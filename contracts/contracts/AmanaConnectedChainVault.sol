@@ -273,8 +273,10 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
         depositFeePaidFromGasTank = !depositFeePaidFromGasTank;
     }
 
-    function incrementLastProcessedNonce() external onlyOwner {
-        lastProcessedNonce++;
+    function setLastProcessedNonce(
+        uint256 _lastProcessedNonce
+    ) external onlyOwner {
+        lastProcessedNonce = _lastProcessedNonce;
     }
 
     /**
@@ -422,9 +424,9 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
     ) internal override {
         Transaction storage txn = pendingTransactions[vaultNonce];
 
-        uint256 maxAmount = maxWithdraw(txn.user);
-        if (txn.amount > maxAmount - pendingWithdrawals[txn.user]) {
-            revert ERC4626ExceededMaxWithdraw(txn.user, txn.amount, maxAmount);
+        uint256 maxAmount = maxWithdraw(user);
+        if (assets > maxAmount - pendingWithdrawals[user]) {
+            revert ERC4626ExceededMaxWithdraw(user, assets, maxAmount);
         }
 
         txn.user = caller;

@@ -39,7 +39,7 @@ const itemVariants = {
     y: 0,
     scale: 1,
     transition: {
-      type: "spring",
+      type: "spring" as const,
       stiffness: 300,
       damping: 25,
     },
@@ -60,7 +60,7 @@ const buttonVariants = {
     scale: 0.98,
     zIndex: 30,
     transition: {
-      type: "spring",
+      type: "spring" as const,
       stiffness: 400,
       damping: 25,
     },
@@ -77,7 +77,7 @@ const searchVariants = {
   focus: {
     scale: 1.02,
     transition: {
-      type: "spring",
+      type: "spring" as const,
       stiffness: 300,
       damping: 25,
     },
@@ -340,9 +340,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
 
   useEffect(() => {
     if (isOpen) {
-      setSelectedChainLocal(
-        selectedChainFromModal || SUPPORTED_CHAINS[0],
-      );
+      setSelectedChainLocal(selectedChainFromModal || SUPPORTED_CHAINS[0]);
       setSelectedTokenLocal(selectedTokenFromModal || null);
       setSearchQuery("");
       setTokenBalances(new Map());
@@ -505,8 +503,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
               variants={containerVariants}
             >
               {chainList.map((chainConfig, index) => {
-                const isSelected =
-                  selectedChainLocal?.id === chainConfig.id;
+                const isSelected = selectedChainLocal?.id === chainConfig.id;
                 return (
                   <motion.div
                     key={chainConfig.id}
@@ -550,7 +547,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
                       >
                         {chainConfig.name}
                       </span>
-                   
+
                       {isSelected && (
                         <div
                           className={`absolute left-0 top-1/2 transform -translate-y-1/2 w-0.5 h-6 bg-[#1B46E0] rounded-sm transition-opacity duration-500 opacity-100`}
@@ -574,12 +571,9 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
             <motion.div className="flex-1" variants={itemVariants}>
               <motion.div className="mb-4" variants={itemVariants}>
                 <div className="relative">
-                  <motion.div
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2"
-                    whileHover={{ scale: 1.1 }}
-                  >
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10 pointer-events-none">
                     <MagnifyingGlassIcon className="w-4 h-4 text-gray-400" />
-                  </motion.div>
+                  </div>
                   <motion.input
                     type="text"
                     placeholder="Search tokens..."

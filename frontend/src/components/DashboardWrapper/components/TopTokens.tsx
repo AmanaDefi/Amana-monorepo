@@ -1,33 +1,39 @@
+import { useMyVaults } from "@/hooks/useMyVaults";
+import { UserVaultBalance, VaultData } from "@/types/types";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 
-const TopTokens = ({}) => {
+const TopTokens = ({
+  vaults,
+  userVaultBalances,
+}: {
+  vaults: VaultData[];
+  userVaultBalances: UserVaultBalance[];
+}) => {
   const [showAll, setShowAll] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const balanceMap = new Map(
+    userVaultBalances.map((balance) => [balance.vaultId, balance.balance]),
+  );
 
-  const cryptoData = [
-    {
-      name: "Ethereum",
-      symbol: "ETH",
-      price: "$40,432",
-      change: "+1.45",
-      icon: "/ETH.png",
-    },
-    {
-      name: "BNB",
-      symbol: "BNB",
-      price: "$2,432",
-      change: "+1.45",
-      icon: "/bnb-bnb-logo.png",
-    },
-    {
-      name: "USDC",
-      symbol: "USDC",
-      price: "$2,432",
-      change: "+1.45",
-      icon: "/USDC.png",
-    },
-  ];
+  const myVaults = useMyVaults({ vaults, userVaultBalances });
+
+  const vaultsData = [...myVaults].sort((vaultA, vaultB) => {
+    const balanceA = Number(balanceMap.get(vaultA.id) ?? 0);
+  
+    const balanceB = Number(balanceMap.get(vaultB.id) ?? 0);
+    return balanceB - balanceA;
+  }).slice(0,3).map(vault => {
+    const userBalance = userVaultBalances.find(
+      (balance) => balance.vaultId === vault.id,
+    );
+    return {
+      name: vault.name,
+      symbol: vault.symbol,
+      price: Number(Number(userBalance?.balance ?? 0)?.toFixed(4)),
+      icon: vault.imgURL ?? vault.protocol.imgURL,
+    }
+  })
 
   useEffect(() => {
     const checkIsMobile = () => {
@@ -41,11 +47,11 @@ const TopTokens = ({}) => {
   }, []);
 
   const itemsToShow =
-    isMobile && !showAll ? cryptoData.slice(0, 2) : cryptoData;
+    isMobile && !showAll ? vaultsData.slice(0, 2) : vaultsData;
 
   return (
     <div className="relative">
-      {isMobile && cryptoData.length > 2 && (
+      {isMobile && vaultsData.length > 2 && (
         <div className="flex justify-end mb-1 ">
           <button
             onClick={() => setShowAll(!showAll)}
@@ -59,7 +65,7 @@ const TopTokens = ({}) => {
       <div className="flex flex-wrap gap-4 md:gap-8">
         {itemsToShow.map((crypto, index) => (
           <div key={index} className="flex items-center gap-2 md:gap-3">
-            <div className="md:w-11 md:h-11 rounded-full flex items-center justify-center text-xl">
+            <div className="md:w-10 md:h-10 overflow-hidden rounded-full flex items-center justify-center text-xl">
               <Image
                 src={crypto.icon}
                 alt={crypto.symbol}
@@ -73,9 +79,8 @@ const TopTokens = ({}) => {
                 <span className="text-[16px] font-normal">{crypto.name}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[16px] md:text-[18px] font-bold">{crypto.price}</span>
-                <span className="text-[#05D47F] text-sm font-normal">
-                  {crypto.change}
+                <span className="text-[16px] md:text-[18px] font-bold">
+                  ${crypto.price}
                 </span>
               </div>
             </div>

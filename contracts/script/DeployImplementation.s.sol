@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 import "forge-std/Script.sol";
-import {WithdrawHelper} from "../contracts//WithdrawHelper.sol";
+import {FluidErc20Strategy} from "../contracts/strategies/FluidErc20Strategy.sol";
 import {console} from "forge-std/console.sol";
 
 contract DeployImplementation is Script {
@@ -23,7 +23,7 @@ contract DeployImplementation is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // ✅ Deploy the new implementation
-        WithdrawHelper newImpl = new WithdrawHelper();
+        FluidErc20Strategy newImpl = new FluidErc20Strategy();
         console.log(" New implementation deployed at:", address(newImpl));
         vm.stopBroadcast();
     }

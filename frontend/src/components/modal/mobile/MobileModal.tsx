@@ -56,11 +56,11 @@ export const MobileModal = ({
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: "100%", opacity: 0 }}
                   transition={{
-                    type: "spring",
+                    type: "spring" as const,
                     stiffness: 300,
                     damping: 30,
                   }}
-                  className={`relative w-full ${height} ${maxHeight} bg-[#14171F] ${roundedClass} text-white shadow-xl font-gotham before-gradient-border overflow-visible block lg:hidden`}
+                  className={`relative w-full ${height} ${maxHeight} bg-[#14171F] ${roundedClass} text-white shadow-xl font-gotham before-modal-gradient-border overflow-visible block lg:hidden`}
                 >
                   {customCloseButton ||
                     (showHeader && (

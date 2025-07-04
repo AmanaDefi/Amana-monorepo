@@ -13,7 +13,11 @@ import {
 } from "@/types/types";
 import { useUpdateAPYs } from "@/hooks/hooks";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { CHAINS_EXPLORER_BASE_URL_MAINNET } from "@/constants/chainConfig";
+import {
+  CHAINS_EXPLORER_BASE_URL_MAINNET,
+  CHAIN_ICONS,
+  CHAIN_ID,
+} from "@/constants/chainConfig";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { bigIntReplacer, bigIntReviver } from "@/utils/utils";
@@ -26,7 +30,7 @@ import Dropdown from "@/components/VaultsDetailsWrapper/components/Dropdown";
 import VaultInformationContent from "@/components/VaultsDetailsWrapper/components/VaultInformationDropdown";
 import ChartDropdown from "@/components/VaultsDetailsWrapper/components/ChartDropdown";
 
-import Button from "@/components/Button";
+import Button from "@/components/common/Button";
 import BackToVaultsIcon from "@/components/svg/BackToVaultsIcon";
 import InvestBlock from "@/components/InvestBlock";
 import { SUPPORTED_TOKENS } from "@/constants/tokens";
@@ -37,8 +41,15 @@ import { Chain } from "viem";
 import clsx from "clsx";
 import { useTransactionStore } from "@/store/transactionStore";
 import DepositComplete from "@/components/VaultsDetailsWrapper/components/DepositComplete";
-import { useVaultDetailsFromGraph, useUserVaultBalancesFromGraph } from "@/hooks/useVaultsGraph";
-import { convertGraphVaultToVaultData, convertGraphVaultToAPY, convertGraphVaultToTotalAssets } from "@/utils/graphUtils";
+import {
+  useVaultDetailsFromGraph,
+  useUserVaultBalancesFromGraph,
+} from "@/hooks/useVaultsGraph";
+import {
+  convertGraphVaultToVaultData,
+  convertGraphVaultToAPY,
+  convertGraphVaultToTotalAssets,
+} from "@/utils/graphUtils";
 import YourInvestment from "@/components/VaultsDetailsWrapper/components/YourInvestment";
 import { VaultCardInfoBlock } from "@/components/VaultsWrapper/components/VaultCardInfoBlock";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -57,6 +68,7 @@ import VaultHeaderInfo from "@/components/VaultsDetailsWrapper/components/VaultH
 import VaultStats from "@/components/VaultsDetailsWrapper/components/VaultStats";
 
 import ChainsModal from "@/components/modal/chains/ChainsModal";
+import Image from "next/image";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -114,7 +126,8 @@ const VaultsDetailContainer: React.FC<{
     isTransactionProcessing,
   } = useTransactionStore();
 
-  const { switchToChain, walletAddress, activeChain } = useMultiChain();
+  const { switchToChain, walletAddress, activeChain, selectedChain } =
+    useMultiChain();
 
   const vaultIdStr = Array.isArray(vaultID) ? vaultID[0] : vaultID;
 
@@ -176,13 +189,8 @@ const VaultsDetailContainer: React.FC<{
 
   const handleChainSelect = useCallback(
     async (chain: Chain) => {
+      console.log('handleChainSelect', chain.id)
       await switchToChain(chain);
-
-      if (vaultID) {
-        updateLocalStorageObject(vaultID.toString(), {
-          selectedChain: JSON.stringify(chain, bigIntReplacer),
-        });
-      }
     },
     [vaultID, switchToChain],
   );
@@ -200,17 +208,11 @@ const VaultsDetailContainer: React.FC<{
         }
       }
     }
-
   }, [vaultID, activeChain]);
 
   useEffect(() => {
     const checkTransactionState = () => {
       if (!vaultID) return;
-
-      if (!user?.address && !wallet?.publicKey) {
-        localStorage.removeItem(vaultID.toString());
-        return;
-      }
 
       const isTxInProgress = CheckTheTxIsInProgress(vaultID.toString());
       const vaultTxData = getLocalStorageObject(vaultID.toString());
@@ -270,7 +272,6 @@ const VaultsDetailContainer: React.FC<{
 
       setVaultTotalAsset(convertGraphVaultToTotalAssets(vaultFromGraph.vault));
     }
-
   }, [vaultID, vaultFromGraph]);
 
   useEffect(() => {
@@ -291,8 +292,7 @@ const VaultsDetailContainer: React.FC<{
 
       setVaultTotalAsset(convertGraphVaultToTotalAssets(vaultFromGraph.vault));
     }
-
-  }, [vaultID, vaultFromGraph]); 
+  }, [vaultID, vaultFromGraph]);
 
   // Set user vault balance from graph data
   useEffect(() => {
@@ -370,7 +370,7 @@ const VaultsDetailContainer: React.FC<{
     memoizedPrices.eth,
     memoizedPrices.comp,
     memoizedPrices.op,
-    user
+    user,
   );
 
   const handleTokenSelect = useCallback(
@@ -384,9 +384,10 @@ const VaultsDetailContainer: React.FC<{
   );
 
   const handleChainAndTokenSelect = useCallback(
-    (chain: Chain, token: Token) => {
-      handleChainSelect(chain);
+    async (chain: Chain, token: Token) => {
       handleTokenSelect(token);
+      console.log('handleChainAndTokenSelect')
+      handleChainSelect(chain);
     },
     [handleChainSelect, handleTokenSelect],
   );
@@ -446,7 +447,14 @@ const VaultsDetailContainer: React.FC<{
             {!walletAddress || isDeposit ? (
               <ErrorInputIcon className="w-5 h-5 text-white" />
             ) : (
-              <GiftIcon size={20} className="text-white" />
+              <div className="rounded-[4px] w-6 h-6 flex items-center justify-center bg-[#0C1015]">
+                <Image
+                  src="/rewards.png"
+                  alt="reward star"
+                  width={20}
+                  height={18}
+                />
+              </div>
             )}
           </button>
 
@@ -567,6 +575,8 @@ const VaultsDetailContainer: React.FC<{
                   )}
                   totalAssets={vaultTotalAsset}
                   isLoading={loading || !vaultAPYs.length}
+                  isDeposit={isDeposit}
+                  isReward={true}
                 />
               </div>
               <div className="hidden md:block">
@@ -578,6 +588,8 @@ const VaultsDetailContainer: React.FC<{
                     )}
                     totalAssets={vaultTotalAsset}
                     titleColor="#535E73"
+                    isDeposit={isDeposit}
+                    isReward={true}
                   />
                 </VaultCardInfoBlock>
               </div>

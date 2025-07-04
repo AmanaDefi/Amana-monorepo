@@ -10,7 +10,8 @@ import { useFundWalletStore } from "@/store/fundWalletStore";
 import { showInfoToast } from "@/toasts";
 import { useEffect, useState } from "react";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { useWallets } from "@privy-io/react-auth";
+import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { useWallet } from "@solana/wallet-adapter-react";
 
 const MobileAllWallets = () => {
   const { step, successAuth, closeAll } = useAuthStore();
@@ -36,6 +37,8 @@ const MobileAllWallets = () => {
   const { walletAddress } = useMultiChain();
   const {wallets} = useWallets();
   const activeAccount = wallets[0];
+  const { logout } = usePrivy();
+  const { disconnect, publicKey } = useWallet();
 
   const {
     connectors,
@@ -49,6 +52,9 @@ const MobileAllWallets = () => {
           localStorage.removeItem("connectorId");
           return fundWalletConnect();
         }
+        if (publicKey) {
+          disconnect();
+        }
         return successAuth(walletAddress, activeAccount || undefined, true);
       },
     },
@@ -58,8 +64,16 @@ const MobileAllWallets = () => {
     setStep("confirm");
   };
 
-  const handleExternalWalletConnect = (connector: Connector) => {
+  const handleExternalWalletConnect = async (connector: Connector) => {
     if (isConnectingWallet) return;
+    if (activeAccount?.walletClientType === "privy") {
+      const confirmResult = confirm(
+        "You smart wallet account will be disconnected",
+      );
+      if (!confirmResult) return;
+
+      await logout();
+    }
     setActiveConnector(connector);
     localStorage.setItem("connectorId", connector.id);
     connect(
@@ -101,7 +115,7 @@ const MobileAllWallets = () => {
       paddingClass="p-5 pb-0"
       showHeader={true}
     >
-      <div className="flex flex-col h-full pt-14">
+      <div className="flex flex-col h-full pt-14 pb-6">
         <div
           style={{ scrollbarColor: "#1B46E0 transparent" }}
           className="overflow-auto flex-1 scrollbar-thin"

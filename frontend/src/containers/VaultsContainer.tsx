@@ -6,16 +6,16 @@ import { useVaultDataWithSearch } from "@/hooks/useVaultData";
 import { useLayoutStore } from "@/store/store";
 
 const VaultsContainer = () => {
-
   let isSearchError: boolean | undefined = false;
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [sortBy, setSortBy] = useState('tvl');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-  const [chainFilter, setChainFilter] = useState('');
-  const [protocolFilter, setProtocolFilter] = useState('');
+  const [sortBy, setSortBy] = useState("tvl");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [chainFilter, setChainFilter] = useState("");
+  const [protocolFilter, setProtocolFilter] = useState("");
+  const [pageLading, setLoading] = useState(true);
 
   const itemsPerPage = useLayoutStore((state) => state.itemsPerPage);
 
@@ -43,8 +43,22 @@ const VaultsContainer = () => {
     networkFilter,
     hasNetworkFilter,
     timedOut,
-    _debug
-  } = useVaultDataWithSearch(debouncedSearchTerm, currentPage, itemsPerPage, sortBy, sortOrder, chainFilter, protocolFilter);
+    _debug,
+  } = useVaultDataWithSearch(
+    debouncedSearchTerm,
+    currentPage,
+    itemsPerPage,
+    sortBy,
+    sortOrder,
+    chainFilter,
+    protocolFilter,
+  );
+
+  useEffect(() => {
+    if (!loading && pageLading) {
+      setLoading(false);
+    }
+  }, [loading, pageLading]);
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages && page !== currentPage) {
@@ -52,7 +66,10 @@ const VaultsContainer = () => {
     }
   };
 
-  const handleSortChange = (newSortBy: string, newSortOrder: 'asc' | 'desc') => {
+  const handleSortChange = (
+    newSortBy: string,
+    newSortOrder: "asc" | "desc",
+  ) => {
     if (newSortBy !== sortBy || newSortOrder !== sortOrder) {
       setSortBy(newSortBy);
       setSortOrder(newSortOrder);
@@ -67,60 +84,61 @@ const VaultsContainer = () => {
     }
   };
 
-
-
-  const isSearching = searchTerm !== debouncedSearchTerm && searchTerm.length > 0;
+  const isSearching =
+    searchTerm !== debouncedSearchTerm && searchTerm.length > 0;
 
   const isSearchTermTooLong = searchTerm.length > 100;
 
-  const shouldShowLoading = (!timedOut && (loading ||
-    (vaults.length > 0 && vaultAPYs.length === 0) ||
-    (vaults.length > 0 && vaultTotalAssets.length === 0) ||
-    (vaults.length === 0 && !hasError) ||
-    isSearching));
+  const shouldShowLoading = pageLading || isSearching;
 
   if (hasError) {
-    isSearchError = error?.message?.includes('Search') || error?.message?.includes('timeout');
+    isSearchError =
+      error?.message?.includes("Search") || error?.message?.includes("timeout");
   }
 
   const ErrorBlock = () => {
     return (
       <>
-        {isSearchTermTooLong &&
+        {isSearchTermTooLong && (
           <div className="flex flex-col items-center justify-center p-8">
-            <h2 className="text-xl font-semibold mb-4 text-orange-600">Search Term Too Long</h2>
+            <h2 className="text-xl font-semibold mb-4 text-orange-600">
+              Search Term Too Long
+            </h2>
             <p className="text-gray-600 mb-4">
-              Search term cannot exceed 100 characters. Please shorten your search query.
+              Search term cannot exceed 100 characters. Please shorten your
+              search query.
             </p>
             <p className="text-sm text-gray-500 mb-4">
               Current length: {searchTerm.length} characters
             </p>
           </div>
-        }
+        )}
 
-        {
-          hasError &&
+        {hasError && (
           <div className="flex flex-col items-center justify-center p-8">
             <h2 className="text-xl font-semibold mb-4">
-              {isSearchError ? 'Search Error' : 'Unable to load vaults'}
+              {isSearchError ? "Search Error" : "Unable to load vaults"}
             </h2>
             <p className="text-gray-600 mb-4">
               {isSearchError
-                ? 'The search request timed out or failed. Please try a different search term or try again later.'
-                : 'There was an error loading vault data. Please try again later.'
-              }
+                ? "The search request timed out or failed. Please try a different search term or try again later."
+                : "There was an error loading vault data. Please try again later."}
             </p>
           </div>
-        }
+        )}
       </>
-    )
-  }
+    );
+  };
 
   return (
     <>
       <VaultsGrid
         loading={shouldShowLoading}
-        vaults={timedOut && vaults.length === 0 && debouncedSearchTerm.length > 0 ? [] : vaults}
+        vaults={
+          timedOut && vaults.length === 0 && debouncedSearchTerm.length > 0
+            ? []
+            : vaults
+        }
         vaultAPYs={vaultAPYs}
         userVaultBalances={userVaultBalances}
         vaultTotalAssets={vaultTotalAssets}

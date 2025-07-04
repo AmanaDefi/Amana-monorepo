@@ -42,7 +42,12 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       protocolDescription: "Zerolend is a decentralized lending and borrowing protocol designed for efficient capital utilization and seamless DeFi integration. It enables users to supply assets, earn interest, and access liquidity with competitive rates and automated risk management. Built with a focus on security and scalability, Zerolend supports multiple assets and chains while leveraging algorithmic interest rate models. Risks include smart contract vulnerabilities, liquidation risks, and governance changes that may impact borrowing terms or collateral requirements.",
       networkDescription: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum's decentralized security.",
       riskLevel: 2,
-      rewardsContractAddress: null
+      rewardsContractAddress: null,
+      protocolPoints: 0,
+      protocolPointsDescription: null,
+      cooldownPeriod: 0,
+      minDeposit: 1,
+      maxWithdraw: 1000000,
     };
   }
   
@@ -65,7 +70,12 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       protocolDescription: "Fluid is a decentralized lending and borrowing protocol designed for efficient capital utilization and automated yield optimization. It enables users to supply assets, earn interest, and access liquidity while benefiting from dynamic risk management. Risks include smart contract vulnerabilities, liquidation risks, and potential governance changes affecting protocol parameters.",
       networkDescription: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum's decentralized security.",
       riskLevel: 2,
-      rewardsContractAddress: null
+      rewardsContractAddress: null,
+      protocolPoints: 0,
+      protocolPointsDescription: null,
+      cooldownPeriod: 0,
+      minDeposit: 1,
+      maxWithdraw: 1000000,
     };
   }
   
@@ -88,7 +98,12 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       protocolDescription: "Compound is a decentralized lending and borrowing protocol that enables users to supply assets and earn interest while allowing others to borrow against collateral. It features algorithmically adjusted interest rates based on supply and demand, ensuring efficient capital utilization. Users benefit from permissionless access and automated yield accrual. Risks include smart contract vulnerabilities, liquidation risks, and governance decisions that may impact protocol parameters.",
       networkDescription: "Polygon PoS is a Layer 2 scaling solution for Ethereum that enhances transaction speed and reduces costs while maintaining security and EVM compatibility. Built on a Proof-of-Stake consensus mechanism, it enables fast finality and efficient smart contract execution, making it an ideal platform for dApps, DeFi, and gaming applications while benefiting from Ethereum's decentralized security and liquidity.",
       riskLevel: 2,
-      rewardsContractAddress: "0x45939657d1CA34A8FA39A924B71D28Fe8431e581"
+      rewardsContractAddress: "0x45939657d1CA34A8FA39A924B71D28Fe8431e581",
+      protocolPoints: 0,
+      protocolPointsDescription: null,
+      cooldownPeriod: 0,
+      minDeposit: 1,
+      maxWithdraw: 1000000,
     };
   }
   
@@ -111,7 +126,12 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       protocolDescription: "Aave is a decentralized, non-custodial liquidity protocol that allows users to lend and borrow crypto assets while earning yield on supplied funds. It features overcollateralized loans, dynamic interest rates, and innovative mechanisms like flash loans and stable borrowing. The protocol is governed by AAVE token holders and supports multiple chains, ensuring scalability and flexibility. Risks include smart contract vulnerabilities, liquidation risks, and governance changes that may impact borrowing costs and collateral requirements.",
       networkDescription: "BNB Smart Chain (BSC) is a fast, low-cost blockchain supporting smart contracts and EVM-compatible dApps. It offers high throughput but has a more centralized validator structure compared to some networks, impacting governance and security.",
       riskLevel: 2,
-      rewardsContractAddress: null
+      rewardsContractAddress: null,
+      protocolPoints: 0,
+      protocolPointsDescription: null,
+      cooldownPeriod: 0,
+      minDeposit: 1,
+      maxWithdraw: 1000000,
     };
   }
   
@@ -134,7 +154,12 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       protocolDescription: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy.",
       networkDescription: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
       riskLevel: 3,
-      rewardsContractAddress: "0x442E773FFB0043551417D5A37E10c17990fB075c"
+      rewardsContractAddress: "0x442E773FFB0043551417D5A37E10c17990fB075c",
+      protocolPoints: 0,
+      protocolPointsDescription: null,
+      cooldownPeriod: 0,
+      minDeposit: 1,
+      maxWithdraw: 1000000,
     };
   }
   
@@ -157,7 +182,12 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       protocolDescription: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy.",
       networkDescription: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
       riskLevel: 3,
-      rewardsContractAddress: "0x60eF3c53c86E1eCEc76d900B6cf2f0B39ffD98B2"
+      rewardsContractAddress: "0x60eF3c53c86E1eCEc76d900B6cf2f0B39ffD98B2",
+      protocolPoints: 0,
+      protocolPointsDescription: null,
+      cooldownPeriod: 0,
+      minDeposit: 1,
+      maxWithdraw: 1000000,
     };
   }
   
@@ -180,7 +210,12 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       protocolDescription: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy.",
       networkDescription: "Arbitrum One is a Layer 2 scaling solution for Ethereum that offers faster and cheaper transactions while maintaining Ethereum's security through rollup technology. It supports EVM-compatible smart contracts and dApps, making it easy for developers to migrate or build. While it significantly reduces gas costs and improves throughput, occasional delays can occur during periods of network congestion or when bridging assets to and from Ethereum.",
       riskLevel: 3,
-      rewardsContractAddress: "0xD4f9bCc2e0e920e23763FA8e37eCbC4135959dB4"
+      rewardsContractAddress: "0xD4f9bCc2e0e920e23763FA8e37eCbC4135959dB4",
+      protocolPoints: 0,
+      protocolPointsDescription: null,
+      cooldownPeriod: 0,
+      minDeposit: 1,
+      maxWithdraw: 1000000,
     };
   }
   
@@ -203,7 +238,12 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       protocolDescription: "Balancer is a decentralized exchange and automated portfolio manager that enables customizable liquidity pools. By providing liquidity to pools like yUSD/USDC on Base, users earn trading fees and can stake their LP tokens in Balancer Gauges to receive protocol rewards such as axlOP. Balancer's design supports efficient swaps and dynamic fee structures, making it a flexible and rewarding platform for DeFi yield strategies.",
       networkDescription: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum's decentralized security.",
       riskLevel: 3,
-      rewardsContractAddress: "0x50355F3Bb70317E518905664CE09333FA8b90645"
+      rewardsContractAddress: "0x50355F3Bb70317E518905664CE09333FA8b90645",
+      protocolPoints: 0,
+      protocolPointsDescription: null,
+      cooldownPeriod: 0,
+      minDeposit: 1,
+      maxWithdraw: 1000000,
     };
   }
   
@@ -225,7 +265,12 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
     protocolDescription: "Unknown protocol",
     networkDescription: "Unknown network",
     riskLevel: 1,
-    rewardsContractAddress: null
+    rewardsContractAddress: null,
+    protocolPoints: 0,
+    protocolPointsDescription: null,
+    cooldownPeriod: 0,
+    minDeposit: 1,
+    maxWithdraw: 1000000,
   };
 }
 
@@ -247,6 +292,11 @@ class VaultMetadata {
   networkDescription: string;
   riskLevel: i32;
   rewardsContractAddress: string | null;
+  protocolPoints: i32;
+  protocolPointsDescription: string | null;
+  cooldownPeriod: i32;
+  minDeposit: i32;
+  maxWithdraw: i32;
 }
 
 // Legacy function for backward compatibility
@@ -351,6 +401,11 @@ export function handleVaultInitialized(event: VaultInitialized): void {
   entity.protocolDescription = metadata.protocolDescription;
   entity.networkDescription = metadata.networkDescription;
   entity.riskLevel = metadata.riskLevel;
+  entity.protocolPoints = metadata.protocolPoints;
+  entity.protocolPointsDescription = metadata.protocolPointsDescription;
+  entity.cooldownPeriod = metadata.cooldownPeriod;
+  entity.minDeposit = metadata.minDeposit;
+  entity.maxWithdraw = metadata.maxWithdraw;
   
   // Set rewards contract address if provided
   if (metadata.rewardsContractAddress != null) {
@@ -424,6 +479,11 @@ export function handleStrategyUpdated(event: StrategyUpdated): void {
     entity.protocolDescription = metadata.protocolDescription;
     entity.networkDescription = metadata.networkDescription;
     entity.riskLevel = metadata.riskLevel;
+    entity.protocolPoints = metadata.protocolPoints;
+    entity.protocolPointsDescription = metadata.protocolPointsDescription;
+    entity.cooldownPeriod = metadata.cooldownPeriod;
+    entity.minDeposit = metadata.minDeposit;
+    entity.maxWithdraw = metadata.maxWithdraw;
     
     // Set rewards contract address if provided
     if (metadata.rewardsContractAddress != null) {

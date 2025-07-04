@@ -5,7 +5,7 @@ import { z } from "zod";
 import { Modal } from "../base/Modal";
 import { motion } from "framer-motion";
 import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
-import Button from "@/components/Button";
+import Button from "@/components/common/Button";
 import { useState, useEffect } from "react";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import { useMultiChain } from "@/providers/MultiChainProvider";
@@ -14,7 +14,14 @@ import {
   ChevronLeftIcon,
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/solid";
-import { CHAIN_ICONS, chainsWithCustomRpcs } from "@/constants/chainConfig";
+import {
+  CHAIN_ICONS,
+  CHAIN_ID,
+  chainConfigs,
+  chainsWithCustomRpcs,
+} from "@/constants/chainConfig";
+import { useWallets } from "@privy-io/react-auth";
+import { useWallet } from "@solana/wallet-adapter-react";
 
 const sendSchema = z.object({
   recipientAddress: z
@@ -41,6 +48,9 @@ export const Send = () => {
 
   const { walletAddress, activeChain, switchToChain, balance } =
     useMultiChain();
+  const { wallets } = useWallets();
+  const activeWallet = wallets[0];
+  const { connected } = useWallet();
 
   const validateAmount = (value: string) => {
     const num = parseFloat(value);
@@ -81,11 +91,18 @@ export const Send = () => {
 
   const selectedNetworkValue = watch("network") || "";
 
+  const chainList =
+    activeWallet?.walletClientType === "privy"
+      ? [chainsWithCustomRpcs()[0]]
+      : connected
+        ? [chainConfigs[CHAIN_ID["solana"]]]
+        : chainsWithCustomRpcs().filter(
+            (chain) => chain.id !== CHAIN_ID["solana"],
+          );
+
   // Filter networks based on search query
-  const filteredNetworks = chainsWithCustomRpcs().filter((chainConfig) =>
-    chainConfig.name
-      .toLowerCase()
-      .includes(networkSearchQuery.toLowerCase()),
+  const filteredNetworks = chainList.filter((chainConfig) =>
+    chainConfig.name.toLowerCase().includes(networkSearchQuery.toLowerCase()),
   );
 
   const handleNetworkSelect = async (chainName: string) => {

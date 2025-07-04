@@ -1,6 +1,6 @@
 import ArrowRightIcon from "@/components/svg/ArrowRightIcon";
 import { EarnIcon } from "@/components/svg/sidebar/EarnIcon";
-import Button from "@/components/Button";
+import Button from "@/components/common/Button";
 import DiscordLogo from "@public/logo/discord.svg";
 import { VaultData, Token, Balance } from "@/types/types";
 import Image from "next/image";

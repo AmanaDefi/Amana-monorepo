@@ -29,7 +29,7 @@ export const TOKEN_LOGO_URLS: Record<string, string> = {
   BTC: "/bitcoin_logo.png",
   CBBTC: "/cbbtc.png",
   ETH: "/ETH.png",
-  SOL: "/solana_logo.png",
+  SOL: "/solana.png",
   POL: "/polygon_logo.png",
   AVAX: "/avalanche-avax-logo.png",
   BNB: "/bnb-bnb-logo.png",
@@ -236,9 +236,9 @@ export enum MulticallVersion {
   V3 = 3,
 }
 
-const solanaChain = {
+export const solanaChain = {
   id: CHAIN_ID.solana,
-  name: deployEnv === "testnet" ? "devnet" : "mainnet",
+  name: "Solana",
   shortName: "sol",
   chain: "Solana",
   rpcUrls: {
@@ -307,6 +307,7 @@ export const chainsMainnet = [
   avalanche,
   arbitrum,
   bitcoinChain, // Added Bitcoin to mainnet chains
+  solanaChain,
 ];
 const chainsTestnet = [
   zetachainAthensTestnet,
@@ -317,6 +318,7 @@ const chainsTestnet = [
   avalancheFuji,
   arbitrumSepolia,
   bitcoinChain, // Added Bitcoin to testnet chains 
+  solanaChain,
 ];
 
 export const SUPPORTED_CHAINS =
@@ -339,7 +341,9 @@ export const customZetachain = zetaRpcUrl
   : zetaChain;
 
 export const chainsWithCustomRpcs = () => {
-  return SUPPORTED_CHAINS.map((chain) => {
+  return SUPPORTED_CHAINS.filter(
+    (chain) => chain.id !== CHAIN_ID["solana"],
+  ).map((chain) => {
     const customUrl = customRpcsMap[chain.id];
 
     if (customUrl) {

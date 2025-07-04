@@ -5,26 +5,20 @@ import { useAuthStore } from "@/store/authStore";
 import ConnectWallet from "../shared/ConnectWallet";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import PopularOptions from "../shared/PopularOptions";
-import SmartWalletIcon from "@/components/svg/SmartWalletIcon";
-import ModalButton from "../shared/ModalButton";
-import AllWalletsIcon from "@/components/svg/AllWalletsIcon";
-import BackedBy from "../shared/BackedBy";
-import GoogleEmailIcon from "@/components/svg/GoogleEmailIcon";
-import GooglePasskeyIcon from "@/components/svg/GooglePasskeyIcon";
-import CryptoIcons from "../shared/CryptoIcons";
+import WalletButtons from "../shared/WalletButtons";
 
 const OptionsModalA = () => {
   const { step, closeAll, openStep } = useAuthStore();
 
   const handleSmartWallets = () => {
-    const hasViewedOnboarding = localStorage.getItem('hasViewedOnboarding');
+    const hasViewedOnboarding = localStorage.getItem("hasViewedOnboarding");
     if (hasViewedOnboarding) {
-      openStep('optionsB')
+      openStep("optionsB");
     } else {
-      localStorage.setItem('hasViewedOnboarding', 'true');
-      openStep("onboarding")
+      localStorage.setItem("hasViewedOnboarding", "true");
+      openStep("onboarding");
     }
-  }
+  };
 
   return (
     <Modal
@@ -51,25 +45,10 @@ const OptionsModalA = () => {
           </div>
           <div className="flex flex-col pt-4">
             <PopularOptions />
-            <div className="flex flex-col gap-4 mt-6">
-              <ModalButton
-                label="Smart Wallet"
-                icon={<SmartWalletIcon width={22} height={19} />}
-                onClick={handleSmartWallets}
-              >
-                <div className="flex flex-row gap-2 mr-4 items-center">
-                  <GoogleEmailIcon width={19} height={14} />
-                  <GooglePasskeyIcon width={19} height={19} />
-                </div>
-              </ModalButton>
-              <ModalButton
-                label="All Wallets"
-                icon={<AllWalletsIcon width={20} height={20} />}
-                onClick={() => openStep("allWallets")}
-              >
-                <CryptoIcons />
-              </ModalButton>
-            </div>
+            <WalletButtons
+              handleSmartWallets={handleSmartWallets}
+              openStep={openStep}
+            />
           </div>
         </div>
       </div>

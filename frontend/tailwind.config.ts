@@ -24,6 +24,32 @@ const beforeGradientBorder = plugin(({ addUtilities }) => {
     },
   });
 });
+const beforeMobileGradientBorder = plugin(({ addUtilities }) => {
+  addUtilities({
+    ".before-modal-gradient-border": {
+      position: "relative",
+      zIndex: "0",
+      overflow: "hidden",
+    },
+    ".before-modal-gradient-border::before": {
+      content: '""',
+      position: "absolute",
+      top: "0",
+      left: "0",
+      right: "0",
+      bottom: "-2px",
+      padding: "1px",
+      borderRadius: "inherit",
+      background: "linear-gradient(180deg, #162559 0%, #1B46E0 100%)",
+      pointerEvents: "none",
+      zIndex: "-1",
+      maskComposite: "exclude",
+      WebkitMask:
+        "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+      WebkitMaskComposite: "xor",
+    },
+  });
+});
 const menuItemHover = plugin(function ({ addUtilities }) {
   addUtilities({
     ".menu-item-hover": {
@@ -117,9 +143,10 @@ const config: Config = {
         custom: "0 4px 6px 0 rgba(0, 0, 0, 0.1)",
         sidebar:
           "0 2px 2px 0 rgba(255, 255, 255, 0.1), inset 0 1px 0 0 rgba(255, 255, 255, 0.1)",
+        black15: "0 4px 6px 0 rgba(0, 0, 0, 0.15)",
       },
     },
   },
-  plugins: [beforeGradientBorder, menuItemHover, sidebarShadow],
+  plugins: [beforeGradientBorder, beforeMobileGradientBorder, menuItemHover, sidebarShadow],
 };
 export default config;

@@ -15,7 +15,7 @@ import type {
   VaultTotalAssets,
   UserVaultBalance,
 } from "@/types/types";
-import Button from "@/components/Button";
+import Button from "@/components/common/Button";
 import { WalletIcon } from "@/components/svg/sidebar/WalletIcon";
 import { useMyVaults } from "@/hooks/useMyVaults";
 import { VaultCard } from "@/components/VaultsWrapper/components/VaultCard";
@@ -201,8 +201,8 @@ const TransactionItem: React.FC<{ transaction: Transaction }> = ({
 
 interface PortfolioTabsProps {
   vaults?: VaultData[];
-  vaultAPYs?: VaultAPY[];
   userVaultBalances?: UserVaultBalance[];
+  vaultAPYs?: VaultAPY[];
   vaultTotalAssets?: VaultTotalAssets[];
   loading?: boolean;
   transactions?: Transaction[]; // New prop for when backend is ready
@@ -288,7 +288,8 @@ const PortfolioTabs: React.FC<PortfolioTabsProps> = ({
             <div
               className="grid gap-4"
               style={{
-                gridTemplateColumns: "repeat(auto-fit, minmax(380px, 1fr))",
+                gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))",
+                justifyContent: "start",
               }}
             >
               {myVaults.map((vault) => (

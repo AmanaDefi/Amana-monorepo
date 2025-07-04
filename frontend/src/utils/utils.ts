@@ -624,7 +624,7 @@ export const getERC20TokenBalance = async (
       };
     }
 
-    const publicClient = await getPublicClient(activeWallet);
+    const publicClient = await getPublicClient(activeWallet, chain.id);
     if (!publicClient) {
       console.log("NO publicClient for chainId", chain.id);
       return {
@@ -730,7 +730,7 @@ export async function getSplTokenBalance(
 }
 
 export function shortAddressForm(address: string) {
-  return address.slice(0, 6) + "..." + address.slice(-4);
+  return address.slice(0, 9) + "..." + address.slice(-8);
 }
 
 export function getSolanaEVMAddress(solanaPublicKey: string) {
@@ -861,3 +861,16 @@ export function bigIntReviver(key: string, value: any) {
   }
   return value;
 }
+
+export const checkAmount = (amountString: string, amount: string) => {
+  if (!/^([0-9,]*|[0-9]*\.[0-9,]*)$/g.test(amountString.replace(",", "."))) {
+    return null;
+  } else if (
+    (amountString === "." || amountString === "," || amountString === "0") &&
+    amount === ""
+  ) {
+    return "0.";
+  } else {
+    return amountString.replace(",", ".");
+  }
+};

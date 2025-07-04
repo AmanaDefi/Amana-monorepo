@@ -14,6 +14,7 @@ import {
   useCreateWallet,
   useWallets,
 } from "@privy-io/react-auth";
+import { useWallet } from "@solana/wallet-adapter-react";
 
 const formatEmail = (email: string) => {
   const [local, domain] = email.split("@");
@@ -31,12 +32,16 @@ export const VerifyOtpModal = () => {
   const [error, setError] = useState(false);
   const { logout } = usePrivy();
   const { createWallet } = useCreateWallet();
+  const { disconnect, publicKey } = useWallet();
   const { sendCode, loginWithCode } = useLoginWithEmail({
     onComplete: async (result) => {
       console.log("Success email auth", result);
       authenticate(result?.user?.wallet?.address ?? "");
       if (!result?.user?.wallet) {
         await createWallet();
+      }
+      if (publicKey) {
+        disconnect();
       }
       if (!result.wasAlreadyAuthenticated) {
         successAuth();

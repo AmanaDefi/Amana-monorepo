@@ -1405,6 +1405,294 @@ const executeSolanaDeposit = async (
   }
 };
 
+// Helper functions for wallet topup 
+const executeDirectWalletTopup = async (
+  inputToken: Token,
+  activeAccount: ConnectedWallet,
+  activeChain: Chain,
+  smartAccountAddress: Address,
+  transactionAmount: bigint,
+) => {
+  const walletClient = await getWalletClient(activeAccount);
+  if (!walletClient || !activeAccount?.address) {
+    console.log("No wallet client or active account found");
+    return { transactionHash: null };
+  }
+
+  try {
+    if (inputToken.isNative) {
+      // For native ZETA: simple sendTransaction
+      const txHash = await walletClient.sendTransaction({
+        account: activeAccount.address,
+        to: smartAccountAddress,
+        value: transactionAmount,
+        chain: activeChain,
+      });
+
+      const publicClient = await getPublicClient(activeAccount, activeChain.id);
+      if (!publicClient) {
+        console.log("No public client found");
+        return { transactionHash: txHash };
+      }
+
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: txHash,
+      });
+
+      return receipt;
+    } else {
+      // For ZRC20: ERC20 transfer call
+      const txHash = await walletClient.writeContract({
+        address: inputToken.address,
+        abi: [
+          parseAbiItem("function transfer(address to, uint256 amount) returns (bool)"),
+        ],
+        functionName: "transfer",
+        args: [smartAccountAddress, transactionAmount],
+        account: activeAccount.address,
+        chain: activeChain,
+      });
+
+      const publicClient = await getPublicClient(activeAccount, activeChain.id);
+      if (!publicClient) {
+        console.log("No public client found");
+        return { transactionHash: txHash };
+      }
+
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: txHash,
+      });
+
+      return receipt;
+    }
+  } catch (error: any) {
+    console.log("Error in executeDirectWalletTopup:", error.message);
+    if (
+      error?.message?.includes("executing this transaction exceeds the balance") &&
+      activeAccount.walletClientType === "privy"
+    ) {
+      showErrorToast("Insufficient balance for wallet topup transaction.");
+    }
+    return { transactionHash: null };
+  }
+};
+
+const executeSolanaWalletTopup = async (
+  inputToken: Token,
+  walletContext: WalletContextState | undefined,
+  activeChain: Chain,
+  smartAccountAddress: Address,
+  transactionAmount: bigint,
+  setcrossChainTxId?: Function,
+) => {
+  if (!walletContext?.publicKey) {
+    console.log("No Solana wallet context found");
+    return { transactionHash: null };
+  }
+
+  const wallet = {
+    publicKey: walletContext.publicKey,
+    signTransaction: walletContext.signTransaction,
+    signAllTransactions: walletContext.signAllTransactions,
+  } as Wallet;
+  
+  const client = new SolanaZetaClient(wallet);
+  
+  const revertOptions = {
+    revertAddress: walletContext.publicKey,
+    abortAddress: ethers.getBytes(smartAccountAddress),
+    callOnRevert: false,
+    revertMessage: Buffer.from("_walletTopupFailed", "utf8"),
+    onRevertGasLimit: new (require("@coral-xyz/anchor")).BN(500000), // Lower gas limit for simple topup
+  };
+
+  try {
+    const simpleArgs = {
+      types: ["address"],
+      values: [smartAccountAddress], // Just the destination address
+    };
+
+    if (inputToken.isNative) {
+      const txHash = await client.solanaDepositAndCall(
+        parseInt(transactionAmount.toString()),
+        smartAccountAddress, // receiver
+        simpleArgs,
+        revertOptions
+      );
+
+      if (setcrossChainTxId) {
+        setcrossChainTxId(txHash);
+      }
+      return { transactionHash: txHash };
+    } else {
+      const txHash = await client.depositSplTokenAndCall(
+        inputToken.address,
+        parseInt(transactionAmount.toString()),
+        smartAccountAddress, // receiver
+        simpleArgs,
+        revertOptions
+      );
+
+      if (setcrossChainTxId) {
+        setcrossChainTxId(txHash);
+      }
+      return { transactionHash: txHash };
+    }
+  } catch (error: any) {
+    console.log("Error in executeSolanaWalletTopup:", error.message);
+    return { transactionHash: null };
+  }
+};
+
+const executeCrossChainWalletTopup = async (
+  inputToken: Token,
+  activeAccount: ConnectedWallet,
+  activeChain: Chain,
+  smartAccountAddress: Address,
+  transactionAmount: bigint,
+  setcrossChainTxId?: Function,
+) => {
+  const walletClient = await getWalletClient(activeAccount);
+  if (!activeAccount || !walletClient) {
+    console.log("No wallet client or active account found");
+    return { transactionHash: null };
+  }
+
+  const revertOptions = [
+    activeAccount.address, // revertAddress
+    false, // callOnRevert
+    activeAccount.address, // abortAddress
+    abiCoder.encode(
+      ["string", "address"],
+      ["_walletTopupFailed", activeAccount.address],
+    ) as `0x${string}`, // revertMessage
+    BigInt(500000), // onRevertGasLimit - lower than vault deposits
+  ] as const;
+
+  try {
+    if (inputToken.isNative) {
+      const txHash = await walletClient.sendTransaction({
+        account: activeAccount.address,
+        to: EVM_GATEWAY_ADDRESSES[activeChain.id],
+        value: transactionAmount,
+        chain: activeChain,
+        data: encodeFunctionData({
+          abi: [
+            parseAbiItem(
+              "function deposit(address receiver, (address,bool,address,bytes,uint256) revertOptions)",
+            ),
+          ],
+          functionName: "deposit",
+          args: [smartAccountAddress, revertOptions],
+        }),
+      });
+
+      const publicClient = await getPublicClient(activeAccount);
+      if (!publicClient) {
+        console.log("No public client found");
+        if (setcrossChainTxId) {
+          setcrossChainTxId(txHash);
+        }
+        return { transactionHash: txHash };
+      }
+
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: txHash,
+      });
+
+      if (setcrossChainTxId) {
+        setcrossChainTxId(txHash);
+      }
+      return receipt;
+    } else {
+      const txHash = await walletClient.writeContract({
+        address: EVM_GATEWAY_ADDRESSES[activeChain.id],
+        abi: [
+          parseAbiItem(
+            "function deposit(address receiver, uint256 amount, address asset, (address,bool,address,bytes,uint256) revertOptions)",
+          ),
+        ],
+        functionName: "deposit",
+        args: [
+          smartAccountAddress,
+          transactionAmount,
+          inputToken.address,
+          revertOptions,
+        ],
+        chain: activeChain,
+        account: activeAccount.address,
+      });
+
+      const publicClient = await getPublicClient(activeAccount);
+      if (!publicClient) {
+        console.log("No public client found");
+        if (setcrossChainTxId) {
+          setcrossChainTxId(txHash);
+        }
+        return { transactionHash: txHash };
+      }
+
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: txHash,
+      });
+
+      if (setcrossChainTxId) {
+        setcrossChainTxId(txHash);
+      }
+      return receipt;
+    }
+  } catch (error: any) {
+    console.log("Error in executeCrossChainWalletTopup:", error.message);
+    if (
+      error?.message?.includes("executing this transaction exceeds the balance") &&
+      activeAccount.walletClientType === "privy"
+    ) {
+      showErrorToast("Insufficient balance for wallet topup transaction.");
+    }
+    return { transactionHash: null };
+  }
+};
+
+export const executeWalletTopup = async (
+  inputToken: Token,
+  activeAccount: ConnectedWallet,
+  activeChain: Chain,
+  smartAccountAddress: Address,
+  transactionAmount: bigint,
+  walletContext?: WalletContextState, // Added for Solana support
+) => {
+  // Mock smart account address until Cowchain integration is ready
+  // TODO: Replace with actual smart account address 
+  const mockSmartAccountAddress = "0x1234567890123456789012345678901234567890" as Address;
+  const actualSmartAccountAddress = smartAccountAddress || mockSmartAccountAddress;
+
+  if (activeChain.id === CHAIN_ID.zetachain) {
+    return executeDirectWalletTopup(
+      inputToken,
+      activeAccount,
+      activeChain,
+      actualSmartAccountAddress,
+      transactionAmount,
+    );
+  } else if (activeChain.id === CHAIN_ID.solana) {
+    return executeSolanaWalletTopup(
+      inputToken,
+      walletContext,
+      activeChain,
+      actualSmartAccountAddress,
+      transactionAmount,
+    );
+  } else {
+    return executeCrossChainWalletTopup(
+      inputToken,
+      activeAccount,
+      activeChain,
+      actualSmartAccountAddress,
+      transactionAmount,
+    );
+  }
+};
+
 export const executeSolanaWithdrawal = async (
   vaultData: VaultData,
   walletContext: WalletContextState,
@@ -2140,6 +2428,7 @@ export const getPerformanceFee = async (
   chainId: number,
   activeWallet: ConnectedWallet,
 ) => {
+  console.log(chainId, 'getPerformanceFee')
   const publicClient = await getPublicClient(activeWallet, chainId);
   if (!publicClient) return 1;
   const abi = [
@@ -2204,8 +2493,7 @@ export async function fetchReceiptTokens(
 
   for (const [chainIdStr, group] of Object.entries(groups)) {
     const chainId = Number(chainIdStr);
-    
-    const rpcUrl = chainConfigs[chainId].rpcUrls.default.http[0];
+    const rpcUrl = chainConfigs[chainId]?.rpcUrls?.default?.http[0];
 
     if (!rpcUrl) continue;
     const provider = new ethers.JsonRpcProvider(rpcUrl, chainId);

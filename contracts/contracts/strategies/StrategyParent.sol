@@ -61,9 +61,7 @@ abstract contract StrategyParent is
     IERC20 internal inputToken;
     address internal receiptTokenAddress;
 
-    bool public processSingleTxMode;
-
-    uint256[50] private __gap;
+    // uint256[50] private __gap;
 
     bytes32 internal constant TX_DEPOSIT_CONFIRMED =
         keccak256("DepositConfirmed");
@@ -160,10 +158,6 @@ abstract contract StrategyParent is
 
     function _authorizeUpgrade(address) internal override onlyOwner {}
 
-    function setProcessSingleTxMode(bool _mode) external onlyOwner {
-        processSingleTxMode = _mode;
-    }
-
     /// @notice Processes calls from the Gateway for deposits or withdrawals.
     /// @param context The message context from the Gateway.
     /// @param message Encoded data specifying the transaction details.
@@ -202,22 +196,22 @@ abstract contract StrategyParent is
         });
 
         if (vaultNonce == lastProcessedNonce + 1) {
-            if (processSingleTxMode) {
-                _processNextBufferedTransaction(); // one tx only
-            } else {
-                _processBufferedTransactions(); // process all
-            }
+            _processBufferedTransactions(); // process all
         }
 
         return abi.encode(true);
     }
 
     function processBufferedTransactions() external onlyOwner {
-        _processBufferedTransactions();
+        _processBufferedTransactions(); // just one
     }
 
     function _processBufferedTransactions() internal {
         while (_processNextBufferedTransaction()) {}
+    }
+
+    function processNextBufferedTransaction() external onlyOwner {
+        _processNextBufferedTransaction(); // just one
     }
 
     function _processNextBufferedTransaction()

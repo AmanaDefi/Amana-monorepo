@@ -8,7 +8,10 @@ import CardsMenuIcon from "@/components/svg/ListMenuCards";
 import ListMenuIcon from "@/components/svg/ListMenuIcon";
 import SearchIcon from "@/components/svg/Search";
 import classNames from "classnames";
-import { NETWORK_FILTER_OPTIONS, PROTOCOL_FILTER_OPTIONS } from "@/constants/chainConfig";
+import {
+  NETWORK_FILTER_OPTIONS,
+  PROTOCOL_FILTER_OPTIONS,
+} from "@/constants/chainConfig";
 
 const SORT_BY_LIST = [{ value: "APY" }, { value: "TVL" }, { value: "Risk" }];
 
@@ -206,26 +209,9 @@ export const VaultFilters: FC<Props> = ({
               <input
                 ref={inputRef}
                 type="text"
-                placeholder={
-                  "Search"
-                }
+                placeholder={"Search"}
                 maxLength={100}
-                className="text-white hidden lg:block focus:outline-none bg-transparent w-full"
-                value={localSearch}
-                onFocus={() => setIsHiddenFilterButton(true)}
-                onBlur={() => setIsHiddenFilterButton(false)}
-                onChange={(e) => setLocalSearch(e.target.value)}
-              />
-              <input
-                ref={inputRef}
-                type="text"
-                placeholder={
-                  !isHiddenFilterButton
-                    ? "Search"
-                    : "Search"
-                }
-                maxLength={100}
-                className="text-white lg:hidden focus:outline-none bg-transparent w-full"
+                className="text-white focus:outline-none bg-transparent w-full"
                 value={localSearch}
                 onFocus={() => setIsHiddenFilterButton(true)}
                 onBlur={() => setIsHiddenFilterButton(false)}
