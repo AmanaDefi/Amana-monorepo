@@ -275,26 +275,7 @@ const VaultsDetailContainer: React.FC<{
     }
   }, [vaultID, vaultFromGraph]);
 
-  useEffect(() => {
-    if (vaultFromGraph?.vault) {
-      const vd = convertGraphVaultToVaultData(vaultFromGraph.vault);
-      setVaultData(vd);
-
-      const newAPY = convertGraphVaultToAPY(vaultFromGraph.vault);
-      setVaultAPYs((prevAPYs) => {
-        const existingAPY = prevAPYs.find(
-          (apy) => apy.vaultId === vaultID.toString(),
-        );
-        if (!existingAPY || existingAPY.APY7d !== newAPY.APY7d) {
-          return [newAPY];
-        }
-        return prevAPYs;
-      });
-
-      setVaultTotalAsset(convertGraphVaultToTotalAssets(vaultFromGraph.vault));
-    }
-  }, [vaultID, vaultFromGraph]);
-
+  // Set user vault balance from graph data
   useEffect(() => {
     const userBalance = userVaultBalances?.find(
       (balance) => balance.vaultId === vaultIdStr,
@@ -604,7 +585,7 @@ const VaultsDetailContainer: React.FC<{
                 </VaultCardInfoBlock>
               </div>
 
-              {/* {walletAddress && isWithdraw && <WithdrawalNotice />} */}
+              {walletAddress && isWithdraw && <WithdrawalNotice vault={vaultData} />}
 
               <div className="bg-[#14171F] pb-8 pt-6 px-4 md:px-5 min-w-[343px] lg:min-w-[490px] 2xl:min-w-[526px] rounded-[16px] w-full xl:max-w-[526px] mt-4 md:mt-4">
                 <VaultInputs

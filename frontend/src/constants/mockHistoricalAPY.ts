@@ -26,4 +26,7 @@ export const MOCK_HISTORICAL_APY: Record<string, number[]> = {
   "0xe488d52601772bc327048e61f86ee40df75b7a4f": [
     3.2, 4.1, 5.3, 4.7, 6.2, 5.1, 4.8, 5.9, 6.4, 5.6,
   ],
+  "0x86351ca28ffadc520c940fa6b5dbe441289b55cb": [
+    3.2, 6.1, 5.3, 4.7, 3.2, 4.1, 1.8, 5.9, 6.4, 5.6,
+  ]
 };
