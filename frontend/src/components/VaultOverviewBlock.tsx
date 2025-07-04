@@ -1,17 +1,16 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { VaultAPY, VaultTotalAssets, VaultData } from "@/types/types";
-import { formatTVLInUSD } from "@/utils/utils";
+import { formatTVLInUSD, formatNumberWithSuffix, getOnlyTokenSymbol } from "@/utils/utils";
 import classNames from "classnames";
 import { calculateRiskLevel } from "./VaultsWrapper";
 import { InfoBlock } from "./VaultsWrapper/components/InfoBlock.tsx";
 import { RISK_LEVELS } from "./VaultsGrid";
 
 import PointsIcon from "./svg/PointsIcon";
-import { getPointsInfo } from "@/utils/helpers";
+import { useTokenPriceBySymbol } from "@/hooks/hooks";
 
 import Image from "next/image";
-import { useTokenPriceBySymbol } from "@/hooks/hooks";
 
 
 type Props = {
@@ -76,6 +75,7 @@ export const VaultOverviewBlock: React.FC<Props> = ({
   isDeposit,
   isReward = false,
 }) => {
+  
   const apyValue = Number(vaultAPY?.APY7d || 0);
   const riskRating = calculateRiskLevel(vault);
   
@@ -194,7 +194,9 @@ export const VaultOverviewBlock: React.FC<Props> = ({
               height={18}
             />
           )}
-          {getPointsInfo(vault.protocol.name).displayPoints && (
+          {
+          vault.protocolPoints && vault.protocolPoints > 0 &&
+           (
             <InfoBlock 
               isRight
               customIcon={<PointsIcon className="w-5 h-5" color="#ffffff" />}
@@ -202,7 +204,7 @@ export const VaultOverviewBlock: React.FC<Props> = ({
               <div className="flex flex-col gap-2">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-300 text-sm">
-                    {getPointsInfo(vault.protocol.name).nativeYield}
+                    {vault.protocol.name} native yield
                   </span>
                   <span className="text-cyan-400 font-medium text-base">
                     {(apyValue * 100).toFixed(2)}%
@@ -210,10 +212,14 @@ export const VaultOverviewBlock: React.FC<Props> = ({
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-300 text-sm">
-                    {vault.protocol.name === 'YieldFi' ? '+ YieldCrumbs' : '+ Aegis Points'}
+                    {`+ ${vault.protocolPointsDescription 
+                      ?
+                       vault.protocolPointsDescription 
+                       : vault.protocol.name} Points`
+                    }
                   </span>
                   <span className="text-white font-medium text-base">
-                    {getPointsInfo(vault.protocol.name).points}
+                    {vault.protocolPoints} pts/$/day
                   </span>
                 </div>
               </div>

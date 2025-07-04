@@ -63,6 +63,11 @@ class GraphClient {
           apy7d
           apy30d
           riskLevel
+          protocolPoints
+          protocolPointsDescription
+          cooldownPeriod
+          minDeposit
+          maxWithdraw
         }
       }
     `;
@@ -121,6 +126,11 @@ class GraphClient {
           apy7d
           apy30d
           riskLevel
+          protocolPoints
+          protocolPointsDescription
+          cooldownPeriod
+          minDeposit
+          maxWithdraw
         }
       }
     `;
@@ -207,6 +217,11 @@ class GraphClient {
           apy7d
           apy30d
           riskLevel
+          protocolPoints
+          protocolPointsDescription
+          cooldownPeriod
+          minDeposit
+          maxWithdraw
         }
       }
     `;
@@ -316,6 +331,11 @@ class GraphClient {
           apy7d
           apy30d
           riskLevel
+          protocolPoints
+          protocolPointsDescription
+          cooldownPeriod
+          minDeposit
+          maxWithdraw
         }
       }
     `;
@@ -474,6 +494,11 @@ class GraphClient {
           apy7d
           apy30d
           riskLevel
+          protocolPoints
+          protocolPointsDescription
+          cooldownPeriod
+          minDeposit
+          maxWithdraw
         }
       }
     `;
@@ -574,6 +599,11 @@ class GraphClient {
           apy7d
           apy30d
           riskLevel
+          protocolPoints
+          protocolPointsDescription
+          cooldownPeriod
+          minDeposit
+          maxWithdraw
         }
       }
     `;
@@ -674,6 +704,11 @@ class GraphClient {
           apy7d
           apy30d
           riskLevel
+          protocolPoints
+          protocolPointsDescription
+          cooldownPeriod
+          minDeposit
+          maxWithdraw
         }
       }
     `;
@@ -774,6 +809,11 @@ class GraphClient {
           apy7d
           apy30d
           riskLevel
+          protocolPoints
+          protocolPointsDescription
+          cooldownPeriod
+          minDeposit
+          maxWithdraw
         }
       }
     `;
@@ -874,6 +914,11 @@ class GraphClient {
           apy7d
           apy30d
           riskLevel
+          protocolPoints
+          protocolPointsDescription
+          cooldownPeriod
+          minDeposit
+          maxWithdraw
         }
       }
     `;
@@ -975,6 +1020,11 @@ class GraphClient {
           apy7d
           apy30d
           riskLevel
+          protocolPoints
+          protocolPointsDescription
+          cooldownPeriod
+          minDeposit
+          maxWithdraw
         }
       }
     `;
