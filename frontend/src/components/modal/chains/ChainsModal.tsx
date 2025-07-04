@@ -7,6 +7,7 @@ import {
   SUPPORTED_CHAINS,
   CHAIN_ICONS,
   APPROVED_TOKENS,
+  CHAIN_ID,
 } from "@/constants/chainConfig";
 import { Token, VaultData, Balance } from "@/types/types";
 import { Chain } from "viem";
@@ -16,6 +17,12 @@ import { useMultichainTokenBalanceForModal } from "@/hooks/useMultichainTokenBal
 import { formatTokenBalance, getOnlyTokenSymbol } from "@/utils/utils";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { MiniSpinner } from "@/components/PendingDots";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { useMultiChain } from "@/providers/MultiChainProvider";
+import { AppButton } from "@/components/button/AppButton";
+import { zetachain } from "viem/chains";
+import { useWallets } from "@privy-io/react-auth";
+import { useAuthStore } from "@/store/authStore";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -293,6 +300,12 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
     setSelectedChainFromModal,
     setSelectedTokenFromModal,
   } = useChainTokenModalStore();
+  const { publicKey } = useWallet();
+  const { walletAddress, activeChain, selectedChain } = useMultiChain();
+  const { wallets } = useWallets();
+  const activeAccount = wallets[0];
+  const { openStep } = useAuthStore();
+  const { setChain } = useAuthStore();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -328,6 +341,22 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
     },
     [vaultDataForModal, propVaultData],
   );
+
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window?.innerWidth < 1024);
+    };
+
+    checkIsMobile();
+
+    window?.addEventListener("resize", checkIsMobile);
+
+    return () => {
+      window?.removeEventListener("resize", checkIsMobile);
+    };
+  }, []);
 
   const availableTokens = useMemo(() => {
     if (!selectedChainLocal) return [];
@@ -434,6 +463,32 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
   const chainList = isFromTopUpForModal
     ? SUPPORTED_CHAINS.slice(1)
     : SUPPORTED_CHAINS;
+
+  const handleWalletConnect = () => {
+    setChain(selectedChainLocal);
+    if (activeChain?.id === zetachain.id) {
+      openStep(isMobile ? "mobileOptionsA" : "optionsA");
+    } else {
+      if (
+        (selectedChain === "solana" &&
+          activeChain?.id !== CHAIN_ID["solana"]) ||
+        (selectedChain === "evm" && activeChain?.id === CHAIN_ID["solana"])
+      ) {
+        if (selectedChain === "evm" && activeAccount?.address) {
+          const confirmResult = confirm("Your EVM wallet will be disconnected");
+          if (!confirmResult) return;
+        } else if (selectedChain === "solana") {
+          const confirmResult = confirm(
+            "Your Solana wallet will be disconnected",
+          );
+          if (!confirmResult) return;
+        }
+      }
+      openStep("connectInChosenChain");
+    }
+  };
+
+  console.log({ walletAddress, publicKey });
 
   return (
     <Modal
@@ -618,6 +673,38 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
                       {searchQuery
                         ? "No tokens found"
                         : "No tokens available for this network"}
+                    </motion.div>
+                  ) : selectedChainLocal.name === "Solana" && !publicKey ? (
+                    <motion.div
+                      key="no-tokens"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      className="text-center text-gray-400 py-8 w-full justify-center align"
+                    >
+                      <AppButton
+                        variant={"reverse"}
+                        onClick={handleWalletConnect}
+                      >
+                        Connect Solana wallet
+                      </AppButton>
+                    </motion.div>
+                  ) : (selectedChainLocal.name !== "Solana" &&
+                      !activeAccount) ||
+                    (!activeAccount && !publicKey) ? (
+                    <motion.div
+                      key="no-tokens"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      className="text-center text-gray-400 py-8 w-full h-full justify-center align"
+                    >
+                      <AppButton
+                        variant={"reverse"}
+                        onClick={handleWalletConnect}
+                      >
+                        Connect wallet
+                      </AppButton>
                     </motion.div>
                   ) : (
                     <motion.div

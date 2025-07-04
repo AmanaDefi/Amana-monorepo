@@ -37,7 +37,7 @@ const AllWAllets = () => {
 
     return () => window?.removeEventListener("resize", checkIsMobile);
   }, []);
-  const { step, successAuth, closeAll } = useAuthStore();
+  const { step, successAuth, closeAll, chosenChain } = useAuthStore();
   const {
     step: fundWalletStep,
     setStep,
@@ -57,6 +57,7 @@ const AllWAllets = () => {
     connect: solanaConnect,
     disconnect,
     publicKey,
+    connected,
   } = useWallet();
 
   const fundWalletConnect = () => {
@@ -70,15 +71,15 @@ const AllWAllets = () => {
   } = useConnect({
     mutation: {
       onSuccess: (result) => {
+        if (connected) {
+          disconnect();
+        }
         if (fundWalletStep === "connectWallet") {
           setWalletAddress(result.accounts[0]);
           localStorage.removeItem("connectorId");
           return fundWalletConnect();
         }
 
-        if (step === "connectInChosenChain" && publicKey) {
-          disconnect();
-        }
         return successAuth(null, activeAccount || undefined, true);
       },
     },
@@ -102,7 +103,7 @@ const AllWAllets = () => {
     connect(
       {
         connector,
-        chainId: fundWalletStep === "connectWallet" ? chain.id : undefined,
+        chainId: fundWalletStep === "connectWallet" ? chain.id : chosenChain,
       },
       {
         onError: (error) => {
