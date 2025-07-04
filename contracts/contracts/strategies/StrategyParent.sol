@@ -61,7 +61,7 @@ abstract contract StrategyParent is
     IERC20 internal inputToken;
     address internal receiptTokenAddress;
 
-    // uint256[50] private __gap;
+    uint256[50] private __gap;
 
     bytes32 internal constant TX_DEPOSIT_CONFIRMED =
         keccak256("DepositConfirmed");

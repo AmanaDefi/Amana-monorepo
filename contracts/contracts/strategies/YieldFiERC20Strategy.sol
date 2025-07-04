@@ -9,12 +9,14 @@ import "./ERC20StrategyParent.sol";
 import "../interfaces/ISwapHelper.sol";
 import "../interfaces/I4626Vault.sol";
 
-// import "../interfaces/IYieldFiManager.sol";
+import "../interfaces/IYieldFiManager.sol";
+
+import "hardhat/console.sol";
 
 contract YieldFiERC20Strategy is ERC20StrategyParent {
     using SafeERC20 for IERC20;
 
-    // address public manager;
+    address public manager;
 
     function initialize(
         string memory _name,
@@ -24,7 +26,7 @@ contract YieldFiERC20Strategy is ERC20StrategyParent {
         address _swapHelper,
         address _receiptTokenAddress, // this is YUSD
         address _inputTokenAddress, // inputToken
-        address, // _liquidityGaugeAddress, // this is the YUSD staking gauge
+        address _manager, // _liquidityGaugeAddress, // this is the YUSD staking gauge
         address /* _rewardsTokenAddress — not needed */,
         uint256 // _inputTokenIndex - not needed
     ) external initializer {
@@ -39,7 +41,7 @@ contract YieldFiERC20Strategy is ERC20StrategyParent {
 
         swapHelper = _swapHelper;
 
-        // manager = 0x03ACc35286bAAE6D73d99a9f14Ef13752208C8dC;
+        manager = _manager; // 0x03ACc35286bAAE6D73d99a9f14Ef13752208C8dC;
     }
 
     function _depositFundsIntoYieldSource(
@@ -82,28 +84,50 @@ contract YieldFiERC20Strategy is ERC20StrategyParent {
             address(this),
             vyusdToWithdraw
         );
+
         uint256 inputTokenBalanceBefore = inputToken.balanceOf(address(this));
+        uint256 amountOut;
+        console.log("YieldFiERC20Strategy: redeeming via I4626Vault");
 
-        uint256 amountOut = I4626Vault(receiptTokenAddress).redeem(
-            vyusdToWithdraw,
-            address(this),
-            address(this)
+        try
+            I4626Vault(receiptTokenAddress).redeem(
+                vyusdToWithdraw,
+                address(this),
+                address(this)
+            )
+        returns (uint256 redeemedAmount) {
+            amountOut = redeemedAmount;
+        } catch {
+            console.log("YieldFiERC20Strategy: redeem failed, trying manager");
+            // fallback: try redeem via manager
+            IERC20(receiptTokenAddress).approve(manager, type(uint256).max);
+
+            IYieldFiManager(manager).redeem(
+                address(this),
+                receiptTokenAddress,
+                address(inputToken),
+                vyusdToWithdraw,
+                address(this),
+                address(0),
+                ""
+            );
+
+            uint256 inputTokenBalanceAfter = inputToken.balanceOf(
+                address(this)
+            );
+            amountOut = inputTokenBalanceAfter - inputTokenBalanceBefore;
+        }
+        console.log(
+            "YieldFiERC20Strategy: redeemed amount",
+            amountOut,
+            "vyusdToWithdraw",
+            vyusdToWithdraw
         );
-
-        // IERC20(receiptTokenAddress).approve(manager, type(uint256).max);
-
-        // IYieldFiManager(manager).redeem(
-        //     address(this),
-        //     receiptTokenAddress,
-        //     address(inputToken),
-        //     vyusdToWithdraw,
-        //     address(this),
-        //     address(0),
-        //     ""
-        // );
         uint256 inputTokenBalanceAfter = inputToken.balanceOf(address(this));
-        amountOut = inputTokenBalanceAfter - inputTokenBalanceBefore;
-
+        console.log(
+            "YieldFiERC20Strategy: inputToken balance after redeem",
+            inputTokenBalanceAfter
+        );
         require(amountOut >= minAmountOut, "Insufficient output amount");
         amountWithdrawn = amountOut;
     }
