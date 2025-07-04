@@ -1,0 +1,125 @@
+import { ConnectedWallet } from "@privy-io/react-auth";
+import { Chain } from "viem";
+import { create } from "zustand";
+
+export type AuthStep =
+  | "signup"
+  | "verify"
+  | "import"
+  | "optionsA"
+  | "optionsB"
+  | "mobileOptionsA"
+  | "mobileOptionsB"
+  | "allWallets"
+  | "mobileAllWallets"
+  | "success"
+  | "onboarding"
+  | "logout"
+  | "passkey"
+  | "signature"
+  | "checking"
+  | "notVerify"
+  | "recieve"
+  | "send"
+  | "mobileInfo"
+  | "connectInChosenChain"
+  | null;
+
+interface AuthState {
+  step: AuthStep;
+  username: string;
+  email: string;
+  otp: string;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
+  userAddress: string | null;
+  chosenChain: Chain | null;
+
+  openStep: (step: AuthStep) => void;
+  closeAll: () => void;
+  successAuth: (
+    walletAddress?: string | null,
+    activeAccount?: ConnectedWallet,
+    fromAllWallets?: boolean,
+  ) => void;
+  updateField: (name: "username" | "email" | "otp", value: string) => void;
+  setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
+  setChain: (chain: Chain | null) => void;
+  authenticate: (address: string) => void;
+  logout: () => void;
+}
+
+export const useAuthStore = create<AuthState>((set) => ({
+  step: null,
+  username: "",
+  email: "",
+  otp: "",
+  isAuthenticated: false,
+  isLoading: false,
+  error: null,
+  userAddress: null,
+  chosenChain: null,
+
+  openStep: (step) => set({ step }),
+  closeAll: () =>
+    set({
+      step: null,
+      isLoading: false,
+      error: null,
+      email: "",
+      username: "",
+      otp: "",
+    }),
+  successAuth: (walletAddress, activeAccount, fromAllWallets = false) => {
+    if (fromAllWallets) {
+      set({
+        step: null,
+        isLoading: false,
+        error: null,
+        username: "",
+        otp: "",
+      });
+    } else {
+      if (activeAccount?.walletClientType === "privy") {
+        set({
+          step: "success",
+          isLoading: false,
+          error: null,
+          username: "",
+          otp: "",
+        });
+      } else {
+        set({
+          step: null,
+          isLoading: false,
+          error: null,
+          username: "",
+          otp: "",
+        });
+      }
+    }
+  },
+  updateField: (name, value) => set((state) => ({ ...state, [name]: value })),
+  setLoading: (isLoading) => set({ isLoading }),
+  setError: (error) => set({ error }),
+  setChain: (chosenChain) => set({chosenChain}),
+  authenticate: (address) =>
+    set({
+      isAuthenticated: true,
+      userAddress: address,
+      step: null,
+      username: "",
+      otp: "",
+      error: null,
+    }),
+  logout: () =>
+    set({
+      isAuthenticated: false,
+      userAddress: null,
+      email: "",
+      username: "",
+      otp: "",
+    }),
+}));

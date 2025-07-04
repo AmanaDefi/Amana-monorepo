@@ -13,23 +13,37 @@
   font-optical-sizing: auto;
   font-style: normal;
   font-variation-settings: "slnt" 0;
-  /* Customize the background and text colors */
-  --toastify-color-light: #ffffff;
-  /* White background */
-  --toastify-text-color-light: #4a5568;
-  /* Dark grey text (like your modal headers) */
-
-  /* Customize the success toast colors */
-  --toastify-color-success: #4a5568;
-  /* Dark grey background for success toast */
-  --toastify-icon-color-success: #3182ce;
-  /* Dark grey tick icon */
-
-  /* Customize the progress bar */
-  --toastify-color-progress-success: #3182ce;
-  /* Blue progress bar */
 
   --header-height: 71px;
+
+  /* Fluid button animation variables */
+  --fluid-button-bg-from: #262830;
+  --fluid-button-bg-to: #06afbc;
+  --fluid-transition-time: 0.6s;
+
+  /* Toast colors with your palette */
+  --toastify-color-light: #1D2A41;
+  --toastify-text-color-light: #ECECED;
+  
+  /* Success toast */
+  --toastify-color-success: #1D2A41;
+  --toastify-icon-color-success: #3E73C4;
+  --toastify-color-progress-success: #1B46E0;
+  
+  /* Error toast */
+  --toastify-color-error: #1D2A41;
+  --toastify-icon-color-error: #535E73;
+  --toastify-color-progress-error: #1B46E0;
+  
+  /* Warning toast */
+  --toastify-color-warning: #1D2A41;
+  --toastify-icon-color-warning: #9A9CB3;
+  --toastify-color-progress-warning: #1B46E0;
+  
+  /* Info toast */
+  --toastify-color-info: #1D2A41;
+  --toastify-icon-color-info: #1B46E0;
+  --toastify-color-progress-info: #1B46E0;
 
   @media only screen and (min-width: 1024px) {
     --header-height: 112px;
@@ -38,12 +52,126 @@
 
 @layer base {
   body {
-    @apply bg-zinc-950 text-neutral-200;
+    @apply bg-[#0C1015] text-neutral-200;
   }
 
   .flex-center {
     @apply flex items-center justify-center;
   }
+}
+
+::-webkit-scrollbar {
+  width: 6px; 
+  height: 6px; 
+}
+
+::-webkit-scrollbar-track {
+  background: #161C27; 
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1B46E0;
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+.dropdown-scrollbar::-webkit-scrollbar {
+  width: 2px; 
+}
+
+.dropdown-scrollbar::-webkit-scrollbar-track {
+  background: #161C27;
+  border-radius: 2px;
+}
+
+.dropdown-scrollbar::-webkit-scrollbar-thumb {
+  background: #1B46E0;
+  border-radius: 2px;
+  transition: background 0.3s ease;
+}
+
+.dropdown-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #1B46E0 #161C27;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.Toastify__toast-container--bottom-left {
+  bottom: 20px;
+  left: 20px;
+  width: 400px;
+}
+
+.Toastify__toast {
+  border: 1px solid #535E73 !important;
+  border-radius: 8px !important;
+  margin-bottom: 12px !important;
+  font-family: var(--font-inter), sans-serif !important;
+}
+
+.Toastify__toast--info {
+  color: #9A9CB3 !important;
+}
+
+.Toastify__toast:hover {
+  transform: translateY(-2px);
+}
+
+.Toastify__progress-bar {
+  height: 3px !important;
+}
+
+@media (max-width: 480px) {
+  .Toastify__toast-container--bottom-left {
+    left: 12px;
+    right: 12px;
+    width: auto;
+  }
+}
+
+.fluid-hover-button {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(
+    to right,
+    var(--fluid-button-bg-from),
+    var(--fluid-button-bg-to)
+  );
+  transition: all 0.3s ease;
+}
+
+.fluid-hover-button::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 100%;
+  background: var(--fluid-button-bg-from);
+  z-index: 0;
+  transition: left var(--fluid-transition-time) cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fluid-hover-button:hover::before {
+  left: 0;
+}
+
+.fluid-hover-button > * {
+  position: relative;
+  z-index: 2;
+}
+
+.fluid-hover-button:hover {
+  box-shadow: 0 0 10px rgba(6, 175, 188, 0.5);
 }
 
 input::-webkit-outer-spin-button,
@@ -67,10 +195,60 @@ input::-webkit-inner-spin-button {
 
 body .page-container {
   @media only screen and (min-width: 1080px) {
-    zoom: .8;
+    zoom: 0.9;
   }
 
   @media only screen and (min-width: 1920px) {
-    /*zoom: unset;*/
   }
+}
+
+.tooltip-container {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.tooltip-container .tooltip {
+  visibility: hidden;
+  width: auto;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px 10px;
+  position: absolute;
+  z-index: 1;
+  top: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.tooltip-container .tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
+}
+
+.tooltip-container:hover .tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+.modal-open {
+  overflow: hidden !important;
+}
+
+.gradient-text {
+  background: linear-gradient(150deg, #d7d7d9 11%, #1b46e0 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }

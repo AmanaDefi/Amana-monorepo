@@ -3,94 +3,85 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const network = hre.network.name;
-
   const [signer] = await hre.ethers.getSigners();
+
   if (!signer) {
     throw new Error(
-      `Wallet not found. Please, run "npx hardhat account --save" or set PRIVATE_KEY env variable (for example, in a .env file)`
+      `Wallet not found. Please set PRIVATE_KEY in an .env file or run "npx hardhat account --save".`
     );
   }
 
-  // Fetch the initializer parameters
   const name = args.name || "AmanaConnectedChainVault";
   const symbol = args.symbol || "UV";
-  const asset = args.asset; // This should be passed as an argument
-  const treasury = args.treasury; // Address for the treasury
-  const gasTank = args.gastank; // Address for the gas tank contract
-  const receiver = args.receiver;
+  const asset = args.asset;
+  const registry = args.registry;
   const gasLimitWithdrawAndCall = args.gasLimitWithdrawAndCall;
   const gasLimitCall = args.gasLimitCall;
+  const performanceFeeRate = args.performanceFeeRate ?? 1500;
+  const depositFeePaid = args.depositFeePaid === "true";
 
-  // Set the default for performanceFeeRate if it's not provided
-  const performanceFeeRate = args.performanceFeeRate ?? 1500; // Default to 15% (1500 basis points)
-
-  if (!asset || !treasury || !gasTank || !receiver) {
-    throw new Error("🚨 Asset address, Treasury address, GasTank address and WithdrawalReceiver address are required.");
+  if (!asset || !registry) {
+    throw new Error("🚨 Asset and registry addresses are required.");
   }
 
-  // Deploy the AmanaConnectedChainVault contract using OpenZeppelin Upgrades
-  const factory = await hre.ethers.getContractFactory("AmanaConnectedChainVault", {
-    libraries: {
-      SwapHelperLibEddy: "0xbE1a99f8B2c88c5eFd8bD23Fe7eCE8010DC3d191",
-    },
-  });
-  const contract = await hre.upgrades.deployProxy(factory, [name, symbol, asset, treasury, performanceFeeRate, gasTank, receiver, gasLimitWithdrawAndCall, gasLimitCall], {
-    initializer: "initialize",
-    unsafeAllowLinkedLibraries: true,
-  });
-  console.log("Contract deployed, waiting for confirmations...");
+  console.log(`🔑 Deploying with signer: ${signer.address}`);
 
-  // Wait for contract to be deployed before proceeding
-  await contract.deployed();
+  const factory = await hre.ethers.getContractFactory("AmanaConnectedChainVault", signer);
 
-  console.log(`🔑 Using account: ${signer.address}`);
-  console.log(`🚀 Successfully deployed AmanaConnectedChainVault on ${network}.`);
-  console.log(`📜 Contract address: ${contract.address}`);  // Updated from contract.target
+  const proxy = await hre.upgrades.deployProxy(
+    factory,
+    [
+      name,
+      symbol,
+      asset,
+      registry,
+      performanceFeeRate,
+      gasLimitWithdrawAndCall,
+      gasLimitCall,
+      depositFeePaid
+    ],
+    {
+      initializer: "initialize",
+      kind: "uups",
+    }
+  );
 
-  // Authorize the vault with the GasTank
-  console.log(`⚙️ Authorizing the vault with the GasTank at ${gasTank}`);
+  await proxy.deployed();
+  console.log(`✅ Proxy deployed at: ${proxy.address}`);
+
+  // Get implementation address
+  const implAddress = await hre.upgrades.erc1967.getImplementationAddress(proxy.address);
+  console.log(`📦 Implementation deployed at: ${implAddress}`);
+
+  // Authorize vault with GasTank
+  const registryContract = await hre.ethers.getContractAt("AmanaRegistry", registry);
+  const gasTank = await registryContract.gasTank();
+  console.log(`⚙️ Authorizing vault with GasTank at ${gasTank}...`);
+
   const gasTankContract = await hre.ethers.getContractAt("GasTank", gasTank);
-  const tx = await gasTankContract.authorizeVault(contract.address);
+  const tx = await gasTankContract.authorizeVault(proxy.address);
   await tx.wait();
   console.log(`✅ Vault authorized with GasTank.`);
 
-  const etherscanApiKey = hre.config.etherscan.apiKey[network];
+  // Verify implementation contract
+  const etherscanApiKey = hre.config.etherscan.apiKey?.[network];
   if (etherscanApiKey) {
-    // Verifying the implementation contract first
-    const implementationAddress = await hre.upgrades.erc1967.getImplementationAddress(contract.address);  // Updated from getAddress()
-    console.log(`Verifying implementation: ${implementationAddress}`);
+    console.log(`🔍 Verifying implementation on Etherscan...`);
     try {
       await hre.run("verify:verify", {
-        address: implementationAddress,
-        constructorArguments: [],
+        address: implAddress,
+        constructorArguments: [], // Implementation has no constructor args
       });
-      console.log(`✅ Successfully verified implementation contract at ${implementationAddress}`);
+      console.log(`✅ Implementation verified on Etherscan`);
     } catch (err) {
-      console.error("❌ Failed to verify implementation contract:", err);
-    }
-
-    // Verifying the proxy contract
-    const proxyAddress = contract.address;  // Updated from getAddress()
-    console.log(`Verifying proxy: ${proxyAddress}`);
-    try {
-      await hre.run("verify:verify", {
-        address: proxyAddress,
-        constructorArguments: [], // Proxy has no constructor arguments
-      });
-      console.log(`✅ Successfully verified proxy contract at ${proxyAddress}`);
-    } catch (err) {
-      if (err.message.includes("Already Verified")) {
-        console.log(`ℹ️ Proxy contract at ${proxyAddress} is already verified.`);
-      } else {
-        console.error("❌ Failed to verify proxy contract:", err);
-      }
+      console.error("❌ Etherscan verification failed:", err.message);
     }
   } else {
-    console.log(`🚨 Etherscan API key not configured for ${network}. Skipping verification.`);
+    console.log(`⚠️ No Etherscan API key for ${network}, skipping verification.`);
   }
 
   if (args.json) {
-    console.log(JSON.stringify(contract));
+    console.log(JSON.stringify({ proxyAddress: proxy.address, implementationAddress: implAddress }));
   }
 };
 
@@ -99,12 +90,10 @@ task("deploy-amana-connected-chain-vault", "Deploy the AmanaConnectedChainVault 
   .addOptionalParam("name", "Token name", "AmanaConnectedChainVault")
   .addOptionalParam("symbol", "Token symbol", "UV")
   .addParam("asset", "The address of the asset ERC20 token")
-  .addParam("treasury", "The address of the treasury")
-  .addParam("gastank", "The address of the GasTank contract")
-  .addParam("receiver", "The address of the WithdrawalReceiver contract on connected chains")
+  .addParam("registry", "The address of the registry")
   .addParam("gasLimitWithdrawAndCall", "Gas limit for withdrawAndCall function")
   .addParam("gasLimitCall", "Gas limit for Call function")
-  .addOptionalParam("performanceFeeRate", "Performance fee rate (basis points)"); // Remove the default here
+  .addParam("depositFeePaid", "Deposit fee paid from gas tank")
+  .addOptionalParam("performanceFeeRate", "Performance fee rate (basis points)");
 
-// Export the task so it can be used in hardhat
 export default {};

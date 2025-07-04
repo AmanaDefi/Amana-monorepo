@@ -1,0 +1,78 @@
+import { Dialog, DialogPanel } from "@headlessui/react";
+import { Fragment, ReactNode } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import Footer from "@/components/Footer";
+import GlowIcon from "@/components/svg/GlowIcon";
+
+type ModalProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  children: ReactNode;
+  paddingClass?: string;
+  roundedClass?: string;
+  customCloseButton?: ReactNode;
+  maxWidth?: string;
+  minHeight?: string;
+  noBlur?: boolean;
+};
+
+export const Modal = ({
+  isOpen,
+  onClose,
+  children,
+  paddingClass = "p-6",
+  roundedClass = "rounded-[16px]",
+  customCloseButton,
+  maxWidth = "max-w-md",
+  minHeight,
+  noBlur = false,
+}: ModalProps) => {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <Dialog open={isOpen} onClose={onClose} as={Fragment}>
+          <div className="relative z-50">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className={`fixed h-[100vh] inset-0 ${
+                noBlur
+                  ? "bg-transparent"
+                  : "md:bg-[rgba(12,16,21,0.5)] md:backdrop-blur-[10px] bg-[#0C1015]"
+              }`}
+            >
+              <div className="md:hidden">
+                <GlowIcon position="top-mobile" />
+                <GlowIcon position="bottom-mobile" />
+              </div>
+            </motion.div>
+            <div className="fixed inset-0 flex flex-col h-[100vh] md:items-center md:justify-center justify-between items-center pt-10 p-4">
+              <DialogPanel as={Fragment}>
+                <motion.div
+                  key="modal"
+                  initial={{ y: 100, opacity: 0, scale: 0.95 }}
+                  animate={{ y: 0, opacity: 1, scale: 1 }}
+                  exit={{ y: 100, opacity: 0, scale: 0.95 }}
+                  transition={{
+                    type: "spring" as const,
+                    stiffness: 300,
+                    damping: 24,
+                  }}
+                  className={`relative flex w-full ${maxWidth} ${minHeight} bg-[#14171F] ${roundedClass} text-white shadow-xl font-gotham before-gradient-border`}
+                >
+                  {customCloseButton}
+                  <div className={paddingClass}>{children}</div>
+                </motion.div>
+              </DialogPanel>
+              <div className="block md:hidden mb-3">
+                <Footer isConnected={false} />
+              </div>
+            </div>
+          </div>
+        </Dialog>
+      )}
+    </AnimatePresence>
+  );
+};

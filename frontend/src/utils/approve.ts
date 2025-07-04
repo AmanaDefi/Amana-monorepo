@@ -1,58 +1,50 @@
-import { allowance } from "thirdweb/extensions/erc20";
-import { Address, getContract, Chain } from "thirdweb";
-import { client } from "../utils/client";
+import { Chain, getContract, erc20Abi } from "viem";
+import { EVM_GATEWAY_ADDRESSES } from "@/constants/chainConfig"; // adjust path if needed
+import { getPublicClient} from "./getPublicClient";
+import { ConnectedWallet } from "@privy-io/react-auth";
 
 interface HandleAllowanceProps {
-    token: Address;
-    activeChain: Chain;
-    activeAccount: Address;
-    spender: Address;
-    amount: Number
+  token: string;
+  activeChain: Chain;
+  activeAccount: string;
+  spender: string;
+  amount: Number;
+  activeWallet: ConnectedWallet
 }
 
-export async function handleAllowance({
-    token,
-    activeChain,
-    activeAccount,
-    spender,
-    amount
+export async function isApproved({
+  token,
+  activeChain,
+  activeAccount,
+  spender,
+  amount,
+  activeWallet
 }: HandleAllowanceProps): Promise<boolean> {
+  const publicClient = await getPublicClient(activeWallet);
+  if (!publicClient) return false;
 
-    let contract = getContract({
-        client,
-        chain: activeChain, // this will always be Zetachain
-        address: token
-    });
-    let allow: bigint;
-    const deployEnv = process.env.NEXT_PUBLIC_DEPLOY_ENV;
-    const EVMGatewayAddress = deployEnv === "testnet"
-        ? process.env.NEXT_PUBLIC_EVM_GATEWAY_ADDRESS_TESTNET
-        : process.env.NEXT_PUBLIC_EVM_GATEWAY_ADDRESS;
+  const contract = getContract({
+    client: { public: publicClient},
+    address: token,
+    abi: erc20Abi,
+  });
+  let allow: bigint;
 
-    try {
-        if (activeChain.id === 7000 || activeChain.id === 7001) {
-            allow = await allowance({
-                contract,
-                owner: activeAccount,
-                spender: spender,
-            });
-        }
-        else {
-            allow = await allowance({
-                contract,
-                owner: activeAccount,
-                spender: EVMGatewayAddress as Address,
-            });
-        }
+  const EVMGatewayAddress = EVM_GATEWAY_ADDRESSES[activeChain.id];
 
-        if (Number(allow) >= Number(amount)) {
-            return true;
-        }
-        else {
-            return false;
-        }
-    } catch (error) {
-        return false;
+  try {
+    if (activeChain.id === 7000 || activeChain.id === 7001) {
+      allow = await contract.read.allowance([activeAccount, spender]);
+    } else {
+      allow = await contract.read.allowance([activeAccount, EVMGatewayAddress]);
     }
 
+    if (Number(allow) >= Number(amount)) {
+      return true;
+    } else {
+      return false;
+    }
+  } catch (error) {
+    return false;
+  }
 }

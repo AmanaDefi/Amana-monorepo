@@ -1,43 +1,36 @@
-import { toast } from "react-toastify";
+import { toast, ToastOptions } from "react-toastify";
 
-// Define a default toast style
-const defaultToastStyle = {
-  borderRadius: "4px",
-  padding: "16px",
-  backgroundColor: "#23262f",
-  color: "#FFFFFF",
-  fontSize: "18px",
-  border: "1px solid #353945",
+const baseConfig: ToastOptions = {
+  position: "bottom-left",
+  autoClose: 5000,
+  hideProgressBar: false,
+  closeOnClick: true,
+  pauseOnHover: true,
+  closeButton: false,
 };
 
-// Loading Toast
 export const loadingToast = (message: string) => {
-  toast(message, {
-    style: { ...defaultToastStyle },
-    position: "bottom-left",
+  return toast.loading(message, {
+    ...baseConfig,
+    autoClose: false,
   });
 };
 
-// Success Toast
 export const successToast = (message: string) => {
-  toast.success(message, {
-    style: {
-      ...defaultToastStyle,
-      border: "1px solid #34C759",
-      color: "#34C759",
-    },
-    position: "bottom-left",
+  return toast.success(message, baseConfig);
+};
+
+export const errorToast = (message: string) => {
+  return toast.error(message, {
+    ...baseConfig,
+    autoClose: 7000,
   });
 };
 
-// Error Toast
-export const errorToast = (message: string) => {
-  toast.error(message, {
-    style: {
-      ...defaultToastStyle,
-      border: "1px solid #D43D44",
-      color: "#D43D44",
-    },
-    position: "bottom-left",
-  });
+export const warningToast = (message: string) => {
+  return toast.warning(message, baseConfig);
+};
+
+export const infoToast = (message: string) => {
+  return toast.info(message, baseConfig);
 };

@@ -5,37 +5,38 @@ interface ISwapRouter {
     struct ExactInputSingleParams {
         address tokenIn; // The token being swapped in
         address tokenOut; // The token being swapped out
-        uint256 amountIn; // The amount of input tokens
-        uint256 amountOutMinimum; // The minimum amount of output tokens to receive
-        uint160 limitSqrtPrice; // The price limit for the swap
+        uint24 fee; // The fee to pay
         address recipient; // The recipient of the output tokens
         uint256 deadline; // The deadline for the swap to be executed
+        uint256 amountIn; // The amount of input tokens
+        uint256 amountOutMinimum; // The minimum amount of output tokens to receive
+        uint160 sqrtPriceLimitX96; // The price limit for the swap
     }
 
     struct ExactInputParams {
-        bytes path; // The encoded swap path
-        uint256 amountIn; // The amount of input tokens
-        uint256 amountOutMinimum; // The minimum amount of output tokens to receive
-        address recipient; // The recipient of the output tokens
-        uint256 deadline; // The deadline for the swap to be executed
+        bytes path;
+        address recipient;
+        uint256 deadline;
+        uint256 amountIn;
+        uint256 amountOutMinimum;
     }
 
     struct ExactOutputSingleParams {
-        address tokenIn; // The token being swapped in
-        address tokenOut; // The token being swapped out
-        uint256 amountOut; // The desired amount of output tokens
-        uint256 amountInMaximum; // The maximum amount of input tokens
-        uint160 limitSqrtPrice; // The price limit for the swap
-        address recipient; // The recipient of the output tokens
-        uint256 deadline; // The deadline for the swap to be executed
+        address tokenIn;
+        address tokenOut;
+        address recipient;
+        uint256 deadline;
+        uint256 amountOut;
+        uint256 amountInMaximum;
+        uint160 limitSqrtPrice;
     }
 
     struct ExactOutputParams {
-        bytes path; // The encoded swap path
-        uint256 amountOut; // The desired amount of output tokens
-        uint256 amountInMaximum; // The maximum amount of input tokens
-        address recipient; // The recipient of the output tokens
-        uint256 deadline; // The deadline for the swap to be executed
+        bytes path;
+        address recipient;
+        uint256 deadline;
+        uint256 amountOut;
+        uint256 amountInMaximum;
     }
 
     /**
@@ -65,11 +66,9 @@ interface ISwapRouter {
         ExactOutputSingleParams calldata params
     ) external payable returns (uint256 amountIn);
 
-    /**
-     * @notice Performs a multi-hop exact output swap
-     * @param params The parameters for the swap
-     * @return amountIn The amount of input tokens used
-     */
+    /// @notice Swaps as little as possible of one token for `amountOut` of another along the specified path (reversed)
+    /// @param params The parameters necessary for the multi-hop swap, encoded as `ExactOutputParams` in calldata
+    /// @return amountIn The amount of the input token
     function exactOutput(
         ExactOutputParams calldata params
     ) external payable returns (uint256 amountIn);

@@ -1,50 +1,164 @@
-import React, {useEffect, useState} from "react";
-import {usePathname, useRouter} from "next/navigation";
+"use client";
 
-export default function MobileMenuModal() {
-    const [openedMobileMenu, setOpenedMobileMenu] = useState(false);
-    const path = usePathname();
-    const router = useRouter();
+import React from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import VaultsMobileMenuIcon from "../svg/mobileMenu/VaultsMobileMenu";
+import LeaderboardIcon from "../svg/mobileMenu/LeaderBoard";
+import AboutIcon from "../svg/mobileMenu/AboutIcon";
+import classNames from "classnames";
+import AmanaLogo from "@public/logo/amanadefi/logo.svg";
+import CloseModalIcon from "../svg/CloseModalIcon";
+import DiscordLogo from "@public/logo/discord.svg";
+import XLogo from "@public/logo/x.svg";
+import LinkedInLogo from "@public/logo/linkedIn.svg";
+import GlowIcon from "../svg/GlowIcon";
+import MenuNavigation from "../sidebar/MenuNavigation";
+import { DashboardIcon } from "../svg/sidebar/DashboardIcon";
+import { ActivityIcon } from "../svg/sidebar/ActivityIcon";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 
-    useEffect(() => {
-        setOpenedMobileMenu(false);
-    }, [path]);
-    return (
-        <>
-            <button className={`group relative w-7 h-4 flex justify-end lg:hidden ${openedMobileMenu && 'opened'}`}
-                    onClick={() => setOpenedMobileMenu(!openedMobileMenu)}>
-                <div
-                    className='absolute w-full h-px bg-white top-0 transition-all group-[.opened]:top-1/2 group-[.opened]:-translate-y-1/2 group-[.opened]:-rotate-45 group-[.opened]:w-6'></div>
-                <div
-                    className='absolute top-1/2 -translate-y-1/2 w-full h-px bg-white transition-all group-[.opened]:rotate-45 group-[.opened]:w-6'></div>
-                <div className='absolute bottom-0 w-2/3 h-px bg-white transition-all group-[.opened]:opacity-0'></div>
-            </button>
-            <div
-                className={`z-[1] lg:!hidden fixed top-[var(--header-height)] bottom-0 left-0 right-0 bg-black ${openedMobileMenu ? 'flex' : 'hidden'}`}>
-                <nav className="flex flex-col h-fit divide-y divide-tuatara-900 border-b border-tuatara-900 w-full text-center">
-                        <span
-                            className={`cursor-pointer py-6 ${path === "/" ? "font-bold text-themeColor" : ""
-                            }`}
-                            onClick={() => router.push("/")}
-                        >
-                            Vaults
-                        </span>
-                    <span
-                        className={`cursor-pointer py-6 ${path === "/buy" ? "font-bold text-themeColor" : ""
-                        }`}
-                        onClick={() => router.push("/buy")}
-                    >
-                            Fund Wallet
-                        </span>
-                    <span
-                        className={`cursor-pointer py-6 ${path === "/about" ? "font-bold text-themeColor" : ""
-                        }`}
-                        onClick={() => router.push("/about")}
-                    >
-                            About
-                        </span>
-                </nav>
-            </div>
-        </>
-    )
+const GUEST_MENU_ITEMS = [
+  {
+    path: "/",
+    icon: <VaultsMobileMenuIcon height={19} width={19} fill="#1B46E0" />,
+    title: "Vaults",
+  },
+  {
+    path: "/leaderboard",
+    icon: <LeaderboardIcon height={19} width={19} fill="#1B46E0" />,
+    title: "Leaderboard",
+  },
+  {
+    path: "/about",
+    icon: <AboutIcon height={19} width={19} fill="#1B46E0" />,
+    title: "About",
+  },
+];
+
+const USER_MENU_ITEMS = [
+  {
+    path: "/dashboard",
+    icon: <DashboardIcon height={19} width={19} color="#1B46E0" />,
+    title: "Dashboard",
+  },
+  {
+    path: "/",
+    icon: <VaultsMobileMenuIcon height={19} width={19} fill="#1B46E0" />,
+    title: "Vaults",
+  },
+  {
+    path: "/activity",
+    icon: <ActivityIcon height={19} width={19} color="#1B46E0" />,
+    title: "Activity",
+  },
+  {
+    path: "/leaderboard",
+    icon: <LeaderboardIcon height={19} width={19} fill="#1B46E0" />,
+    title: "Leaderboard",
+  },
+  {
+    path: "/about",
+    icon: <AboutIcon height={19} width={19} fill="#1B46E0" />,
+    title: "About",
+  },
+];
+
+interface MobileMenuProps {
+  toggleMenu: () => void;
+  isOpen: boolean;
 }
+
+const MobileMenuModal: React.FC<MobileMenuProps> = ({ toggleMenu, isOpen }) => {
+  const path = usePathname();
+  const { walletAddress } = useMultiChain();
+
+  const menuItems = walletAddress ? USER_MENU_ITEMS : GUEST_MENU_ITEMS;
+
+  return (
+    <div
+      className={`z-[100] py-10 px-4 lg:!hidden fixed top-0 bottom-0 left-0 right-0 bg-[#0C1015] h-screen transform transition-all duration-500 ease-in-out ${
+        isOpen ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"
+      }`}
+    >
+      <GlowIcon position="top-mobile" />
+      <GlowIcon position="bottom-mobile" />
+      <nav className="flex flex-col h-full w-full items-center justify-between">
+        <div className="flex flex-col w-full items-center">
+          <div className="flex flex-row items-center w-full justify-between mb-10">
+            <div className="w-[50px] h-10" />
+            <AmanaLogo width={65} height={46} className="w-[65px] h-[46px]" />
+            <button
+              onClick={toggleMenu}
+              className="z-[110] flex items-center justify-center w-10 h-10"
+              aria-label="Close"
+            >
+              <CloseModalIcon width={16} height={16} />
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-6 items-center w-full">
+            {menuItems.map((link) => {
+              return (
+                <Link
+                  key={link.path}
+                  onClick={toggleMenu}
+                  href={link.path}
+                  className={classNames(
+                    "flex cursor-pointer flex-row items-center gap-[6px] text-white z-[105]",
+                    {
+                      "text-blue-button":
+                        path === link.path ||
+                        (link.path === "/" && path === "/earn"),
+                    },
+                  )}
+                >
+                  {link.icon}
+                  <p className="font-gotham font-normal text-base leading-4 text-center">
+                    {link.title}
+                  </p>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="flex flex-col justify-center items-center">
+          <div className="flex flex-col justify-center items-center mb-[62px]">
+            <div className="border-t border-[#535E73] w-[224px] mb-8"></div>
+            <MenuNavigation
+              isCollapsed={false}
+              isMobile={true}
+              onItemClick={toggleMenu}
+            />
+          </div>
+          <div className="flex items-center gap-4">
+            <Link
+              href="https://www.linkedin.com/company/amana-defi"
+              target="_blank"
+              className="w-10 h-10 bg-[#1B46E0] rounded-full flex items-center justify-center z-[105]"
+            >
+              <LinkedInLogo height={20} className="w-[20px] h-[20px]" />
+            </Link>
+            <Link
+              href="https://x.com/Amana_DeFi"
+              target="_blank"
+              className="w-10 h-10 bg-[#1B46E0] rounded-full flex items-center justify-center z-[105]"
+            >
+              <XLogo height={24} className="w-[24px] h-[24px]" />
+            </Link>
+            <Link
+              href="https://discord.gg/kG3Gfn3B9V"
+              target="_blank"
+              className="w-10 h-10 bg-[#1B46E0] rounded-full flex items-center justify-center z-[105]"
+            >
+              <DiscordLogo height={18} className="w-[22px] h-[26px]" />
+            </Link>
+          </div>
+        </div>
+      </nav>
+    </div>
+  );
+};
+
+export default MobileMenuModal;

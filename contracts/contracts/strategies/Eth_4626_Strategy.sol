@@ -17,8 +17,8 @@ import "./EthStrategyParent.sol";
 contract Eth_4626_Strategy is EthStrategyParent {
     using SafeERC20 for IERC20;
 
-    IWETH public immutable weth;
-    I4626Vault public immutable receiptToken;
+    IWETH public weth;
+    I4626Vault public receiptToken;
 
     /// @notice Initializes the strategy contract.
     /// @param _name Name of the strategy.
@@ -26,71 +26,92 @@ contract Eth_4626_Strategy is EthStrategyParent {
     /// @param _receiptTokenAddress Address of the Aave receipt token.
     /// @param _gateway Address of the ZetaChain Gateway.
     /// @param _wethAddress Address of the WETH contract.
-    constructor(
+    function initialize(
         string memory _name,
         address _amanaVault,
         address _receiptTokenAddress,
         address _gateway,
-        address _wethAddress
-    ) StrategyParent(_name, _amanaVault, _gateway) {
+        address _wethAddress,
+        address _withdrawHelper
+    ) external initializer {
+        __StrategyParent_init(
+            _name,
+            _amanaVault,
+            _gateway,
+            _withdrawHelper,
+            address(0),
+            _receiptTokenAddress
+        );
+
         receiptToken = I4626Vault(_receiptTokenAddress);
         weth = IWETH(_wethAddress);
     }
 
     /// @notice deposits funds into the yield source.
-    function _depositFundsIntoYieldSource(uint256 amount) internal override {
+    function _depositFundsIntoYieldSource(
+        uint256 amount,
+        uint256 minimumOut
+    ) internal override {
         weth.deposit{value: amount}();
-        bool success = weth.approve(address(receiptToken), amount);
-        if (!success) {
-            revert ApprovalFailed();
+        approveOrIncreaseAllowance(IERC20(weth), address(receiptToken), amount);
+
+        uint256 shares = receiptToken.deposit(amount, address(this));
+        if (shares < minimumOut) {
+            revert InsufficientOut();
         }
-        receiptToken.deposit(amount, address(this));
     }
 
     /// @notice Withdraws funds from the Aave pool.
-    /// @param amount Amount to be withdrawn.
+    /// @param fractionToWithdraw Fraction of shares to be withdrawn.
+    /// @param minAmountOut Minimum amount of ETH to be withdrawn.
     function _withdrawFundsFromYieldSource(
-        uint256 amount
+        uint256 fractionToWithdraw,
+        uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
-        amountWithdrawn = receiptToken.withdraw(
-            amount,
+        uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(
+            fractionToWithdraw
+        );
+
+        amountWithdrawn = receiptToken.redeem(
+            sharesToWithdraw,
             address(this), // receiver
             address(this) // owner
         );
-
+        if (amountWithdrawn < minAmountOut) {
+            revert InsufficientOut();
+        }
         weth.withdraw{gas: 50000}(amountWithdrawn);
     }
 
-    /**
-     * @notice Transfers assets from the current strategy to a new strategy.
-     * @dev This function is intended to be overridden in derived contracts to define specific transfer logic.
-     * @param newStrategy The address of the new strategy contract.
-     * @param currentExecutionNonce The current execution nonce for the transaction.
-     * @param _crossChainTxId The cross-chain transaction ID.
-     */
-    function _transferAssetsToNewStrategy(
-        address newStrategy,
-        uint256 currentExecutionNonce,
-        bytes32 _crossChainTxId
-    ) internal override {
-        uint256 strategyTotalBalance = receiptToken.maxWithdraw(address(this));
-        _withdrawFundsFromYieldSource(strategyTotalBalance);
-
-        IStrategy(newStrategy).depositFromOldStrategy{
-            value: strategyTotalBalance
-        }(strategyTotalBalance, currentExecutionNonce, _crossChainTxId);
-        emit AssetsTransferredToNewStrategy(
-            newStrategy,
-            strategyTotalBalance,
-            currentExecutionNonce,
-            _crossChainTxId
-        );
+    function getStrategyWithdrawShareAmount(
+        uint256 fractionOfTotalShares
+    ) public view override returns (uint256) {
+        uint256 totalShares = receiptToken.balanceOf(address(this));
+        uint256 withdrawShareAmount = (fractionOfTotalShares *
+            totalShares +
+            5e17) / 1e18;
+        if (withdrawShareAmount > totalShares) {
+            withdrawShareAmount = totalShares;
+        }
+        return withdrawShareAmount;
     }
 
     /// @notice Gets the total assets held in the strategy.
     /// @return Total assets as an unsigned integer.
     function totalUnderlyingAssets() public view override returns (uint256) {
         uint256 shares = receiptToken.balanceOf(address(this));
+        return receiptToken.convertToAssets(shares);
+    }
+
+    function convertToShares(
+        uint256 assetAmount
+    ) public view override returns (uint256) {
+        return receiptToken.convertToShares(assetAmount);
+    }
+
+    function convertToAssets(
+        uint256 shares
+    ) public view override returns (uint256) {
         return receiptToken.convertToAssets(shares);
     }
 }

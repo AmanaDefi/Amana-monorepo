@@ -1,0 +1,124 @@
+"use client";
+
+import { useAuthStore } from "@/store/authStore";
+import { Modal } from "../base/Modal";
+import { motion } from "framer-motion";
+import Button from "@/components/common/Button";
+import CloseModalIcon from "@/components/svg/CloseModalIcon";
+import ProfileDropdownIcon from "@/components/svg/ProfileDropdownIcon";
+import { useSignupWithPasskey, useCreateWallet } from "@privy-io/react-auth";
+import { useWallet } from "@solana/wallet-adapter-react";
+
+export const SignIn = () => {
+  const { step, closeAll, openStep, setError, successAuth } = useAuthStore();
+  const { createWallet } = useCreateWallet();
+  const { disconnect, publicKey } = useWallet();
+  const { signupWithPasskey, state } = useSignupWithPasskey({
+    onComplete: async (result) => {
+      await createWallet();
+      if (publicKey) {
+        disconnect();
+      }
+      if (!result.wasAlreadyAuthenticated) {
+        successAuth();
+      }
+    },
+    onError: (err) => {
+      console.log("Error passkey auth:", err);
+      setError(err);
+    },
+  });
+
+  const isButtonDisabled = state.status === "submitting-response";
+
+  return (
+    <Modal
+      isOpen={step === "passkey"}
+      onClose={closeAll}
+      paddingClass="px-4 pt-5 pb-6"
+      roundedClass="rounded-[16px]"
+      maxWidth="max-w-[358px] md:max-w-[440px]"
+      minHeight="608px"
+    >
+      <div className="flex justify-start">
+        <button
+          onClick={closeAll}
+          className="rounded-[8px] flex items-center justify-center w-10 h-10"
+          aria-label="Close"
+        >
+          <CloseModalIcon width={16} height={16} />
+        </button>
+      </div>
+
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 200, damping: 18 }}
+      >
+        <div className="flex flex-col justify-center items-center px-0 md:px-7 font-gotham">
+          <div className="w-12 h-12 rounded-[8px] bg-[rgba(62,115,196,0.05)] flex items-center justify-center">
+            <ProfileDropdownIcon
+              width={26}
+              height={26}
+              className="w-[26px] h-[26px]"
+            />
+          </div>
+          <h2 className="text-center text-[24px] font-medium text-white mt-6">
+            Sign in with passkey
+          </h2>
+          <Button
+            onClick={() => openStep("signature")}
+            type="button"
+            variant="custom"
+            className="mt-6 w-full h-12 rounded-[8px] text-white !font-bold !text-[16px] shadow-md transition-all duration-200 !font-gotham"
+          >
+            Use existing passkey
+          </Button>
+        </div>
+
+        <div className="flex flew-row items-center mt-8">
+          <div className="bg-[#3f3d5a] h-[1px] w-full"></div>
+          <span className="px-[17px] text-[16px] font-normal text-white">
+            OR
+          </span>
+          <div className="bg-[#3f3d5a] h-[1px] w-full"></div>
+        </div>
+
+        <h2 className="text-center text-[24px] font-medium text-white mt-8">
+          Create new passkey
+        </h2>
+      </motion.div>
+
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 220, damping: 20, delay: 0.1 }}
+        className="flex flex-col gap-4 mt-6 px-0 md:px-[26px]"
+      >
+        <div className="flex justify-center mt-4">
+          <Button
+            onClick={signupWithPasskey}
+            variant="custom"
+            disabled={isButtonDisabled}
+            className="w-full h-12 rounded-[8px] border border-[#3E73C4] text-white shadow-md hover:bg-[#3E73C4]/10 !text-[16px] !font-bold transition-all duration-200 !font-gotham"
+          >
+            Create new passkey
+          </Button>
+        </div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2 }}
+      >
+        <div className="px-0 md:px-[26px] mt-6">
+          <div className="w-full text-[#535E73] text-[12px] font-normal bg-[rgba(62,115,196,0.05)] rounded-[8px] px-[17px] py-[15px]">
+            Store your passkeys securely. Losing your passkey means losing
+            access to your account and any associated funds permanently.
+          </div>
+        </div>
+      </motion.div>
+    </Modal>
+  );
+};
