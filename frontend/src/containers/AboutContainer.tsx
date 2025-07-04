@@ -1,8 +1,13 @@
 import AboutWrapper from "@/components/AboutWrapper.tsx";
-import Button from "@/components/common/Button";
+import Footer from "@/components/Footer";
+import AboutLine from "@/components/svg/about/AboutLine";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 import Image from "next/image";
 
-const AboutContainer = ({}) => {
+const AboutContainer = ({ }) => {
+  const { walletAddress } = useMultiChain();
+  const isConnected = !!walletAddress;
+
   return (
     <div className="font-gotham flex flex-col justify-center items-center">
       <div className="text-center max-w-6xl mx-auto">
@@ -28,8 +33,24 @@ const AboutContainer = ({}) => {
       </div>
       <button className="w-full bg-transparent border border-[#3E73C4] rounded-lg py-4 px-8 mt-8 max-h-[56px] max-w-[192px] ">
         Get Started
-          </button>
-        <AboutWrapper />
+      </button>
+      <AboutWrapper />
+      <div className="flex flex-col justify-center items-center mt-[217px]">
+        <span className="text-[48px] font-normal max-w-[550px] text-center">
+          All of the profit None of the work
+        </span>
+        <button className="w-full bg-transparent border border-[#3E73C4] rounded-lg py-4 px-8 mt-6 max-h-[56px] max-w-[192px] ">
+          Get Started
+        </button>
+      </div>
+
+      <AboutLine className="relative -mt-[220px]" />
+      <div
+        className="absolute z-10 px-[68px]"
+        style={{ bottom: "108px", left: 0, right: 0 }}
+      >
+        <Footer isConnected={isConnected} />
+      </div>
     </div>
   );
 };

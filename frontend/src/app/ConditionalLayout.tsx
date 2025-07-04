@@ -61,10 +61,6 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
           >
             {children}
           </div>
-          <div className="py-4 md:py-6 lg:py-10 px-4 md:px-[44px]">
-            <Footer isConnected={isConnected} />
-            <AppModals />
-          </div>
         </div>
       </div>
     );
