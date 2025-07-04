@@ -1,12 +1,13 @@
 import { ethers, AbiCoder, keccak256, toUtf8Bytes, ZeroAddress } from "ethers";
 import { VaultData, Token } from "@/types/types";
 import { getCurrentSlippage } from "@/utils/utils";
-import { CHAIN_ID } from "@/constants/chainConfig";
+import { CHAIN_ID, APPROVED_TOKENS } from "@/constants/chainConfig";
 import { ZC_BTC_BTC_ADDRESS } from "@/constants";
 import { updateLocalStorageObject } from "@/utils/localStorageUtils";
 import { trackEvent } from "@/utils/trackEvent";
 import { showErrorToast } from "@/toasts";
 import { formatUnits as ethersFormatUnits } from "@ethersproject/units";
+import { getPathDataAndAmountOut } from "@/actions/actions";
 
 // Bitcoin TSS Gateway address (official ZetaChain)
 const BITCOIN_TSS_GATEWAY = "bc1qm24wp577nk8aacckv8np465z3dvmu7ry45el6y";
@@ -111,7 +112,7 @@ export const executeBitcoinDeposit = async ({
       inputToken: inputToken.symbol,
       network: bitcoinWallet.network
     });
-    
+
     // Track Bitcoin deposit initiation
     trackEvent('bitcoin_deposit_initiated', {
       vaultId: vaultData.id,
@@ -126,19 +127,31 @@ export const executeBitcoinDeposit = async ({
     const slippage = getCurrentSlippage();
     const slippageValue = (slippage * 100).toFixed(0);
 
-    // Calculate Bitcoin-specific path and minimum shares out
-    bitcoinLogger.log('INFO', 'Calculating Bitcoin deposit path...');
-    const { swapPath, minSharesOut, estimatedOutput } = await getBitcoinPathDataAndMinSharesOut(
-      vaultData,
-      inputToken,
+    // Calculate path using ZRC-20 BTC.BTC address (1:1 with native BTC)
+    bitcoinLogger.log('INFO', 'Calculating Bitcoin deposit path using ZRC-20 BTC.BTC...');
+    
+    // Get existing ZRC-20 BTC token from chainConfig
+    const bitcoinTokens = APPROVED_TOKENS[CHAIN_ID.bitcoin];
+    const bitcoinToken = bitcoinTokens?.[0]; // Native Bitcoin token
+    const zrc20BtcToken: Token = bitcoinToken?.ZRC20equivalent!;
+
+    // Use existing swap function with ZRC-20 BTC address (treats 1:1 as native BTC)
+    
+    const { encodedPath, amountOut } = await getPathDataAndAmountOut(
       transactionAmount,
-      bitcoinWallet
+      zrc20BtcToken,
+      vaultData.inputToken,
+      vaultData.id,
+      getCurrentSlippage() * 100
     );
+
+    const swapPath = encodedPath ?? "0x";
+    const minSharesOut = amountOut;
 
     bitcoinLogger.log('INFO', 'Bitcoin deposit path calculated', {
       swapPath: swapPath !== "0x" ? 'Swap required' : 'Direct deposit',
       minSharesOut: minSharesOut.toString(),
-      estimatedOutput: estimatedOutput.toString()
+      estimatedOutput: amountOut.toString()
     });
     
     // Create the vault deposit payload (what TSS will execute on ZetaChain)
@@ -587,7 +600,6 @@ export const debugBitcoinIntegration = async () => {
     // Test 3: Swap function compatibility
     bitcoinLogger.log('INFO', 'Testing swap function compatibility...');
     try {
-      const { getPathDataAndAmountOut } = await import('@/actions/actions');
       bitcoinLogger.log('WARN', 'Swap function exists but NOT compatible with Bitcoin', {
         issue: 'getPathDataAndAmountOut expects EVM tokens, Bitcoin is native',
         solution: 'Need Bitcoin-specific path calculation'
@@ -648,11 +660,9 @@ export const debugBitcoinIntegration = async () => {
 };
 
 /**
- * Bitcoin-specific path calculation and amount estimation
- * Handles the unique aspects of Bitcoin deposits through TSS Gateway
+ * Bitcoin-specific path calculation using ZRC-20 BTC.BTC address
+ * Simplified approach: treats ZRC-20 BTC as 1:1 with native BTC
  */
-
-// Bitcoin path calculation - handles TSS Gateway conversion
 export const getBitcoinPathDataAndMinSharesOut = async (
   vaultData: VaultData,
   inputToken: Token,
@@ -660,105 +670,52 @@ export const getBitcoinPathDataAndMinSharesOut = async (
   bitcoinWallet: BitcoinWallet
 ): Promise<{ swapPath: `0x${string}`; minSharesOut: bigint; estimatedOutput: bigint }> => {
   try {
-    bitcoinLogger.log('INFO', 'Calculating Bitcoin deposit path and amounts', {
+    bitcoinLogger.log('INFO', 'Calculating Bitcoin deposit path (simplified EVM-like approach)', {
       vaultId: vaultData.id,
-      inputToken: inputToken.symbol,
       amount: transactionAmount.toString(),
-      vaultInputToken: vaultData.inputToken.symbol
+      approach: 'Use ZRC-20 BTC.BTC address with existing swap function'
     });
 
-    // Step 1: TSS Gateway will convert native BTC to ZRC-20 BTC
-    const zrc20BtcAmount = transactionAmount; // 1:1 conversion (minus fees)
-    bitcoinLogger.log('INFO', 'TSS Gateway BTC → ZRC-20 BTC conversion', {
-      nativeBtcAmount: transactionAmount.toString(),
-      zrc20BtcAmount: zrc20BtcAmount.toString(),
-      conversionRate: '1:1 (minus network fees)'
-    });
+    // Get existing ZRC-20 BTC token from chainConfig
+    const bitcoinTokens = APPROVED_TOKENS[CHAIN_ID.bitcoin];
+    const bitcoinToken = bitcoinTokens?.[0]; // Native Bitcoin token
+    const zrc20BtcToken: Token = bitcoinToken?.ZRC20equivalent!;
 
-    // Step 2: Check if vault accepts ZRC-20 BTC directly
-    const vaultInputTokenAddress = vaultData.inputToken.address;
-    const zrc20BtcAddress = ZC_BTC_BTC_ADDRESS;
+    // Use existing swap function with ZRC-20 BTC address
+
+    const { encodedPath, amountOut } = await getPathDataAndAmountOut(
+      transactionAmount,
+      zrc20BtcToken,
+      vaultData.inputToken,
+      vaultData.id,
+      getCurrentSlippage() * 100
+    );
+
+    const swapPath = encodedPath ?? "0x";
+    const minSharesOut = amountOut;
     
-    let swapPath: `0x${string}` = "0x";
-    let assetsConversionAmount: bigint = zrc20BtcAmount;
-
-    if (vaultInputTokenAddress.toLowerCase() !== zrc20BtcAddress.toLowerCase()) {
-      // Step 3: Need to swap ZRC-20 BTC to vault input token
-      bitcoinLogger.log('INFO', 'Vault requires token swap', {
-        from: 'ZRC-20 BTC',
-        to: vaultData.inputToken.symbol,
-        fromAddress: zrc20BtcAddress,
-        toAddress: vaultInputTokenAddress
-      });
-
-      // Import the existing swap function for ZRC-20 tokens
-      const { getPathDataAndAmountOut } = await import('@/actions/actions');
-      
-      // Create ZRC-20 BTC token object for swap calculation
-      const zrc20BtcToken: Token = {
-        address: zrc20BtcAddress,
-        symbol: 'BTC',
-        decimals: 8,
-        imgURL: '/bitcoin_logo.png',
-        price: 0,
-        balance: { value: BigInt(0), formatted: '0' },
-        isNative: false
-      };
-
-      // Calculate swap path ZRC-20 BTC → Vault Token
-      const { encodedPath, amountOut } = await getPathDataAndAmountOut(
-        zrc20BtcAmount,
-        zrc20BtcToken,
-        vaultData.inputToken,
-        vaultData.id,
-        getCurrentSlippage() * 100
-      );
-
-      swapPath = encodedPath ?? "0x";
-      assetsConversionAmount = amountOut;
-      
-      bitcoinLogger.log('INFO', 'Swap path calculated', {
-        swapPath: swapPath !== "0x" ? 'Found' : 'Direct',
-        expectedOutput: amountOut.toString(),
-        slippage: getCurrentSlippage() * 100
-      });
-    } else {
-      bitcoinLogger.log('INFO', 'Direct deposit - vault accepts ZRC-20 BTC', {
-        directDeposit: true,
-        amount: assetsConversionAmount.toString()
-      });
-    }
-
-    // Step 4: Calculate minimum shares out from vault
-    // Note: This calculation happens on ZetaChain after TSS processing
-    const minSharesOut = (assetsConversionAmount * BigInt(10000 - getCurrentSlippage() * 100)) / BigInt(10000);
-    
-    bitcoinLogger.log('INFO', 'Bitcoin deposit calculation complete', {
-      swapRequired: swapPath !== "0x",
-      assetsConversionAmount: assetsConversionAmount.toString(),
+    bitcoinLogger.log('INFO', 'Bitcoin deposit calculation complete (EVM-like)', {
+      swapPath: swapPath !== "0x" ? 'Swap required' : 'Direct deposit',
       minSharesOut: minSharesOut.toString(),
-      estimatedSlippage: getCurrentSlippage() * 100
+      estimatedOutput: amountOut.toString(),
+      approach: 'Same as EVM chains, just using ZRC-20 BTC address'
     });
 
     return {
       swapPath,
       minSharesOut,
-      estimatedOutput: assetsConversionAmount
+      estimatedOutput: amountOut
     };
 
   } catch (error: any) {
     bitcoinLogger.log('ERROR', 'Bitcoin path calculation failed', {
       error: error.message,
       vaultId: vaultData.id,
-      inputToken: inputToken.symbol
+      fallbackApproach: 'Conservative estimates'
     });
     
     // Fallback: Return conservative estimates
     const fallbackMinShares = (transactionAmount * BigInt(8000)) / BigInt(10000); // 20% slippage buffer
-    bitcoinLogger.log('WARN', 'Using fallback estimates', {
-      fallbackMinShares: fallbackMinShares.toString(),
-      reason: 'Path calculation failed'
-    });
     
     return {
       swapPath: "0x",
@@ -768,7 +725,7 @@ export const getBitcoinPathDataAndMinSharesOut = async (
   }
 };
 
-// Bitcoin amount estimation for UI display
+// Bitcoin amount estimation for UI display (simplified EVM-like approach)
 export const estimateBitcoinDepositOutput = async (
   vaultData: VaultData,
   inputToken: Token,
@@ -781,9 +738,10 @@ export const estimateBitcoinDepositOutput = async (
   fees: { network: string; slippage: string };
 }> => {
   try {
-    bitcoinLogger.log('INFO', 'Estimating Bitcoin deposit output for UI', {
+    bitcoinLogger.log('INFO', 'Estimating Bitcoin deposit output (EVM-like approach)', {
       amount: transactionAmount.toString(),
-      vaultId: vaultData.id
+      vaultId: vaultData.id,
+      approach: 'Use existing swap calculation with ZRC-20 BTC'
     });
 
     const { estimatedOutput, minSharesOut } = await getBitcoinPathDataAndMinSharesOut(
@@ -794,15 +752,11 @@ export const estimateBitcoinDepositOutput = async (
     );
 
     const conversionSteps = [
-      `${formatUnits(transactionAmount, 8)} BTC (Bitcoin Network)`,
-      `${formatUnits(transactionAmount, 8)} ZRC-20 BTC (ZetaChain TSS)`,
+      `${formatUnits(transactionAmount, 8)} BTC (Native Bitcoin)`,
+      `${formatUnits(transactionAmount, 8)} ZRC-20 BTC (TSS Gateway 1:1)`,
+      `${formatUnits(estimatedOutput, vaultData.inputToken.decimals)} ${vaultData.inputToken.symbol} (Beam Swap)`,
+      `${formatUnits(minSharesOut, vaultData.inputToken.decimals)} Vault Shares (Final)`
     ];
-
-    if (vaultData.inputToken.address.toLowerCase() !== ZC_BTC_BTC_ADDRESS.toLowerCase()) {
-      conversionSteps.push(`${formatUnits(estimatedOutput, vaultData.inputToken.decimals)} ${vaultData.inputToken.symbol} (Beam Swap)`);
-    }
-
-    conversionSteps.push(`${formatUnits(minSharesOut, vaultData.inputToken.decimals)} Vault Shares (Vault Deposit)`);
 
     return {
       estimatedVaultTokens: estimatedOutput,

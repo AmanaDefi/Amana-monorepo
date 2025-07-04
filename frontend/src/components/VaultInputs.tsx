@@ -807,11 +807,23 @@ export default function VaultInputs({
       //   return;
       // }
 
-      const actualInputToken = isZetachain(activeChain?.id as number)
-        ? inputToken
-        : inputToken?.ZRC20equivalent;
+      // For Bitcoin, we need to use the ZRC-20 equivalent for swap calculations
+      let actualInputToken: Token | undefined;
+      
+      if (selectedChain?.id === CHAIN_ID.bitcoin) {
+        // Bitcoin: Use ZRC-20 BTC equivalent from chainConfig
+        const bitcoinTokens = APPROVED_TOKENS[CHAIN_ID.bitcoin];
+        const bitcoinToken = bitcoinTokens?.[0]; // Native Bitcoin token
+        actualInputToken = bitcoinToken?.ZRC20equivalent;
+      } else {
+        // Other chains: Use existing logic
+        actualInputToken = isZetachain(activeChain?.id as number)
+          ? inputToken
+          : inputToken?.ZRC20equivalent;
+      }
       
       if (!actualInputToken) {
+        console.error("❌ No actualInputToken found for chain:", selectedChain?.id);
         return;
       }
 

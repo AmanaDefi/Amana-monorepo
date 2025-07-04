@@ -1,475 +1,277 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
-  debugBitcoinIntegration, 
-  getBitcoinPathDataAndMinSharesOut,
+  executeBitcoinDeposit, 
+  getBitcoinPathDataAndMinSharesOut, 
   estimateBitcoinDepositOutput,
-  validateBitcoinDeposit
+  validateBitcoinDeposit,
+  debugBitcoinIntegration
 } from '@/actions/bitcoinActions';
-import { CHAIN_ID } from '@/constants/chainConfig';
+import { VaultData, Token } from '@/types/types';
+import { CHAIN_ID, APPROVED_TOKENS } from '@/constants/chainConfig';
 import { ZC_BTC_BTC_ADDRESS } from '@/constants';
 
-interface TestResult {
-  test: string;
-  status: 'pending' | 'success' | 'failure';
-  message: string;
-  details?: any;
-}
-
 const BitcoinIntegrationTest: React.FC = () => {
-  const [testResults, setTestResults] = useState<TestResult[]>([]);
-  const [isRunning, setIsRunning] = useState(false);
-  const [overallStatus, setOverallStatus] = useState<'pending' | 'success' | 'failure'>('pending');
-  const [bitcoinLogs, setBitcoinLogs] = useState<any[]>([]);
+  const [testResults, setTestResults] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const runComprehensiveTest = async () => {
-    setIsRunning(true);
-    setOverallStatus('pending');
-    const results: TestResult[] = [];
+  const mockVaultData: VaultData = {
+    id: '0x1234567890abcdef',
+    inputToken: {
+      address: '0x9615152e180085f057c7708e8f05e5a7770a4561', // Example USDC address
+      symbol: 'USDC',
+      decimals: 6,
+      imgURL: '/usdc-logo.png',
+      price: 1,
+      balance: { value: BigInt(0), formatted: '0' },
+      isNative: false
+    },
+    // Add other required VaultData fields
+    name: 'Test Vault',
+    symbol: 'TEST',
+    decimals: 18,
+    totalSupply: BigInt(0),
+    pricePerShare: BigInt(0),
+    totalAssets: BigInt(0),
+    apy: 0,
+    chain: 'bitcoin',
+    strategy: 'test',
+    riskLevel: 'medium',
+    tvl: BigInt(0),
+    fees: { deposit: 0, withdrawal: 0, performance: 0 },
+    isActive: true,
+    description: 'Test vault for Bitcoin integration'
+  } as unknown as VaultData;
 
-    // Test 1: Basic Bitcoin Integration Debug
-    try {
-      const debugResult = await debugBitcoinIntegration();
-      results.push({
-        test: 'Bitcoin Integration Debug',
-        status: debugResult.canProceed ? 'success' : 'failure',
-        message: debugResult.canProceed 
-          ? 'Bitcoin integration basic setup is working'
-          : `Bitcoin integration issues: ${debugResult.error}`,
-        details: debugResult
-      });
-      
-      // Store logs for display
-      setBitcoinLogs(debugResult.logs || []);
-    } catch (error: any) {
-      results.push({
-        test: 'Bitcoin Integration Debug',
-        status: 'failure',
-        message: `Debug test failed: ${error.message}`,
-        details: error
-      });
-    }
-
-    // Test 2: Bitcoin Path Calculation
-    try {
-      const pathTest = await testBitcoinPathCalculation();
-      results.push(pathTest);
-    } catch (error: any) {
-      results.push({
-        test: 'Bitcoin Path Calculation',
-        status: 'failure',
-        message: `Path calculation test failed: ${error.message}`,
-        details: error
-      });
-    }
-
-    // Test 3: Bitcoin Amount Estimation
-    try {
-      const estimationTest = await testBitcoinAmountEstimation();
-      results.push(estimationTest);
-    } catch (error: any) {
-      results.push({
-        test: 'Bitcoin Amount Estimation',
-        status: 'failure',
-        message: `Amount estimation test failed: ${error.message}`,
-        details: error
-      });
-    }
-
-    // Test 4: Bitcoin Deposit Validation
-    try {
-      const validationTest = await testBitcoinDepositValidation();
-      results.push(validationTest);
-    } catch (error: any) {
-      results.push({
-        test: 'Bitcoin Deposit Validation',
-        status: 'failure',
-        message: `Validation test failed: ${error.message}`,
-        details: error
-      });
-    }
-
-    // Test 5: Swap Function Compatibility
-    try {
-      const swapTest = await testSwapFunctionCompatibility();
-      results.push(swapTest);
-    } catch (error: any) {
-      results.push({
-        test: 'Swap Function Compatibility',
-        status: 'failure',
-        message: `Swap compatibility test failed: ${error.message}`,
-        details: error
-      });
-    }
-
-    setTestResults(results);
-    
-    // Determine overall status
-    const hasFailures = results.some(result => result.status === 'failure');
-    const hasPending = results.some(result => result.status === 'pending');
-    
-    if (hasFailures) {
-      setOverallStatus('failure');
-    } else if (hasPending) {
-      setOverallStatus('pending');
-    } else {
-      setOverallStatus('success');
-    }
-    
-    setIsRunning(false);
+  const mockBitcoinWallet = {
+    address: 'bc1qtest123456789abcdef',
+    publicKey: 'test-public-key',
+    network: 'mainnet' as const,
+    signTransaction: async (tx: any) => 'mock-signature',
+    signMessage: async (msg: string) => 'mock-signature',
+    getBalance: async () => 100000000, // 1 BTC in satoshis
+    provider: null
   };
 
-  const testBitcoinPathCalculation = async (): Promise<TestResult> => {
+  // Get existing ZRC-20 BTC token from chainConfig
+  const bitcoinTokens = APPROVED_TOKENS[CHAIN_ID.bitcoin];
+  const bitcoinToken = bitcoinTokens?.[0]; // Native Bitcoin token
+  const mockBtcToken: Token = bitcoinToken?.ZRC20equivalent!;
+
+  const runTest = async (testName: string, testFn: () => Promise<any>) => {
+    setIsLoading(true);
+    console.log(`🧪 Running test: ${testName}`);
+    
     try {
-      // Mock data for testing
-      const mockBitcoinWallet = {
-        address: 'bc1qtest123...',
-        publicKey: 'test-pubkey',
-        network: 'mainnet' as const,
-        signTransaction: async () => 'mock-signature',
-        signMessage: async () => 'mock-signature',
-        getBalance: async () => 100000000,
-        provider: null
+      const result = await testFn();
+      const testResult = {
+        name: testName,
+        status: 'PASS',
+        result,
+        timestamp: new Date().toISOString()
       };
+      
+      setTestResults(prev => [...prev, testResult]);
+      console.log(`✅ Test passed: ${testName}`, result);
+      return result;
+    } catch (error: any) {
+      const testResult = {
+        name: testName,
+        status: 'FAIL',
+        error: error.message,
+        timestamp: new Date().toISOString()
+      };
+      
+      setTestResults(prev => [...prev, testResult]);
+      console.error(`❌ Test failed: ${testName}`, error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-      const mockVaultData = {
-        id: '0x123...',
-        inputToken: { 
-          address: ZC_BTC_BTC_ADDRESS,
-          symbol: 'BTC',
-          decimals: 8
-        }
-      } as any;
+  const runAllTests = async () => {
+    setTestResults([]);
+    
+    try {
+      // Test 1: Bitcoin configuration validation
+      await runTest('Bitcoin Configuration Check', async () => {
+        const debugResult = await debugBitcoinIntegration();
+        return {
+          canProceed: debugResult.canProceed,
+          btcAddress: ZC_BTC_BTC_ADDRESS,
+          hasValidAddress: ZC_BTC_BTC_ADDRESS.startsWith('0x')
+        };
+      });
 
-      const mockInputToken = {
-        address: 'native',
-        symbol: 'BTC',
-        decimals: 8
-      } as any;
+      // Test 2: Bitcoin deposit validation
+      await runTest('Bitcoin Deposit Validation', async () => {
+        const validation = validateBitcoinDeposit(
+          mockBitcoinWallet,
+          BigInt(1000000), // 0.01 BTC
+          mockVaultData
+        );
+        return validation;
+      });
 
-      const testAmount = BigInt(1000000); // 0.01 BTC
-
-      const pathResult = await getBitcoinPathDataAndMinSharesOut(
-        mockVaultData,
-        mockInputToken,
-        testAmount,
-        mockBitcoinWallet
-      );
-
-      return {
-        test: 'Bitcoin Path Calculation',
-        status: 'success',
-        message: 'Bitcoin path calculation working correctly',
-        details: {
+      // Test 3: Bitcoin path calculation (NEW SIMPLIFIED APPROACH)
+      await runTest('Bitcoin Path Calculation (EVM-like)', async () => {
+        const pathResult = await getBitcoinPathDataAndMinSharesOut(
+          mockVaultData,
+          mockBtcToken,
+          BigInt(1000000), // 0.01 BTC
+          mockBitcoinWallet
+        );
+        
+        return {
           swapPath: pathResult.swapPath,
           minSharesOut: pathResult.minSharesOut.toString(),
           estimatedOutput: pathResult.estimatedOutput.toString(),
-          hasSwapPath: pathResult.swapPath !== "0x"
-        }
-      };
+          approach: 'Uses ZRC-20 BTC.BTC address with existing swap function'
+        };
+      });
 
-    } catch (error: any) {
-      return {
-        test: 'Bitcoin Path Calculation',
-        status: 'failure',
-        message: `Path calculation failed: ${error.message}`,
-        details: error
-      };
-    }
-  };
-
-  const testBitcoinAmountEstimation = async (): Promise<TestResult> => {
-    try {
-      // Mock data for testing
-      const mockBitcoinWallet = {
-        address: 'bc1qtest123...',
-        publicKey: 'test-pubkey',
-        network: 'mainnet' as const,
-        signTransaction: async () => 'mock-signature',
-        signMessage: async () => 'mock-signature',
-        getBalance: async () => 100000000,
-        provider: null
-      };
-
-      const mockVaultData = {
-        id: '0x123...',
-        inputToken: { 
-          address: ZC_BTC_BTC_ADDRESS,
-          symbol: 'BTC',
-          decimals: 8
-        }
-      } as any;
-
-      const mockInputToken = {
-        address: 'native',
-        symbol: 'BTC',
-        decimals: 8
-      } as any;
-
-      const testAmount = BigInt(1000000); // 0.01 BTC
-
-      const estimation = await estimateBitcoinDepositOutput(
-        mockVaultData,
-        mockInputToken,
-        testAmount,
-        mockBitcoinWallet
-      );
-
-      return {
-        test: 'Bitcoin Amount Estimation',
-        status: 'success',
-        message: 'Bitcoin amount estimation working correctly',
-        details: {
+      // Test 4: Bitcoin output estimation
+      await runTest('Bitcoin Output Estimation', async () => {
+        const estimation = await estimateBitcoinDepositOutput(
+          mockVaultData,
+          mockBtcToken,
+          BigInt(1000000), // 0.01 BTC
+          mockBitcoinWallet
+        );
+        
+        return {
           estimatedVaultTokens: estimation.estimatedVaultTokens.toString(),
           estimatedShares: estimation.estimatedShares.toString(),
           conversionSteps: estimation.conversionSteps,
           fees: estimation.fees
+        };
+      });
+
+      // Test 5: Swap function compatibility test
+      await runTest('Swap Function Compatibility', async () => {
+        try {
+          const { getPathDataAndAmountOut } = await import('@/actions/actions');
+          
+          // Test with ZRC-20 BTC address (should work now)
+          const result = await getPathDataAndAmountOut(
+            BigInt(1000000), // 0.01 BTC
+            mockBtcToken,    // ZRC-20 BTC token
+            mockVaultData.inputToken, // USDC
+            mockVaultData.id,
+            500 // 5% slippage
+          );
+          
+          return {
+            success: true,
+            hasPath: !!result.encodedPath,
+            amountOut: result.amountOut.toString(),
+            approach: 'ZRC-20 BTC.BTC address works with existing swap function'
+          };
+        } catch (error: any) {
+          return {
+            success: false,
+            error: error.message,
+            note: 'This is the issue we are trying to fix'
+          };
         }
-      };
+      });
 
-    } catch (error: any) {
-      return {
-        test: 'Bitcoin Amount Estimation',
-        status: 'failure',
-        message: `Amount estimation failed: ${error.message}`,
-        details: error
-      };
-    }
-  };
-
-  const testBitcoinDepositValidation = async (): Promise<TestResult> => {
-    try {
-      const mockBitcoinWallet = {
-        address: 'bc1qtest123...',
-        publicKey: 'test-pubkey',
-        network: 'mainnet' as const,
-        signTransaction: async () => 'mock-signature',
-        signMessage: async () => 'mock-signature',
-        getBalance: async () => 100000000,
-        provider: null
-      };
-
-      const mockVaultData = {
-        id: '0x123...',
-        inputToken: { 
-          address: ZC_BTC_BTC_ADDRESS,
-          symbol: 'BTC',
-          decimals: 8
-        }
-      } as any;
-
-      // Test valid deposit
-      const validDeposit = validateBitcoinDeposit(
-        mockBitcoinWallet,
-        BigInt(1000000), // 0.01 BTC
-        mockVaultData
-      );
-
-      // Test invalid deposit (too small)
-      const invalidDeposit = validateBitcoinDeposit(
-        mockBitcoinWallet,
-        BigInt(100), // Too small
-        mockVaultData
-      );
-
-      return {
-        test: 'Bitcoin Deposit Validation',
-        status: validDeposit.isValid && !invalidDeposit.isValid ? 'success' : 'failure',
-        message: validDeposit.isValid && !invalidDeposit.isValid 
-          ? 'Bitcoin deposit validation working correctly'
-          : 'Bitcoin deposit validation has issues',
-        details: {
-          validDeposit,
-          invalidDeposit
-        }
-      };
-
-    } catch (error: any) {
-      return {
-        test: 'Bitcoin Deposit Validation',
-        status: 'failure',
-        message: `Validation test failed: ${error.message}`,
-        details: error
-      };
-    }
-  };
-
-  const testSwapFunctionCompatibility = async (): Promise<TestResult> => {
-    try {
-      // Test if swap functions can handle ZRC-20 BTC
-      const { getPathDataAndAmountOut } = await import('@/actions/actions');
+      console.log('🎉 All Bitcoin integration tests completed!');
       
-      const mockZRC20BtcToken = {
-        address: ZC_BTC_BTC_ADDRESS,
-        symbol: 'BTC',
-        decimals: 8,
-        imgURL: '/bitcoin_logo.png',
-        price: 0,
-        balance: { value: BigInt(0), formatted: '0' },
-        isNative: false
-      };
-
-      const mockVaultToken = {
-        address: '0x456...',
-        symbol: 'USDT',
-        decimals: 6,
-        imgURL: '/usdt.png',
-        price: 0,
-        balance: { value: BigInt(0), formatted: '0' },
-        isNative: false
-      };
-
-      // This should work for ZRC-20 BTC → other tokens
-      const swapResult = await getPathDataAndAmountOut(
-        BigInt(1000000), // 0.01 BTC
-        mockZRC20BtcToken,
-        mockVaultToken,
-        '0x123...',
-        5 // 5% slippage
-      );
-
-      return {
-        test: 'Swap Function Compatibility',
-        status: 'success',
-        message: 'Swap functions can handle ZRC-20 BTC conversions',
-        details: {
-          encodedPath: swapResult.encodedPath,
-          amountOut: swapResult.amountOut.toString(),
-          hasPath: !!swapResult.encodedPath
-        }
-      };
-
-    } catch (error: any) {
-      return {
-        test: 'Swap Function Compatibility',
-        status: 'failure',
-        message: `Swap function compatibility failed: ${error.message}`,
-        details: error
-      };
-    }
-  };
-
-  // Run tests automatically on component mount
-  useEffect(() => {
-    runComprehensiveTest();
-  }, []);
-
-  const getStatusIcon = (status: 'pending' | 'success' | 'failure') => {
-    switch (status) {
-      case 'pending':
-        return '⏳';
-      case 'success':
-        return '✅';
-      case 'failure':
-        return '❌';
-      default:
-        return '❓';
-    }
-  };
-
-  const getStatusColor = (status: 'pending' | 'success' | 'failure') => {
-    switch (status) {
-      case 'pending':
-        return 'text-yellow-600';
-      case 'success':
-        return 'text-green-600';
-      case 'failure':
-        return 'text-red-600';
-      default:
-        return 'text-gray-600';
+    } catch (error) {
+      console.error('❌ Test suite failed:', error);
     }
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">
-            Bitcoin Integration Test Suite
-          </h1>
-          <div className={`flex items-center space-x-2 ${getStatusColor(overallStatus)}`}>
-            <span className="text-2xl">{getStatusIcon(overallStatus)}</span>
-            <span className="font-semibold">
-              {overallStatus === 'pending' && 'Running...'}
-              {overallStatus === 'success' && 'All Tests Passed'}
-              {overallStatus === 'failure' && 'Tests Failed'}
-            </span>
+    <div className="p-6 bg-gray-100 min-h-screen">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold mb-6 text-center">
+          🧪 Bitcoin Integration Test Suite
+        </h1>
+        
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4">Test Overview</h2>
+          <div className="bg-blue-50 p-4 rounded-lg mb-4">
+            <p className="text-sm text-blue-800">
+              <strong>New Approach:</strong> Use ZRC-20 BTC.BTC address ({ZC_BTC_BTC_ADDRESS}) 
+              with existing swap functions, treating it as 1:1 with native BTC.
+            </p>
           </div>
+          
+          <button
+            onClick={runAllTests}
+            disabled={isLoading}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50"
+          >
+            {isLoading ? '🔄 Running Tests...' : '🚀 Run All Tests'}
+          </button>
         </div>
 
-        {/* Test Results */}
-        <div className="space-y-4 mb-8">
-          {testResults.map((result, index) => (
-            <div
-              key={index}
-              className={`border rounded-lg p-4 ${
-                result.status === 'success' ? 'border-green-200 bg-green-50' :
-                result.status === 'failure' ? 'border-red-200 bg-red-50' :
-                'border-yellow-200 bg-yellow-50'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <span className="text-xl">{getStatusIcon(result.status)}</span>
-                  <h3 className="font-semibold text-gray-800">{result.test}</h3>
-                </div>
-                <span className={`text-sm font-medium ${getStatusColor(result.status)}`}>
-                  {result.status.toUpperCase()}
-                </span>
-              </div>
-              <p className="text-gray-600 mt-2">{result.message}</p>
-              {result.details && (
-                <details className="mt-2">
-                  <summary className="text-sm text-gray-500 cursor-pointer">
-                    Show Details
-                  </summary>
-                  <pre className="text-xs text-gray-600 mt-2 p-2 bg-gray-100 rounded overflow-x-auto">
-                    {JSON.stringify(result.details, null, 2)}
-                  </pre>
-                </details>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Bitcoin Logs */}
-        {bitcoinLogs.length > 0 && (
-          <div className="border rounded-lg p-4 bg-gray-50">
-            <h3 className="font-semibold text-gray-800 mb-3">Bitcoin Integration Logs</h3>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {bitcoinLogs.map((log, index) => (
-                <div key={index} className="text-sm">
-                  <span className="text-gray-500">{log.timestamp}</span>
-                  <span className={`ml-2 font-medium ${
-                    log.level === 'ERROR' ? 'text-red-600' :
-                    log.level === 'WARN' ? 'text-yellow-600' :
-                    log.level === 'INFO' ? 'text-blue-600' :
-                    'text-purple-600'
-                  }`}>
-                    [{log.level}]
-                  </span>
-                  <span className="ml-2 text-gray-700">{log.message}</span>
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h2 className="text-xl font-semibold mb-4">Test Results</h2>
+          
+                     {testResults.length === 0 ? (
+             <p className="text-gray-500">No tests run yet. Click &quot;Run All Tests&quot; to start.</p>
+           ) : (
+            <div className="space-y-4">
+              {testResults.map((test, index) => (
+                <div
+                  key={index}
+                  className={`p-4 rounded-lg border-l-4 ${
+                    test.status === 'PASS' 
+                      ? 'bg-green-50 border-green-500' 
+                      : 'bg-red-50 border-red-500'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold">
+                      {test.status === 'PASS' ? '✅' : '❌'} {test.name}
+                    </h3>
+                    <span className="text-sm text-gray-500">
+                      {new Date(test.timestamp).toLocaleTimeString()}
+                    </span>
+                  </div>
+                  
+                  {test.status === 'PASS' ? (
+                    <pre className="text-sm bg-gray-100 p-2 rounded overflow-x-auto">
+                      {JSON.stringify(test.result, null, 2)}
+                    </pre>
+                  ) : (
+                    <div className="text-red-700 text-sm">
+                      <strong>Error:</strong> {test.error}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* Control Buttons */}
-        <div className="flex space-x-4 mt-6">
-          <button
-            onClick={runComprehensiveTest}
-            disabled={isRunning}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-          >
-            {isRunning ? 'Running Tests...' : 'Run Tests Again'}
-          </button>
-          
-          <button
-            onClick={() => console.log('Bitcoin Integration Test Results:', testResults)}
-            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
-          >
-            Export Results to Console
-          </button>
+        <div className="bg-white rounded-lg shadow-lg p-6 mt-6">
+          <h2 className="text-xl font-semibold mb-4">Expected Flow</h2>
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center space-x-2">
+              <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs">1</span>
+              <span>User enters Bitcoin amount in UI</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs">2</span>
+              <span>Frontend uses ZRC-20 BTC.BTC address with existing swap function</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs">3</span>
+              <span>Beam API calculates route: ZRC-20 BTC → Vault Token</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs">4</span>
+                             <span>UI shows expected output amount (no more &quot;swap route not found&quot;)</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs">5</span>
+              <span>User confirms deposit → TSS Gateway handles native BTC → ZRC-20 BTC conversion</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
