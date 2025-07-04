@@ -4,7 +4,7 @@ import Image from "next/image";
 
 const AboutContainer = ({}) => {
   return (
-    <div className="font-gotham flex flex-col justify-center items-center  px-4">
+    <div className="font-gotham flex flex-col justify-center items-center">
       <div className="text-center max-w-6xl mx-auto">
         <p className="text-[20px] text-white leading-tight mb-4">
           Simplifying Your DeFi Investments

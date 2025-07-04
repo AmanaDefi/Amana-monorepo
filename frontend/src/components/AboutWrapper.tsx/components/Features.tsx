@@ -44,7 +44,7 @@ const FeatureCard: FC<FeatureCardProps> = ({
   isLast = false,
 }) => (
   <div
-    className={`rounded-[24px] px-10 py-8 before-gradient-border flex flex-col max-w-[708px] ${!isLast ? "mr-4" : ""}`}
+    className={`rounded-[24px] px-10 py-8 before-gradient-border flex flex-col max-w-[708px]`}
   >
     <Image src={image} alt={alt} width={64} height={64} />
     <h3 className="text-lg font-bold mt-8">{title}</h3>

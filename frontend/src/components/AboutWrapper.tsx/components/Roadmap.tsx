@@ -56,12 +56,12 @@ const Roadmap = () => {
 
   return (
     <section className="mt-[484px]">
-      <div className="flex flex-row gap-3 items-start">
+      <div className="flex flex-row justify-between items-start">
         {ROADMAP_DATA.map((item, index) => (
-          <div key={index} className="relative max-w-[360px] w-[360px]">
+          <div key={index} className="relative max-w-[360px]">
             {item.isHighlighted ? (
               <div
-                className="absolute top-[-218px] left-0 w-[360px] h-[748px] rounded-[24px] pt-[22px] pl-4 z-10"
+                className="absolute top-[-218px] left-0 max-w-[360px] h-[748px] rounded-[24px] pt-[22px] pl-4 z-10"
                 style={{
                   background:
                     "linear-gradient(180deg, #101219 0%, #1b46e0 100%)",
