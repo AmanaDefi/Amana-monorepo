@@ -14,14 +14,14 @@ import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { useWallet } from "@solana/wallet-adapter-react";
 
 const MobileAllWallets = () => {
-  const { step, successAuth, closeAll } = useAuthStore();
+  const { step, successAuth, closeAll, chosenChain } = useAuthStore();
   const {
     step: fundWalletStep,
     setStep,
     setActiveConnector,
     setWalletAddress,
   } = useFundWalletStore();
-  
+
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const checkIsMobile = () => {
@@ -38,7 +38,7 @@ const MobileAllWallets = () => {
   const {wallets} = useWallets();
   const activeAccount = wallets[0];
   const { logout } = usePrivy();
-  const { disconnect, publicKey } = useWallet();
+  const { disconnect, publicKey, connected } = useWallet();
 
   const {
     connectors,
@@ -47,13 +47,13 @@ const MobileAllWallets = () => {
   } = useConnect({
     mutation: {
       onSuccess: (result) => {
+        if (connected) {
+          disconnect();
+        }
         if (fundWalletStep === "connectWallet") {
           setWalletAddress(result.accounts[0]);
           localStorage.removeItem("connectorId");
           return fundWalletConnect();
-        }
-        if (publicKey) {
-          disconnect();
         }
         return successAuth(walletAddress, activeAccount || undefined, true);
       },
