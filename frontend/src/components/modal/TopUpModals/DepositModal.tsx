@@ -15,6 +15,7 @@ import { useState } from "react";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import { Token } from "@/types/types";
 import { useWallets } from "@privy-io/react-auth";
+import { useWallet } from "@solana/wallet-adapter-react";
 
 export const Deposit = () => {
   const {
@@ -35,6 +36,7 @@ export const Deposit = () => {
 
   const { wallets } = useWallets();
   const activeWallet = wallets[0];
+  const { connected, disconnect } = useWallet();
 
   const handleSelectChain = (chain: Chain) => {
     setChain(chain);
@@ -50,7 +52,12 @@ export const Deposit = () => {
   };
 
   const handleClose = async () => {
-    await activeConnector?.disconnect();
+    if (connected) {
+      disconnect();
+    }
+    if (activeConnector) {
+      await activeConnector?.disconnect();
+    }
     closeAll();
   };
 

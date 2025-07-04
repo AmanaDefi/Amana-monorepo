@@ -3,6 +3,7 @@ import { ChooseBuyWith } from "./TopUpModals/ChooseBuyWith";
 import { Deposit } from "./TopUpModals/DepositModal";
 import { TopUpChainsModal } from "./TopUpModals/components/ChainsModal";
 import AllWAllets from "./allWallets/AllWallets";
+import ConnectChosenChain from "./connectChosenChainWallet/ConnectChosenChainWalletModal";
 import MobileAllWallets from "./mobile/MobileAllWalletsModal";
 import MobileOptionsModalA from "./mobile/MobileOptionsModalA";
 import MobileOptionsModalB from "./mobile/MobileOptionsModalB";
@@ -41,6 +42,7 @@ export const AppModals = () => {
       <ReceiveModal />
       <Send />
       <TopUpChainsModal />
+      <ConnectChosenChain />
     </>
   );
 };

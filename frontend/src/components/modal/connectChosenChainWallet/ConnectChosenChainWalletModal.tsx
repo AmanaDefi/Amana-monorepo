@@ -18,11 +18,13 @@ import {
 } from "@solana/wallet-adapter-base";
 import { ConnectorIcon } from "../allWallets/components/ConnectorIcon";
 import { useMultiChain } from "@/providers/MultiChainProvider";
+import { CHAIN_ID } from "@/constants/chainConfig";
 
 const ConnectChosenChain = () => {
-  const { selectedChain } = useMultiChain();
+  const { selectedChain, activeChain, connectSolana } =
+    useMultiChain();
 
-  const { step, successAuth, closeAll } = useAuthStore();
+  const { step, successAuth, closeAll, chosenChain } = useAuthStore();
   const {
     step: fundWalletStep,
     setStep,
@@ -39,6 +41,8 @@ const ConnectChosenChain = () => {
     wallets: solanaAdapters,
     select,
     connect: solanaConnect,
+    disconnect,
+    publicKey,
   } = useWallet();
 
   const fundWalletConnect = () => {
@@ -51,11 +55,14 @@ const ConnectChosenChain = () => {
     isPending: isConnectingWallet,
   } = useConnect({
     mutation: {
-      onSuccess: (result) => {
-        if (fundWalletStep === "connectWallet") {
+      onSuccess: async (result) => {
+        if (fundWalletStep === "reconnectChain") {
           setWalletAddress(result.accounts[0]);
           localStorage.removeItem("connectorId");
           return fundWalletConnect();
+        }
+        if (step === "connectInChosenChain" && publicKey) {
+          disconnect();
         }
         return successAuth(null, activeAccount || undefined, true);
       },
@@ -77,10 +84,12 @@ const ConnectChosenChain = () => {
     }
     setActiveConnector(connector);
     localStorage.setItem("connectorId", connector.id);
+
     connect(
       {
         connector,
-        chainId: fundWalletStep === "connectWallet" ? chain.id : undefined,
+        chainId:
+          fundWalletStep === "reconnectChain" ? chain.id : activeChain?.id,
       },
       {
         onError: (error) => {
@@ -121,21 +130,15 @@ const ConnectChosenChain = () => {
     .map((adapter) => adapter.adapter);
 
   const handleSolanaConnect = async (connector: Adapter) => {
-    if (
-      activeAccount?.address &&
-      fundWalletStep !== "reconnectChain"
-    ) {
-      const confirmResult = confirm(
-        "Your EVM wallet will be disconnected",
-      );
-      if (!confirmResult) return;
-
-      await logout();
-    }
     setActiveConnector(connector);
     try {
+      try {
+        await connectSolana();
+      } catch (e) {
+        console.log("connect solana error");
+      }
       select(connector.name);
-      await solanaConnect();
+      solanaConnect();
     } catch (error) {
       console.log(error);
 
@@ -148,13 +151,19 @@ const ConnectChosenChain = () => {
     }
   };
 
+  const shouldShowEvnWallets =
+    (selectedChain === "evm" &&
+      !activeAccount?.address &&
+      activeChain?.id !== CHAIN_ID["solana"]) ||
+    activeChain?.id !== CHAIN_ID["solana"];
+
   return (
     <Modal
       isOpen={
         step === "connectInChosenChain" || fundWalletStep === "reconnectChain"
       }
       onClose={handleClose}
-      paddingClass="pt-[28px] w-full pl-[57px] pb-10 pr-[24px] flex"
+      paddingClass="pt-[90px] w-full pl-[57px] pb-10 pr-[24px] flex max-h-[80%] md:max-h-[700px]"
       roundedClass="rounded-[16px]"
       maxWidth="max-w-[526px]"
       customCloseButton={
@@ -167,16 +176,16 @@ const ConnectChosenChain = () => {
         </button>
       }
     >
-      <div className="flex flex-col overflow-hidden gap-8">
+      <div className="flex w-full items-center flex-col overflow-hidden gap-8">
         <p className="text-base text-white">
           Connect your wallet in chosen chain
         </p>
         <div
           style={{ scrollbarColor: "#1B46E0 transparent" }}
-          className="overflow-auto h-full mt-6 flex-1 flex flex-col "
+          className="overflow-auto h-full w-[260px] mt-6 flex-1 flex flex-col "
         >
-          {selectedChain === "evm" ? (
-            <div className="flex flex-col gap-4 min-h-fit">
+          {shouldShowEvnWallets ? (
+            <div className="flex flex-col gap-4 min-h-fit ">
               {connectors.map((connector) => (
                 <ModalButton
                   variant="allWallets"

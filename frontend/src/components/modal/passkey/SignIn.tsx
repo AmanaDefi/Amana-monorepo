@@ -7,14 +7,18 @@ import Button from "@/components/common/Button";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import ProfileDropdownIcon from "@/components/svg/ProfileDropdownIcon";
 import { useSignupWithPasskey, useCreateWallet } from "@privy-io/react-auth";
+import { useWallet } from "@solana/wallet-adapter-react";
 
 export const SignIn = () => {
   const { step, closeAll, openStep, setError, successAuth } = useAuthStore();
   const { createWallet } = useCreateWallet();
-
+  const { disconnect, publicKey } = useWallet();
   const { signupWithPasskey, state } = useSignupWithPasskey({
     onComplete: async (result) => {
       await createWallet();
+      if (publicKey) {
+        disconnect();
+      }
       if (!result.wasAlreadyAuthenticated) {
         successAuth();
       }
