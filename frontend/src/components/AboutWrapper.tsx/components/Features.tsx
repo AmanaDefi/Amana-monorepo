@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { FC } from "react";
+import { motion } from "framer-motion";
 
 interface Feature {
   id: string;
@@ -15,6 +16,7 @@ interface FeatureCardProps {
   title: string;
   description: string;
   isLast?: boolean;
+  index: number;
 }
 
 const FEATURES_DATA: Feature[] = [
@@ -42,28 +44,48 @@ const FeatureCard: FC<FeatureCardProps> = ({
   title,
   description,
   isLast = false,
+  index,
 }) => (
-  <div
+  <motion.div
+    initial={{ opacity: 0, y: 50 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.6, delay: index * 0.2 }}
+    viewport={{ once: true }}
+    whileHover={{ y: -5 }}
     className={`rounded-[24px] px-10 py-8 before-gradient-border flex flex-col max-w-[708px]`}
   >
-    <Image src={image} alt={alt} width={64} height={64} />
+    <motion.div
+      initial={{ scale: 0, rotate: -180 }}
+      whileInView={{ scale: 1, rotate: 0 }}
+      transition={{ duration: 0.6, delay: index * 0.2 + 0.3 }}
+      viewport={{ once: true }}
+    >
+      <Image src={image} alt={alt} width={64} height={64} />
+    </motion.div>
     <h3 className="text-lg font-bold mt-8">{title}</h3>
     <p className="text-sm font-normal mt-2">{description}</p>
-  </div>
+  </motion.div>
 );
 
 const Features: FC = () => {
   return (
     <section className="flex flex-col justify-center mt-[140px]">
-      <h2 className="text-white text-[48px] leading-[-0.04em] text-center font-bold mb-10">
+      <motion.h2
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+        viewport={{ once: true }}
+        className="text-white text-[48px] leading-[-0.04em] text-center font-bold mb-10"
+      >
         How Amana Works
-      </h2>
+      </motion.h2>
       <div className="flex flex-row w-full justify-between">
         {FEATURES_DATA.map((feature, index) => (
           <FeatureCard
             key={feature.id}
             {...feature}
             isLast={index === FEATURES_DATA.length - 1}
+            index={index}
           />
         ))}
       </div>

@@ -3,6 +3,7 @@ import GradientAssetIcon from "@/components/svg/about/GradientAssetIcon";
 import GradientLightingIcon from "@/components/svg/about/GradientLightingIcon";
 import GradientWithdrawIcon from "@/components/svg/about/GradientWithdrawIcon";
 import ArrowIcon from "@/components/svg/about/Arrow";
+import { motion } from "framer-motion";
 
 interface Advice {
   title: string;
@@ -40,13 +41,26 @@ const Advice = () => {
 
   return (
     <section className="mt-[150px]">
-      <h1 className="text-white text-[48px] leading-[-0.04em] text-center font-bold mb-16">
+      <motion.h1
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+        viewport={{ once: true }}
+        className="text-white text-[48px] leading-[-0.04em] text-center font-bold mb-16"
+      >
         How to Use Amana
-      </h1>
+      </motion.h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 mx-auto">
         {ADVICE_DATA.map((advice, index) => (
-          <div key={index} className="relative">
+          <motion.div
+            key={index}
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: index * 0.1 }}
+            viewport={{ once: true }}
+            className="relative"
+          >
             <div
               className="absolute -top-12 left-1 text-[48px] font-normal "
               style={{
@@ -60,7 +74,11 @@ const Advice = () => {
               {String(index + 1).padStart(2, "0")}
             </div>
 
-            <div className="absolute z-10 bg-[#14171F] rounded-[24px] h-[300px] pl-6 pt-[35px] pr-4 pb-6 before-gradient-border max-w-[350px]">
+            <motion.div
+              whileHover={{ y: -5 }}
+              transition={{ duration: 0.3 }}
+              className="absolute z-10 bg-[#14171F] rounded-[24px] h-[300px] pl-6 pt-[35px] pr-4 pb-6 before-gradient-border max-w-[350px]"
+            >
               <div className="absolute top-4 right-4">
                 <ArrowIcon width="24" height="24" />
               </div>
@@ -85,8 +103,8 @@ const Advice = () => {
               <p className="text-white text-sm font-normal leading-relaxed w-full max-w-[257px]">
                 {advice.description}
               </p>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         ))}
       </div>
     </section>

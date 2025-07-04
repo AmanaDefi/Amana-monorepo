@@ -1,5 +1,6 @@
 import XLogo from "@public/logo/x.svg";
 import LinkedInLogo from "@public/logo/linkedIn.svg";
+import { motion } from "framer-motion";
 
 const teamData = [
   {
@@ -47,25 +48,42 @@ const teamData = [
 const Team = ({}) => {
   return (
     <section className="mt-[364px]">
-      <h1 className="text-white text-[48px] leading-[-0.04em] text-center font-bold mb-10">
+      <motion.h1
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+        viewport={{ once: true }}
+        className="text-white text-[48px] leading-[-0.04em] text-center font-bold mb-10"
+      >
         Meet Our Team
-      </h1>
+      </motion.h1>
 
       <div className="container px-4 flex flex-col justify-center items-center">
         {/* First row - 2 members */}
         <div className="flex justify-between w-full max-w-[1034px] mb-10 items-center">
-          {teamData.slice(0, 2).map((member) => (
-            <div
+          {teamData.slice(0, 2).map((member, index) => (
+            <motion.div
               key={member.id}
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: index * 0.2 }}
+              viewport={{ once: true }}
+              whileHover={{ y: -10 }}
               className="rounded-[24px] px-7 py-10 w-[469px] h-[516px] shadow-lg bg-[#0D1117] text-center"
             >
-              <div className="relative w-[413px] h-[356px] rounded-[16px] overflow-hidden mb-6 mx-auto">
+              <motion.div
+                initial={{ scale: 0.8 }}
+                whileInView={{ scale: 1 }}
+                transition={{ duration: 0.5, delay: index * 0.2 + 0.3 }}
+                viewport={{ once: true }}
+                className="relative w-[413px] h-[356px] rounded-[16px] overflow-hidden mb-6 mx-auto"
+              >
                 <img
                   src={member.image}
                   alt={member.name}
                   className="w-full h-full object-cover"
                 />
-              </div>
+              </motion.div>
 
               <div className="flex flex-row justify-between items-center">
                 <div className="flex flex-col gap-2 items-start justify-start">
@@ -78,39 +96,54 @@ const Team = ({}) => {
                 </div>
 
                 <div className="flex justify-center gap-3">
-                  <a
+                  <motion.a
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
                     href={member.linkedin}
                     className="w-10 h-10 bg-[#1B46E0] rounded-[2000px] flex items-center justify-center hover:bg-blue-700 transition-colors"
                   >
                     <LinkedInLogo width="21" height="20" />
-                  </a>
+                  </motion.a>
 
-                  <a
+                  <motion.a
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
                     href={member.twitter}
                     className="w-10 h-10 bg-[#1B46E0] rounded-[2000px] flex items-center justify-center hover:bg-blue-700 transition-colors"
                   >
                     <XLogo width="21" height="20" />
-                  </a>
+                  </motion.a>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
 
         {/* Second row - 3 members */}
         <div className="flex justify-between max-w-[1431px] w-full">
-          {teamData.slice(2, 5).map((member) => (
-            <div
+          {teamData.slice(2, 5).map((member, index) => (
+            <motion.div
               key={member.id}
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: index * 0.2 + 0.4 }}
+              viewport={{ once: true }}
+              whileHover={{ y: -10 }}
               className="rounded-[24px] px-7 py-10 w-[469px] h-[516px] shadow-lg bg-[#0D1117] text-center"
             >
-              <div className="relative w-[413px] h-[356px] rounded-[16px] overflow-hidden mb-6 mx-auto">
+              <motion.div
+                initial={{ scale: 0.8 }}
+                whileInView={{ scale: 1 }}
+                transition={{ duration: 0.5, delay: index * 0.2 + 0.7 }}
+                viewport={{ once: true }}
+                className="relative w-[413px] h-[356px] rounded-[16px] overflow-hidden mb-6 mx-auto"
+              >
                 <img
                   src={member.image}
                   alt={member.name}
                   className="w-full h-full object-cover"
                 />
-              </div>
+              </motion.div>
 
               <div className="flex flex-row justify-between items-center">
                 <div className="flex flex-col gap-2 items-start justify-start">
@@ -123,22 +156,26 @@ const Team = ({}) => {
                 </div>
 
                 <div className="flex justify-center gap-3">
-                  <a
+                  <motion.a
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
                     href={member.linkedin}
                     className="w-10 h-10 bg-[#1B46E0] rounded-[2000px] flex items-center justify-center hover:bg-blue-700 transition-colors"
                   >
                     <LinkedInLogo width="21" height="20" />
-                  </a>
+                  </motion.a>
 
-                  <a
+                  <motion.a
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
                     href={member.twitter}
                     className="w-10 h-10 bg-[#1B46E0] rounded-[2000px] flex items-center justify-center hover:bg-blue-700 transition-colors"
                   >
                     <XLogo width="21" height="20" />
-                  </a>
+                  </motion.a>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>

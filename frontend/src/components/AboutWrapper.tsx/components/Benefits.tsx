@@ -7,6 +7,7 @@ import RecoveryIcon from "@/components/svg/about/RecoveryIcon";
 import WalletIcon from "@/components/svg/about/WalletIcon";
 import RebalancingIcon from "@/components/svg/about/RebalancingIcon";
 import SmartContractsIcon from "@/components/svg/about/SmartContractsIcon";
+import { motion } from "framer-motion";
 
 interface Benefit {
   id: string;
@@ -83,14 +84,21 @@ interface BenefitCardProps {
   title: string;
   icon: React.ReactNode;
   hasGradientBorder?: boolean;
+  index: number;
 }
 
 const BenefitCard = ({
   title,
   icon,
   hasGradientBorder = false,
+  index,
 }: BenefitCardProps) => (
-  <div
+  <motion.div
+    initial={{ opacity: 0, y: 30 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay: index * 0.1 }}
+    viewport={{ once: true }}
+    whileHover={{ scale: 1.05 }}
     className={`
       flex items-center gap-3 px-[23px] py-4 
       rounded-[2000px] w-fit h-[56px]
@@ -103,7 +111,7 @@ const BenefitCard = ({
   >
     {icon}
     <span className="whitespace-nowrap">{title}</span>
-  </div>
+  </motion.div>
 );
 
 const Benefits = () => {
@@ -112,29 +120,37 @@ const Benefits = () => {
 
   return (
     <section className="mt-[109px]">
-      <h1 className="text-white text-[48px] leading-[-0.04em] text-center font-bold mb-16">
+      <motion.h1
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+        viewport={{ once: true }}
+        className="text-white text-[48px] leading-[-0.04em] text-center font-bold mb-16"
+      >
         Amana Benefits
-      </h1>
+      </motion.h1>
 
       <div className="flex flex-col gap-8 max-w-7xl mx-auto">
         <div className="flex flex-wrap justify-center gap-8">
-          {firstRow.map((benefit) => (
+          {firstRow.map((benefit, index) => (
             <BenefitCard
               key={benefit.id}
               title={benefit.title}
               icon={benefit.icon}
               hasGradientBorder={benefit.hasGradientBorder}
+              index={index}
             />
           ))}
         </div>
 
         <div className="flex flex-wrap justify-center gap-8">
-          {secondRow.map((benefit) => (
+          {secondRow.map((benefit, index) => (
             <BenefitCard
               key={benefit.id}
               title={benefit.title}
               icon={benefit.icon}
               hasGradientBorder={benefit.hasGradientBorder}
+              index={index + 5}
             />
           ))}
         </div>

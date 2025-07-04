@@ -1,4 +1,5 @@
 import RoadmapIcon from "@/components/svg/about/RoadmapIcon";
+import { motion } from "framer-motion";
 
 interface RoadmapItem {
   quarter: string;
@@ -58,14 +59,31 @@ const Roadmap = () => {
 
   return (
     <section className="mt-[275px] relative">
-      <div className="relative z-20 right-1">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.8 }}
+        viewport={{ once: true }}
+        className="relative z-20 right-1"
+      >
         <RoadmapIcon />
-      </div>
+      </motion.div>
       <div className="flex flex-row justify-between items-start">
         {ROADMAP_DATA.map((item, index) => (
-          <div key={index} className="relative max-w-[360px]">
+          <motion.div
+            key={index}
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: index * 0.15 }}
+            viewport={{ once: true }}
+            className="relative max-w-[360px]"
+          >
             {item.isHighlighted ? (
-              <div
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.8, delay: 0.3 }}
+                viewport={{ once: true }}
                 className="absolute top-[-220px] left-0 max-w-[360px] h-[748px] rounded-[24px] pt-[22px] pl-4 z-10"
                 style={{
                   background:
@@ -103,16 +121,23 @@ const Roadmap = () => {
 
                 <ul className="flex flex-col gap-8">
                   {item.tasks.map((task, taskIndex) => (
-                    <li
+                    <motion.li
                       key={taskIndex}
+                      initial={{ opacity: 0, x: -20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      transition={{
+                        duration: 0.4,
+                        delay: 0.6 + taskIndex * 0.1,
+                      }}
+                      viewport={{ once: true }}
                       className="font-normal text-[16px] text-[#9A9CB3] flex items-start gap-3"
                     >
                       <div className="w-[10px] h-[10px] bg-white rounded-full mt-1 flex-shrink-0"></div>
                       <span>{task}</span>
-                    </li>
+                    </motion.li>
                   ))}
                 </ul>
-              </div>
+              </motion.div>
             ) : null}
 
             <div>
@@ -135,17 +160,21 @@ const Roadmap = () => {
 
               <ul className="flex flex-col gap-8">
                 {item.tasks.map((task, taskIndex) => (
-                  <li
+                  <motion.li
                     key={taskIndex}
+                    initial={{ opacity: 0, x: -10 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.4, delay: 0.3 + taskIndex * 0.1 }}
+                    viewport={{ once: true }}
                     className="font-normal text-[16px] text-[#9A9CB3] flex items-start gap-3"
                   >
                     <div className="w-[10px] h-[10px] bg-white rounded-full mt-1 flex-shrink-0"></div>
                     <span>{task}</span>
-                  </li>
+                  </motion.li>
                 ))}
               </ul>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
     </section>
