@@ -35,6 +35,9 @@ export interface VaultData {
   depositFeePaidFromGasTank: boolean;
   minDeposit?: number; // Minimum deposit amount in USD
   maxWithdraw?: number; // Maximum instant withdrawal amount in USD
+  protocolPoints?: number; // Points earned in this vault toward protocol rewards
+  protocolPointsDescription?: string | null; // Description of the protocol points
+  cooldownPeriod?: number; // Cooldown period in days before funds can be withdrawn
   inputToken: Token;
   strategyNetwork?: string;
   protocol: {

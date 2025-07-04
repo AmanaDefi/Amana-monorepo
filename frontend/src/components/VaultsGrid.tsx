@@ -14,7 +14,6 @@ import { useMultiChain } from '@/providers/MultiChainProvider';
 import { useTokenPriceBySymbol } from '@/hooks/hooks';
 import PointsIcon from "@/components/svg/PointsIcon";
 import ResponsiveTooltip from "@/components/common/Tooltip";
-import { getPointsInfo } from "@/utils/helpers";
 
 import { useLayoutStore } from "@/store/store";
 // import { formatTokenBalance } from '@/utils/utils';
@@ -585,7 +584,8 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                     <p className="text-cyan-400 font-bold text-xl">
                       {`${(Number(vaultAPY?.APY7d || 0) * 100).toFixed(2)}%`}
                     </p>
-                      {getPointsInfo(vault.protocol.name).displayPoints && (
+                      {/* Points Icon and Tooltip - using vault data from subgraph */}
+                      {vault.protocolPoints && vault.protocolPoints > 0 && (
                         <div className="flex items-center">
                           <button
                             id={`points-tooltip-${vault.id}`}
@@ -599,19 +599,18 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                               <div className="w-48">
                                 <div className="flex justify-between items-center mb-2">
                                   <span className="text-gray-300 text-sm">
-                                    {getPointsInfo(vault.protocol.name).nativeYield}
+                                    {vault.protocol.name} native yield
                                   </span>
                                   <span className="text-cyan-400 font-medium">
-                                    { `${(Number(vaultAPY?.APY7d || 0) * 100).toFixed(2)}%`
-                                    }
+                                    {`${(Number(vaultAPY?.APY7d || 0) * 100).toFixed(2)}%`}
                                   </span>
                                 </div>
                                 <div className="flex justify-between items-center">
                                   <span className="text-gray-300 text-sm">
-                                    {vault.protocol.name === 'YieldFi' ? '+ YieldCrumbs' : '+ Aegis Points'}
+                                    {vault.protocolPointsDescription || `+ ${vault.protocol.name} Points`}
                                   </span>
                                   <span className="text-white font-medium">
-                                    {getPointsInfo(vault.protocol.name).points}
+                                    {vault.protocolPoints} pts/$/day
                                   </span>
                                 </div>
                               </div>

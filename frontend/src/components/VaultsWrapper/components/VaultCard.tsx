@@ -113,7 +113,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
             />
             <div className="flex flex-col gap-1 flex-auto min-w-0">
               <div className="flex flex-row gap-2 items-baseline">
-                <p className="text-white font-[600] md:text-lg leading-5 -tracking-1">
+                <p className="text-white font-[600] md:text-lg leading-5 -tracking-1 whitespace-nowrap">
                   {vault.name.replace("Pool", "").replace("Lend", "")}
                 </p>
                 <p className="text-white text-sm leading-4 whitespace-nowrap overflow-hidden text-ellipsis flex-shrink min-w-0">

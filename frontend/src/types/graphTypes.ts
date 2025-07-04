@@ -32,6 +32,11 @@ export interface GraphVault {
   apy7d: string;
   apy30d?: string;
   riskLevel?: number;
+  protocolPoints?: number;
+  protocolPointsDescription?: string;
+  cooldownPeriod?: number;
+  minDeposit?: number;
+  maxWithdraw?: number;
 }
 
 export interface GraphUserPosition {
