@@ -24,23 +24,18 @@ export const formatUSDValue = (value: number): string => {
   return formatCurrency(Math.max(0, value));
 };
 
-// Determine if input loader should be shown
 export const shouldShowInputLoader = (
   loadingOutputToken: boolean | undefined,
   isDeposit: boolean,
   isOutput: boolean | undefined,
 ): boolean => {
-  return (
-    !!loadingOutputToken &&
-    ((!isDeposit && !isOutput) || (isDeposit && !!isOutput))
-  );
+  return false;
 };
 
-// Determine if USD loader should be shown
 export const shouldShowUSDLoader = (
   loadingOutputToken: boolean | undefined,
   isDeposit: boolean,
   isOutput: boolean | undefined,
 ): boolean => {
-  return !!loadingOutputToken && ((!isDeposit && !isOutput) || !!isOutput);
+  return !!loadingOutputToken && !!isOutput;
 };

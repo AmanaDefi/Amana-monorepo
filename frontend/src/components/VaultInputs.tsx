@@ -924,46 +924,46 @@ export default function VaultInputs({
       setOutputBoxErrorMessage("");
       return;
     }
-    if (!inputBalance.formatted || Number(inputBalance.formatted) <= 0) {
+    if (
+      !debouncedInputBalance.formatted ||
+      Number(debouncedInputBalance.formatted) <= 0
+    ) {
       setConversionOutput(initialConversionOutput);
-      setDebouncedInputBalance(inputBalance);
       setIsSlippageExceedingLimit(false);
       setOutputBoxErrorMessage("");
       return;
     }
 
+    const isGasFeeSpecialCase =
+      isDeposit &&
+      !vaultData.depositFeePaidFromGasTank &&
+      debouncedInputBalance.value > 0n &&
+      Number(
+        conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, "") ??
+          0,
+      ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, "") ?? 0);
     if (
-      inputBalance.value > 0n &&
-      Number(conversionOutput.outputAmountFormatted) == 0 &&
-      !(
-        isDeposit &&
-        !vaultData.depositFeePaidFromGasTank &&
-        debouncedInputBalance.value > 0n &&
-        Number(
-          conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, "") ??
-            0,
-        ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, "") ?? 0)
-      )
+      debouncedInputBalance.value > 0n &&
+      Number(conversionOutput.outputAmountFormatted) === 0 &&
+      !isGasFeeSpecialCase &&
+      !loadingOutputToken && 
+      conversionOutput.outputAmountFormatted !== "0.00" 
     ) {
-      console.log(
-        "Swap route not found",
-        inputBalance.value,
-        Number(conversionOutput.outputAmountFormatted),
-
+      console.log("Swap route not found - setting error message", {
+        debouncedInputBalance: debouncedInputBalance.value.toString(),
+        outputAmount: conversionOutput.outputAmountFormatted,
         isDeposit,
-        !vaultData.depositFeePaidFromGasTank,
-        debouncedInputBalance,
-        Number(
-          conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, "") ??
-            0,
-        ),
-        Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, "") ?? 0),
-      );
+        isGasFeeSpecialCase,
+        loadingOutputToken,
+      });
       setOutputBoxErrorMessage("Swap route not found");
+    } else if (!loadingOutputToken) {
+      setOutputBoxErrorMessage("");
     }
   }, [
-    conversionOutput,
-    inputBalance,
+    conversionOutput.outputAmountFormatted, 
+    conversionOutput.inputAmountInUSDFormatted,
+    conversionOutput.gasFeeInUSD,
     debouncedInputBalance,
     initialConversionOutput,
     isDeposit,
@@ -1017,6 +1017,7 @@ export default function VaultInputs({
     if (!inputBalance.formatted || Number(inputBalance.formatted) <= 0) {
       setConversionOutput(initialConversionOutput);
       setDebouncedInputBalance(inputBalance);
+      setLoadingOutputToken(false); 
       return;
     }
 
@@ -1046,6 +1047,7 @@ export default function VaultInputs({
     }
 
     setLoadingOutputToken(true);
+
     if (isDeposit) getDepositOutputAmount(debouncedInputBalance.value);
     else getWithdrawOutputAmount(debouncedInputBalance.value);
   }, [
@@ -1116,6 +1118,11 @@ export default function VaultInputs({
       return true;
     }
 
+    if (loadingOutputToken) {
+      setIsButtonDisabled(true);
+      return true;
+    }
+
     if (errorMessage || outputBoxErrorMessage) {
       setIsButtonDisabled(true);
       return true;
@@ -1146,11 +1153,34 @@ export default function VaultInputs({
       setIsButtonDisabled(true);
       return true;
     }
+    if (
+      inputBalance.value > 0n &&
+      conversionOutput.outputAmountFormatted &&
+      Number(conversionOutput.outputAmountFormatted) === 0 &&
+      !(
+        isDeposit &&
+        !vaultData.depositFeePaidFromGasTank &&
+        debouncedInputBalance.value > 0n &&
+        Number(
+          conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, "") ??
+            0,
+        ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, "") ?? 0)
+      )
+    ) {
+      setIsButtonDisabled(true);
+      return true;
+    }
+
+    if (isSlippageExceedingLimit) {
+      setIsButtonDisabled(true);
+      return true;
+    }
     setIsButtonDisabled(false);
     return false;
   }, [
     inputBalance.formatted,
     inputBalance.value,
+    loadingOutputToken,
     errorMessage,
     outputBoxErrorMessage,
     isDeposit,
@@ -1160,6 +1190,8 @@ export default function VaultInputs({
     debouncedInputBalance.value,
     conversionOutput.inputAmountInUSDFormatted,
     conversionOutput.gasFeeInUSD,
+    conversionOutput.outputAmountFormatted,
+    isSlippageExceedingLimit,
     setIsButtonDisabled,
   ]);
   // 🧪 TESTING: Log final values being displayed
