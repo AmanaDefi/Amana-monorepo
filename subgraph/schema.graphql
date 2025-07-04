@@ -65,6 +65,12 @@ type Vault @entity(immutable: false) {
   "Cooldown period in days before funds can be withdrawn"
   cooldownPeriod: Int
 
+  "Minimum deposit that a user can make"
+  minDeposit: Int
+
+  "Maximum withdrawal that a user can make"
+  maxWithdraw: Int
+
   "Network description"
   networkDescription: String
 
