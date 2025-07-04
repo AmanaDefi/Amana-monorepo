@@ -93,6 +93,7 @@ export type ConversionOutput = {
   gasFeeInETH?: string;
   netDepositToVaultUSD?: string;
   inputAmountInUSDFormatted?: string;
+  slippageAmountInUSDFormatted?: string;
 };
 
 export default function VaultInputs({
@@ -137,7 +138,7 @@ export default function VaultInputs({
     }
   };
 
-  const { setIsButtonDisabled } = useTransactionStore();
+  const { setIsButtonDisabled, setLastDepositInfo } = useTransactionStore();
 
   // Update label when isDeposit prop changes
   useEffect(() => {
@@ -668,6 +669,7 @@ export default function VaultInputs({
       const assetsConversionInUSD =
         (Number(assetsAmount) / 10 ** vaultData.inputToken.decimals) *
         vaultTokenPrice;
+
       const tokenConversionFromWei =
         Number(tokenConversionAmount) / 10 ** (inputToken?.decimals ?? 18);
       const tokenConversionInUSD = tokenConversionFromWei * inputTokenPrice;
@@ -675,6 +677,14 @@ export default function VaultInputs({
       const slippageActualValue = Math.max(
         0,
         100 - (tokenConversionInUSD * 100) / assetsConversionInUSD,
+      );
+
+      const calculatedSlippageUSD =
+        assetsConversionInUSD - tokenConversionInUSD;
+
+      const slippageAmountInUSDFormatted = formatUSDValue(
+        calculatedSlippageUSD,
+
       );
 
       if (inputAmountValue === debouncedInputBalance.value) {
@@ -686,6 +696,7 @@ export default function VaultInputs({
 
         setConversionOutput({
           slippageActualValue: Number(slippageActualValue.toFixed(2)),
+          slippageAmountInUSDFormatted: slippageAmountInUSDFormatted,
           finalConvertedAmountInUSDFormatted: formatCurrency(
             assetsConversionInUSD,
           ).toString(),
@@ -824,9 +835,11 @@ export default function VaultInputs({
       const inputAmountValueInUSD =
         (Number(inputAmountValue) / 10 ** (inputToken?.decimals ?? 18)) *
         inputTokenPrice;
+
       const finalConvertedAmountInUSD =
         (Number(finalConvertedAmount) / 10 ** vaultData.inputToken.decimals) *
         vaultTokenPrice;
+
       const finalConvertedAmountInUSDFormatted = formatCurrency(
         finalConvertedAmountInUSD,
       ).toString();
@@ -918,46 +931,46 @@ export default function VaultInputs({
       setOutputBoxErrorMessage("");
       return;
     }
-    if (!inputBalance.formatted || Number(inputBalance.formatted) <= 0) {
+    if (
+      !debouncedInputBalance.formatted ||
+      Number(debouncedInputBalance.formatted) <= 0
+    ) {
       setConversionOutput(initialConversionOutput);
-      setDebouncedInputBalance(inputBalance);
       setIsSlippageExceedingLimit(false);
       setOutputBoxErrorMessage("");
       return;
     }
 
+    const isGasFeeSpecialCase =
+      isDeposit &&
+      !vaultData.depositFeePaidFromGasTank &&
+      debouncedInputBalance.value > 0n &&
+      Number(
+        conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, "") ??
+          0,
+      ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, "") ?? 0);
     if (
-      inputBalance.value > 0n &&
-      Number(conversionOutput.outputAmountFormatted) == 0 &&
-      !(
-        isDeposit &&
-        !vaultData.depositFeePaidFromGasTank &&
-        debouncedInputBalance.value > 0n &&
-        Number(
-          conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, "") ??
-            0,
-        ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, "") ?? 0)
-      )
+      debouncedInputBalance.value > 0n &&
+      Number(conversionOutput.outputAmountFormatted) === 0 &&
+      !isGasFeeSpecialCase &&
+      !loadingOutputToken && 
+      conversionOutput.outputAmountFormatted !== "0.00" 
     ) {
-      console.log(
-        "Swap route not found",
-        inputBalance.value,
-        Number(conversionOutput.outputAmountFormatted),
-
+      console.log("Swap route not found - setting error message", {
+        debouncedInputBalance: debouncedInputBalance.value.toString(),
+        outputAmount: conversionOutput.outputAmountFormatted,
         isDeposit,
-        !vaultData.depositFeePaidFromGasTank,
-        debouncedInputBalance,
-        Number(
-          conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, "") ??
-            0,
-        ),
-        Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, "") ?? 0),
-      );
+        isGasFeeSpecialCase,
+        loadingOutputToken,
+      });
       setOutputBoxErrorMessage("Swap route not found");
+    } else if (!loadingOutputToken) {
+      setOutputBoxErrorMessage("");
     }
   }, [
-    conversionOutput,
-    inputBalance,
+    conversionOutput.outputAmountFormatted, 
+    conversionOutput.inputAmountInUSDFormatted,
+    conversionOutput.gasFeeInUSD,
     debouncedInputBalance,
     initialConversionOutput,
     isDeposit,
@@ -968,6 +981,13 @@ export default function VaultInputs({
   // Reset input state after transaction completes or fails
   useEffect(() => {
     if (transactionCompleted) {
+      setLastDepositInfo({
+        inputAmount: displayValue,
+        outputAmount: conversionOutput.outputAmountFormatted,
+        inputSymbol: inputToken?.symbol || "",
+        outputSymbol: vaultData.symbol,
+      });
+
       setInputBalance(EMPTY_BALANCE);
       setDisplayValue("0.00");
       setConversionOutput(initialConversionOutput);
@@ -978,6 +998,7 @@ export default function VaultInputs({
       // Reset transactionCompleted to false after processing
       setTimeout(() => {
         setTransactionCompleted(false);
+        setLastDepositInfo(null);
       }, 1000);
     }
   }, [
@@ -985,6 +1006,12 @@ export default function VaultInputs({
     initialConversionOutput,
     setInputBalance,
     vaultData.id,
+    displayValue,
+    conversionOutput.outputAmountFormatted,
+    inputToken?.symbol,
+    vaultData.symbol,
+    setTransactionCompleted,
+    setLastDepositInfo,
   ]);
 
   // Debounce the input balance in order to calculate the output amount
@@ -997,6 +1024,7 @@ export default function VaultInputs({
     if (!inputBalance.formatted || Number(inputBalance.formatted) <= 0) {
       setConversionOutput(initialConversionOutput);
       setDebouncedInputBalance(inputBalance);
+      setLoadingOutputToken(false); 
       return;
     }
 
@@ -1026,6 +1054,7 @@ export default function VaultInputs({
     }
 
     setLoadingOutputToken(true);
+
     if (isDeposit) getDepositOutputAmount(debouncedInputBalance.value);
     else getWithdrawOutputAmount(debouncedInputBalance.value);
   }, [
@@ -1096,6 +1125,11 @@ export default function VaultInputs({
       return true;
     }
 
+    if (loadingOutputToken) {
+      setIsButtonDisabled(true);
+      return true;
+    }
+
     if (errorMessage || outputBoxErrorMessage) {
       setIsButtonDisabled(true);
       return true;
@@ -1126,12 +1160,34 @@ export default function VaultInputs({
       setIsButtonDisabled(true);
       return true;
     }
+    if (
+      inputBalance.value > 0n &&
+      conversionOutput.outputAmountFormatted &&
+      Number(conversionOutput.outputAmountFormatted) === 0 &&
+      !(
+        isDeposit &&
+        !vaultData.depositFeePaidFromGasTank &&
+        debouncedInputBalance.value > 0n &&
+        Number(
+          conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, "") ??
+            0,
+        ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, "") ?? 0)
+      )
+    ) {
+      setIsButtonDisabled(true);
+      return true;
+    }
 
+    if (isSlippageExceedingLimit) {
+      setIsButtonDisabled(true);
+      return true;
+    }
     setIsButtonDisabled(false);
     return false;
   }, [
     inputBalance.formatted,
     inputBalance.value,
+    loadingOutputToken,
     errorMessage,
     outputBoxErrorMessage,
     isDeposit,
@@ -1141,6 +1197,8 @@ export default function VaultInputs({
     debouncedInputBalance.value,
     conversionOutput.inputAmountInUSDFormatted,
     conversionOutput.gasFeeInUSD,
+    conversionOutput.outputAmountFormatted,
+    isSlippageExceedingLimit,
     setIsButtonDisabled,
   ]);
   // 🧪 TESTING: Log final values being displayed
@@ -1363,15 +1421,7 @@ export default function VaultInputs({
               isOutput={false}
               captionText={!isDeposit ? "Output Amount" : ""}
             />
-            <div className="mb-6 md:mb-10">
-              <FeeDisplay
-                isDeposit={isDeposit}
-                vaultData={vaultData}
-                conversionOutput={conversionOutput}
-                debouncedInputBalance={debouncedInputBalance}
-                performanceFee={performanceFee}
-              />
-            </div>
+            <div className="mb-6 md:mb-10"></div>
             <div className="mb-4">
               {selectedChain && onSelectChain && vaultId && !isDeposit && (
                 <ChainSelector

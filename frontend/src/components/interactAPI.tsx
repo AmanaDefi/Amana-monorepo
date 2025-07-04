@@ -1323,7 +1323,9 @@ function Interaction({
         </>
       )}
 
-      {finishedTransaction ? (
+      {finishedTransaction &&
+      (Object.keys(lastTransactionStepFeedback).length > 0 ||
+        Object.keys(transactionStepFeedback).length > 0) ? (
         <Button
           variant="special"
           className="w-full mt-10 md:mt-[47px] !max-h-[48px] md:!max-h-[54px]"

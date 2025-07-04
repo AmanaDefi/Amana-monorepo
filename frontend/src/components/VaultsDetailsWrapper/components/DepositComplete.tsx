@@ -4,26 +4,30 @@ import Button from "@/components/common/Button";
 import DiscordLogo from "@public/logo/discord.svg";
 import { VaultData, Token, Balance } from "@/types/types";
 import Image from "next/image";
-import USDCImage from "@/USDC.png"
+import USDCImage from "@/USDC.png";
 
 interface DepositCompleteProps {
   vaultData: VaultData;
   selectedToken?: Token;
   userVaultBalance?: Balance;
   onClose: () => void;
+  depositedInputAmount: string;
+  depositedOutputAmount: string;
+  depositedInputSymbol: string;
+  depositedOutputSymbol: string;
 }
 
 const DepositComplete = ({
   vaultData,
   selectedToken,
-  userVaultBalance,
   onClose,
+  depositedInputAmount,
+  depositedOutputAmount,
+  depositedInputSymbol,
+  depositedOutputSymbol,
 }: DepositCompleteProps) => {
-
-    const inputTokenSymbol =
-      selectedToken?.symbol || vaultData.inputToken.symbol;
-    const outputTokenSymbol = vaultData.symbol;
-    const depositAmount = userVaultBalance?.formatted || "1,000";
+  const inputTokenSymbol = depositedInputSymbol;
+  const outputTokenSymbol = depositedOutputSymbol;
 
   return (
     <div className="flex flex-col gap-6 font-gotham">
@@ -31,27 +35,27 @@ const DepositComplete = ({
         <div className="flex flex-col mb-10">
           <p className="text-[24px] font-medium mb-1">Deposit complete</p>
           <p className="text-[#4874db] text-[16px] font-normal leading-[1.75] max-w-[440px]">
-            Your deposit and the underlying transaction has been completed
-            successfully. You can see your position in Your Earnings now.
+            Your deposit has been completed successfully. You can see your
+            position in Your Earnings now.
           </p>
         </div>
 
         <div className="bg-[#161C27] border border-[#3E73C4] py-8 px-4 rounded-lg flex justify-between w-full">
           <div className="flex flex-row gap-2">
             <div className="relative w-[62px] h-[62px] flex items-center justify-center overflow-hidden">
-              {selectedToken?.imgURL ? (
+              {selectedToken?.imgURL || vaultData.inputToken.imgURL ? ( // Check if either input or vault has an image
                 <>
                   <div className="absolute top-0 left-0">
                     <img
-                      src={selectedToken.imgURL}
-                      alt={selectedToken.symbol}
+                      src={selectedToken?.imgURL || "/USDC.png"} // Fallback for selectedToken if not passed/has no image
+                      alt={inputTokenSymbol}
                       className="w-10 h-10 object-cover"
                     />
                   </div>
                   <div className="absolute bottom-0 right-0">
                     <img
-                      src="/USDC.png"
-                      alt="USDC"
+                      src={vaultData.inputToken.imgURL || "/USDC.png"} // Use vault's inputToken image as it's the underlying asset of shares
+                      alt={outputTokenSymbol}
                       className="w-10 h-10 object-cover"
                     />
                   </div>
@@ -72,11 +76,12 @@ const DepositComplete = ({
             </div>
           </div>
           <div className="flex flex-col items-end justify-between">
+            {/* Use the new props for display */}
             <p className="text-white-400 font-medium">
-              -{depositAmount} {inputTokenSymbol}
+              -{depositedInputAmount} {inputTokenSymbol}
             </p>
             <p className="text-white-400 font-medium">
-              +{depositAmount} {outputTokenSymbol}
+              +{depositedOutputAmount} {outputTokenSymbol}
             </p>
           </div>
         </div>
@@ -104,7 +109,7 @@ const DepositComplete = ({
             <p>Socials</p>
           </div>
           <p className="text-[16px] font-normal mt-[13px] max-w-[210px]">
-            Subscribe for our social media.
+            Subscribe to our socials.
           </p>
           <Button variant="custom" className="!w-full !max-h-10 !mt-10">
             Check

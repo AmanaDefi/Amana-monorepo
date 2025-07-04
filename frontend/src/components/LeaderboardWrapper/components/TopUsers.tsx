@@ -166,8 +166,8 @@ export default function TopUsers({ users, searchTerm }: TopUsersProps) {
               <span className="line-clamp-1 font-normal text-xs md:text-base text-white truncate min-w-0">
                 {shortAddressForm(item.user_address)}
               </span>
-              <div className="flex-shrink-0 w-3 md:w-4">
-                <CopyTextButton text={item.user_address} />
+              <div className="flex-shrink-0">
+                <CopyTextButton text={item.user_address} size={16} />
               </div>
             </div>
           </motion.div>
