@@ -874,3 +874,55 @@ export const checkAmount = (amountString: string, amount: string) => {
     return amountString.replace(",", ".");
   }
 };
+
+export function getBlockchainExplorerBaseUrl(chainIdentifier: number | string): string | null {
+  switch (chainIdentifier) {
+    case 1: 
+      return 'https://etherscan.io';
+    case 11155111:
+      return 'https://sepolia.etherscan.io';
+    case 56:
+      return 'https://bscscan.com';
+    case 97:
+      return 'https://testnet.bscscan.com';
+    case 8453:
+      return 'https://basescan.org';
+    case 84532: 
+      return 'https://sepolia.basescan.org';
+    case 137: 
+      return 'https://polygonscan.com';
+    case 80002:
+      return 'https://amoy.polygonscan.com';
+    case 42161:
+      return 'https://arbiscan.io';
+    case 421614:
+      return 'https://sepolia.arbiscan.io';
+    case 43114:
+      return 'https://snowtrace.io';
+    case 43113:
+      return 'https://testnet.snowtrace.io';
+
+    case 900:
+      return 'https://solscan.io'; 
+
+    case 7000:
+      return 'https://zetascan.com';
+    case 7001:
+      return 'https://athens.explorer.zetachain.com';
+
+    default:
+      return null; 
+  }
+}
+
+export function formatDateTimeCustom(date: Date): string {
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  const seconds = date.getSeconds().toString().padStart(2, '0');
+
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
