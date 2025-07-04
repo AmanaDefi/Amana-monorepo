@@ -117,10 +117,15 @@ const TokenBalanceItem = ({
   return (
     <motion.button
       onClick={onClick}
+      layout
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.03, duration: 0.2 }}
-      whileHover={{ scale: 1.02 }}
+      transition={{
+        layout: { duration: 0.3, ease: "easeInOut" },
+        delay: index * 0.03,
+        duration: 0.2,
+      }}
+      whileHover={{ scale: 0.98 }}
       whileTap={{ scale: 0.98 }}
       className={`flex items-center gap-3 rounded-[8px] border transition-colors duration-200 p-3 w-full ${
         isSelected
@@ -197,47 +202,49 @@ export const Send = () => {
     return getTokensForChain(activeChain);
   }, [activeChain, getTokensForChain]);
 
-  const filteredTokens = useMemo(() => {
-    if (!tokenSearchQuery) return availableTokens;
-    const query = tokenSearchQuery.toLowerCase();
-    return availableTokens.filter(
-      (token) =>
-        token.symbol.toLowerCase().includes(query) ||
-        token.address.toLowerCase().includes(query),
-    );
-  }, [availableTokens, tokenSearchQuery]);
+  const displayTokens = useMemo(() => {
+    let tokens = availableTokens;
 
-  const tokensWithBalance = useMemo(() => {
-    return filteredTokens.filter((token) => {
-      const tokenKey = `${token.address.toLowerCase()}-${activeChain?.id}`;
-      const tokenData = tokenBalances.get(tokenKey);
+    if (tokenSearchQuery) {
+      const query = tokenSearchQuery.toLowerCase();
+      tokens = tokens.filter(
+        (token) =>
+          token.symbol.toLowerCase().includes(query) ||
+          token.address.toLowerCase().includes(query),
+      );
+    }
 
-      if (tokenData?.isLoading) return true;
+    if (activeWallet?.walletClientType === "privy") {
+      return tokens.filter((token) => {
+        const tokenKey = `${token.address.toLowerCase()}-${activeChain?.id}`;
+        const tokenData = tokenBalances.get(tokenKey);
 
-      return tokenData?.balance && parseFloat(tokenData.balance.formatted) > 0;
-    });
-  }, [filteredTokens, tokenBalances, activeChain]);
+        if (tokenData?.isLoading) return true;
 
-  // Callback to handle balance updates from TokenBalanceItem
-  const handleBalanceUpdate = useCallback(
-    (token: Token, balance: Balance, price: number, isLoading: boolean) => {
-      const tokenKey = `${token.address.toLowerCase()}-${activeChain?.id}`;
-      setTokenBalances((prev) => {
-        const newMap = new Map(prev);
-        newMap.set(tokenKey, { balance, price, isLoading });
-        return newMap;
+        return (
+          tokenData?.balance && parseFloat(tokenData.balance.formatted) > 0
+        );
       });
-    },
-    [activeChain],
-  );
+    }
+    return tokens;
+  }, [
+    availableTokens,
+    tokenSearchQuery,
+    activeWallet?.walletClientType,
+    tokenBalances,
+    activeChain,
+  ]);
 
   const sortedTokens = useMemo(() => {
-    return [...tokensWithBalance].sort((a, b) => {
+    return [...displayTokens].sort((a, b) => {
       const keyA = `${a.address.toLowerCase()}-${activeChain?.id}`;
       const keyB = `${b.address.toLowerCase()}-${activeChain?.id}`;
 
       const dataA = tokenBalances.get(keyA);
       const dataB = tokenBalances.get(keyB);
+
+      if (dataA?.isLoading && !dataB?.isLoading) return -1;
+      if (!dataA?.isLoading && dataB?.isLoading) return 1;
 
       const balanceA =
         dataA?.balance && dataA?.price
@@ -254,7 +261,20 @@ export const Send = () => {
 
       return a.symbol.localeCompare(b.symbol);
     });
-  }, [tokensWithBalance, tokenBalances, activeChain]);
+  }, [displayTokens, tokenBalances, activeChain]);
+
+  // Callback to handle balance updates from TokenBalanceItem
+  const handleBalanceUpdate = useCallback(
+    (token: Token, balance: Balance, price: number, isLoading: boolean) => {
+      const tokenKey = `${token.address.toLowerCase()}-${activeChain?.id}`;
+      setTokenBalances((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(tokenKey, { balance, price, isLoading });
+        return newMap;
+      });
+    },
+    [activeChain],
+  );
 
   const validateAmount = (value: string) => {
     const num = parseFloat(value);
@@ -313,26 +333,17 @@ export const Send = () => {
     setTokenBalances(new Map());
   }, [activeChain, setValue]);
 
-  // auto-select first token with balance
+  // auto-select first token
   useEffect(() => {
     if (sortedTokens.length > 0 && !selectedToken && activeChain) {
-      const tokensWithLoadedBalances = sortedTokens.filter((token) => {
-        const tokenKey = `${token.address.toLowerCase()}-${activeChain.id}`;
-        const tokenData = tokenBalances.get(tokenKey);
-        return tokenData && !tokenData.isLoading;
-      });
-
-      if (tokensWithLoadedBalances.length > 0) {
-        // first token (with highest balance)
-        const bestToken = tokensWithLoadedBalances[0];
-        setSelectedToken(bestToken);
-        setValue("token", bestToken.symbol, { shouldValidate: true });
-      }
+      const firstToken = sortedTokens[0];
+      setSelectedToken(firstToken);
+      setValue("token", firstToken.symbol, { shouldValidate: true });
     } else if (sortedTokens.length === 0) {
       setSelectedToken(null);
       setValue("token", undefined, { shouldValidate: true });
     }
-  }, [sortedTokens, selectedToken, setValue, tokenBalances, activeChain]);
+  }, [sortedTokens, selectedToken, setValue, activeChain]);
 
   const selectedNetworkValue = watch("network") || "";
   const selectedTokenValue = watch("token") || "";
@@ -577,20 +588,38 @@ export const Send = () => {
                     >
                       {tokenSearchQuery
                         ? "No tokens found"
-                        : "No tokens available to send"}
+                        : activeWallet?.walletClientType === "privy"
+                          ? "No tokens with balance available to send"
+                          : "No tokens available for this network"}
                     </motion.div>
                   ) : (
-                    sortedTokens.map((token, index) => (
-                      <TokenBalanceItem
-                        key={`${token.address}-${activeChain?.id}`}
-                        token={token}
-                        selectedChain={activeChain}
-                        isSelected={selectedToken?.address === token.address}
-                        onClick={() => handleTokenSelect(token)}
-                        onBalanceUpdate={handleBalanceUpdate}
-                        index={index}
-                      />
-                    ))
+                    <>
+                      {sortedTokens.map((token, index) => (
+                        <motion.div
+                          key={`${token.address}-${activeChain?.id}`}
+                          layout
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                          transition={{
+                            layout: { duration: 0.3, ease: "easeInOut" },
+                            opacity: { duration: 0.2 },
+                            y: { duration: 0.2 },
+                          }}
+                        >
+                          <TokenBalanceItem
+                            token={token}
+                            selectedChain={activeChain}
+                            isSelected={
+                              selectedToken?.address === token.address
+                            }
+                            onClick={() => handleTokenSelect(token)}
+                            onBalanceUpdate={handleBalanceUpdate}
+                            index={index}
+                          />
+                        </motion.div>
+                      ))}
+                    </>
                   )}
                 </AnimatePresence>
               </div>
