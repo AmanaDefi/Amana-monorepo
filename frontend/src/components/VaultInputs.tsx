@@ -315,6 +315,17 @@ export default function VaultInputs({
     selectedChain: providerSelectedChain 
   } = useMultiChain();
   
+  // Debug log to check provider state (disabled in production)
+  // useEffect(() => {
+  //   console.log("🔍 MultiChain Provider State:", {
+  //     bitcoinWallet: !!bitcoinWallet,
+  //     bitcoinWalletAddress: bitcoinWallet?.address,
+  //     bitcoinBalance: bitcoinBalance?.formatted,
+  //     providerSelectedChain,
+  //     selectedChainProp: selectedChain?.id,
+  //   });
+  // }, [bitcoinWallet, bitcoinBalance, providerSelectedChain, selectedChain]);
+  
   // Bitcoin balance state
   const [bitcoinBalanceFormatted, setBitcoinBalanceFormatted] = useState<string>("0");
 
@@ -339,11 +350,42 @@ export default function VaultInputs({
   // Update error message handling to include Bitcoin validation
   useEffect(() => {
     const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
+    // Debug: Log all relevant state for Bitcoin validation
+    if (selectedChain?.id === CHAIN_ID.bitcoin) {
+      console.log("[DEBUG][Bitcoin Validation]", {
+        inputToken,
+        inputBalance,
+        bitcoinWallet,
+        bitcoinWalletAddress: bitcoinWallet?.address,
+        bitcoinBalanceFormatted,
+        errorMessage,
+        outputBoxErrorMessage,
+        isDeposit,
+        steps,
+        vaultData,
+        inputTokenPrice,
+        vaultTokenPrice,
+        conversionOutput,
+        loadingOutputToken,
+        selectedChainId: selectedChain?.id,
+        tokenBalanceFormatted: tokenBalance.formatted,
+        walletAddress,
+      });
+    }
     if (inputToken && vaultTotalAssetinToken && !isTxInProgress) {
       if (isDeposit) {
         // Bitcoin-specific validation
         if (selectedChain?.id === CHAIN_ID.bitcoin) {
+          console.log("🔍 Bitcoin validation check:", {
+            selectedChainId: selectedChain?.id,
+            bitcoinChainId: CHAIN_ID.bitcoin,
+            bitcoinWallet: !!bitcoinWallet,
+            bitcoinWalletAddress: bitcoinWallet?.address,
+            isBitcoinConnected: !!bitcoinWallet,
+          });
+          
           if (!bitcoinWallet) {
+            console.log("❌ Bitcoin wallet not found in provider state");
             setErrorMessage("Bitcoin wallet not connected. Please connect a Bitcoin wallet.");
             return;
           }
@@ -1274,6 +1316,23 @@ export default function VaultInputs({
     ) {
       setIsButtonDisabled(true);
       return true;
+    }
+
+    // Debug: Log all relevant state for button disabling
+    if (selectedChain?.id === CHAIN_ID.bitcoin) {
+      console.log("[DEBUG][isButtonDisabled]", {
+        walletAddress,
+        bitcoinWallet,
+        bitcoinWalletAddress: bitcoinWallet?.address,
+        inputBalance,
+        errorMessage,
+        outputBoxErrorMessage,
+        isDeposit,
+        bitcoinBalanceFormatted,
+        tokenBalanceFormatted: tokenBalance.formatted,
+        currentBalance: parseFloat(inputBalance.formatted || "0"),
+        maxBalance: parseFloat(bitcoinBalanceFormatted || "0"),
+      });
     }
 
     setIsButtonDisabled(false);

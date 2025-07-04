@@ -342,6 +342,7 @@ export default function InteractionContainer({
   setLabel: Dispatch<SetStateAction<string>>;
   label: string;
 }): JSX.Element {
+  const { walletAddress } = useMultiChain();
   // Core transaction state
   const [crosschainInvestHash, setCrosschainInvestHash] = useState("");
   const [crossChainTxId, setcrossChainTxId] = useState<string>("");
@@ -1349,12 +1350,13 @@ function Interaction({
             Number(inputBalance.formatted) <= 0 ||
             !!errorMessage;
 
+          const isBitcoin = activeChain.id === CHAIN_ID.bitcoin;
+          const isBitcoinWalletConnected = isBitcoin && !!bitcoinWallet;
+
           const isConnectWalletSHown =
-            (!activeAccount && !walletContext.publicKey) ||
-            (activeAccount?.walletClientType === "privy" &&
-              activeChain.id !== zetachain.id) ||
-            (walletContext.publicKey &&
-              activeChain.id !== CHAIN_ID["solana"]) ||
+            (!activeAccount && !walletContext.publicKey && !isBitcoinWalletConnected) ||
+            (activeAccount?.walletClientType === "privy" && activeChain.id !== zetachain.id) ||
+            (walletContext.publicKey && activeChain.id !== CHAIN_ID["solana"]) ||
             (activeAccount?.address && activeChain.id === CHAIN_ID["solana"]);
 
           const isDisabled = !isConnectWalletSHown

@@ -360,35 +360,50 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
 
   // Handle Bitcoin wallet state changes
   useEffect(() => {
+    debugLog("Bitcoin wallet state changed:", {
+      isBitcoinConnected,
+      bitcoinWalletAddress: bitcoinWallet?.address,
+      selectedChain,
+      step
+    });
+    
     if (isBitcoinConnected && bitcoinWallet?.address) {
-      if (!step) {
-        debugLog("Bitcoin wallet connected:", bitcoinWallet.address);
-        setWalletAddress(bitcoinWallet.address);
-        setSelectedChain("bitcoin");
-        setIsModalOpen(false);
-        
-        // Fetch Bitcoin balance
-        getBitcoinBalanceFormatted(bitcoinWallet.address);
-      }
+      debugLog("Bitcoin wallet connected, updating provider state:", bitcoinWallet.address);
       
-      // Disconnect other wallets when Bitcoin connects
-      if (connected) {
-        disconnect().catch((err) => {
-          console.error("error disconnect Solana:", err);
-        });
-      }
-      if (privyWallet?.address) {
-        evmDisconnect().catch((err) => {
-          console.error("error disconnect EVM:", err);
-        });
+      // Always update state when Bitcoin wallet is connected
+      setWalletAddress(bitcoinWallet.address);
+      setSelectedChain("bitcoin");
+      setActiveChain(chainConfigs[CHAIN_ID.bitcoin]);
+      setIsModalOpen(false);
+      
+      // Fetch Bitcoin balance
+      getBitcoinBalanceFormatted(bitcoinWallet.address);
+      
+      // Disconnect other wallets when Bitcoin connects (but only if not in step mode)
+      if (!step) {
+        if (connected) {
+          disconnect().catch((err) => {
+            console.error("error disconnect Solana:", err);
+          });
+        }
+        if (privyWallet?.address) {
+          evmDisconnect().catch((err) => {
+            console.error("error disconnect EVM:", err);
+          });
+        }
       }
     } else if (!isBitcoinConnected && selectedChain === "bitcoin") {
       debugLog("Bitcoin wallet disconnected");
       setBitcoinBalance({ value: 0n, formatted: "0" });
+      // Reset wallet address if we were using Bitcoin
+      if (walletAddress && walletAddress.startsWith('bc1')) {
+        setWalletAddress(null);
+        setSelectedChain("evm"); // Default back to EVM
+      }
     }
   }, [
     isBitcoinConnected,
-    bitcoinWallet,
+    bitcoinWallet?.address, // More specific dependency
     step,
     connected,
     disconnect,
@@ -396,6 +411,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     evmDisconnect,
     selectedChain,
     getBitcoinBalanceFormatted,
+    walletAddress,
   ]);
 
   //  Disconnect Wallet
@@ -492,10 +508,24 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
           latestChainRef.current = CHAIN_ID.solana.toString();
           return Promise.resolve(); // Resolve immediately for Solana
         } else if (chain.id === CHAIN_ID.bitcoin) {
-          setSelectedChain("bitcoin");
-          setActiveChain(chainConfigs[CHAIN_ID.bitcoin]);
-          latestChainRef.current = CHAIN_ID.bitcoin.toString();
-          return Promise.resolve(); // Resolve immediately for Bitcoin
+          // For Bitcoin, we need to connect the wallet if not already connected
+          if (!isBitcoinConnected || !bitcoinWallet?.address) {
+            debugLog("Bitcoin chain selected but wallet not connected, triggering connection...");
+            try {
+              await connectBitcoinWallet('unisat'); // Default to Unisat
+              // The wallet connection will handle setting the chain state
+              return Promise.resolve();
+            } catch (error) {
+              debugLog("Failed to connect Bitcoin wallet:", error);
+              throw new Error("Failed to connect Bitcoin wallet");
+            }
+          } else {
+            // Already connected, just switch to Bitcoin chain
+            setSelectedChain("bitcoin");
+            setActiveChain(chainConfigs[CHAIN_ID.bitcoin]);
+            latestChainRef.current = CHAIN_ID.bitcoin.toString();
+            return Promise.resolve();
+          }
         } else {
           // For EVM chains, we need to request the wallet to switch chains
           try {
@@ -555,27 +585,38 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [privyWallet?.chainId, privyWallet?.address, getEvmBalance]);
 
+  // Debug log the provider value
+  const providerValue = {
+    selectedChain,
+    activeChain: activeChain,
+    walletAddress,
+    balance: selectedChain === "solana" ? solanaBalance : selectedChain === "bitcoin" ? bitcoinBalance : balance,
+    connectSolana,
+    connectBitcoin,
+    disconnectWallet,
+    isModalOpen,
+    setIsModalOpen,
+    switchToChain,
+    refetchBalance: selectedChain === "bitcoin" ? getBitcoinBalanceFormatted : getEvmBalance,
+    isHydrated,
+    evmDisconnect: evmDisconnect,
+    // Bitcoin-specific properties
+    bitcoinWallet,
+    bitcoinBalance,
+  };
+  
+  // Log provider state changes
+  console.log("🔄 MultiChain Provider State:", {
+    selectedChain,
+    activeChainId: activeChain?.id,
+    walletAddress,
+    bitcoinWallet: !!bitcoinWallet,
+    bitcoinWalletAddress: bitcoinWallet?.address,
+    isBitcoinConnected,
+  });
+
   return (
-    <MultiChainContext.Provider
-      value={{
-        selectedChain,
-        activeChain: activeChain,
-        walletAddress,
-        balance: selectedChain === "solana" ? solanaBalance : selectedChain === "bitcoin" ? bitcoinBalance : balance,
-        connectSolana,
-        connectBitcoin,
-        disconnectWallet,
-        isModalOpen,
-        setIsModalOpen,
-        switchToChain,
-        refetchBalance: selectedChain === "bitcoin" ? getBitcoinBalanceFormatted : getEvmBalance,
-        isHydrated,
-        evmDisconnect: evmDisconnect,
-        // Bitcoin-specific properties
-        bitcoinWallet,
-        bitcoinBalance,
-      }}
-    >
+    <MultiChainContext.Provider value={providerValue}>
       {children}
     </MultiChainContext.Provider>
   );
