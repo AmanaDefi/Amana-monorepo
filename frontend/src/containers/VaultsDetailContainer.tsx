@@ -274,26 +274,6 @@ const VaultsDetailContainer: React.FC<{
     }
   }, [vaultID, vaultFromGraph]);
 
-  useEffect(() => {
-    if (vaultFromGraph?.vault) {
-      const vd = convertGraphVaultToVaultData(vaultFromGraph.vault);
-      setVaultData(vd);
-
-      const newAPY = convertGraphVaultToAPY(vaultFromGraph.vault);
-      setVaultAPYs((prevAPYs) => {
-        const existingAPY = prevAPYs.find(
-          (apy) => apy.vaultId === vaultID.toString(),
-        );
-        if (!existingAPY || existingAPY.APY7d !== newAPY.APY7d) {
-          return [newAPY];
-        }
-        return prevAPYs;
-      });
-
-      setVaultTotalAsset(convertGraphVaultToTotalAssets(vaultFromGraph.vault));
-    }
-  }, [vaultID, vaultFromGraph]);
-
   // Set user vault balance from graph data
   useEffect(() => {
     const userBalance = userVaultBalances?.find(
