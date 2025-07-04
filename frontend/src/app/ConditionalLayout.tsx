@@ -18,7 +18,6 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
   const activeSection = getActiveSectionFromPathname(pathname);
 
-  // Перевірка чи поточна сторінка є About
   const isAboutPage = pathname === "/about";
 
   useEffect(() => {
@@ -37,7 +36,6 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
 
   const isConnected = !!walletAddress;
 
-  // Окремий layout для About сторінки
   if (isAboutPage) {
     return (
       <div className="relative overflow-hidden min-h-screen z-0">
@@ -72,7 +70,6 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  // Звичайний layout для всіх інших сторінок
   return (
     <div className="relative overflow-hidden min-h-screen z-0">
       <GlowIcon position={isMobile ? "top-mobile" : "top-right"} />
