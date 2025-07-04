@@ -55,7 +55,8 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
                     paddingRight: "40px",
                   }
                 : {
-                    padding: "16px",
+                    paddingLeft: "16px",
+                    paddingRight: "16px",
                   }
             }
           >

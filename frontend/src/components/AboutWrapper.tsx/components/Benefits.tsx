@@ -80,6 +80,53 @@ const BENEFITS_DATA: Benefit[] = [
   },
 ];
 
+const MOBILE_BENEFITS_DATA: Benefit[] = [
+  {
+    id: "smart-vaults",
+    title: "Smart Vaults",
+    icon: <LightingIcon />,
+  },
+  {
+    id: "cross-chain",
+    title: "Cross-Chain Deposits",
+    icon: <CrossChainIcon />,
+  },
+  {
+    id: "stablecoin-yield",
+    title: "Stablecoin Yield",
+    icon: (
+      <div className="relative flex items-center mr-3">
+        <Image src="/USDC.png" alt="USDC" width={20} height={20} />
+        <Image
+          src="/tether.png"
+          alt="Tether"
+          width={20}
+          height={20}
+          className="absolute left-3 "
+        />
+      </div>
+    ),
+    hasGradientBorder: true,
+    hasDoubleIcon: true,
+  },
+  {
+    id: "audited-contracts",
+    title: "Audited Smart Contracts",
+    icon: <SmartContractsIcon />,
+  },
+  {
+    id: "earn-rewards",
+    title: "Earn Rewards",
+    icon: <InfoIcon />,
+    hasGradientBorder: true,
+  },
+  {
+    id: "wallet-optional",
+    title: "Wallet-Optional Onboarding",
+    icon: <WalletIcon />,
+  },
+];
+
 interface BenefitCardProps {
   title: string;
   icon: React.ReactNode;
@@ -114,10 +161,7 @@ const BenefitCard = ({
   </motion.div>
 );
 
-const Benefits = () => {
-  const firstRow = BENEFITS_DATA.slice(0, 5);
-  const secondRow = BENEFITS_DATA.slice(5);
-
+const MobileBenefits = () => {
   return (
     <section className="mt-[64px] lg:mt-[109px]">
       <motion.h1
@@ -130,33 +174,53 @@ const Benefits = () => {
         Amana Benefits
       </motion.h1>
 
-      <div className="flex flex-col gap-8 max-w-[767px] lg:max-w-7xl mx-auto">
-        <div className="flex flex-wrap justify-center gap-8">
-          {firstRow.map((benefit, index) => (
-            <BenefitCard
+      <div className="md:hidden px-4">
+        <div className="flex flex-col space-y-8 max-w-xs mx-auto">
+          {MOBILE_BENEFITS_DATA.map((benefit, index) => (
+            <div
               key={benefit.id}
-              title={benefit.title}
-              icon={benefit.icon}
-              hasGradientBorder={benefit.hasGradientBorder}
-              index={index}
-            />
+              className={`flex ${index % 2 === 0 ? "justify-start" : "justify-end"}`}
+            >
+              <BenefitCard
+                title={benefit.title}
+                icon={benefit.icon}
+                hasGradientBorder={benefit.hasGradientBorder}
+                index={index}
+              />
+            </div>
           ))}
         </div>
+      </div>
 
-        <div className="flex flex-wrap justify-center gap-8">
-          {secondRow.map((benefit, index) => (
-            <BenefitCard
-              key={benefit.id}
-              title={benefit.title}
-              icon={benefit.icon}
-              hasGradientBorder={benefit.hasGradientBorder}
-              index={index + 5}
-            />
-          ))}
+      <div className="hidden md:block">
+        <div className="flex flex-col gap-8 max-w-[767px] lg:max-w-7xl mx-auto">
+          <div className="flex flex-wrap justify-center gap-8">
+            {BENEFITS_DATA.slice(0, 5).map((benefit, index) => (
+              <BenefitCard
+                key={benefit.id}
+                title={benefit.title}
+                icon={benefit.icon}
+                hasGradientBorder={benefit.hasGradientBorder}
+                index={index}
+              />
+            ))}
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-8">
+            {BENEFITS_DATA.slice(5).map((benefit, index) => (
+              <BenefitCard
+                key={benefit.id}
+                title={benefit.title}
+                icon={benefit.icon}
+                hasGradientBorder={benefit.hasGradientBorder}
+                index={index + 5}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </section>
   );
 };
 
-export default Benefits;
+export default MobileBenefits;

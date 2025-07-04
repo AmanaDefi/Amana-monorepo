@@ -7,6 +7,11 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
+import React from "react";
+import DiscordLogo from "@public/logo/discord.svg";
+import XLogo from "@public/logo/x.svg";
+import LinkedInLogo from "@public/logo/linkedIn.svg";
+import Link from "next/link";
 
 const AboutContainer = ({}) => {
   const { walletAddress } = useMultiChain();
@@ -30,7 +35,7 @@ const AboutContainer = ({}) => {
   return (
     <div
       ref={containerRef}
-      className="font-gotham flex flex-col justify-center items-center overflow-hidden"
+      className="font-gotham flex flex-col justify-center items-center overflow-hidden relative"
     >
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {[...Array(20)].map((_, i) => (
@@ -227,14 +232,14 @@ const AboutContainer = ({}) => {
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
         viewport={{ once: true }}
-        className="flex flex-col justify-center items-center mt-[217px]"
+        className="flex flex-col justify-center items-center mt-[116px] md:mt-[217px]"
       >
         <motion.span
           whileHover={{
             y: -5,
             textShadow: "0 10px 20px rgba(59, 130, 246, 0.3)",
           }}
-          className="text-[48px] font-normal max-w-[550px] text-center cursor-default"
+          className="text-[32px] lg:text-[48px] font-normal max-w-[300px] lg:max-w-[450px] text-center cursor-default"
         >
           Bridge nothing Earn everything
         </motion.span>
@@ -250,7 +255,7 @@ const AboutContainer = ({}) => {
           }}
           whileTap={{ scale: 0.95 }}
           onClick={handleGetStartedClick}
-          className="relative w-full bg-transparent border border-[#3E73C4] rounded-lg py-4 px-8 mt-6 max-h-[56px] max-w-[192px] text-white font-medium transition-all duration-300 ease-in-out hover:bg-[#1B46E0] hover:border-[#1B46E0] hover:shadow-lg hover:shadow-[#1B46E0]/20 cursor-pointer overflow-hidden group z-20"
+          className="relative w-full bg-transparent border border-[#3E73C4] rounded-lg py-4 px-8 mt-8 lg:mt-6 max-h-[56px] max-w-[192px] text-white font-medium transition-all duration-300 ease-in-out hover:bg-[#1B46E0] hover:border-[#1B46E0] hover:shadow-lg hover:shadow-[#1B46E0]/20 cursor-pointer overflow-hidden group z-20"
         >
           <motion.div
             className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-20"
@@ -268,13 +273,36 @@ const AboutContainer = ({}) => {
         </motion.button>
       </motion.div>
 
-      <AboutLine className="relative -mt-[220px] ml-2" />
       <div
-        className="absolute z-10 px-[68px]"
+        className="hidden md:block absolute z-10 px-[68px]"
         style={{ bottom: "108px", left: 0, right: 0 }}
       >
         <Footer isConnected={isConnected} />
       </div>
+      <div className="flex md:hidden items-center gap-4 absolute bottom-10 left-1/2 transform -translate-x-1/2 z-20">
+        <Link
+          href="https://www.linkedin.com/company/amana-defi"
+          target="_blank"
+          className="w-10 h-10 bg-[#1B46E0] rounded-full flex items-center justify-center"
+        >
+          <LinkedInLogo height={20} className="w-[20px] h-[20px]" />
+        </Link>
+        <Link
+          href="https://x.com/Amana_DeFi"
+          target="_blank"
+          className="w-10 h-10 bg-[#1B46E0] rounded-full flex items-center justify-center"
+        >
+          <XLogo height={24} className="w-[24px] h-[24px]" />
+        </Link>
+        <Link
+          href="https://discord.gg/kG3Gfn3B9V"
+          target="_blank"
+          className="w-10 h-10 bg-[#1B46E0] rounded-full flex items-center justify-center"
+        >
+          <DiscordLogo height={18} className="w-[22px] h-[26px]" />
+        </Link>
+      </div>
+      <AboutLine className="relative -mt-0 md:-mt-[220px] w-[881px] h-[336px] md:w-[1528px] md:h-[683px]" />
     </div>
   );
 };

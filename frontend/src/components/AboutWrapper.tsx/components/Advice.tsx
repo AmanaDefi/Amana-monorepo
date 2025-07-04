@@ -40,72 +40,135 @@ const Advice = () => {
   ];
 
   return (
-    <section className="mt-[150px]">
+    <section className="mt-[64px] lg:mt-[150px]">
       <motion.h1
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
         viewport={{ once: true }}
-        className="text-white text-[48px] leading-[-0.04em] text-center font-bold mb-16"
+        className="text-white text-[24px] lg:text-[48px] leading-[-0.04em] text-center font-bold mb-[72px] lg:mb-16"
       >
         How to Use Amana
       </motion.h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 mx-auto">
-        {ADVICE_DATA.map((advice, index) => (
-          <motion.div
-            key={index}
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: index * 0.1 }}
-            viewport={{ once: true }}
-            className="relative"
-          >
-            <div
-              className="absolute -top-12 left-1 text-[48px] font-normal "
-              style={{
-                fontFamily: "var(--font-family)",
-                background: "linear-gradient(90deg, #302e44 0%, #454363 100%)",
-                backgroundClip: "text",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
-            >
-              {String(index + 1).padStart(2, "0")}
-            </div>
-
+      <div className="md:hidden px-4 max-w-xs mx-auto">
+        <div className="flex flex-col space-y-[72px]">
+          {ADVICE_DATA.map((advice, index) => (
             <motion.div
-              whileHover={{ y: -5 }}
-              transition={{ duration: 0.3 }}
-              className="absolute z-10 bg-[#14171F] rounded-[24px] h-[300px] pl-6 pt-[35px] pr-4 pb-6 before-gradient-border max-w-[350px]"
+              key={index}
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: index * 0.1 }}
+              viewport={{ once: true }}
+              className="relative"
             >
-              <div className="absolute top-4 right-4">
-                <ArrowIcon width="24" height="24" />
+              <div
+                className="absolute -top-12 left-1 text-[48px] font-normal "
+                style={{
+                  fontFamily: "var(--font-family)",
+                  background:
+                    "linear-gradient(90deg, #302e44 0%, #454363 100%)",
+                  backgroundClip: "text",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                }}
+              >
+                {String(index + 1).padStart(2, "0")}
               </div>
 
-              <div className="mb-6">
-                <div
-                  className="w-12 h-12 rounded-lg flex items-center justify-center"
-                  style={{
-                    background: "#14171F",
-                    boxShadow:
-                      "0 4px 6px 0 rgba(0, 0, 0, 0.1), 0 4px 4px 0 rgba(0, 0, 0, 0.25)",
-                  }}
-                >
-                  {advice.icon}
+              <motion.div
+                whileHover={{ y: -5 }}
+                transition={{ duration: 0.3 }}
+                className="absolute z-10 bg-[#14171F] rounded-[24px] h-[300px] pl-6 pt-[35px] pr-4 pb-6 before-gradient-border w-full"
+              >
+                <div className="absolute top-4 right-4">
+                  <ArrowIcon width="24" height="24" />
                 </div>
+
+                <div className="mb-6">
+                  <div
+                    className="w-12 h-12 rounded-lg flex items-center justify-center"
+                    style={{
+                      background: "#14171F",
+                      boxShadow:
+                        "0 4px 6px 0 rgba(0, 0, 0, 0.1), 0 4px 4px 0 rgba(0, 0, 0, 0.25)",
+                    }}
+                  >
+                    {advice.icon}
+                  </div>
+                </div>
+
+                <h3 className="text-white text-base font-bold mb-4">
+                  {advice.title}
+                </h3>
+
+                <p className="text-white text-sm font-normal leading-relaxed w-full">
+                  {advice.description}
+                </p>
+              </motion.div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      <div className="hidden md:block">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 mx-auto px-2">
+          {ADVICE_DATA.map((advice, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: index * 0.1 }}
+              viewport={{ once: true }}
+              className="relative"
+            >
+              <div
+                className="absolute -top-12 left-1 text-[48px] font-normal "
+                style={{
+                  fontFamily: "var(--font-family)",
+                  background:
+                    "linear-gradient(90deg, #302e44 0%, #454363 100%)",
+                  backgroundClip: "text",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                }}
+              >
+                {String(index + 1).padStart(2, "0")}
               </div>
 
-              <h3 className="text-white text-base font-bold mb-4">
-                {advice.title}
-              </h3>
+              <motion.div
+                whileHover={{ y: -5 }}
+                transition={{ duration: 0.3 }}
+                className="absolute z-10 bg-[#14171F] rounded-[24px] h-[300px] pl-6 pt-[35px] pr-4 pb-6 before-gradient-border max-w-[350px]"
+              >
+                <div className="absolute top-4 right-4">
+                  <ArrowIcon width="24" height="24" />
+                </div>
 
-              <p className="text-white text-sm font-normal leading-relaxed w-full max-w-[257px]">
-                {advice.description}
-              </p>
+                <div className="mb-6">
+                  <div
+                    className="w-12 h-12 rounded-lg flex items-center justify-center"
+                    style={{
+                      background: "#14171F",
+                      boxShadow:
+                        "0 4px 6px 0 rgba(0, 0, 0, 0.1), 0 4px 4px 0 rgba(0, 0, 0, 0.25)",
+                    }}
+                  >
+                    {advice.icon}
+                  </div>
+                </div>
+
+                <h3 className="text-white text-base font-bold mb-4">
+                  {advice.title}
+                </h3>
+
+                <p className="text-white text-sm font-normal leading-relaxed w-full max-w-[257px]">
+                  {advice.description}
+                </p>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        ))}
+          ))}
+        </div>
       </div>
     </section>
   );
