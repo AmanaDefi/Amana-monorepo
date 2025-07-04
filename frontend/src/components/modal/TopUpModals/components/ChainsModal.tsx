@@ -27,7 +27,7 @@ export const TopUpChainsModal = () => {
     setStep("setValues");
   };
 
-  const chainList = SUPPORTED_CHAINS.slice(1)
+  const chainList = SUPPORTED_CHAINS
     .filter((chain) => chain.id !== CHAIN_ID["solana"])
     .map((chain) => {
       return {
@@ -77,7 +77,7 @@ export const TopUpChainsModal = () => {
     <Modal
       isOpen={step === "selectChain"}
       onClose={handleClose}
-      paddingClass="px-[21px] pt-5 pb-6 flex min-h-[490px] max-h-[524px] w-full"
+      paddingClass="px-[21px] pt-5 pb-6 flex min-h-[490px] max-h-[528px] w-full"
       roundedClass="rounded-[16px]"
       maxWidth="max-w-[358px] md:max-w-[526px]"
     >

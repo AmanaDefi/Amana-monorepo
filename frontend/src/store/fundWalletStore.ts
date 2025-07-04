@@ -27,6 +27,7 @@ const initialState = {
   currency: undefined,
   activeConnector: null,
   walletAddress: "",
+  transactionHash: null,
 };
 
 interface FundWalletState {
@@ -37,6 +38,7 @@ interface FundWalletState {
   currency: Token | undefined;
   activeConnector: Connector | Adapter | null;
   walletAddress: string;
+  transactionHash: string | null;
 
   setStep: (step: FundStep) => void;
   setBuyWith: (buyWith: BuyWithEnum) => void;
@@ -46,6 +48,7 @@ interface FundWalletState {
   closeAll: () => void;
   setActiveConnector: (connector: Connector | Adapter | null) => void;
   setWalletAddress: (walletAddress: string) => void;
+  setTxHash: (transactionHash: string | null) => void;
 }
 export const useFundWalletStore = create<FundWalletState>((set) => ({
   ...initialState,
@@ -59,6 +62,7 @@ export const useFundWalletStore = create<FundWalletState>((set) => ({
   setChain: (chain) => set({ chain }),
   setDepositAmount: (depositAmount) => set({ depositAmount }),
   setWalletAddress: (walletAddress) => set({ walletAddress }),
+  setTxHash: (transactionHash) => set({ transactionHash }),
   setCurrency: (currency) =>
     set({
       currency,

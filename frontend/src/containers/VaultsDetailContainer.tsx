@@ -214,11 +214,6 @@ const VaultsDetailContainer: React.FC<{
     const checkTransactionState = () => {
       if (!vaultID) return;
 
-      if (!user?.address && !wallet?.publicKey) {
-        localStorage.removeItem(vaultID.toString());
-        return;
-      }
-
       const isTxInProgress = CheckTheTxIsInProgress(vaultID.toString());
       const vaultTxData = getLocalStorageObject(vaultID.toString());
 
