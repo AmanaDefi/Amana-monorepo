@@ -27,6 +27,10 @@ export const ConnectorIcon = ({
     }
   }, [connectorIcon]);
 
+  if (name.toLowerCase() === "metamask") {
+    return <MetaMaskIcon width={35} height={32} />;
+  }
+
   const handleImageError = () => {
     setImageError(true);
   };

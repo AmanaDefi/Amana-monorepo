@@ -12,6 +12,8 @@ import { DropdownList } from "../VaultsWrapper/components/DropdownList";
 import Button from "../common/Button";
 import { useWallets } from "@privy-io/react-auth";
 import { useMultiChain } from "@/providers/MultiChainProvider";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 
 // Destructure chainsWithCustomRpcs() to get zetaChain for default
 const [zetachain] = chainsWithCustomRpcs();
@@ -20,11 +22,13 @@ const [zetachain] = chainsWithCustomRpcs();
 const ChainSwitcher: React.FC = () => {
   const { wallets } = useWallets();
   const wallet = wallets[0];
+  const { publicKey } = useWallet();
   const [isOpen, setIsOpen] = useState(false);
-  const { switchToChain, activeChain: currentChain} = useMultiChain();
+  const { switchToChain, activeChain: currentChain } = useMultiChain();
   const [isLoading, setIsLoading] = useState<number | null>(null); // Track loading state by chain ID
   const dropdownRef = useRef<HTMLDivElement>(null);
   const previousChainRef = useRef<string | null>(null);
+  const { setSelectedChainFromModal } = useChainTokenModalStore();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -55,15 +59,19 @@ const ChainSwitcher: React.FC = () => {
       const chain = chainsWithCustomRpcs().find(
         (c) => c.id.toString() === wallet?.chainId?.split(":")[1],
       );
-      // Use a try-catch to handle potential toast errors
-      try {
-        showSuccessToast(
-          `Successfully switched to ${chain?.name || "new network"}`,
-        );
-      } catch (error) {
-        console.error("Toast error:", error);
+      if (chain) {
+        setSelectedChainFromModal(chain);
+        // Use a try-catch to handle potential toast errors
+        try {
+          showSuccessToast(
+            `Successfully switched to ${chain?.name || "new network"}`,
+          );
+        } catch (error) {
+          console.error("Toast error:", error);
+        }
       }
-      console.log('Successfully switched', chain?.id)
+
+      console.log("Successfully switched", chain?.id);
     }
 
     // Update the previous chain ref
@@ -71,9 +79,7 @@ const ChainSwitcher: React.FC = () => {
   }, [wallet?.chainId]);
 
   // Handle chain switch
-  const handleChainSwitch = async (
-    chain: Chain,
-  ) => {
+  const handleChainSwitch = async (chain: Chain) => {
     if (!wallet?.address) {
       try {
         showErrorToast("Please connect your wallet to switch chains.");
@@ -134,7 +140,9 @@ const ChainSwitcher: React.FC = () => {
     option: string,
   ) => {
     event.stopPropagation();
-    const selected = chainsWithCustomRpcs().find((c: Chain) => c.name === option);
+    const selected = chainsWithCustomRpcs().find(
+      (c: Chain) => c.name === option,
+    );
 
     if (selected) {
       handleChainSwitch(selected);
@@ -145,7 +153,7 @@ const ChainSwitcher: React.FC = () => {
     <div className="z-50 relative rounded-full " ref={dropdownRef}>
       <Button
         variant="secondary"
-        disabled={!wallet}
+        disabled={!wallet && !publicKey}
         onClick={() => setIsOpen(!isOpen)}
         className="cursor-pointer !p-[3px] md:!p-2 md:!w-[56px] md:!h-[56px] !w-10 !h-10"
         data-tooltip-id="chain-switcher-tooltip"
@@ -154,7 +162,7 @@ const ChainSwitcher: React.FC = () => {
         <div className="bg-[#24262f] relative md:!w-10 md:!h-10 !h-8 !w-8 rounded-full flex items-center justify-center">
           <Image
             src={CHAIN_ICONS[currentChain?.id ?? 7000].url}
-            alt={currentChain?.name ?? 'Zetachain'}
+            alt={currentChain?.name ?? "Zetachain"}
             fill
           />
         </div>

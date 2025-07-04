@@ -9,11 +9,19 @@ import ProfileDropdownIcon from "@/components/svg/ProfileDropdownIcon";
 import OnboardingIcon from "@/components/svg/OnboardingIcon";
 import { useLoginWithPasskey } from "@privy-io/react-auth";
 import CheckPasskeyIcon from "@/components/svg/CheckPasskeyIcon";
+import { useWallet } from "@solana/wallet-adapter-react";
 
 export const SignatureCheck = () => {
   const { step, closeAll, successAuth, openStep } = useAuthStore();
+  const {
+    disconnect,
+    publicKey
+  } = useWallet();
   const { loginWithPasskey } = useLoginWithPasskey({
     onComplete: (result) => {
+      if (publicKey) {
+        disconnect();
+      }
       if (!result.wasAlreadyAuthenticated) {
         successAuth();
       }

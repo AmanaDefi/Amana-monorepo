@@ -325,6 +325,75 @@ export class Vault extends Entity {
     }
   }
 
+  get protocolPoints(): i32 {
+    let value = this.get("protocolPoints");
+    if (!value || value.kind == ValueKind.NULL) {
+      return 0;
+    } else {
+      return value.toI32();
+    }
+  }
+
+  set protocolPoints(value: i32) {
+    this.set("protocolPoints", Value.fromI32(value));
+  }
+
+  get protocolPointsDescription(): string | null {
+    let value = this.get("protocolPointsDescription");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toString();
+    }
+  }
+
+  set protocolPointsDescription(value: string | null) {
+    if (!value) {
+      this.unset("protocolPointsDescription");
+    } else {
+      this.set("protocolPointsDescription", Value.fromString(<string>value));
+    }
+  }
+
+  get cooldownPeriod(): i32 {
+    let value = this.get("cooldownPeriod");
+    if (!value || value.kind == ValueKind.NULL) {
+      return 0;
+    } else {
+      return value.toI32();
+    }
+  }
+
+  set cooldownPeriod(value: i32) {
+    this.set("cooldownPeriod", Value.fromI32(value));
+  }
+
+  get minDeposit(): i32 {
+    let value = this.get("minDeposit");
+    if (!value || value.kind == ValueKind.NULL) {
+      return 0;
+    } else {
+      return value.toI32();
+    }
+  }
+
+  set minDeposit(value: i32) {
+    this.set("minDeposit", Value.fromI32(value));
+  }
+
+  get maxWithdraw(): i32 {
+    let value = this.get("maxWithdraw");
+    if (!value || value.kind == ValueKind.NULL) {
+      return 0;
+    } else {
+      return value.toI32();
+    }
+  }
+
+  set maxWithdraw(value: i32) {
+    this.set("maxWithdraw", Value.fromI32(value));
+  }
+
   get networkDescription(): string | null {
     let value = this.get("networkDescription");
     if (!value || value.kind == ValueKind.NULL) {

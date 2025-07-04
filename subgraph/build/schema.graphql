@@ -56,6 +56,21 @@ type Vault @entity(immutable: false) {
   "Protocol description"
   protocolDescription: String
 
+  "Points earned in this vault toward protocol rewards"
+  protocolPoints: Int
+
+  "Description of the protocol points"
+  protocolPointsDescription: String
+
+  "Cooldown period in days before funds can be withdrawn"
+  cooldownPeriod: Int
+
+  "Minimum deposit that a user can make"
+  minDeposit: Int
+
+  "Maximum withdrawal that a user can make"
+  maxWithdraw: Int
+
   "Network description"
   networkDescription: String
 

@@ -9,7 +9,10 @@ import {
 } from "@/constants/chainConfig";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { CheckTheTxIsInProgress } from "@/utils/localStorageUtils";
-import { CHAINS_ICONS_BUTTON, CHAINS_ICONS_BUTTON_WITHOUT_ZETA } from "@/constants/tokens";
+import {
+  CHAINS_ICONS_BUTTON,
+  CHAINS_ICONS_BUTTON_WITHOUT_ZETA,
+} from "@/constants/tokens";
 import { useFundWallet, useWallets } from "@privy-io/react-auth";
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 import { Token, VaultData } from "@/types/types";
@@ -36,10 +39,10 @@ export default function ChainSelector({
   isFromTopUp,
   vaultData,
 }: ChainSelectorProps) {
-  const { activeChain, switchToChain, walletAddress } = useMultiChain();
+  const { activeChain, walletAddress } = useMultiChain();
   const { wallets } = useWallets();
   const activeAccount = wallets[0];
-  const { openModal } = useChainTokenModalStore();
+  const { openModal, setSelectedChainFromModal } = useChainTokenModalStore();
   const { setStep } = useFundWalletStore();
 
   const handleOpenModal = (e: React.MouseEvent) => {
@@ -76,18 +79,21 @@ export default function ChainSelector({
     const chainToSelect = SUPPORTED_CHAINS.find(
       (chain) => chain.id === chainId,
     );
+
     if (chainToSelect) {
       const tokens = APPROVED_TOKENS[chainId] ?? [];
       const defaultToken =
         tokens.find((token) => token.symbol === "USDC") || tokens[0];
 
       if (onSelectChainAndToken) {
+        console.log('onSelectChainAndToken from chain selector')
+        setSelectedChainFromModal(chainToSelect);
         onSelectChainAndToken(chainToSelect, defaultToken);
       }
     }
   };
 
-  const chainIconsList = isFromTopUp ? CHAINS_ICONS_BUTTON_WITHOUT_ZETA : CHAINS_ICONS_BUTTON;
+  const chainIconsList = CHAINS_ICONS_BUTTON;
 
   return (
     <div
@@ -108,7 +114,7 @@ export default function ChainSelector({
       </div>
 
       <div className="relative">
-        <button
+        <div
           className={`flex items-center justify-between gap-4 py-[6px] ${className} ${
             walletAddress &&
             activeAccount?.walletClientType === "privy" &&
@@ -133,10 +139,8 @@ export default function ChainSelector({
               </button>
             ))}
           </div>
-          {!walletAddress && (
-            <ChevronDownIcon className="w-5 h-5 text-[#9A9CB3] transition-transform" />
-          )}
-        </button>
+          <ChevronDownIcon className="w-5 h-5 text-[#9A9CB3] transition-transform" />
+        </div>
       </div>
     </div>
   );

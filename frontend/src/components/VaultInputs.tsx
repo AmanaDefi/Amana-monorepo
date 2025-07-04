@@ -16,6 +16,7 @@ import { Address, parseAbiItem, parseUnits } from "viem";
 import { Chain } from "viem";
 import {
   APPROVED_TOKENS,
+  CHAIN_ID,
   chainConfigs,
   chainsWithCustomRpcs,
 } from "@/constants/chainConfig";
@@ -41,7 +42,7 @@ import {
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { calculateGasFeeInVaultAsset } from "@/utils/gasFeeCalculations";
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { trackEvent } from "@/utils/trackEvent";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -112,7 +113,7 @@ export default function VaultInputs({
 }: VaultInputsProps): JSX.Element {
   const router = useRouter();
   const pathname = usePathname();
-  const [inputToken, setInputToken] = useState<Token>();
+  const [inputToken, setInputToken] = useState<Token | undefined>(selectedToken);
   const [inputBalance, setInputBalance] = useState<Balance>(EMPTY_BALANCE);
   const [displayValue, setDisplayValue] = useState<string>("0.00");
   const [debouncedInputBalance, setDebouncedInputBalance] =
@@ -130,6 +131,7 @@ export default function VaultInputs({
 
   const handleSelectChainAngToken = (chain: Chain, token: Token) => {
     setInputToken(token);
+
     if (onSelectChainAndToken) {
       onSelectChainAndToken(chain, token);
     }
@@ -146,8 +148,10 @@ export default function VaultInputs({
   const [step, setStep] = useState<number>(0);
   const [action, setAction] = useState<Action>(steps[0]);
   const [performanceFee, setPerformanceFee] = useState<number>(0);
-  const { selectedChainFromModal, selectedTokenFromModal } =
-    useChainTokenModalStore();
+  const {
+    selectedChainFromModal,
+    setSelectedTokenFromModal,
+  } = useChainTokenModalStore();
 
   useEffect(() => {
     async function handlePerformanceFee() {
@@ -223,8 +227,10 @@ export default function VaultInputs({
   }, [vaultData]);
 
   useEffect(() => {
-    if (selectChain?.id === selectedChainFromModal?.id) return;
     const setToken = () => {
+      if (selectChain?.id === selectedChainFromModal?.id && inputToken) {
+        return;
+      }
       if (
         selectChain &&
         (selectChain.id === 7001 || selectChain.id === 7000) &&
@@ -233,6 +239,7 @@ export default function VaultInputs({
         setInputToken(vaultData.inputToken);
         if (onTokenSelect) {
           onTokenSelect(vaultData.inputToken);
+          setSelectedTokenFromModal(vaultData.inputToken);
         }
       } else if (vaultData?.inputToken && selectChain) {
         const tokens = APPROVED_TOKENS[selectChain.id] || [];
@@ -243,6 +250,7 @@ export default function VaultInputs({
           setInputToken(defaultToken);
           if (onTokenSelect) {
             onTokenSelect(defaultToken);
+            setSelectedTokenFromModal(defaultToken);
           }
         }
       }
@@ -255,11 +263,9 @@ export default function VaultInputs({
       if (isTxInProgress && vaultInfo?.selectedToken) {
         setInputToken(JSON.parse(vaultInfo.selectedToken, bigIntReviver));
       } else {
-        setInputToken(undefined);
         setToken();
       }
     } else {
-      setInputToken(undefined);
       setToken();
     }
 
@@ -308,11 +314,12 @@ export default function VaultInputs({
       if (isDeposit) {
         // For Ethereum vaults, use net deposit amount for validation
         // For other vaults, use input amount
-        const amountToValidate = !vaultData.depositFeePaidFromGasTank 
-          ? conversionOutput.netDepositToVaultUSD?.replace(/[^0-9.]/g, '') || inputBalance.formatted
+        const amountToValidate = !vaultData.depositFeePaidFromGasTank
+          ? conversionOutput.netDepositToVaultUSD?.replace(/[^0-9.]/g, "") ||
+            inputBalance.formatted
           : inputBalance.formatted;
-        
-        const priceToUse = !vaultData.depositFeePaidFromGasTank 
+
+        const priceToUse = !vaultData.depositFeePaidFromGasTank
           ? 1 // netDepositToVaultUSD is already in USD
           : inputTokenPrice;
 
@@ -323,8 +330,8 @@ export default function VaultInputs({
             steps,
             vaultData,
             priceToUse,
-            isDeposit
-          )
+            isDeposit,
+          ),
         );
       } else {
         setErrorMessage(
@@ -334,8 +341,8 @@ export default function VaultInputs({
             steps,
             vaultData,
             vaultTokenPrice,
-            isDeposit
-          )
+            isDeposit,
+          ),
         );
       }
     } else if (loadingOutputToken) {
@@ -363,7 +370,7 @@ export default function VaultInputs({
         const actionType = isDeposit
           ? SmartVaultActionType.Deposit
           : SmartVaultActionType.Withdrawal;
-        
+
         const newStepsConfig = await selectActions(
           actionType,
           vaultData,
@@ -640,7 +647,7 @@ export default function VaultInputs({
       // 🔄 NEW LOGIC: Input is now in underlying asset terms, not shares
       // So we don't need to convert from shares to assets - the input IS the asset amount
       let assetsAmount = inputAmountValue;
-      
+
       const actualInputToken = isZetachain(activeChain?.id as number)
         ? inputToken
         : inputToken?.ZRC20equivalent;
@@ -648,14 +655,14 @@ export default function VaultInputs({
 
       let tokenConversionAmount = assetsAmount;
       if (actualInputToken.address !== vaultData.inputToken.address) {
-         const result = await getPathDataAndAmountOut(
+        const result = await getPathDataAndAmountOut(
           assetsAmount,
           vaultData.inputToken,
           actualInputToken,
           vaultData.id as Address,
-          getCurrentSlippage() * 100
+          getCurrentSlippage() * 100,
         );
-        tokenConversionAmount = result.amountOut
+        tokenConversionAmount = result.amountOut;
       }
 
       const assetsConversionInUSD =
@@ -667,20 +674,20 @@ export default function VaultInputs({
 
       const slippageActualValue = Math.max(
         0,
-        100 - (tokenConversionInUSD * 100) / assetsConversionInUSD
+        100 - (tokenConversionInUSD * 100) / assetsConversionInUSD,
       );
 
       if (inputAmountValue === debouncedInputBalance.value) {
         // Use formatTokenBalance for the output amount formatting
         const formattedOutputAmount = formatTokenBalance(
           tokenConversionFromWei,
-          inputToken?.symbol || ""
+          inputToken?.symbol || "",
         );
 
         setConversionOutput({
           slippageActualValue: Number(slippageActualValue.toFixed(2)),
           finalConvertedAmountInUSDFormatted: formatCurrency(
-            assetsConversionInUSD
+            assetsConversionInUSD,
           ).toString(),
           outputAmountFormatted: formattedOutputAmount,
           outputAmountInUSDFormatted:
@@ -698,19 +705,19 @@ export default function VaultInputs({
       inputToken,
     ],
   );
-  
-    const getDepositOutputAmount = useCallback(
+
+  const getDepositOutputAmount = useCallback(
     async (inputAmountValue: bigint) => {
       const actualInputToken = isZetachain(activeChain?.id as number)
         ? inputToken
         : inputToken?.ZRC20equivalent;
-      
+
       if (!actualInputToken) {
         return;
       }
 
       let assetsConversionAmount: bigint = inputAmountValue;
-      
+
       // Step 1: Convert input token to vault token if needed
       if (actualInputToken.address !== vaultData.inputToken.address) {
         const result = await getPathDataAndAmountOut(
@@ -718,123 +725,121 @@ export default function VaultInputs({
           actualInputToken,
           vaultData.inputToken,
           vaultData.id as Address,
-          getCurrentSlippage() *100
+          getCurrentSlippage() * 100,
         );
         assetsConversionAmount = result.amountOut;
       }
 
-        console.log("Double Box - Pre Gas Conversion amounts:", {
-          assetsConversionAmount: assetsConversionAmount.toString(),
+      console.log("Double Box - Pre Gas Conversion amounts:", {
+        assetsConversionAmount: assetsConversionAmount.toString(),
+      });
+
+      // 2. Fetch gas fee info from the ZRC20 token
+
+      let gasFeeInVaultAsset = BigInt(0);
+      let gasFeeInUSD = "0";
+      let gasFeeInETH = "0";
+      let netDepositToVaultUSD = "0";
+      if (!selectedChain?.id) return;
+
+      const publicClient = await getPublicClient(
+        activeWallet,
+        selectedChain.id,
+      );
+      if (!vaultData.depositFeePaidFromGasTank && !!publicClient) {
+        const gasLimitForWithdrawAndCall = await publicClient.readContract({
+          address: vaultData.id as Address,
+          abi: [
+            parseAbiItem(
+              "function gasLimitForWithdrawAndCall() view returns (uint256)",
+            ),
+          ],
+          functionName: "gasLimitForWithdrawAndCall",
         });
 
-        // 2. Fetch gas fee info from the ZRC20 token
+        console.log("gas limit:", gasLimitForWithdrawAndCall);
 
-        let gasFeeInVaultAsset = BigInt(0);
-        let gasFeeInUSD = "0";
-        let gasFeeInETH = "0";
-        let netDepositToVaultUSD = "0";
-        if (!selectedChain?.id) return;
+        const result = await publicClient.readContract({
+          address: vaultData.inputToken.address as Address,
+          abi: [
+            parseAbiItem(
+              "function withdrawGasFeeWithGasLimit(uint256) view returns (address, uint256)",
+            ),
+          ],
+          functionName: "withdrawGasFeeWithGasLimit",
+          args: [gasLimitForWithdrawAndCall],
+        });
+        const gasZRC20 = result[0] as Address;
+        const gasFee = result[1] as bigint;
 
+        gasFeeInVaultAsset = gasFee;
 
-        const publicClient = await getPublicClient(
-          activeWallet,
-          selectedChain.id,
-        );
-        if (!vaultData.depositFeePaidFromGasTank && !!publicClient) {
-
-          const gasLimitForWithdrawAndCall = await publicClient.readContract({
-            address: vaultData.id as Address,
-            abi: [
-              parseAbiItem(
-                "function gasLimitForWithdrawAndCall() view returns (uint256)",
-              ),
-            ],
-            functionName: "gasLimitForWithdrawAndCall",
-          });
-
-          console.log("gas limit:", gasLimitForWithdrawAndCall);
-
-          const result = await publicClient.readContract({
-            address: vaultData.inputToken.address as Address,
-            abi: [
-              parseAbiItem(
-                "function withdrawGasFeeWithGasLimit(uint256) view returns (address, uint256)",
-              ),
-            ],
-            functionName: "withdrawGasFeeWithGasLimit",
-            args: [gasLimitForWithdrawAndCall],
-          });
-          const gasZRC20 = result[0] as Address;
-          const gasFee = result[1] as bigint;
-
-          gasFeeInVaultAsset = gasFee;
-
-          if (gasZRC20 !== vaultData.inputToken.address) {
-            // Convert fee from gas token into vault asset terms
-            const result = await getPathDataAndAmountOut(
-              gasFee,
-              ZRC20_TOKENS_BY_ADDRESS[gasZRC20],
-              vaultData.inputToken,
-              vaultData.id as Address,
-              getCurrentSlippage() * 100,
-            );
-            gasFeeInVaultAsset = result.amountOut;
-          }
-          // Format gas fee in USD and ETH
-          const gasFeeInTokenUnits =
-            Number(gasFeeInVaultAsset) / 10 ** vaultData.inputToken.decimals;
-          const gasFeeInUSDAmount = gasFeeInTokenUnits * vaultTokenPrice;
-          gasFeeInUSD = formatCurrency(gasFeeInUSDAmount);
-          const ethAmount = convertUsdToEth(gasFeeInUSDAmount, ethPriceUsd);
-          gasFeeInETH = ethAmount.toFixed(5);
+        if (gasZRC20 !== vaultData.inputToken.address) {
+          // Convert fee from gas token into vault asset terms
+          const result = await getPathDataAndAmountOut(
+            gasFee,
+            ZRC20_TOKENS_BY_ADDRESS[gasZRC20],
+            vaultData.inputToken,
+            vaultData.id as Address,
+            getCurrentSlippage() * 100,
+          );
+          gasFeeInVaultAsset = result.amountOut;
         }
+        // Format gas fee in USD and ETH
+        const gasFeeInTokenUnits =
+          Number(gasFeeInVaultAsset) / 10 ** vaultData.inputToken.decimals;
+        const gasFeeInUSDAmount = gasFeeInTokenUnits * vaultTokenPrice;
+        gasFeeInUSD = formatCurrency(gasFeeInUSDAmount);
+        const ethAmount = convertUsdToEth(gasFeeInUSDAmount, ethPriceUsd);
+        gasFeeInETH = ethAmount.toFixed(5);
+      }
 
-        // 4. Subtract gas fee from converted amount
-        const finalConvertedAmount =
-          assetsConversionAmount > gasFeeInVaultAsset
-            ? assetsConversionAmount - gasFeeInVaultAsset
-            : BigInt(0);
+      // 4. Subtract gas fee from converted amount
+      const finalConvertedAmount =
+        assetsConversionAmount > gasFeeInVaultAsset
+          ? assetsConversionAmount - gasFeeInVaultAsset
+          : BigInt(0);
 
-        console.log("Double Box - Final converted amount after gas fee:", {
-          finalConvertedAmount: finalConvertedAmount.toString(),
-          gasFeeInVaultAsset: gasFeeInVaultAsset.toString(),
-        });
+      console.log("Double Box - Final converted amount after gas fee:", {
+        finalConvertedAmount: finalConvertedAmount.toString(),
+        gasFeeInVaultAsset: gasFeeInVaultAsset.toString(),
+      });
 
-        const sharesAmountRaw = await getSharesFromDeposit(
-          finalConvertedAmount,
-          vaultData,
-          activeWallet,
-        );
+      const sharesAmountRaw = await getSharesFromDeposit(
+        finalConvertedAmount,
+        vaultData,
+        activeWallet,
+      );
 
-        // Use formatTokenBalance for the output amount formatting
-        const sharesAmountFormatted = formatTokenBalance(
-          sharesAmountRaw,
-          vaultData.symbol,
-        );
+      // Use formatTokenBalance for the output amount formatting
+      const sharesAmountFormatted = formatTokenBalance(
+        sharesAmountRaw,
+        vaultData.symbol,
+      );
 
-        console.log("Double Box - Shares calculation:", {
-          sharesAmountFormatted,
-          finalConvertedAmount: finalConvertedAmount.toString(),
-        });
-        const inputAmountValueInUSD =
-          (Number(inputAmountValue) / 10 ** (inputToken?.decimals ?? 18)) *
-          inputTokenPrice;
-        const finalConvertedAmountInUSD =
-          (Number(finalConvertedAmount) / 10 ** vaultData.inputToken.decimals) *
-          vaultTokenPrice;
-        const finalConvertedAmountInUSDFormatted = formatCurrency(
-          finalConvertedAmountInUSD,
-        ).toString();
+      console.log("Double Box - Shares calculation:", {
+        sharesAmountFormatted,
+        finalConvertedAmount: finalConvertedAmount.toString(),
+      });
+      const inputAmountValueInUSD =
+        (Number(inputAmountValue) / 10 ** (inputToken?.decimals ?? 18)) *
+        inputTokenPrice;
+      const finalConvertedAmountInUSD =
+        (Number(finalConvertedAmount) / 10 ** vaultData.inputToken.decimals) *
+        vaultTokenPrice;
+      const finalConvertedAmountInUSDFormatted = formatCurrency(
+        finalConvertedAmountInUSD,
+      ).toString();
 
       // Calculate slippage excluding gas fee
       const slippageActualValue = Math.max(
         0,
-        100 - (finalConvertedAmountInUSD * 100) / inputAmountValueInUSD
+        100 - (finalConvertedAmountInUSD * 100) / inputAmountValueInUSD,
       );
 
       if (!vaultData.depositFeePaidFromGasTank && gasFeeInVaultAsset > 0n) {
         const totalLossUSD = inputAmountValueInUSD - finalConvertedAmountInUSD;
-        const gasFeeUSD = parseFloat(gasFeeInUSD.replace(/[^0-9.]/g, ''));
+        const gasFeeUSD = parseFloat(gasFeeInUSD.replace(/[^0-9.]/g, ""));
         const gasFeeETH = parseFloat(gasFeeInETH);
         const swapLossUSD = totalLossUSD - gasFeeUSD;
       }
@@ -842,7 +847,9 @@ export default function VaultInputs({
       if (inputAmountValue === debouncedInputBalance.value) {
         setConversionOutput({
           slippageActualValue: Number(slippageActualValue.toFixed(2)),
-          finalConvertedAmountInUSDFormatted: formatUSDValue(finalConvertedAmountInUSD),
+          finalConvertedAmountInUSDFormatted: formatUSDValue(
+            finalConvertedAmountInUSD,
+          ),
           outputAmountFormatted: sharesAmountFormatted,
           outputAmountInUSDFormatted: formatUSDValue(finalConvertedAmountInUSD),
           gasFeeInVaultAsset: gasFeeInVaultAsset.toString(),
@@ -864,7 +871,6 @@ export default function VaultInputs({
       ethPriceUsd,
       activeWallet,
       selectedChain?.id,
-
     ],
   );
 
@@ -968,7 +974,7 @@ export default function VaultInputs({
       setDebouncedInputBalance(EMPTY_BALANCE);
       setOutputBoxErrorMessage("");
       setIsSlippageExceedingLimit(false);
-      
+
       // Reset transactionCompleted to false after processing
       setTimeout(() => {
         setTransactionCompleted(false);
@@ -1229,8 +1235,8 @@ export default function VaultInputs({
             </div>
 
             <InputTokenWithError
-             onSelectChain={onSelectChain}
-             onSelectChainAndToken={handleSelectChainAngToken}
+              onSelectChain={onSelectChain}
+              onSelectChainAndToken={handleSelectChainAngToken}
               onSelectToken={isDeposit ? handleDepositTokenSelect : () => {}}
               allowInput={allowInput}
               vaultData={vaultData}
@@ -1283,8 +1289,8 @@ export default function VaultInputs({
             </div>
 
             <InputTokenWithError
-             onSelectChain={onSelectChain}
-             onSelectChainAndToken={handleSelectChainAngToken}
+              onSelectChain={onSelectChain}
+              onSelectChainAndToken={handleSelectChainAngToken}
               captionText={isDeposit ? "Output Amount" : ""}
               onSelectToken={isDeposit ? () => {} : handleWithdrawTokenSelect}
               allowInput={allowInput}
@@ -1378,8 +1384,8 @@ export default function VaultInputs({
               )}
             </div>
             <InputTokenWithError
-             onSelectChain={onSelectChain}
-             onSelectChainAndToken={handleSelectChainAngToken}
+              onSelectChain={onSelectChain}
+              onSelectChainAndToken={handleSelectChainAngToken}
               captionText={isDeposit ? "Output Amount" : ""}
               onSelectToken={isDeposit ? () => {} : handleWithdrawTokenSelect}
               allowInput={allowInput}
@@ -1409,9 +1415,7 @@ export default function VaultInputs({
       </AnimatePresence>
       <APYChangeCard isDeposit={isDeposit} minReceived={minReceived} />
 
-      {inputToken &&
-        // !loadingOutputToken &&
-        !(
+      {!(
           isDeposit &&
           !vaultData.depositFeePaidFromGasTank &&
           conversionOutput.gasFeeInVaultAsset &&
@@ -1441,8 +1445,6 @@ export default function VaultInputs({
             label={label}
           />
         )}
-
-      
     </>
   );
 }

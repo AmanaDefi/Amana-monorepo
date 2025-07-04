@@ -11,6 +11,7 @@ import {
 import { Chain } from "viem";
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useWallets } from "@privy-io/react-auth";
+import useSolanaBalance from "./useSolanaBalance";
 
 const DEFAULT_BALANCE: Balance = { value: 0n, formatted: "0" };
 
@@ -20,11 +21,13 @@ export const useMultichainTokenBalanceForModal = (
 ) => {
   const currentToken = useMemo(() => token, [token]);
   const currentChain = useMemo(() => targetChain, [targetChain]);
-  const {wallets} = useWallets();
+  const { wallets } = useWallets();
   const activeWallet = wallets[0];
 
-  const { walletAddress, refetchBalance: refetchNativeBalance } =
-    useMultiChain();
+  const { walletAddress, selectedChain } = useMultiChain();
+
+  const { balance: solanaBalance, refetch: refetchSolBalance } =
+    useSolanaBalance();
 
   const [balance, setBalance] = useState<Balance>(DEFAULT_BALANCE);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -33,6 +36,10 @@ export const useMultichainTokenBalanceForModal = (
   const prevChainIdRef = useRef<number | string | undefined>(undefined);
   const retryCountRef = useRef(0);
   const MAX_RETRIES = 3;
+
+  useEffect(() => {
+    setBalance(solanaBalance);
+  }, [solanaBalance]);
 
   const internalFetchBalance = useCallback(async () => {
     console.log("💰 [MODAL-TOKEN-BALANCE] fetchBalance called", {
@@ -64,6 +71,44 @@ export const useMultichainTokenBalanceForModal = (
       setError(null);
 
       if (currentToken.isNative) {
+        if (selectedChain === "evm") {
+          try {
+            const { getPublicClient } = await import("@/utils/getPublicClient");
+            const { formatEther } = await import("viem");
+
+            const publicClient = await getPublicClient(
+              activeWallet,
+              currentChain.id,
+            );
+            if (publicClient) {
+              const nativeBalance = await publicClient.getBalance({
+                address: walletAddress as `0x${string}`,
+              });
+              const formattedBalance = formatEther(nativeBalance);
+
+              setBalance({
+                value: nativeBalance,
+                formatted: formattedBalance,
+              });
+            } else {
+              console.warn(
+                "No public client available for chain:",
+                currentChain.id,
+              );
+              setBalance(DEFAULT_BALANCE);
+            }
+          } catch (error) {
+            console.error(
+              "Error fetching native balance for chain:",
+              currentChain.id,
+              error,
+            );
+            setBalance(DEFAULT_BALANCE);
+          }
+        } else if (selectedChain === "solana") {
+          refetchSolBalance();
+        }
+
         console.log(
           "🪙 [MODAL-TOKEN-BALANCE] Fetching native balance for specific chain",
           {
@@ -72,37 +117,6 @@ export const useMultichainTokenBalanceForModal = (
             timestamp: new Date().toISOString(),
           },
         );
-
-        try {
-          const { getPublicClient } = await import("@/utils/getPublicClient");
-          const { formatEther } = await import("viem");
-
-          const publicClient = await getPublicClient(activeWallet, currentChain.id);
-          if (publicClient) {
-            const nativeBalance = await publicClient.getBalance({
-              address: walletAddress as `0x${string}`,
-            });
-            const formattedBalance = formatEther(nativeBalance);
-
-            setBalance({
-              value: nativeBalance,
-              formatted: formattedBalance,
-            });
-          } else {
-            console.warn(
-              "No public client available for chain:",
-              currentChain.id,
-            );
-            setBalance(DEFAULT_BALANCE);
-          }
-        } catch (error) {
-          console.error(
-            "Error fetching native balance for chain:",
-            currentChain.id,
-            error,
-          );
-          setBalance(DEFAULT_BALANCE);
-        }
 
         setIsLoading(false);
         retryCountRef.current = 0;
@@ -157,7 +171,7 @@ export const useMultichainTokenBalanceForModal = (
                 walletAddress,
                 currentToken.address,
                 currentChain,
-                activeWallet
+                activeWallet,
               );
             newBalance = {
               value: ercBalance,
@@ -190,7 +204,14 @@ export const useMultichainTokenBalanceForModal = (
       setBalance({ value: 0n, formatted: "0" });
       setIsLoading(false);
     }
-  }, [currentToken, walletAddress, currentChain, error, refetchNativeBalance, activeWallet]);
+  }, [
+    currentToken,
+    walletAddress,
+    currentChain,
+    error,
+    activeWallet,
+    selectedChain,
+  ]);
 
   useEffect(() => {
     const currentChainId = currentChain?.id;
