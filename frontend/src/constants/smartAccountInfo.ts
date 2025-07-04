@@ -1,9 +1,3 @@
-import { StaticImageData } from "next/image";
-import BrainImage from "@/brainImage.png";
-import SecureImage from "@/secureImage.png";
-import PowerImage from "@/powerImage.png";
-import FundImage from "@/fundImage.png";
-
 export enum IconTypes {
   PASSKEY = "PASSKEY",
   EMAIL = "EMAIL",
