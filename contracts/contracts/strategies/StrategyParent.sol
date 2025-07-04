@@ -3,133 +3,51 @@ pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@zetachain/protocol-contracts/contracts/evm/interfaces/IGatewayEVM.sol";
 import "../interfaces/IWETH.sol";
 import "../interfaces/I4626Vault.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IErrors.sol";
-import "../interfaces/IDistributor.sol";
-import "../interfaces/ISwapHelper.sol";
 
 /// @title StrategyParent
 /// @notice Base contract for cross-chain investment strategies.
 /// @dev Handles common logic for investing, divesting, and cross-chain messaging.
-abstract contract StrategyParent is
-    Initializable,
-    Ownable2StepUpgradeable,
-    UUPSUpgradeable,
-    IErrors
-{
+abstract contract StrategyParent is Ownable, IErrors {
     using SafeERC20 for IERC20;
 
     string public name;
-    address public amanaVault;
-    address public withdrawHelper;
+    address public immutable amanaVault;
+    uint256 public executionNonce = 1;
     address public oldStrategy;
-    address public rewardsDistributor;
-
-    address public _GATEWAY_ADDRESS;
-
-    uint256 public lastProcessedNonce;
-
-    uint16 public harvestSwapSlippage;
-    uint256 public minClaimableReward; // Default: 0.005
-
-    address public swapHelper;
-
-    enum TxType {
-        Deposit,
-        Withdraw,
-        Switch,
-        Revert
-    }
-
-    struct BufferedTx {
-        TxType txType;
-        uint256 assetAmount;
-        uint256 minimumOut;
-        address newStrategy; // only for switch, optional otherwise
-    }
-
-    mapping(uint256 => BufferedTx) public pendingByNonce;
-
-    IERC20 internal inputToken;
-    address internal receiptTokenAddress;
-
-    // uint256[50] private __gap;
-
-    bytes32 internal constant TX_DEPOSIT_CONFIRMED =
-        keccak256("DepositConfirmed");
-    bytes32 internal constant TX_WITHDRAW_CONFIRMED =
-        keccak256("WithdrawConfirmed");
-    bytes32 internal constant TX_SWITCH_CONFIRMED =
-        keccak256("SwitchConfirmed");
-    bytes32 internal constant TX_DEPOSIT_REVERTED =
-        keccak256("DepositReverted");
-    bytes32 internal constant TX_WITHDRAW_REVERTED =
-        keccak256("WithdrawReverted");
-    bytes32 internal constant TX_SWITCH_REVERTED = keccak256("SwitchReverted");
-    bytes32 internal constant TX_TOTAL_ASSETS_UPDATE =
-        keccak256("TotalAssetsUpdated");
 
     event FundsInvested(
-        uint256 indexed vaultNonce,
-        uint256 amount,
-        uint256 totalAssetsAfter
+        bytes32 indexed crossChainTxId,
+        address user,
+        uint256 amount
     );
     event FundsDivested(
-        uint256 indexed vaultNonce,
-        uint256 amount,
-        uint256 totalAssetsAfter
+        bytes32 indexed crossChainTxId,
+        address user,
+        uint256 amount
     );
-    event InvestConfirmFailed(
-        uint256 indexed vaultNonce,
-        uint256 totalAssetsAfter
-    );
-    event ReturnFundsFromStrategyFailed(
-        uint256 indexed vaultNonce,
-        uint256 withdrawnAmount,
-        uint256 totalAssetsAfter
-    );
+    event InvestConfirmFailed(bytes32 indexed crossChainTxId);
+    event ReturnFundsFromStrategyFailed(bytes32 indexed crossChainTxId);
     event TotalUnderlyingAssetsSent(
-        uint256 indexed vaultNonce,
-        uint256 totalUnderlyingAssets
+        address indexed vaultAddress,
+        uint256 totalUnderlyingAssets,
+        uint256 blockNumber,
+        uint256 blockTimestamp
     );
-    event SendTotalUnderlyingAssetsFailed(
-        uint256 indexed vaultNonce,
-        uint256 totalAssetsAfter
-    );
+    event SendTotalUnderlyingAssetsFailed();
     event AssetsTransferredToNewStrategy(
         address indexed newStrategy,
         uint256 totalAssetsTransferrred,
-        uint256 vaultNonce
+        uint256 executionNonce,
+        bytes32 crossChainTxId
     );
-    event AssetsReceivedFromOldStrategy(
-        address indexed oldStrategy,
-        uint256 totalAssetsTransferrred,
-        uint256 vaultNonce
-    );
-    event RewardsClaimed(
-        address indexed strategy,
-        address indexed rewardToken,
-        uint256 amount
-    );
-    event RewardsHarvested(
-        address indexed rewardToken,
-        uint256 rewardAmount,
-        uint256 inputTokenReceived
-    );
-    event RewardClaimFailed(string reason);
-    event SwapFailed(
-        address indexed rewardToken,
-        uint256 amount,
-        string reason
-    );
+
+    address immutable _GATEWAY_ADDRESS;
 
     modifier onlyGateway() {
         if (msg.sender != _GATEWAY_ADDRESS) {
@@ -138,25 +56,16 @@ abstract contract StrategyParent is
         _;
     }
 
-    function __StrategyParent_init(
+    constructor(
         string memory _name,
         address _amanaVault,
-        address _gateway,
-        address _withdrawHelper,
-        address _inputTokenAddress,
-        address _receiptTokenAddress
-    ) internal onlyInitializing {
-        __Ownable_init(msg.sender);
+        address _gateway
+    ) Ownable(msg.sender) {
+        if (_amanaVault == address(0)) revert InvalidAddress();
         name = _name;
         amanaVault = _amanaVault;
         _GATEWAY_ADDRESS = _gateway;
-        withdrawHelper = _withdrawHelper;
-        inputToken = IERC20(_inputTokenAddress);
-        receiptTokenAddress = _receiptTokenAddress;
-        minClaimableReward = 5; // wherever this is used it is multiplied by 1e15 or 1e3, depending on token decimals
     }
-
-    function _authorizeUpgrade(address) internal override onlyOwner {}
 
     /// @notice Processes calls from the Gateway for deposits or withdrawals.
     /// @param context The message context from the Gateway.
@@ -165,96 +74,65 @@ abstract contract StrategyParent is
         MessageContext calldata context,
         bytes calldata message
     ) external payable onlyGateway returns (bytes memory result) {
-        if (
-            context.sender != address(amanaVault) &&
-            context.sender != withdrawHelper
-        ) {
+        if (context.sender != address(amanaVault)) {
             revert OnlyVault();
         }
 
         (
-            TxType txType,
-            uint256 assetAmount,
-            uint256 minimumOut,
-            address newStrategy,
-            uint256 vaultNonce
-        ) = abi.decode(message, (TxType, uint256, uint256, address, uint256));
-
-        if (txType == TxType.Deposit && msg.value == 0) {
-            SafeERC20.safeTransferFrom(
-                inputToken,
-                msg.sender,
-                address(this),
-                assetAmount
+            address user,
+            address receiver,
+            address ZRC20AddressOrNewStrategy,
+            address withdrawERC20,
+            uint256 amount,
+            uint256 fee,
+            uint32 withdrawChainId,
+            bool isDeposit,
+            bytes32 crossChainTxId,
+            uint16 slippage
+        ) = abi.decode(
+                message,
+                (
+                    address,
+                    address,
+                    address,
+                    address,
+                    uint256,
+                    uint256,
+                    uint32,
+                    bool,
+                    bytes32,
+                    uint16
+                )
             );
-        }
-        pendingByNonce[vaultNonce] = BufferedTx({
-            txType: txType,
-            assetAmount: assetAmount,
-            minimumOut: minimumOut,
-            newStrategy: newStrategy
-        });
 
-        if (vaultNonce == lastProcessedNonce + 1) {
-            _processBufferedTransactions(); // process all
-        }
+        uint256 currentExecutionNonce = executionNonce;
+        executionNonce++;
 
-        return abi.encode(true);
-    }
-
-    function processBufferedTransactions() external onlyOwner {
-        _processBufferedTransactions(); // just one
-    }
-
-    function _processBufferedTransactions() internal {
-        while (_processNextBufferedTransaction()) {}
-    }
-
-    function processNextBufferedTransaction() external onlyOwner {
-        _processNextBufferedTransaction(); // just one
-    }
-
-    function _processNextBufferedTransaction()
-        internal
-        returns (bool didProcess)
-    {
-        uint256 nextNonce = lastProcessedNonce + 1;
-        BufferedTx storage txData = pendingByNonce[nextNonce];
-
-        if (
-            txData.txType == TxType(0) &&
-            txData.assetAmount == 0 &&
-            txData.minimumOut == 0 &&
-            txData.newStrategy == address(0)
-        ) {
-            return false;
-        }
-
-        if (txData.txType == TxType.Deposit) {
-            _invest();
-        } else if (txData.txType == TxType.Withdraw) {
-            _divest();
-        } else if (txData.txType == TxType.Switch) {
-            _transferAssetsToNewStrategy();
-        } else if (txData.txType == TxType.Revert) {
-            _sendUpdateToVault(nextNonce, TX_DEPOSIT_REVERTED);
+        if (user == address(0) && receiver == address(0)) {
+            _transferAssetsToNewStrategy(
+                ZRC20AddressOrNewStrategy,
+                currentExecutionNonce,
+                crossChainTxId
+            );
+            return abi.encode(true);
+        } else if (isDeposit) {
+            _invest(receiver, amount, currentExecutionNonce, crossChainTxId);
+            return abi.encode(true);
         } else {
-            revert("Unknown TxType");
+            _divest(
+                user,
+                receiver,
+                ZRC20AddressOrNewStrategy,
+                withdrawERC20,
+                amount,
+                fee,
+                withdrawChainId,
+                currentExecutionNonce,
+                crossChainTxId,
+                slippage
+            );
+            return abi.encode(true);
         }
-
-        delete pendingByNonce[nextNonce];
-        lastProcessedNonce = nextNonce;
-        return true;
-    }
-
-    function updateWithdrawHelper(address _withdrawHelper) external onlyOwner {
-        if (_withdrawHelper == address(0)) revert InvalidAddress();
-        withdrawHelper = _withdrawHelper;
-    }
-
-    function updateVault(address _amanaVault) external onlyOwner {
-        if (_amanaVault == address(0)) revert InvalidAddress();
-        amanaVault = _amanaVault;
     }
 
     /**
@@ -267,148 +145,94 @@ abstract contract StrategyParent is
         oldStrategy = _oldStrategy;
     }
 
-    function setLastProcessedNonce(
-        uint256 _lastProcessedNonce
-    ) external onlyOwner {
-        lastProcessedNonce = _lastProcessedNonce;
-    }
-
-    function setHarvestSwapSlippage(uint16 _slippage) external onlyOwner {
-        require(_slippage <= 10000, "Slippage too high");
-        harvestSwapSlippage = _slippage;
-    }
-
-    function setMinClaimableReward(uint256 newThreshold) external onlyOwner {
-        require(newThreshold < 10000, "Too high"); // Optional sanity check
-        minClaimableReward = newThreshold;
-    }
-
-    function setSwapHelper(address _swapHelper) external onlyOwner {
-        if (_swapHelper == address(0)) revert InvalidAddress();
-        swapHelper = _swapHelper;
-    }
-
-    function claimRewards() public virtual returns (uint256) {}
-
-    function _reinvestRewards() internal virtual {}
-
-    function harvest() public virtual {
-        claimRewards();
-        _reinvestRewards();
-    }
-
-    /**
-     * @notice Sets the address of the Merkl rewards distributor contract.
-     * @param _rewardsDistributor The address of the rewards distributor contract.
-     */
-    function setRewardsDistributor(
-        address _rewardsDistributor
-    ) external onlyOwner {
-        rewardsDistributor = _rewardsDistributor;
-    }
-
-    /**
-     * @notice Whitelists an operator for rewards distribution.
-     * @param operator can whitelist a wallet that can claim merkl rewards on behalf of this strategy
-     */
-    function whitelistOperatorForRewards(address operator) external onlyOwner {
-        IDistributor(rewardsDistributor).toggleOperator(
-            address(this),
-            operator
-        );
-    }
-
     /**
      * @notice Returns the total underlying assets managed by the contract.
      * @return The total amount of underlying assets in the contract.
      */
     function totalUnderlyingAssets() public view virtual returns (uint256);
 
-    function convertToShares(
-        uint256 assetAmount
-    ) public view virtual returns (uint256) {
-        return assetAmount;
-    }
-
-    function convertToAssets(
-        uint256 shares
-    ) public view virtual returns (uint256) {
-        return shares;
-    }
-
-    function getStrategyWithdrawShareAmount(
-        uint256 assetAmount
-    ) public view virtual returns (uint256 withdrawShareAmount);
-
     /// @notice Invests assets into the yield source
-    function _invest() internal virtual;
-
-    function depositFundsIntoYieldSource(
+    /// @param receiver Address of the receiver whose funds are being invested.
+    /// @param amount Amount of asset to invest.
+    /// @param _executionNonce Current execution nonce for the transaction.
+    /// @param _crossChainTxId Cross-chain transaction ID.
+    function _invest(
+        address receiver,
         uint256 amount,
-        uint256 minimumOut
-    ) external onlyOwner {
-        _depositFundsIntoYieldSource(amount, minimumOut);
-    }
+        uint256 _executionNonce,
+        bytes32 _crossChainTxId
+    ) internal virtual;
 
     /**
      * @notice Deposits funds into the configured yield source.
      * @dev This function is intended to be overridden in derived contracts to define specific deposit logic.
      * @param amount The amount of funds to deposit into the yield source.
      */
-    function _depositFundsIntoYieldSource(
-        uint256 amount,
-        uint256 minimumOut
-    ) internal virtual;
+    function _depositFundsIntoYieldSource(uint256 amount) internal virtual;
 
     /**
      * @notice Allows the owner to manually resend an investment confirmation message.
+     * @param receiver The address of the receiver to whom the confirmation is sent.
+     * @param amount The amount of assets being invested.
      * @param totalUnderlyingAssetsAfter The total underlying assets after the investment.
-     * @param vaultNonce The execution nonce associated with the investment.
+     * @param _executionNonce The execution nonce associated with the investment.
+     * @param _crossChainTxId The cross-chain transaction ID.
      */
     function manualResendInvestConfirmation(
-        uint256 totalUnderlyingAssetsBefore,
+        address receiver,
+        uint256 amount,
         uint256 totalUnderlyingAssetsAfter,
-        uint256 vaultNonce
+        uint256 _executionNonce,
+        bytes32 _crossChainTxId
     ) external onlyOwner {
         _sendInvestConfirmation(
-            totalUnderlyingAssetsBefore,
+            receiver,
+            amount,
             totalUnderlyingAssetsAfter,
-            vaultNonce
+            _executionNonce,
+            _crossChainTxId
         );
     }
 
     /**
      * @dev Sends an investment confirmation message to the gateway.
-
+     * @param receiver The address of the receiver to whom the confirmation is sent.
+     * @param amount The amount of assets being invested.
      * @param totalUnderlyingAssetsAfter The total underlying assets after the investment.
-
+     * @param _executionNonce The execution nonce associated with the investment.
+     * @param _crossChainTxId The cross-chain transaction ID.
      *
      * Notes:
      * - This function encodes the investment details and sends them via the gateway contract.
      * - Includes revert options in case of failure.
      */
     function _sendInvestConfirmation(
-        uint256 totalUnderlyingAssetsBefore,
+        address receiver,
+        uint256 amount,
         uint256 totalUnderlyingAssetsAfter,
-        uint256 vaultNonce
+        uint256 _executionNonce,
+        bytes32 _crossChainTxId
     ) internal {
         bytes memory outgoingMessage = abi.encode(
-            totalUnderlyingAssetsBefore,
+            address(0),
+            receiver,
+            address(this),
+            address(0),
+            amount,
+            0,
+            0,
+            true,
             totalUnderlyingAssetsAfter,
-            vaultNonce,
-            TX_DEPOSIT_CONFIRMED
+            _executionNonce,
+            _crossChainTxId,
+            0
         );
 
         RevertOptions memory revertOptions = RevertOptions(
             address(this),
             false,
             address(this),
-            abi.encode(
-                "_investConfirmFailed",
-                0,
-                totalUnderlyingAssetsAfter,
-                vaultNonce
-            ),
+            abi.encode("_investConfirmFailed", _crossChainTxId),
             uint256(1000000)
         );
 
@@ -422,83 +246,151 @@ abstract contract StrategyParent is
     /**
      * @notice Transfers assets from the current strategy to a new strategy during a strategy switch.
      * @dev This function is intended to be overridden in derived contracts to define specific transfer logic.
+     * @param newStrategy The address of the new strategy contract.
+     * @param currentExecutionNonce The current execution nonce for the transaction.
+     * @param _crossChainTxId The cross-chain transaction ID.
      */
-    function _transferAssetsToNewStrategy() internal virtual;
+    function _transferAssetsToNewStrategy(
+        address newStrategy,
+        uint256 currentExecutionNonce,
+        bytes32 _crossChainTxId
+    ) internal virtual;
 
     /// @notice Withdraws funds from the yield source.
-    function _divest() internal virtual {
-        BufferedTx storage txData = pendingByNonce[lastProcessedNonce + 1];
-        uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
-            txData.assetAmount,
-            txData.minimumOut
-        );
+    /// @param user Address of the user whose funds are being withdrawn.
+    /// @param withdrawZRC20 ZRC20 token address for the withdrawal.
+    /// @param amount Amount to withdraw.
+    /// @param fee Gas fee for the transaction.
+    /// @param withdrawChainId Chain ID for the withdrawal.
+    /// @param _executionNonce Current execution nonce for the transaction.
+    /// @param _crossChainTxId Cross-chain transaction ID.
+    function _divest(
+        address user,
+        address receiver,
+        address withdrawZRC20,
+        address withdrawERC20,
+        uint256 amount,
+        uint256 fee,
+        uint32 withdrawChainId,
+        uint256 _executionNonce,
+        bytes32 _crossChainTxId,
+        uint16 slippage
+    ) internal {
+        _withdrawFundsFromYieldSource(amount + fee);
 
         uint256 totalUnderlyingAssetsAfter = totalUnderlyingAssets();
 
         _sendFundsAndDivestConfirmation(
-            amountWithdrawn,
+            user,
+            receiver,
+            withdrawZRC20,
+            withdrawERC20,
+            amount,
+            fee,
+            withdrawChainId,
             totalUnderlyingAssetsAfter,
-            lastProcessedNonce + 1
+            _executionNonce,
+            _crossChainTxId,
+            slippage
         );
 
-        emit FundsDivested(
-            lastProcessedNonce + 1,
-            amountWithdrawn,
-            totalUnderlyingAssetsAfter
-        );
+        emit FundsDivested(_crossChainTxId, user, amount + fee);
     }
 
     /**
      * @notice Allows the owner to manually resend a funds and divest confirmation message.
      * @dev Calls the internal `_sendFundsAndDivestConfirmation` function with the provided parameters.
-     * @param amountWithdrawn The amount of funds to process.
+     * @param user The address of the user whose funds are being processed.
+     * @param receiver The address of the receiver of the funds.
+     * @param withdrawZRC20 The ZRC20 token address for withdrawal.
+     * @param amount The amount of funds to process.
+     * @param fee The fee associated with the transaction.
+     * @param withdrawChainId The ID of the chain to which the funds are being withdrawn.
+     * @param totalUnderlyingAssetsAfter The total underlying assets after the divestment.
+     * @param _executionNonce The execution nonce associated with the transaction.
+     * @param _crossChainTxId The cross-chain transaction ID.
      */
     function manualResendFundsAndDivestConfirmation(
-        uint256 amountWithdrawn,
+        address user,
+        address receiver,
+        address withdrawZRC20,
+        address withdrawERC20,
+        uint256 amount,
+        uint256 fee,
+        uint32 withdrawChainId,
         uint256 totalUnderlyingAssetsAfter,
-        uint256 vaultNonce
+        uint256 _executionNonce,
+        bytes32 _crossChainTxId,
+        uint16 slippage
     ) external onlyOwner {
         _sendFundsAndDivestConfirmation(
-            amountWithdrawn,
+            user,
+            receiver,
+            withdrawZRC20,
+            withdrawERC20,
+            amount,
+            fee,
+            withdrawChainId,
             totalUnderlyingAssetsAfter,
-            vaultNonce
+            _executionNonce,
+            _crossChainTxId,
+            slippage
         );
     }
 
     /**
      * @dev Sends a funds and divest confirmation message to the Amana vault.
-     * @param amountWithdrawn The amount of funds to process.
-
+     * @param user The address of the user whose funds are being processed.
+     * @param receiver The address of the receiver of the funds.
+     * @param withdrawZRC20 The ZRC20 token address for withdrawal.
+     * @param amount The amount of funds to process.
+     * @param fee The fee associated with the transaction.
+     * @param withdrawChainId The ID of the chain to which the funds are being withdrawn.
+     * @param totalUnderlyingAssetsAfter The total underlying assets after the divestment.
+     * @param _executionNonce The execution nonce associated with the transaction.
+     * @param _crossChainTxId The cross-chain transaction ID.
      *
      * Notes:
      * - Constructs the message payload for the funds and divestment confirmation.
      * - Configures revert options in case of failure and sends the message using `_sendDepositAndCall`.
      */
     function _sendFundsAndDivestConfirmation(
-        uint256 amountWithdrawn,
+        address user,
+        address receiver,
+        address withdrawZRC20,
+        address withdrawERC20,
+        uint256 amount,
+        uint256 fee,
+        uint32 withdrawChainId,
         uint256 totalUnderlyingAssetsAfter,
-        uint256 vaultNonce
+        uint256 _executionNonce,
+        bytes32 _crossChainTxId,
+        uint16 slippage
     ) internal {
         bytes memory outgoingMessage = abi.encode(
-            amountWithdrawn,
+            user,
+            receiver,
+            withdrawZRC20,
+            withdrawERC20,
+            amount,
+            fee,
+            withdrawChainId,
+            false,
             totalUnderlyingAssetsAfter,
-            vaultNonce,
-            TX_WITHDRAW_CONFIRMED
+            _executionNonce,
+            _crossChainTxId,
+            slippage
         );
+
         RevertOptions memory revertOptions = RevertOptions(
             address(this),
             true,
             address(this),
-            abi.encode(
-                "_returnFundsFromStrategyFailed",
-                amountWithdrawn,
-                totalUnderlyingAssetsAfter,
-                vaultNonce
-            ),
-            uint256(1500000)
+            abi.encode("_returnFundsFromStrategyFailed", _crossChainTxId),
+            uint256(1000000)
         );
         _sendDepositAndCall(
-            amountWithdrawn,
+            amount + fee,
             amanaVault,
             outgoingMessage,
             revertOptions
@@ -507,13 +399,13 @@ abstract contract StrategyParent is
 
     /**
      * @dev Sends a deposit and calls the `amanaVault` with the specified outgoing message and revert options.
-     * @param amountWithdrawn The amount of native tokens to send with the transaction.
+     * @param amount The amount of native tokens to send with the transaction.
      * @param amanaVault The address of the vault to which the deposit and call are sent.
      * @param outgoingMessage The payload to be passed to the `amanaVault`.
      * @param revertOptions Options specifying how to handle transaction reverts.
      */
     function _sendDepositAndCall(
-        uint256 amountWithdrawn,
+        uint256 amount,
         address amanaVault,
         bytes memory outgoingMessage,
         RevertOptions memory revertOptions
@@ -522,13 +414,11 @@ abstract contract StrategyParent is
     /**
      * @notice Withdraws funds from the configured yield source.
      * @dev This function is intended to be overridden in derived contracts to define specific withdrawal logic.
-     * @param fractionOfTotalShares The fraction of shares to withdraw from the yield source.
-     * @param minAmountOut The minimum amount of funds to withdraw.
+     * @param amount The amount of funds to withdraw from the yield source.
      * @return The amount of funds successfully withdrawn.
      */
     function _withdrawFundsFromYieldSource(
-        uint256 fractionOfTotalShares,
-        uint256 minAmountOut
+        uint256 amount
     ) internal virtual returns (uint256);
 
     /**
@@ -540,103 +430,72 @@ abstract contract StrategyParent is
      * - Emits a `TotalUnderlyingAssetsSent` event upon successful execution.
      */
     function sendTotalUnderlyingAssetsToVault() external {
-        _sendUpdateToVault(lastProcessedNonce, TX_TOTAL_ASSETS_UPDATE);
-    }
-
-    function _sendUpdateToVault(uint256 nonceToUse, bytes32 txStatus) internal {
+        uint256 currentExecutionNonce = executionNonce;
+        executionNonce++;
+        // Construct the message payload with the desired information
         bytes memory outgoingMessage = abi.encode(
+            address(0),
+            address(0),
+            address(0),
+            address(0),
+            block.number,
             0,
-            totalUnderlyingAssets(),
-            nonceToUse,
-            txStatus
-        );
-
-        RevertOptions memory revertOptions = RevertOptions(
-            address(this),
+            0,
             false,
-            address(this),
-            abi.encode(
-                "_handleRevertOnSendTotalUnderlyingAssets",
-                0,
-                totalUnderlyingAssets(),
-                nonceToUse
-            ),
-            1_000_000
-        );
-
-        IGatewayEVM(_GATEWAY_ADDRESS).call(
-            amanaVault,
-            outgoingMessage,
-            revertOptions
-        );
-
-        emit TotalUnderlyingAssetsSent(nonceToUse, totalUnderlyingAssets());
-    }
-
-    /// @notice Safely approves an allowance for a spender.
-    function approveOrIncreaseAllowance(
-        IERC20 token,
-        address spender,
-        uint256 amount
-    ) internal {
-        bytes memory approveCalldata = abi.encodeWithSelector(
-            IERC20.approve.selector,
-            spender,
-            amount
-        );
-
-        (bool success, ) = address(token).call(approveCalldata);
-        if (success) return;
-
-        // If initial approve failed, try resetting to zero first
-        bytes memory resetCalldata = abi.encodeWithSelector(
-            IERC20.approve.selector,
-            spender,
+            totalUnderlyingAssets(),
+            currentExecutionNonce,
+            0,
             0
         );
-        (bool resetSuccess, ) = address(token).call(resetCalldata);
-        require(resetSuccess, "Reset to 0 failed");
-        (bool secondApproveSuccess, ) = address(token).call(approveCalldata);
-        require(secondApproveSuccess, "Second approve failed");
+
+        // Configure revert options for the cross-chain call
+        RevertOptions memory revertOptions = RevertOptions(
+            address(this), // Address to send revert message to
+            false, // Flag to indicate whether to revert on failure
+            address(this), // Address to handle revert logic
+            abi.encode("_handleRevertOnSendTotalUnderlyingAssets", bytes32(0)), // Revert handling logic
+            uint256(1000000) // Gas for revert call
+        );
+
+        // Use the GatewayEVM contract to make the call
+        IGatewayEVM(_GATEWAY_ADDRESS).call(
+            amanaVault, // Destination contract (vault on ZetaChain)
+            outgoingMessage, // Encoded message payload
+            revertOptions // Revert options
+        );
+
+        emit TotalUnderlyingAssetsSent(
+            amanaVault,
+            totalUnderlyingAssets(),
+            block.number,
+            block.timestamp
+        );
     }
 
     /// @notice Handles reverts from the Gateway.
     /// @param context Context of the revert.
-    function onRevert(
-        RevertContext calldata context
-    ) external virtual onlyGateway {
-        (
-            string memory revertMessage,
-            uint256 withdrawnAmount,
-            uint256 totalAssetsAfter,
-            uint256 vaultNonce
-        ) = abi.decode(
-                context.revertMessage,
-                (string, uint256, uint256, uint256)
-            );
+    function onRevert(RevertContext calldata context) external {
+        (string memory revertMessage, bytes32 _crossChainTxId) = abi.decode(
+            context.revertMessage,
+            (string, bytes32)
+        );
 
         if (
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_investConfirmFailed"))
         ) {
-            _sendUpdateToVault(vaultNonce, TX_DEPOSIT_REVERTED);
-            emit InvestConfirmFailed(vaultNonce, totalAssetsAfter);
+            emit InvestConfirmFailed(_crossChainTxId);
         } else if (
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_returnFundsFromStrategyFailed"))
         ) {
-            _depositFundsIntoYieldSource(context.amount, 1);
-            _sendUpdateToVault(vaultNonce, TX_WITHDRAW_REVERTED);
-            emit ReturnFundsFromStrategyFailed(
-                vaultNonce,
-                withdrawnAmount,
-                totalAssetsAfter
-            );
+            _depositFundsIntoYieldSource(context.amount);
+            emit ReturnFundsFromStrategyFailed(_crossChainTxId);
         } else if (
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_handleRevertOnSendTotalUnderlyingAssets"))
         ) {
-            emit SendTotalUnderlyingAssetsFailed(vaultNonce, totalAssetsAfter);
+            emit SendTotalUnderlyingAssetsFailed();
         } else {
             revert("Revert not handled");
         }

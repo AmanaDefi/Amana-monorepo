@@ -16,10 +16,11 @@ export default function ResponsiveTooltip({
           anchorSelect={`#${id}`}
           place="bottom"
           style={{
-            backgroundColor: "#1B46E0",
+            backgroundColor: "#353945",
             borderRadius: "8px",
             zIndex: "50",
           }}
+          border="1px solid #555555"
           opacity={1}
         >
           {content}
@@ -31,10 +32,11 @@ export default function ResponsiveTooltip({
           openOnClick
           place="bottom"
           style={{
-            backgroundColor: "#1B46E0",
+            backgroundColor: "#353945",
             borderRadius: "8px",
             zIndex: "50",
           }}
+          border="1px solid #555555"
           opacity={1}
         >
           {content}

@@ -4,15 +4,14 @@ pragma solidity 0.8.26;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@zetachain/protocol-contracts/contracts/evm/interfaces/IGatewayEVM.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import {RevertContext, RevertOptions} from "@zetachain/protocol-contracts/contracts/Revert.sol";
 
 import "./interfaces/IErrors.sol";
 
-contract WithdrawalReceiver is Revertable, Ownable {
+contract WithdrawalReceiver is Revertable {
     using SafeERC20 for IERC20;
 
-    address public _GATEWAY_ADDRESS =
+    address public constant _GATEWAY_ADDRESS =
         0x48B9AACC350b20147001f88821d31731Ba4C30ed;
 
     event FundsReturned(
@@ -31,8 +30,6 @@ contract WithdrawalReceiver is Revertable, Ownable {
         }
         _;
     }
-
-    constructor(address _owner) Ownable(_owner) {}
 
     /**
      * @notice Handles calls from the ZetaChain gateway to return funds to users.
@@ -59,17 +56,6 @@ contract WithdrawalReceiver is Revertable, Ownable {
     }
 
     /**
-     * @notice Allows the owner to update the gateway address.
-     * @param newGatewayAddress The new gateway address.
-     */
-    function updateGatewayAddress(
-        address newGatewayAddress
-    ) external onlyOwner {
-        require(newGatewayAddress != address(0), "Invalid address");
-        _GATEWAY_ADDRESS = newGatewayAddress;
-    }
-
-    /**
      * @dev Internal function to return funds to a user.
      * @param amount The amount of funds to return.
      * @param receiver The address of the receiver.
@@ -82,45 +68,27 @@ contract WithdrawalReceiver is Revertable, Ownable {
         address asset,
         bytes32 crossChainTxId
     ) internal {
-        require(receiver != address(0), "Invalid receiver");
-
+        // Logic to return funds to the user
         if (asset == address(0)) {
-            // Native asset transfer
+            // Native asset
             require(
                 address(this).balance >= amount,
                 "Insufficient native balance"
             );
-            (bool success, ) = payable(receiver).call{value: amount}("");
-            require(success, "Native transfer failed");
+            payable(receiver).transfer(amount);
         } else {
-            SafeERC20.safeTransferFrom(
-                IERC20(asset),
+            // ERC20 token
+            bool success = IERC20(asset).transferFrom(
                 msg.sender,
                 receiver,
                 amount
             );
+            if (!success) {
+                revert IErrors.TransferFailed();
+            }
         }
-        emit FundsReturned(receiver, asset, amount, crossChainTxId);
-    }
 
-    /**
-     * @dev Allows the owner to withdraw all of a specified token from the vault in case of an emergency.
-     * @param _token The address of the token to withdraw.
-     * @notice Reverts if the vault has no balance of the specified token.
-     */
-    function emergencyWithdraw(address _token) external onlyOwner {
-        if (_token == address(0)) {
-            // Withdraw native token (ETH)
-            uint256 nativeBalance = address(this).balance;
-            if (nativeBalance == 0) revert IErrors.NothingToWithdraw();
-            (bool success, ) = payable(owner()).call{value: nativeBalance}("");
-            require(success, "ETH transfer failed");
-        } else {
-            // Withdraw ERC-20 token
-            uint256 balance = IERC20(_token).balanceOf(address(this));
-            if (balance == 0) revert IErrors.NothingToWithdraw();
-            SafeERC20.safeTransfer(IERC20(_token), owner(), balance);
-        }
+        emit FundsReturned(receiver, asset, amount, crossChainTxId);
     }
 
     /**
@@ -139,10 +107,11 @@ contract WithdrawalReceiver is Revertable, Ownable {
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_crossChainDepositFailed"))
         ) {
-            SafeERC20.safeTransfer(
-                IERC20(context.asset),
+            _returnFundsToUser(
+                context.amount,
+                context.asset,
                 receiver,
-                context.amount
+                _crossChainTxId
             );
             emit CrossChainDepositFailed(_crossChainTxId);
         } else if (

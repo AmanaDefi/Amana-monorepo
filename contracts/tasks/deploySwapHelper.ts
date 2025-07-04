@@ -1,44 +1,37 @@
 import { task } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
-const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
-  const { ethers, upgrades } = hre;
-  const [signer] = await ethers.getSigners();
+const deployLibrary = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const network = hre.network.name;
+  const [deployer] = await hre.ethers.getSigners();
 
-  const contractName = args.contract;
-  const priceOracleAddress = args.priceOracle;
-
-  if (!contractName) {
-    throw new Error("🚨 Contract name is required (e.g., SwapHelperOnBase)");
+  if (!deployer) {
+    throw new Error(
+      `Wallet not found. Please, set a PRIVATE_KEY env variable or run "npx hardhat account --save"`
+    );
   }
 
-  if (!priceOracleAddress) {
-    throw new Error("🚨 Price oracle address is required");
-  }
+  console.log(`🔑 Deploying using account: ${deployer.address}`);
+  console.log(`🚀 Deploying SwapHelperLibEddy on ${network}...`);
 
-  console.log(`🔑 Deploying UUPS Upgradeable ${contractName} with signer: ${signer.address}`);
+  // Deploy the library
+  const factory = await hre.ethers.getContractFactory("SwapHelperLibEddy");
+  const swapHelperLib = await factory.deploy();
 
-  const ContractFactory = await ethers.getContractFactory(contractName, signer);
+  console.log("📜 Contract deployed, waiting for confirmations...");
+  await swapHelperLib.deployed();
 
-  const proxy = await upgrades.deployProxy(ContractFactory, [priceOracleAddress], {
-    kind: "uups",
-    initializer: "initialize",
-  });
+  console.log(`✅ Successfully deployed SwapHelperLibEddy on ${network}.`);
+  console.log(`📍 Library address: ${swapHelperLib.address}`);
 
-  await proxy.deployed();
-  console.log(`✅ ${contractName} proxy deployed at: ${proxy.address}`);
-
-  const implementationAddress = await upgrades.erc1967.getImplementationAddress(proxy.address);
-  console.log(`📦 Implementation address: ${implementationAddress}`);
-
-  const etherscanApiKey = hre.config.etherscan.apiKey?.[network];
+  // Verify contract on Etherscan if API key is set
+  const etherscanApiKey = hre.config.etherscan.apiKey[network];
   if (etherscanApiKey) {
-    console.log(`🛠 Verifying implementation contract on ${network} explorer...`);
+    console.log(`🛠 Verifying contract on ${network} explorer...`);
     try {
       await hre.run("verify:verify", {
-        address: implementationAddress,
-        constructorArguments: [],
+        address: swapHelperLib.address,
+        constructorArguments: [], // Libraries don't have constructor arguments
       });
       console.log(`✅ Contract verified on ${network} explorer`);
     } catch (err) {
@@ -47,11 +40,16 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   } else {
     console.log(`🚨 Etherscan API key not configured for ${network}. Skipping verification.`);
   }
+
+  // Output JSON if the flag is set
+  if (args.json) {
+    console.log(JSON.stringify(swapHelperLib));
+  }
 };
 
-task("deploy-swap-helper", "Deploys a UUPS upgradeable SwapHelper contract")
-  .addParam("contract", "The contract name to deploy, e.g., SwapHelperOnBase")
-  .addParam("priceOracle", "The address of the price oracle contract")
-  .setAction(main); // <- This line is missing in your current script
+// Register the Hardhat task
+task("deploy-swap-helper", "Deploy SwapHelperLibEddy library", deployLibrary)
+  .addFlag("json", "Output in JSON format");
 
+// Export for Hardhat
 export default {};

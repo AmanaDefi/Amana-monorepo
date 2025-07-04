@@ -10,24 +10,29 @@ abstract contract EthStrategyParent is StrategyParent {
     using SafeERC20 for IERC20;
 
     /// @notice Invests ETH into the Aave pool.
-    function _invest() internal override {
+    /// @param receiverAddress Address of the user whose funds are being invested.
+    /// @param amount Amount of ETH to invest.
+    /// @param _executionNonce Current execution nonce for the transaction.
+    /// @param _crossChainTxId Cross-chain transaction ID.
+    function _invest(
+        address receiverAddress,
+        uint256 amount,
+        uint256 _executionNonce,
+        bytes32 _crossChainTxId
+    ) internal override {
         if (msg.value == 0) revert NoFundsReceived();
-        BufferedTx memory txn = pendingByNonce[lastProcessedNonce + 1];
-        uint256 totalUnderlyingAssetsBefore = totalUnderlyingAssets();
 
-        _depositFundsIntoYieldSource(msg.value, txn.minimumOut);
+        _depositFundsIntoYieldSource(msg.value);
 
         _sendInvestConfirmation(
-            totalUnderlyingAssets() - totalUnderlyingAssetsBefore,
+            receiverAddress,
+            amount,
             totalUnderlyingAssets(),
-            lastProcessedNonce + 1
+            _executionNonce,
+            _crossChainTxId
         );
 
-        emit FundsInvested(
-            lastProcessedNonce + 1,
-            msg.value,
-            totalUnderlyingAssets()
-        );
+        emit FundsInvested(_crossChainTxId, receiverAddress, amount);
     }
 
     /**
@@ -51,49 +56,21 @@ abstract contract EthStrategyParent is StrategyParent {
     }
 
     /**
-     * @notice Transfers assets from the current strategy to a new strategy.
-     * @dev This function is intended to be overridden in derived contracts to define specific transfer logic.
-     */
-    function _transferAssetsToNewStrategy() internal virtual override {
-        BufferedTx memory txn = pendingByNonce[lastProcessedNonce + 1];
-        if (IStrategy(txn.newStrategy).amanaVault() != amanaVault) {
-            revert InvalidAmanaVault();
-        }
-        uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
-            1e18,
-            txn.assetAmount
-        );
-
-        IStrategy(txn.newStrategy).depositFromOldStrategy{
-            value: amountWithdrawn
-        }(amountWithdrawn, txn.minimumOut, lastProcessedNonce + 1);
-        emit AssetsTransferredToNewStrategy(
-            txn.newStrategy,
-            amountWithdrawn,
-            lastProcessedNonce + 1
-        );
-    }
-
-    /**
      * @dev Handles deposits from an old strategy into this strategy during a strategy switch.
      *      This function ensures the deposit comes from the old strategy, updates the execution nonce, and invests the funds.
      * @param currentExecutionNonce The current execution nonce from the old strategy.
+     * @param _crossChainTxId The cross-chain transaction ID associated with this deposit.
      */
     function depositFromOldStrategy(
         uint256,
-        uint256 minimumOut,
-        uint256 currentExecutionNonce
-    ) external payable virtual {
+        uint256 currentExecutionNonce,
+        bytes32 _crossChainTxId
+    ) external payable {
         if (oldStrategy == address(0)) revert OldStrategyNotSet();
-        if (msg.sender != oldStrategy) revert NotAuthorized();
+        if (msg.sender != oldStrategy) revert Unauthorized();
         if (msg.value == 0) revert NoFundsReceived();
-        lastProcessedNonce = currentExecutionNonce;
-        _invest();
-        emit AssetsReceivedFromOldStrategy(
-            oldStrategy,
-            msg.value,
-            currentExecutionNonce
-        );
+        executionNonce = currentExecutionNonce + 1;
+        _invest(address(0), msg.value, currentExecutionNonce, _crossChainTxId);
         oldStrategy = address(0);
     }
 
@@ -102,18 +79,7 @@ abstract contract EthStrategyParent is StrategyParent {
         if (balance == 0) {
             revert NothingToWithdraw();
         }
-        (bool success, ) = payable(owner()).call{value: balance}("");
-        if (!success) {
-            revert IErrors.TransferFailed();
-        }
-    }
-
-    function emergencyWithdraw(address _token) external onlyOwner {
-        uint256 balance = IERC20(_token).balanceOf(address(this));
-        if (balance == 0) {
-            revert NothingToWithdraw();
-        }
-        IERC20(_token).safeTransfer(owner(), balance);
+        payable(owner()).transfer(balance);
     }
 
     /// @notice Allows the contract to receive ETH.

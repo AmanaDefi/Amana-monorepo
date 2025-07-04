@@ -12,7 +12,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   }
 
   const factory = await hre.ethers.getContractFactory(args.name);
-  const contract = await (factory as any).deploy();
+  const contract = await (factory as any).deploy(args.conargs);
   await contract.deployed();
 
   if (args.json) {

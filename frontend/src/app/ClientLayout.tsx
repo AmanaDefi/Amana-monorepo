@@ -1,51 +1,49 @@
+"use client"; // Client-side code
+
 import { Inter, Space_Mono } from "next/font/google";
 import "./globals.css";
+import { ThirdwebProvider } from "thirdweb/react";
 import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import React, { PropsWithChildren } from "react";
+import 'react-toastify/dist/ReactToastify.css';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React, { useState } from 'react';
 import AccountProvider from "@/providers/AccountProvider";
 import TokenPriceProvider from "@/providers/TokenPriceProvider";
-import { fustat, gotham } from "@/styles/fonts";
-import { MultiChainProvider } from "@/providers/MultiChainProvider";
-import SolanaWalletProvider from "@/providers/SolanaWalletProvider";
-import ConditionalLayout from "./ConditionalLayout";
-import CustomPrivyProvider from "@/providers/PrivyProvider";
+import { fustat } from '@/styles/fonts'
+import Header from "@/components/header";
+import Footer from "@/components/Footer";
 
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["300", "400", "500"],
-  variable: "--font-inter",
-});
-const spaceMono = Space_Mono({
-  subsets: ["latin"],
-  weight: ["400", "700"],
-  variable: "--font-space-mono",
-});
+const inter = Inter({ subsets: ["latin"], weight: ['300', '400', '500'], variable: '--font-inter' });
+const spaceMono = Space_Mono({ subsets: ["latin"], weight: ['400', '700'], variable: '--font-space-mono' });
 
-const ClientLayout = (props: PropsWithChildren) => {
+const ClientLayout = ({ children }: Readonly<{ children: React.ReactNode; }>) => {
+  const [queryClient] = useState(() => new QueryClient());
+
   return (
-    <html
-      lang="en"
-      className={`${fustat.variable} ${gotham.variable} ${inter.variable} ${spaceMono.variable}`}
-    >
-      <body className="font-sans font-light">
-        <SolanaWalletProvider>
-          <CustomPrivyProvider>
-            <AccountProvider>
-              <MultiChainProvider>
-                <TokenPriceProvider>
-                  <main className="min-h-screen flex flex-col relative overflow-hidden">
-                    <ConditionalLayout>{props.children}</ConditionalLayout>
-                  </main>
-                </TokenPriceProvider>
-              </MultiChainProvider>
-            </AccountProvider>
-            <ToastContainer />
-          </CustomPrivyProvider>
-        </SolanaWalletProvider>
-      </body>
+    <html lang="en" className={`${fustat.variable} ${inter.variable} ${spaceMono.variable}`}>
+        <body className='font-sans font-light'>
+            <QueryClientProvider client={queryClient}>
+                <ThirdwebProvider>
+                      <AccountProvider>
+                          <TokenPriceProvider>
+                              <main className="min-h-screen flex flex-col relative overflow-hidden">
+                                  <div className="flex flex-col flex-1 page-container">
+                                      <Header/>
+                                      <div className='flex flex-1 mx-auto container'>
+                                          {children}
+                                      </div>
+                                      {/* Footer aligned with the main content */}
+                                      <Footer/>
+                                  </div>
+                              </main>
+                          </TokenPriceProvider>
+                      </AccountProvider>
+                    <ToastContainer/>
+                </ThirdwebProvider>
+            </QueryClientProvider>
+        </body>
     </html>
   );
-};
+}
 
 export default ClientLayout;

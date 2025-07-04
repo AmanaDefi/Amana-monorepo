@@ -1,4 +1,4 @@
-import { PreparedTransaction, ThirdwebClient } from "thirdweb";
+import { ThirdwebClient } from "thirdweb";
 import { ChainOptions } from "thirdweb/chains";
 import { Address } from "viem";
 
@@ -18,7 +18,6 @@ export interface Domain {
   chainId: number;
   verifyingContract: string;
 }
-
 export interface Rate {
   id: string;
   type: string;
@@ -28,19 +27,13 @@ export interface Rate {
 export interface VaultData {
   id: string;
   name: string;
-  type: string;
   symbol: string;
   des?: string;
   imgURL?: string;
-  depositFeePaidFromGasTank: boolean;
-  minDeposit?: number; // Minimum deposit amount in USD
-  maxWithdraw?: number; // Maximum instant withdrawal amount in USD
   inputToken: Token;
-  strategyNetwork?: string;
   protocol: {
     name: string;
     strategyAddress: string;
-    rewardsContractAddress?: string;
     network: string;
     chainId: number;
     netdes?: string;
@@ -67,7 +60,6 @@ export interface VaultTotalAssetsinToken {
 export interface VaultAPY {
   vaultId: string;
   APY7d: string | number | "Error"; // Adjust the type as needed
-  apy30d?: number;
 }
 
 export interface User {
@@ -87,18 +79,18 @@ export interface TransactionResult {
 export type Balance = {
   value: bigint;
   formatted: string;
-  formattedUSD?: string;
+  formattedUSD: string;
 }
 
 export interface Token {
-  address: Address | string;
+  address: Address;
   symbol: string;
   decimals: number;
   imgURL: string;
   price: number;
   balance: Balance;
   isNative: boolean;
-  ZRC20equivalent?: Token;
+  ZRC20equivalent?: Address;
 }
 
 export interface TokenByAddress {
@@ -108,22 +100,6 @@ export interface TokenByAddress {
 export enum SmartVaultActionType {
   Deposit,
   Withdrawal
-}
-
-export enum StepStatus {
-  upcoming,
-  undergo,
-  completed
-}
-
-export type Step = {
-  description: string,
-  status: StepStatus
-}
-
-export type Milestone = {
-  title: string,
-  steps: Step[],
 }
 
 export enum Action {
@@ -164,13 +140,7 @@ export enum TransactionStepStatus {
 export type TransactionStepFeedback = {
   label: string
   description: string
-  status: TransactionStepStatus,
-  txHash?: string,
-  isWaitingTooLong?: boolean,
-  waitTime?: number,
-  isRecovery?: boolean,
-  recoveryAttempted?: boolean,
-  outboundHash?: string
+  status: TransactionStepStatus
 }
 
 export type TransactionStepMessages = {
@@ -185,61 +155,5 @@ export interface UserSettings {
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
-  slippage: { isAuto: true, value: 5 }
+  slippage: { isAuto: true, value: 100 }
 };
-
-export type LeaderboardUserData = {
-  user_address: Address;
-  points: number;
-  position: number;
-  username: string;
-};
-
-export type SearchParams = {
-  userAddress: string,
-  page: number,
-  perPage: number,
-}
-
-export type Icon = {
-  url: string;
-  width: number;
-  height: number;
-  format: string;
-}
-
-export enum Tabs {
-  DEPOSIT = 'deposit',
-  WITHDRAW = 'withdraw',
-}
-
-export interface ITxLocalStorage {
-  tab: Tabs;
-
-  action: Action;
-  step: number;
-  steps: Action[];
-
-  selectedToken: string; //JSON.stringify fo save BigInt
-  inputBal: string; //JSON.stringify fo save BigInt
-  displayValue: string;
-
-  crosschainInvestHash: string;
-  lastEventTxHash: string;
-  crossChainTxId: string;
-  depositTx: PreparedTransaction;
-
-  isTransactionStarted: boolean;
-  isTransactionProcessing: boolean;
-  finishedTransaction: boolean;
-  transactionCompleted: boolean;
-  selectedChain?: string;
-
-  slippage?: {
-    value: number;
-    isAuto: boolean;
-  };
-
-  transactionStepFeedback: TransactionStepMessages;
-  lastTransactionStepFeedback: TransactionStepMessages;
-}

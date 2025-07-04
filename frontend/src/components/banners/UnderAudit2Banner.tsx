@@ -1,6 +1,4 @@
 import LinumLabs from "@public/banners/linum-labs.svg"
-import Image from 'next/image'
-
 export function UnderAudit2Banner() {
     return (
         <div
@@ -15,9 +13,9 @@ export function UnderAudit2Banner() {
             </div>
             <div className='flex-center w-2/5 lg:w-1/3 h-full'>
                 <div className='relative h-full w-fit flex-center'>
-                    <Image src="/banners/Ethereum_3D.png" alt="Ethereum" width={120} height={120} className='relative z-[3] translate-x-[40%] h-full w-auto max-h-[63px] lg:max-h-[120px]' sizes="(max-width: 1024px) 63px, 120px"/>
-                    <Image src="/banners/Polygon_3D.png" alt="Polygon" width={120} height={120} className='relative z-[2] h-full w-auto max-h-[63px] lg:max-h-[120px]' sizes="(max-width: 1024px) 63px, 120px"/>
-                    <Image src="/banners/USD%20Coin_3D.png" alt="USD Coin" width={120} height={120} className='relative z-[1] -translate-x-[40%] h-full w-auto max-h-[63px] lg:max-h-[120px]' sizes="(max-width: 1024px) 63px, 120px"/>
+                    <img src="/banners/Ethereum_3D.png" alt="Ethereum" className='relative z-[3] translate-x-[40%] h-full w-auto max-h-[63px] lg:max-h-[120px]'/>
+                    <img src="/banners/Polygon_3D.png" alt="Polygon" className='relative z-[2] h-full w-auto max-h-[63px] lg:max-h-[120px]'/>
+                    <img src="/banners/USD%20Coin_3D.png" alt="Polygon" className='relative z-[1] -translate-x-[40%] h-full w-auto max-h-[63px] lg:max-h-[120px]'/>
                 </div>
             </div>
         </div>

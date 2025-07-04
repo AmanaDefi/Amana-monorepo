@@ -3,11 +3,10 @@ import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import { Token, VaultData } from "@/types/types";
 import TokenIcon from "@/components/common/TokenIcon";
 import SearchToken from "@/components/input/SearchToken";
+import Modal from "@/components/modal/Modal";
 import { Tooltip } from "react-tooltip";
-import {getOnlyTokenSymbol, isZetachain} from "@/utils/utils";
-import Modal from "../modal/Modal";
-import { useMultiChain } from "@/providers/MultiChainProvider";
-
+import { useActiveAccount, useReadContract, useActiveWalletChain } from "thirdweb/react";
+import { Account } from "thirdweb/wallets";
 
 export interface SelectTokenProps {
   options: Token[];
@@ -20,8 +19,6 @@ export default function SelectToken({
   selectedToken,
   selectToken
 }: SelectTokenProps): JSX.Element {
-  const activeChain = useMultiChain().activeChain;
-
   const [show, setShow] = useState(false);
   const selectTokenId = selectedToken?.symbol.split(" ").join("");
 
@@ -37,6 +34,7 @@ export default function SelectToken({
             <SearchToken
               options={options}
               selectToken={(token) => {
+                console.log("Token selected in SelectToken:", token); // Debug log
                 selectToken(token);
                 setShow(false);
               }}
@@ -63,11 +61,7 @@ export default function SelectToken({
             id={selectTokenId}
             className="font-medium text-lg leading-none hidden md:block text-white group-hover:text-white truncate cursor-pointer"
           >
-            {
-              !selectedToken?.symbol ? "Select Token" : (
-                  isZetachain(Number(activeChain?.id)) ? selectedToken?.symbol : getOnlyTokenSymbol(selectedToken?.symbol ?? "")
-              )
-            }
+            {selectedToken?.symbol || "Select Token"}
           </p>
           <div className="hidden md:block">
             <Tooltip

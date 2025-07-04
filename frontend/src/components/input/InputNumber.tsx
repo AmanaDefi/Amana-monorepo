@@ -1,54 +1,20 @@
-import React, { HTMLProps } from "react";
-import clsx from "clsx";
-import { useNumberInput } from "@/hooks/useNumberInput";
-import { checkAmount } from "@/utils/utils";
+import type { HTMLProps } from "react";
 
-export type InputNumberProps = {
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-} & Omit<HTMLProps<HTMLInputElement>, "value" | "onChange" | "type">;
-
-export default function InputNumber({
-  value,
-  onChange,
-  onFocus,
-  onBlur,
-  className,
-  ...props
-}: InputNumberProps): JSX.Element {
-  const { inputRef, displayValue, handlers } = useNumberInput({
-    value,
-    onChange,
-    onFocus,
-    onBlur,
-  });
-
-  const handleAmount = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const amountString = e.target.value;
-    const newAmount = checkAmount(amountString, value);
-    if (newAmount !== "" && !newAmount) {
-      return;
-    } else {
-      onChange(e);
-    }
-  };
-
+export default function InputNumber(
+  props: HTMLProps<HTMLInputElement>
+): JSX.Element {
   return (
     <input
       {...props}
-      ref={inputRef}
-      className={clsx(
-        "w-full h-[31px] p-0 border-none text-white text-2xl bg-inherit focus:ring-0 focus:outline-none",
-        className,
-      )}
+      className="block w-full p-0 border-none text-customGray100 text-2xl bg-inherit focus:ring-0"
       inputMode="decimal"
       autoComplete="off"
       autoCorrect="off"
+      // text-specific options
       type="text"
       pattern="^[0-9]*[.,]?[0-9]*$"
+      placeholder={"0.0"}
       spellCheck="false"
-      value={displayValue}
-      {...handlers}
     />
   );
 }

@@ -1,6 +1,6 @@
 import { toast } from "react-toastify";
 
-import { loadingToast, successToast, errorToast, warningToast, infoToast } from "./toastStyles";
+import { loadingToast, successToast, errorToast } from "./toastStyles";
 
 export function showLoadingToast(message: string = "Transaction pending!") {
   loadingToast(message)
@@ -17,14 +17,6 @@ export function showErrorToast(
   const errorMessage = extractRevertReason(error);
   toast.dismiss();
   errorToast(errorMessage)
-}
-
-export function showWarningToast(message: string = "Warning!") {
-  warningToast(message);
-}
-
-export function showInfoToast(message: string = "Information") {
-  infoToast(message);
 }
 
 function extractRevertReason(error: any): string {

@@ -1,9 +1,0 @@
-node_modules
-.next/cache
-.vscode
-dist
-build
-coverage
-test
-logs
-.DS_Store

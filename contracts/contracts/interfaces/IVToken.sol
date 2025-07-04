@@ -4,9 +4,7 @@ pragma solidity 0.8.26;
 interface IVToken {
     function mint(uint mintAmount) external returns (uint);
 
-    // function redeemUnderlying(uint redeemTokens) external returns (uint);
-
-    function redeem(uint redeemTokens) external returns (uint);
+    function redeemUnderlying(uint redeemTokens) external returns (uint);
 
     function balanceOf(address account) external view returns (uint256);
 

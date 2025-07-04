@@ -2,15 +2,14 @@ import React from "react";
 
 interface Props {
   color: string;
-  strokeWidth?: number
 }
-const LeftArrowIcon: React.FC<Props> = ({ color, strokeWidth = 2}) => {
+const LeftArrowIcon: React.FC<Props> = ({ color }) => {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"
-      strokeWidth={`${strokeWidth}`}
+      strokeWidth="2"
       stroke={color}
     >
       <path

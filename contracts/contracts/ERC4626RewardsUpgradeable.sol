@@ -3,15 +3,13 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 /// @title ERC4626RewardsUpgradeable
 /// @notice Extends ERC4626Upgradeable with a reward system for token holders.
 abstract contract ERC4626RewardsUpgradeable is
-    Initializable,
     ERC4626Upgradeable,
-    Ownable2StepUpgradeable
+    OwnableUpgradeable
 {
     using SafeERC20 for IERC20;
 
@@ -64,18 +62,6 @@ abstract contract ERC4626RewardsUpgradeable is
     RewardsInterval public rewardsInterval; // Active rewards interval.
     RewardsPerToken public rewardsPerToken; // Accumulated rewards per token.
     mapping(address => UserRewards) public accumulatedRewards; // User-specific rewards data.
-
-    function __ERC4626RewardsUpgradeable_init(
-        IERC20 asset,
-        string memory name,
-        string memory symbol,
-        address owner_
-    ) internal onlyInitializing {
-        __ERC4626_init(asset);
-        __ERC20_init(name, symbol);
-        __Ownable_init(owner_);
-        _transferOwnership(owner_);
-    }
 
     /// @notice Sets the reward token.
     /// @param _rewardToken Address of the reward token.

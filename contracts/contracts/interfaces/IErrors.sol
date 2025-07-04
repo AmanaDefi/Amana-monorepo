@@ -4,17 +4,23 @@ pragma solidity 0.8.26;
 interface IErrors {
     error OnlyGateway();
     error OnlyVault();
+    error ApprovalFailed();
     error InvalidAddress();
     error OldStrategyNotSet();
-    error NotAuthorized();
+    error Unauthorized();
     error NoFundsReceived();
     error NothingToWithdraw();
-    error InsufficientOut();
+    error DepositFailed();
     error TransferFailed();
-    error ExceedsMaxSharesOut();
+
+    error InvalidStrategyAddress();
     error InvalidStrategyChainId();
+    error InvalidTreasuryAddress();
     error FeeExceedsLimit();
-    error AmountCantBeZero();
+    error DepositCantBeZero();
+    error WithdrawCantBeZero();
+    error InvalidZRC20Address();
+    error CantBeZeroAddress();
     error DepositExceedsLimit();
     error MintExceedsLimit();
     error WithdrawExceedsLimit();
@@ -22,24 +28,16 @@ interface IErrors {
     error ConfirmationAlreadyProcessed();
     error StrategyAlreadySet();
     error NoAssetsToSwitch();
-    error DepositsPaused();
 
     error InsufficientBalance();
+    error NotAuthorized();
     error VaultAlreadyAuthorized();
+    error VaultNotAuthorized();
 
     error InvalidPathLength();
+    error CantBeIdenticalAddresses();
     error InsufficientLiquidity();
     error InsufficientInputAmount();
     error InvalidPath();
     error InvalidTokenPair();
-
-    error InvalidMessage();
-    error InvalidAmanaVault();
-    error InvalidNonce();
-
-    error UserSharesInsufficientForWithdrawal(
-        address user,
-        uint256 required,
-        uint256 actual
-    );
 }
