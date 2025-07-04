@@ -39,7 +39,6 @@ export const DepositInput = ({
     walletAddress,
     setChain,
   } = useFundWalletStore();
-  const selectedTokenPrice = useTokenPriceBySymbol(currency?.symbol);
   const [tokenBalance, setTokenBalance] = useState<Balance>(EMPTY_BALANCE);
   const { wallets } = useWallets();
   const activeWallet = wallets[0];
@@ -136,8 +135,6 @@ export const DepositInput = ({
 
     handleChainSelect(chain);
   };
-
-  const usdValue = Number(tokenBalance?.formatted ?? 0) * selectedTokenPrice;
   return (
     <div>
       <div className="relative flex w-full flex-col">

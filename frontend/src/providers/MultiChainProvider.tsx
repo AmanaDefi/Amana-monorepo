@@ -218,8 +218,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       disconnect();
     }
     if (
-      privyWallet?.address &&
-      activeChain?.id.toString() !== privyWallet?.chainId?.split(":")[1]
+      privyWallet?.address
     ) {
       if (!step) {
         setWalletAddress(privyWallet?.address);
