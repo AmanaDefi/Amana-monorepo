@@ -18,6 +18,9 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
   const activeSection = getActiveSectionFromPathname(pathname);
 
+  // Перевірка чи поточна сторінка є About
+  const isAboutPage = pathname === "/about";
+
   useEffect(() => {
     const checkIsMobile = () => {
       setIsMobile(window?.innerWidth < 1024);
@@ -34,6 +37,42 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
 
   const isConnected = !!walletAddress;
 
+  // Окремий layout для About сторінки
+  if (isAboutPage) {
+    return (
+      <div className="relative overflow-hidden min-h-screen z-0">
+        <GlowIcon position={isMobile ? "top-mobile" : "top-right"} />
+        <GlowIcon position={isMobile ? "bottom-mobile" : "bottom-left"} />
+
+        <div className="flex flex-col flex-1 mx-auto w-full min-h-screen">
+          <div className="py-4 md:py-6 lg:py-10 px-4 md:px-[44px] lg:px-0">
+            <Header activeSection={activeSection} />
+          </div>
+          <div
+            className="flex-1"
+            style={
+              !isMobile
+                ? {
+                    paddingLeft: "40px",
+                    paddingRight: "40px",
+                  }
+                : {
+                    padding: "20px",
+                  }
+            }
+          >
+            {children}
+          </div>
+          <div className="py-4 md:py-6 lg:py-10 px-4 md:px-[44px] lg:px-0">
+            <Footer isConnected={isConnected} />
+            <AppModals />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Звичайний layout для всіх інших сторінок
   return (
     <div className="relative overflow-hidden min-h-screen z-0">
       <GlowIcon position={isMobile ? "top-mobile" : "top-right"} />

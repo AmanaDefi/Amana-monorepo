@@ -1,9 +1,11 @@
+import Benefits from "./components/Benefits";
 import Features from "./components/Features";
 
 const AboutWrapper = ({}) => {
   return (
     <div>
-      <Features />
+          <Features />
+          <Benefits />
     </div>
   );
 };
