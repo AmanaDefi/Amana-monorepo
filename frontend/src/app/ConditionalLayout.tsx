@@ -43,7 +43,7 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
         <GlowIcon position={isMobile ? "bottom-mobile" : "bottom-left"} />
 
         <div className="flex flex-col flex-1 mx-auto w-full min-h-screen">
-          <div className="py-4 md:py-6 lg:py-10 px-4 md:px-[44px]">
+          <div className="pt-4 md:pt-6 lg:pt-10 px-4 md:px-0 md:pr-[44px]">
             <Header activeSection={activeSection} />
           </div>
           <div
@@ -55,7 +55,7 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
                     paddingRight: "40px",
                   }
                 : {
-                    padding: "20px",
+                    padding: "16px",
                   }
             }
           >

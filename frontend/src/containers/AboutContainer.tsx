@@ -60,19 +60,66 @@ const AboutContainer = ({}) => {
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
-        className="text-center max-w-6xl mx-auto relative z-10"
+        className="text-center max-w-6xl relative z-10"
       >
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1, delay: 0.2 }}
-          className="text-[20px] text-white leading-tight mb-4"
+          className="text-sm lg:text-[20px] text-white leading-tight mb-2 lg:mb-4"
         >
           Simplifying Your DeFi Investments
         </motion.p>
 
-        <div className="text-[96px] font-bold leading-tight">
-          <div className="flex justify-center items-center gap-2">
+        <div className="text-[48px] lg:text-[96px] font-bold leading-tight">
+          <div className="flex flex-col lg:flex-row justify-center items-start lg:items-center gap-0 lg:gap-2">
+            <div className="flex items-center justify-center gap-2 lg:hidden">
+              <motion.span
+                animate={{
+                  backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "linear",
+                }}
+                style={{
+                  background: "linear-gradient(90deg, #fff, #3E73C4, #fff)",
+                  backgroundSize: "200% 100%",
+                  backgroundClip: "text",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                }}
+                className="text-white"
+              >
+                Amana
+              </motion.span>
+              <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 260,
+                  damping: 20,
+                  duration: 0.6,
+                  delay: 0.3,
+                }}
+                whileHover={{
+                  scale: 1.1,
+                  rotate: [0, -10, 10, -5, 0],
+                  transition: { duration: 0.5 },
+                }}
+                className="cursor-pointer w-[67px] h-[39px]"
+              >
+                <Image
+                  src="/amanaAbout.png"
+                  alt="Elephant"
+                  width={67}
+                  height={39}
+                />
+              </motion.div>
+            </div>
+
             <motion.span
               animate={{
                 backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
@@ -89,7 +136,7 @@ const AboutContainer = ({}) => {
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
               }}
-              className="text-white"
+              className="text-white hidden lg:block"
             >
               Amana
             </motion.span>
@@ -108,7 +155,7 @@ const AboutContainer = ({}) => {
                 rotate: [0, -10, 10, -5, 0],
                 transition: { duration: 0.5 },
               }}
-              className="cursor-pointer"
+              className="cursor-pointer w-[125px] h-[71px] hidden lg:block"
             >
               <Image
                 src="/amanaAbout.png"
@@ -156,7 +203,7 @@ const AboutContainer = ({}) => {
           scale: 0.95,
         }}
         onClick={handleGetStartedClick}
-        className="relative w-full bg-transparent border border-[#3E73C4] rounded-lg py-4 px-8 mt-8 max-h-[56px] max-w-[192px] text-white font-medium transition-all duration-300 ease-in-out hover:bg-[#1B46E0] hover:border-[#1B46E0] hover:shadow-lg hover:shadow-[#1B46E0]/20 cursor-pointer overflow-hidden group"
+        className="relative w-full bg-transparent border border-[#3E73C4] rounded-lg py-3 lg:py-4 px-6 lg:px-8 mt-8 min-h-[44px] max-w-[190px] lg:max-w-[192px] text-white font-medium text-center flex items-center justify-center transition-all duration-300 ease-in-out hover:bg-[#1B46E0] hover:border-[#1B46E0] hover:shadow-lg hover:shadow-[#1B46E0]/20 cursor-pointer overflow-hidden group"
       >
         <motion.div
           className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-20"
@@ -170,7 +217,7 @@ const AboutContainer = ({}) => {
             repeatDelay: 2,
           }}
         />
-        Get Started
+        <span className="relative z-10">Get Started</span>
       </motion.button>
 
       <AboutWrapper />
@@ -189,7 +236,7 @@ const AboutContainer = ({}) => {
           }}
           className="text-[48px] font-normal max-w-[550px] text-center cursor-default"
         >
-          All of the profit None of the work
+          Bridge nothing Earn everything
         </motion.span>
 
         <motion.button

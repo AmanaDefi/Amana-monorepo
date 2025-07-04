@@ -52,7 +52,7 @@ const FeatureCard: FC<FeatureCardProps> = ({
     transition={{ duration: 0.6, delay: index * 0.2 }}
     viewport={{ once: true }}
     whileHover={{ y: -5 }}
-    className={`rounded-[24px] px-10 py-8 before-gradient-border flex flex-col max-w-[708px]`}
+    className={`rounded-[24px] px-10 py-8 before-gradient-border flex flex-col min-w-[358px] lg:max-w-[708px]`}
   >
     <motion.div
       initial={{ scale: 0, rotate: -180 }}
@@ -60,26 +60,26 @@ const FeatureCard: FC<FeatureCardProps> = ({
       transition={{ duration: 0.6, delay: index * 0.2 + 0.3 }}
       viewport={{ once: true }}
     >
-      <Image src={image} alt={alt} width={64} height={64} />
+      <Image src={image} alt={alt} width={40} height={40} className="w-10 h-10 lg:w-[64px] lg:h-[64px]"/>
     </motion.div>
-    <h3 className="text-lg font-bold mt-8">{title}</h3>
-    <p className="text-sm font-normal mt-2">{description}</p>
+    <h3 className="text-sm lg:text-lg font-bold mt-4 lg:mt-8">{title}</h3>
+    <p className="text-xs lg:text-sm font-normal mt-2">{description}</p>
   </motion.div>
 );
 
 const Features: FC = () => {
   return (
-    <section className="flex flex-col justify-center mt-[140px]">
+    <section className="flex flex-col justify-center mt-[116px] lg:mt-[140px]">
       <motion.h2
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
         viewport={{ once: true }}
-        className="text-white text-[48px] leading-[-0.04em] text-center font-bold mb-10"
+        className="text-white text-[24px] lg:text-[48px] leading-[-0.04em] text-center font-bold mb-10"
       >
         How Amana Works
       </motion.h2>
-      <div className="flex flex-row w-full justify-between">
+      <div className="flex flex-col lg:flex-row w-full justify-between mb-4 lg:mb-0">
         {FEATURES_DATA.map((feature, index) => (
           <FeatureCard
             key={feature.id}

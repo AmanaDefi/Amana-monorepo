@@ -119,18 +119,18 @@ const Benefits = () => {
   const secondRow = BENEFITS_DATA.slice(5);
 
   return (
-    <section className="mt-[109px]">
+    <section className="mt-[64px] lg:mt-[109px]">
       <motion.h1
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
         viewport={{ once: true }}
-        className="text-white text-[48px] leading-[-0.04em] text-center font-bold mb-16"
+        className="hidden md:block text-white text-[48px] leading-[-0.04em] text-center font-bold mb-16"
       >
         Amana Benefits
       </motion.h1>
 
-      <div className="flex flex-col gap-8 max-w-7xl mx-auto">
+      <div className="flex flex-col gap-8 max-w-[767px] lg:max-w-7xl mx-auto">
         <div className="flex flex-wrap justify-center gap-8">
           {firstRow.map((benefit, index) => (
             <BenefitCard
