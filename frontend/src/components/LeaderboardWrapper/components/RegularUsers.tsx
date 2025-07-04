@@ -68,7 +68,7 @@ export default function RegularUsers({ users, searchTerm }: RegularUsersProps) {
             role="button"
             className={`
             grid grid-cols-[112px_83px_103px] md:grid-cols-[minmax(0,360px)_minmax(0,226px)_minmax(0,220px)] justify-between w-full transition-colors relative mb-4 cursor-pointer
-            border border-transparent md:border-[#3E73C4] rounded-lg bg-transparent md:px-8 md:py-4
+            border border-transparent md:border-[#3E73C4] rounded-lg bg-transparent md:px-8  md:py-4
             ${isCurrentUser ? "hover:bg-blue-900/20" : "hover:bg-gray-800/30"}
           `}
             variants={userRowVariants}
@@ -117,8 +117,9 @@ export default function RegularUsers({ users, searchTerm }: RegularUsersProps) {
               <span className="line-clamp-1 font-normal text-xs md:text-base text-white truncate min-w-0">
                 {shortAddressForm(item.user_address)}
               </span>
-              <div className="flex-shrink-0 w-3 md:w-4">
-                <CopyTextButton text={item.user_address} />
+
+              <div className="flex-shrink-0">
+                <CopyTextButton text={item.user_address} size={16} />
               </div>
             </div>
           </motion.div>

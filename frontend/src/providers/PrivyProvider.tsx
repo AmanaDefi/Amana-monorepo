@@ -83,21 +83,23 @@ export default function CustomPrivyProvider({ children }: PropsWithChildren) {
   });
   const queryClient = new QueryClient();
   return (
-    <PrivyProvider
-      appId={
-        process.env.NEXT_PUBLIC_PRIVY_APP_ID || "cmca71qv600kfl40m18l83vcc"
-      }
-      config={{
-        embeddedWallets: {
-          createOnLogin: "users-without-wallets",
-        },
-        defaultChain: customZetachain,
-        supportedChains: chainsWithCustomRpcs(),
-      }}
-    >
-      <QueryClientProvider client={queryClient}>
-        <WagmiProvider config={wagmiConfig}>{children}</WagmiProvider>
-      </QueryClientProvider>
-    </PrivyProvider>
+    <WagmiProvider config={wagmiConfig}>
+      <PrivyProvider
+        appId={
+          process.env.NEXT_PUBLIC_PRIVY_APP_ID || "cmca71qv600kfl40m18l83vcc"
+        }
+        config={{
+          embeddedWallets: {
+            createOnLogin: "users-without-wallets",
+          },
+          defaultChain: customZetachain,
+          supportedChains: chainsWithCustomRpcs(),
+        }}
+      >
+        <QueryClientProvider client={queryClient}>
+          {children}
+        </QueryClientProvider>
+      </PrivyProvider>
+    </WagmiProvider>
   );
 }

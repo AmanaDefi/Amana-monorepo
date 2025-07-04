@@ -24,18 +24,22 @@ export const TopUpChainsModal = () => {
   const activeWallet = wallets[0];
 
   const handleClose = () => {
-    setStep("setValues");
+    if (!!walletAddress && activeWallet.walletClientType !== "privy") {
+      setStep("confirm");
+    } else {
+      setStep("setValues");
+    }
   };
 
-  const chainList = SUPPORTED_CHAINS
-    .filter((chain) => chain.id !== CHAIN_ID["solana"])
-    .map((chain) => {
-      return {
-        icon: CHAIN_ICONS[chain.id].url,
-        value: chain,
-        label: chain.name,
-      };
-    });
+  const chainList = SUPPORTED_CHAINS.filter(
+    (chain) => chain.id !== CHAIN_ID["solana"],
+  ).map((chain) => {
+    return {
+      icon: CHAIN_ICONS[chain.id].url,
+      value: chain,
+      label: chain.name,
+    };
+  });
 
   const nonEVMChainList = [
     {

@@ -1,7 +1,7 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { VaultAPY, VaultTotalAssets, VaultData } from "@/types/types";
-import { formatTVLInUSD, formatNumberWithSuffix, getOnlyTokenSymbol } from "@/utils/utils";
+import { formatTVLInUSD } from "@/utils/utils";
 import classNames from "classnames";
 import { calculateRiskLevel } from "./VaultsWrapper";
 import { InfoBlock } from "./VaultsWrapper/components/InfoBlock.tsx";
