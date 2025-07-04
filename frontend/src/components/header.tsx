@@ -15,6 +15,7 @@ import ProfileDropdown from "./ProfileDropdown";
 import BurgerMenuIcon from "./svg/BurgerMenu";
 import MobileMenuModal from "./modal/MobileMenuModal";
 import { useWallets } from "@privy-io/react-auth";
+import { CHAIN_ID } from "@/constants/chainConfig";
 
 interface HeaderProps {
   activeSection?: string;
@@ -26,7 +27,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   const router = useRouter();
   const { wallets } = useWallets();
   const activeAccount = wallets[0];
-  const { walletAddress } = useMultiChain();
+  const { walletAddress, activeChain } = useMultiChain();
   const isConnected = !!walletAddress;
   const [isMenuOpened, setIsMenuOpened] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -104,9 +105,9 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
           </div>
         )}
         <div className="flex items-center gap-2 lg:gap-6 flex-1 justify-end relative z-50">
-          {isConnected &&
+          {activeAccount &&
             activeAccount?.walletClientType !== "privy" &&
-            !isMenuOpened && <ChainSwitcher />}
+            !isMenuOpened && activeChain?.id !== CHAIN_ID['solana'] && <ChainSwitcher />}
 
           <div className="hidden lg:block">
             {!isConnected ? (

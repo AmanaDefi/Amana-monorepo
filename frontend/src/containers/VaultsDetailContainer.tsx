@@ -13,7 +13,12 @@ import {
 } from "@/types/types";
 import { useUpdateAPYs } from "@/hooks/hooks";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { CHAINS_EXPLORER_BASE_URL_MAINNET, CHAIN_ICONS } from "@/constants/chainConfig";
+import {
+  CHAINS_EXPLORER_BASE_URL_MAINNET,
+  CHAIN_ICONS,
+
+  CHAIN_ID,
+} from "@/constants/chainConfig";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { bigIntReplacer, bigIntReviver } from "@/utils/utils";
@@ -52,7 +57,6 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
 import MobileInfoModal from "@/components/modal/mobile/MobileInfoModal";
 import MobileDepositInstruction from "@/components/VaultsDetailsWrapper/MobileDepositInstruction";
-import GiftIcon from "@/components/svg/GiftIcon";
 import WithdrawPendingBlock from "@/components/VaultsDetailsWrapper/components/WithdrawPendingBlock";
 import MobileInvestmentPopover from "@/components/VaultsDetailsWrapper/components/MobileInvestmentPopover";
 import WithdrawalNotice from "@/components/VaultsDetailsWrapper/components/WithdrawalNotice";
@@ -87,7 +91,6 @@ const VaultsDetailContainer: React.FC<{
   const [vaultTotalAsset, setVaultTotalAsset] = useState<VaultTotalAssets>();
   const [vaultTotalAssetinToken, setVaultTotalAssetinToken] =
     useState<VaultTotalAssetsinToken>();
-  const [transactionCompleted, setTransactionCompleted] = useState(false);
   const [selectedToken, setSelectedToken] = useState<Token | undefined>();
   const [isDeposit, setIsDeposit] = useState<boolean>(initialIsDeposit);
   const [showMobileInvestment, setShowMobileInvestment] = useState(false);
@@ -120,9 +123,12 @@ const VaultsDetailContainer: React.FC<{
     setTransactionStepFeedback,
     setIsTransactionProcessing,
     isTransactionProcessing,
+    setLastDepositInfo,
+    lastDepositInfo,
   } = useTransactionStore();
 
-  const { switchToChain, walletAddress, activeChain } = useMultiChain();
+  const { switchToChain, walletAddress, activeChain, selectedChain } =
+    useMultiChain();
 
   const vaultIdStr = Array.isArray(vaultID) ? vaultID[0] : vaultID;
 
@@ -184,13 +190,8 @@ const VaultsDetailContainer: React.FC<{
 
   const handleChainSelect = useCallback(
     async (chain: Chain) => {
+      console.log('handleChainSelect', chain.id)
       await switchToChain(chain);
-
-      if (vaultID) {
-        updateLocalStorageObject(vaultID.toString(), {
-          selectedChain: JSON.stringify(chain, bigIntReplacer),
-        });
-      }
     },
     [vaultID, switchToChain],
   );
@@ -213,11 +214,6 @@ const VaultsDetailContainer: React.FC<{
   useEffect(() => {
     const checkTransactionState = () => {
       if (!vaultID) return;
-
-      if (!user?.address && !wallet?.publicKey) {
-        localStorage.removeItem(vaultID.toString());
-        return;
-      }
 
       const isTxInProgress = CheckTheTxIsInProgress(vaultID.toString());
       const vaultTxData = getLocalStorageObject(vaultID.toString());
@@ -299,7 +295,6 @@ const VaultsDetailContainer: React.FC<{
     }
   }, [vaultID, vaultFromGraph]);
 
-  // Set user vault balance from graph data
   useEffect(() => {
     const userBalance = userVaultBalances?.find(
       (balance) => balance.vaultId === vaultIdStr,
@@ -307,14 +302,13 @@ const VaultsDetailContainer: React.FC<{
 
     if (userVaultBalances?.length && vaultIdStr) {
       if (userBalance) {
-        // Convert formatted balance string to Balance object
         const balanceValue = String(userBalance.balance);
 
         if (userVaultBalance?.formatted !== balanceValue) {
           const balance: Balance = {
-            value: BigInt(0), // We don't have raw value from graph, using 0
+            value: BigInt(0),
             formatted: balanceValue,
-            formattedUSD: "$0.00", // Will be calculated in VaultHeader
+            formattedUSD: "$0.00",
           };
 
           setUserVaultBalance(balance);
@@ -389,9 +383,10 @@ const VaultsDetailContainer: React.FC<{
   );
 
   const handleChainAndTokenSelect = useCallback(
-    (chain: Chain, token: Token) => {
-      handleChainSelect(chain);
+    async (chain: Chain, token: Token) => {
       handleTokenSelect(token);
+      console.log('handleChainAndTokenSelect')
+      handleChainSelect(chain);
     },
     [handleChainSelect, handleTokenSelect],
   );
@@ -505,7 +500,7 @@ const VaultsDetailContainer: React.FC<{
           </div>
         </div>
       </div>
-      {walletAddress && isWithdraw && <WithdrawPendingBlock />}
+      {/* {walletAddress && isWithdraw && <WithdrawPendingBlock />} */}
 
       <VaultHeaderInfo vaultData={vaultData} />
 
@@ -516,7 +511,7 @@ const VaultsDetailContainer: React.FC<{
             userVaultBalance={userVaultBalance}
             selectedVaultId={vaultID.toString()}
             vaultAPYs={vaultAPYs}
-            transactionCompleted={transactionCompleted}
+            transactionCompleted={finishedTransaction}
             selectedToken={selectedToken}
             onDepositDataUpdate={handleDepositDataUpdate}
             isDeposit={isDeposit}
@@ -555,12 +550,23 @@ const VaultsDetailContainer: React.FC<{
                   setLastTransactionStepFeedback({});
                   setTransactionStepFeedback({});
                   setIsTransactionProcessing(false);
+                  setLastDepositInfo(null);
 
                   if (vaultID) {
                     localStorage.removeItem(vaultID.toString());
                   }
-                  setTransactionCompleted(true);
+                  // setTransactionCompleted(true);
                 }}
+                depositedInputAmount={lastDepositInfo?.inputAmount || "0"}
+                depositedOutputAmount={lastDepositInfo?.outputAmount || "0"}
+                depositedInputSymbol={
+                  lastDepositInfo?.inputSymbol ||
+                  selectedToken?.symbol ||
+                  vaultData.inputToken.symbol
+                }
+                depositedOutputSymbol={
+                  lastDepositInfo?.outputSymbol || vaultData.symbol
+                }
               />
             </motion.div>
           ) : (
@@ -598,15 +604,15 @@ const VaultsDetailContainer: React.FC<{
                 </VaultCardInfoBlock>
               </div>
 
-              {walletAddress && isWithdraw && <WithdrawalNotice />}
+              {/* {walletAddress && isWithdraw && <WithdrawalNotice />} */}
 
               <div className="bg-[#14171F] pb-8 pt-6 px-4 md:px-5 min-w-[343px] lg:min-w-[490px] 2xl:min-w-[526px] rounded-[16px] w-full xl:max-w-[526px] mt-4 md:mt-4">
                 <VaultInputs
                   vaultData={vaultData}
-                  setTransactionCompleted={setTransactionCompleted}
+                  setTransactionCompleted={setFinishedTransaction}
                   userVaultBalance={userVaultBalance}
                   vaultTotalAssetinToken={vaultTotalAssetinToken}
-                  transactionCompleted={transactionCompleted}
+                  transactionCompleted={finishedTransaction}
                   initialIsDeposit={initialIsDeposit}
                   isDeposit={isDeposit}
                   onTabChange={handleTabChange}
@@ -622,12 +628,12 @@ const VaultsDetailContainer: React.FC<{
           )}
         </AnimatePresence>
 
-        <div className="hidden md:flex flex-col w-full 2xl:max-w-[576px] 3xl:max-w-[707px] mt-8 md:mt-0 space-y-4 font-gotham">
+        <div className="hidden md:flex flex-col w-full 2xl:max-w-[576px] mt-8 md:mt-0 space-y-4 font-gotham">
           {isWithdraw && walletAddress && (
             <YourInvestment
-              depositAmount={depositData.amount}
-              vaultTokenSymbol={depositData.symbol}
-              depositUSDValue={depositData.usdValue}
+              depositAmount={userVaultBalance?.formatted || "0"}
+              vaultTokenSymbol={vaultData?.inputToken.symbol || ""}
+              depositUSDValue={0}
             />
           )}
           {walletAddress && isDeposit && (
@@ -637,7 +643,7 @@ const VaultsDetailContainer: React.FC<{
                 userVaultBalance={userVaultBalance}
                 selectedVaultId={vaultID.toString()}
                 vaultAPYs={vaultAPYs}
-                transactionCompleted={transactionCompleted}
+                transactionCompleted={finishedTransaction}
                 selectedToken={selectedToken}
                 onDepositDataUpdate={handleDepositDataUpdate}
                 isDeposit={isDeposit}

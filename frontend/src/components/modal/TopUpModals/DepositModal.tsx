@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Chain } from "viem";
+import { Chain, parseUnits } from "viem";
 
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import ChainSelector from "@/components/VaultsDetailsWrapper/components/ChainSelector";
@@ -11,10 +11,14 @@ import { DepositInput } from "./components/DepositInput";
 import ZetaChainLogo from "@public/logo/zetachain.svg";
 import { AppButton } from "@/components/button/AppButton";
 import { showSuccessToast } from "@/toasts";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import { Token } from "@/types/types";
 import { useWallets } from "@privy-io/react-auth";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { executeWalletTopup } from "@/actions/actions";
+import { useMultiChain } from "@/providers/MultiChainProvider";
+import WarningIcon from "@/components/svg/WarningIcon";
 
 export const Deposit = () => {
   const {
@@ -29,12 +33,17 @@ export const Deposit = () => {
     setCurrency,
     setDepositAmount,
     walletAddress,
+    setTxHash
   } = useFundWalletStore();
 
   const [error, setError] = useState("");
+  const { walletAddress: smartWalletAddress } = useMultiChain();
 
   const { wallets } = useWallets();
   const activeWallet = wallets[0];
+  const walletContext = useWallet();
+  const [loading, setLoading] = useState(false);
+  const [txError, setTxError] = useState(false);
 
   const handleSelectChain = (chain: Chain) => {
     setChain(chain);
@@ -50,14 +59,54 @@ export const Deposit = () => {
   };
 
   const handleClose = async () => {
-    await activeConnector?.disconnect();
+    if (walletContext?.connected) {
+      walletContext?.disconnect();
+    }
+    if (activeConnector) {
+      await activeConnector?.disconnect();
+    }
     closeAll();
   };
 
+  useEffect(() => {
+    if (!step) {
+      setLoading(false);
+      setTxError(false);
+      setError("")
+    }
+  }, [step])
+
+  const isButtonDisabled =
+    (!chain || !currency || !depositAmount || !!error) && step === "confirm";
+
   const handleConfirm = async () => {
-    showSuccessToast("Successfully Topped Up");
-    await activeConnector?.disconnect();
-    handleClose();
+    if (!chain || !currency || !depositAmount || !!error || !smartWalletAddress)
+      return;
+    try {
+      setTxError(false);
+      setLoading(true);
+      const newAmt = parseUnits(depositAmount, currency?.decimals);
+      const { transactionHash } = await executeWalletTopup(
+        currency,
+        activeWallet,
+        chain,
+        smartWalletAddress,
+        newAmt,
+        walletContext,
+      );
+      console.log({ transactionHash });
+      if (transactionHash) {
+        setTxHash(transactionHash);
+        showSuccessToast("Successfully Topped Up");
+        setStep("finishDeposit");
+      } else {
+        setTxError(true);
+      }
+    } catch (e) {
+      setTxError(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handlePressButton = () => {
@@ -74,15 +123,13 @@ export const Deposit = () => {
   };
 
   const onSelectChainAndToken = (chain: Chain, token: Token) => {
+    setTxError(false);
     onTokenSelect(token);
     setChain(chain);
     if (!!walletAddress && activeWallet.walletClientType !== "privy") {
       activeWallet.switchChain(chain.id);
     }
   };
-
-  const isButtonDisabled =
-    (!chain || !currency || !depositAmount || !!error) && step === "confirm";
 
   return (
     <Modal
@@ -130,8 +177,18 @@ export const Deposit = () => {
               variant="reverse"
               onClick={handlePressButton}
             >
-              {step === "confirm" ? "Confirm" : "Connect Wallet"}
+              {loading
+                ? "Pending..."
+                : step === "confirm"
+                  ? "Confirm"
+                  : "Connect Wallet"}
             </AppButton>
+          </div>
+          <div className="flex flex-row h-4 items-center gap-[10px] mt-[10px]">
+            {!!txError && <WarningIcon height={16} width={16} />}
+            <p className={`text-[#FFC700] text-xs leading-4`}>
+              {txError ? "Transaction failed please try again" : ""}
+            </p>
           </div>
 
           <div className="flex flex-row items-center gap-3 opacity-40">

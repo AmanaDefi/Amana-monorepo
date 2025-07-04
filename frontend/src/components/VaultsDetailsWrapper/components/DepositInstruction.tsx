@@ -193,9 +193,10 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
       className="flex flex-col gap-[30px]"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
+      transition={{ duration: 0.3 }}
     >
-      <AnimatePresence mode="wait">
+      {/* Remove mode="wait" or change to a different approach */}
+      <div className="flex flex-col gap-[30px]">
         {steps.map((step, index) => {
           const stepState = getStepState(
             step,
@@ -418,7 +419,7 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
             </motion.div>
           );
         })}
-      </AnimatePresence>
+      </div>
       <div className="relative w-full">
         <div className="rounded-[4px] h-[2px] relative overflow-hidden bg-gradient-to-r from-gray-600 via-gray-500 to-gray-600">
           <AnimatePresence>

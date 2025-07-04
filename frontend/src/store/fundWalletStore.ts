@@ -1,5 +1,6 @@
 import { chainsWithCustomRpcs } from "@/constants/chainConfig";
 import { Token } from "@/types/types";
+import { Adapter } from "@solana/wallet-adapter-base";
 import { Chain } from "viem";
 import { Connector } from "wagmi";
 import { create } from "zustand";
@@ -10,6 +11,8 @@ export type FundStep =
   | "connectWallet"
   | "selectChain"
   | "confirm"
+  | "reconnectChain"
+  | "finishDeposit"
   | null;
 
 export enum BuyWithEnum {
@@ -25,6 +28,7 @@ const initialState = {
   currency: undefined,
   activeConnector: null,
   walletAddress: "",
+  transactionHash: null,
 };
 
 interface FundWalletState {
@@ -33,8 +37,9 @@ interface FundWalletState {
   chain: Chain;
   depositAmount: string;
   currency: Token | undefined;
-  activeConnector: Connector | null;
+  activeConnector: Connector | Adapter | null;
   walletAddress: string;
+  transactionHash: string | null;
 
   setStep: (step: FundStep) => void;
   setBuyWith: (buyWith: BuyWithEnum) => void;
@@ -42,8 +47,9 @@ interface FundWalletState {
   setDepositAmount: (depositAmount: string) => void;
   setCurrency: (currency: Token | undefined) => void;
   closeAll: () => void;
-  setActiveConnector: (connector: Connector | null) => void;
+  setActiveConnector: (connector: Connector | Adapter | null) => void;
   setWalletAddress: (walletAddress: string) => void;
+  setTxHash: (transactionHash: string | null) => void;
 }
 export const useFundWalletStore = create<FundWalletState>((set) => ({
   ...initialState,
@@ -57,6 +63,7 @@ export const useFundWalletStore = create<FundWalletState>((set) => ({
   setChain: (chain) => set({ chain }),
   setDepositAmount: (depositAmount) => set({ depositAmount }),
   setWalletAddress: (walletAddress) => set({ walletAddress }),
+  setTxHash: (transactionHash) => set({ transactionHash }),
   setCurrency: (currency) =>
     set({
       currency,

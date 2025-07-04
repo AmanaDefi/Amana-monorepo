@@ -12,10 +12,16 @@ import BackedBy from "../shared/BackedBy";
 import EmailOptionsIcon from "@/components/svg/EmailOptionsIcon";
 import PasskeyOptionsIcon from "@/components/svg/PasskeyOptionsIcon";
 import GoogleOptionsIcon from "@/components/svg/GoogleOptionsButton";
+import { useWallet } from "@solana/wallet-adapter-react";
 
 const OptionsModalB = () => {
   const { step, closeAll, openStep, setError, successAuth } = useAuthStore();
   const { createWallet } = useCreateWallet();
+  const {
+    disconnect,
+    publicKey
+  } = useWallet();
+
   const { initOAuth } = useLoginWithOAuth({
     onError: (e) => {
       setError(e);
@@ -23,6 +29,9 @@ const OptionsModalB = () => {
     onComplete: async (result) => {
       if (!result?.user?.wallet) {
         await createWallet();
+      }
+      if (publicKey) {
+        disconnect();
       }
       if (!result.wasAlreadyAuthenticated) {
         successAuth();

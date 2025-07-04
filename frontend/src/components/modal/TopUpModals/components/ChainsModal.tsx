@@ -24,10 +24,16 @@ export const TopUpChainsModal = () => {
   const activeWallet = wallets[0];
 
   const handleClose = () => {
-    setStep("setValues");
+    if (!!walletAddress && activeWallet.walletClientType !== "privy") {
+      setStep("confirm");
+    } else {
+      setStep("setValues");
+    }
   };
 
-  const chainList = SUPPORTED_CHAINS.slice(1).map((chain) => {
+  const chainList = SUPPORTED_CHAINS.filter(
+    (chain) => chain.id !== CHAIN_ID["solana"],
+  ).map((chain) => {
     return {
       icon: CHAIN_ICONS[chain.id].url,
       value: chain,
@@ -75,7 +81,7 @@ export const TopUpChainsModal = () => {
     <Modal
       isOpen={step === "selectChain"}
       onClose={handleClose}
-      paddingClass="px-[21px] pt-5 pb-6 flex min-h-[490px] max-h-[524px] w-full"
+      paddingClass="px-[21px] pt-5 pb-6 flex min-h-[490px] max-h-[528px] w-full"
       roundedClass="rounded-[16px]"
       maxWidth="max-w-[358px] md:max-w-[526px]"
     >
@@ -154,7 +160,7 @@ export const TopUpChainsModal = () => {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.03, duration: 0.2 }}
                     className="group hover:cursor-pointer hover:shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] hover:bg-[#1D2A41] max-h-9 flex rounded-[4px] py-3 w-full flex-row justify-between items-center transition-colors duration-200"
-                    onClick={() => {}}
+                    onClick={(event) => handleSelectChain(event, chain.value)}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >

@@ -158,7 +158,7 @@ export default function SlippageSettingsDropdown({
               <CloseModalIcon width={12} height={12} />
             </button>
 
-            <div className="flex items-center gap-2 mb-6 mt-10">
+            <div className="flex items-center gap-2 mb-6 mt-6">
               <span className="text-white text-[16px]">Max slippage</span>
               <InfoBlock isMiddle>
                 💡 Your transaction will revert if the price changes by more
