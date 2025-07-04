@@ -12,6 +12,9 @@ import Button from "../common/Button";
 import { useWallets } from "@privy-io/react-auth";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { WithTooltip } from "../common/Tooltip";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
+
 
 // Destructure chainsWithCustomRpcs() to get zetaChain for default
 const [zetachain] = chainsWithCustomRpcs();
@@ -20,11 +23,13 @@ const [zetachain] = chainsWithCustomRpcs();
 const ChainSwitcher: React.FC = () => {
   const { wallets } = useWallets();
   const wallet = wallets[0];
+  const { publicKey } = useWallet();
   const [isOpen, setIsOpen] = useState(false);
   const { switchToChain, activeChain: currentChain } = useMultiChain();
   const [isLoading, setIsLoading] = useState<number | null>(null); // Track loading state by chain ID
   const dropdownRef = useRef<HTMLDivElement>(null);
   const previousChainRef = useRef<string | null>(null);
+  const { setSelectedChainFromModal } = useChainTokenModalStore();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -55,14 +60,18 @@ const ChainSwitcher: React.FC = () => {
       const chain = chainsWithCustomRpcs().find(
         (c) => c.id.toString() === wallet?.chainId?.split(":")[1],
       );
-      // Use a try-catch to handle potential toast errors
-      try {
-        showSuccessToast(
-          `Successfully switched to ${chain?.name || "new network"}`,
-        );
-      } catch (error) {
-        console.error("Toast error:", error);
+      if (chain) {
+        setSelectedChainFromModal(chain);
+        // Use a try-catch to handle potential toast errors
+        try {
+          showSuccessToast(
+            `Successfully switched to ${chain?.name || "new network"}`,
+          );
+        } catch (error) {
+          console.error("Toast error:", error);
+        }
       }
+
       console.log("Successfully switched", chain?.id);
     }
 
@@ -144,20 +153,22 @@ const ChainSwitcher: React.FC = () => {
   return (
     <div className="z-50 relative rounded-full " ref={dropdownRef}>
       <WithTooltip content="Switch network" subId="chain-switcher">
-        <Button
-          variant="secondary"
-          disabled={!wallet}
-          onClick={() => setIsOpen(!isOpen)}
-          className="cursor-pointer !p-[3px] md:!p-2 md:!w-[56px] md:!h-[56px] !w-10 !h-10"
-        >
-          <div className="bg-[#24262f] relative md:!w-10 md:!h-10 !h-8 !w-8 rounded-full flex items-center justify-center">
-            <Image
-              src={CHAIN_ICONS[currentChain?.id ?? 7000].url}
-              alt={currentChain?.name ?? "Zetachain"}
-              fill
-            />
-          </div>
-        </Button>
+       <Button
+        variant="secondary"
+        disabled={!wallet && !publicKey}
+        onClick={() => setIsOpen(!isOpen)}
+        className="cursor-pointer !p-[3px] md:!p-2 md:!w-[56px] md:!h-[56px] !w-10 !h-10"
+        data-tooltip-id="chain-switcher-tooltip"
+        data-tooltip-content={"Switch network"}
+      >
+        <div className="bg-[#24262f] relative md:!w-10 md:!h-10 !h-8 !w-8 rounded-full flex items-center justify-center">
+          <Image
+            src={CHAIN_ICONS[currentChain?.id ?? 7000].url}
+            alt={currentChain?.name ?? "Zetachain"}
+            fill
+          />
+        </div>
+      </Button>
       </WithTooltip>
 
       <DropdownList

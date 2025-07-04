@@ -16,6 +16,7 @@ import { Address, parseAbiItem, parseUnits } from "viem";
 import { Chain } from "viem";
 import {
   APPROVED_TOKENS,
+  CHAIN_ID,
   chainConfigs,
   chainsWithCustomRpcs,
 } from "@/constants/chainConfig";
@@ -113,7 +114,7 @@ export default function VaultInputs({
 }: VaultInputsProps): JSX.Element {
   const router = useRouter();
   const pathname = usePathname();
-  const [inputToken, setInputToken] = useState<Token>();
+  const [inputToken, setInputToken] = useState<Token | undefined>(selectedToken);
   const [inputBalance, setInputBalance] = useState<Balance>(EMPTY_BALANCE);
   const [displayValue, setDisplayValue] = useState<string>("0.00");
   const [debouncedInputBalance, setDebouncedInputBalance] =
@@ -131,6 +132,7 @@ export default function VaultInputs({
 
   const handleSelectChainAngToken = (chain: Chain, token: Token) => {
     setInputToken(token);
+
     if (onSelectChainAndToken) {
       onSelectChainAndToken(chain, token);
     }
@@ -147,8 +149,10 @@ export default function VaultInputs({
   const [step, setStep] = useState<number>(0);
   const [action, setAction] = useState<Action>(steps[0]);
   const [performanceFee, setPerformanceFee] = useState<number>(0);
-  const { selectedChainFromModal, selectedTokenFromModal } =
-    useChainTokenModalStore();
+  const {
+    selectedChainFromModal,
+    setSelectedTokenFromModal,
+  } = useChainTokenModalStore();
 
   useEffect(() => {
     async function handlePerformanceFee() {
@@ -224,8 +228,10 @@ export default function VaultInputs({
   }, [vaultData]);
 
   useEffect(() => {
-    if (selectChain?.id === selectedChainFromModal?.id) return;
     const setToken = () => {
+      if (selectChain?.id === selectedChainFromModal?.id && inputToken) {
+        return;
+      }
       if (
         selectChain &&
         (selectChain.id === 7001 || selectChain.id === 7000) &&
@@ -234,6 +240,7 @@ export default function VaultInputs({
         setInputToken(vaultData.inputToken);
         if (onTokenSelect) {
           onTokenSelect(vaultData.inputToken);
+          setSelectedTokenFromModal(vaultData.inputToken);
         }
       } else if (vaultData?.inputToken && selectChain) {
         const tokens = APPROVED_TOKENS[selectChain.id] || [];
@@ -244,6 +251,7 @@ export default function VaultInputs({
           setInputToken(defaultToken);
           if (onTokenSelect) {
             onTokenSelect(defaultToken);
+            setSelectedTokenFromModal(defaultToken);
           }
         }
       }
@@ -256,11 +264,9 @@ export default function VaultInputs({
       if (isTxInProgress && vaultInfo?.selectedToken) {
         setInputToken(JSON.parse(vaultInfo.selectedToken, bigIntReviver));
       } else {
-        setInputToken(undefined);
         setToken();
       }
     } else {
-      setInputToken(undefined);
       setToken();
     }
 
@@ -678,6 +684,7 @@ export default function VaultInputs({
 
       const slippageAmountInUSDFormatted = formatUSDValue(
         calculatedSlippageUSD,
+
       );
 
       if (inputAmountValue === debouncedInputBalance.value) {
@@ -1458,9 +1465,7 @@ export default function VaultInputs({
       </AnimatePresence>
       <APYChangeCard isDeposit={isDeposit} minReceived={minReceived} />
 
-      {inputToken &&
-        // !loadingOutputToken &&
-        !(
+      {!(
           isDeposit &&
           !vaultData.depositFeePaidFromGasTank &&
           conversionOutput.gasFeeInVaultAsset &&

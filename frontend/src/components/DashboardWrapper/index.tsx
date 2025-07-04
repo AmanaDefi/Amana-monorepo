@@ -22,7 +22,7 @@ const DashboardWrapper = () => {
           </div>
 
           <div className="w-full md:w-auto">
-            <TopTokens />
+            <TopTokens vaults={vaults} userVaultBalances={userVaultBalances} />
           </div>
         </div>
 

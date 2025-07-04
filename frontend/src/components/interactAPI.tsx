@@ -45,6 +45,7 @@ import { useTransactionStore } from "@/store/transactionStore";
 import { ConnectedWallet, useWallets } from "@privy-io/react-auth";
 import { useAuthStore } from "@/store/authStore";
 import { zetachain } from "viem/chains";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 
 function isHex(value: string): value is `0x${string}` {
   return typeof value === "string" && value.startsWith("0x");
@@ -324,7 +325,7 @@ export default function InteractionContainer({
   setStep: Function;
   action: Action;
   setAction: Function;
-  _inputToken: Token;
+  _inputToken?: Token;
   _inputBalance: Balance;
   _action: Action;
   vaultData: VaultData;
@@ -907,7 +908,7 @@ function Interaction({
 }: {
   setStep: Function;
   setAction: Function;
-  inputToken: Token;
+  inputToken?: Token;
   inputBalance: Balance;
   action: Action;
   vaultData: VaultData;
@@ -947,6 +948,7 @@ function Interaction({
   const walletContext = useWallet();
   const prevLebel = useRef(label);
   const { openStep } = useAuthStore();
+  const { selectedChain } = useMultiChain();
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -1143,7 +1145,7 @@ function Interaction({
   async function handleMainAction(directAction?: Action) {
     const currenAction = directAction ?? action;
 
-    if (isTransactionProcessing) {
+    if (isTransactionProcessing || !inputToken) {
       return;
     }
 
@@ -1291,7 +1293,21 @@ function Interaction({
     if (activeChain.id === zetachain.id) {
       openStep(isMobile ? "mobileOptionsA" : "optionsA");
     } else {
-      openStep(isMobile ? "mobileAllWallets" : "allWallets");
+      if (
+        (selectedChain === "solana" && activeChain.id !== CHAIN_ID["solana"]) ||
+        (selectedChain === "evm" && activeChain.id === CHAIN_ID["solana"])
+      ) {
+        if (selectedChain === "evm" && activeAccount?.address) {
+          const confirmResult = confirm("Your EVM wallet will be disconnected");
+          if (!confirmResult) return;
+        } else if (selectedChain === "solana") {
+          const confirmResult = confirm(
+            "Your Solana wallet will be disconnected",
+          );
+          if (!confirmResult) return;
+        }
+      }
+      openStep("connectInChosenChain");
     }
   };
 
@@ -1324,17 +1340,24 @@ function Interaction({
             crosschainInvestHash?.length > 0 && !finishedTransaction;
 
           const isDisabledByValidation =
+            !inputToken ||
             !inputBalance.formatted ||
             Number(inputBalance.formatted) <= 0 ||
             !!errorMessage;
 
           const isConnectWalletSHown =
-            !activeAccount ||
-            (activeAccount.walletClientType === "privy" &&
-              activeChain.id !== zetachain.id);
+            (!activeAccount && !walletContext.publicKey) ||
+            (activeAccount?.walletClientType === "privy" &&
+              activeChain.id !== zetachain.id) ||
+            (walletContext.publicKey &&
+              activeChain.id !== CHAIN_ID["solana"]) ||
+            (activeAccount?.address && activeChain.id === CHAIN_ID["solana"]);
 
           const isDisabled = !isConnectWalletSHown
-            ? isButtonDisabled || isDisabledByProcessing || isDisabledByHash
+            ? isButtonDisabled ||
+              isDisabledByProcessing ||
+              isDisabledByHash ||
+              isDisabledByValidation
             : false;
 
           return (

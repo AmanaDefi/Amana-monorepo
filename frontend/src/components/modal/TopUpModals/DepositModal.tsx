@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Chain } from "viem";
+import { Chain, parseUnits } from "viem";
 
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import ChainSelector from "@/components/VaultsDetailsWrapper/components/ChainSelector";
@@ -15,6 +15,9 @@ import { useState } from "react";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import { Token } from "@/types/types";
 import { useWallets } from "@privy-io/react-auth";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { executeWalletTopup } from "@/actions/actions";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 
 export const Deposit = () => {
   const {
@@ -32,9 +35,11 @@ export const Deposit = () => {
   } = useFundWalletStore();
 
   const [error, setError] = useState("");
+  const { walletAddress: smartWalletAddress } = useMultiChain();
 
   const { wallets } = useWallets();
   const activeWallet = wallets[0];
+  const walletContext = useWallet();
 
   const handleSelectChain = (chain: Chain) => {
     setChain(chain);
@@ -50,14 +55,33 @@ export const Deposit = () => {
   };
 
   const handleClose = async () => {
-    await activeConnector?.disconnect();
+    if (walletContext?.connected) {
+      walletContext?.disconnect();
+    }
+    if (activeConnector) {
+      await activeConnector?.disconnect();
+    }
     closeAll();
   };
 
+  const isButtonDisabled =
+    (!chain || !currency || !depositAmount || !!error) && step === "confirm";
+
   const handleConfirm = async () => {
+    if (!chain || !currency || !depositAmount || !!error || !smartWalletAddress) return;
+
+    const newAmt = parseUnits(depositAmount, currency?.decimals);
+    const {transactionHash} = await executeWalletTopup(
+      currency,
+      activeWallet,
+      chain,
+      smartWalletAddress,
+      newAmt,
+      walletContext,
+    );
+    console.log({transactionHash})
     showSuccessToast("Successfully Topped Up");
-    await activeConnector?.disconnect();
-    handleClose();
+    // handleClose();
   };
 
   const handlePressButton = () => {
@@ -80,9 +104,6 @@ export const Deposit = () => {
       activeWallet.switchChain(chain.id);
     }
   };
-
-  const isButtonDisabled =
-    (!chain || !currency || !depositAmount || !!error) && step === "confirm";
 
   return (
     <Modal

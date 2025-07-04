@@ -9,10 +9,12 @@ import GoogleOptionsIcon from "@/components/svg/GoogleOptionsButton";
 
 import { MobileModal } from "./MobileModal";
 import { useLoginWithOAuth, useCreateWallet } from "@privy-io/react-auth";
+import { useWallet } from "@solana/wallet-adapter-react";
 
 const MobileOptionsModalB = () => {
   const { step, closeAll, openStep, setError, successAuth } = useAuthStore();
   const { createWallet } = useCreateWallet();
+  const { disconnect, publicKey } = useWallet();
 
   const { initOAuth } = useLoginWithOAuth({
     onError: (e) => {
@@ -21,6 +23,9 @@ const MobileOptionsModalB = () => {
     onComplete: async (result) => {
       if (!result?.user?.wallet) {
         await createWallet();
+      }
+      if (publicKey) {
+        disconnect();
       }
       if (!result.wasAlreadyAuthenticated) {
         successAuth();

@@ -11,6 +11,7 @@ import { showInfoToast } from "@/toasts";
 import { useEffect, useState } from "react";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { useWallet } from "@solana/wallet-adapter-react";
 
 const MobileAllWallets = () => {
   const { step, successAuth, closeAll } = useAuthStore();
@@ -37,6 +38,7 @@ const MobileAllWallets = () => {
   const {wallets} = useWallets();
   const activeAccount = wallets[0];
   const { logout } = usePrivy();
+  const { disconnect, publicKey } = useWallet();
 
   const {
     connectors,
@@ -49,6 +51,9 @@ const MobileAllWallets = () => {
           setWalletAddress(result.accounts[0]);
           localStorage.removeItem("connectorId");
           return fundWalletConnect();
+        }
+        if (publicKey) {
+          disconnect();
         }
         return successAuth(walletAddress, activeAccount || undefined, true);
       },

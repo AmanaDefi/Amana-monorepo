@@ -198,8 +198,8 @@ const TransactionItem: React.FC<{ transaction: Transaction }> = ({
 
 interface PortfolioTabsProps {
   vaults?: VaultData[];
-  vaultAPYs?: VaultAPY[];
   userVaultBalances?: UserVaultBalance[];
+  vaultAPYs?: VaultAPY[];
   vaultTotalAssets?: VaultTotalAssets[];
   loading?: boolean;
   transactions?: Transaction[];

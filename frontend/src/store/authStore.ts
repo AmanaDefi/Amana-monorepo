@@ -1,4 +1,5 @@
 import { ConnectedWallet } from "@privy-io/react-auth";
+import { Chain } from "viem";
 import { create } from "zustand";
 
 export type AuthStep =
@@ -21,6 +22,7 @@ export type AuthStep =
   | "recieve"
   | "send"
   | "mobileInfo"
+  | "connectInChosenChain"
   | null;
 
 interface AuthState {
@@ -32,6 +34,7 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
   userAddress: string | null;
+  chosenChain: Chain | null;
 
   openStep: (step: AuthStep) => void;
   closeAll: () => void;
@@ -43,6 +46,7 @@ interface AuthState {
   updateField: (name: "username" | "email" | "otp", value: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  setChain: (chain: Chain | null) => void;
   authenticate: (address: string) => void;
   logout: () => void;
 }
@@ -56,6 +60,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: false,
   error: null,
   userAddress: null,
+  chosenChain: null,
 
   openStep: (step) => set({ step }),
   closeAll: () =>
@@ -99,6 +104,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   updateField: (name, value) => set((state) => ({ ...state, [name]: value })),
   setLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error }),
+  setChain: (chosenChain) => set({chosenChain}),
   authenticate: (address) =>
     set({
       isAuthenticated: true,

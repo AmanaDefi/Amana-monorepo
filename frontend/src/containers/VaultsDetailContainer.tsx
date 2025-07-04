@@ -16,6 +16,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   CHAINS_EXPLORER_BASE_URL_MAINNET,
   CHAIN_ICONS,
+
+  CHAIN_ID,
 } from "@/constants/chainConfig";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
@@ -125,7 +127,8 @@ const VaultsDetailContainer: React.FC<{
     lastDepositInfo,
   } = useTransactionStore();
 
-  const { switchToChain, walletAddress, activeChain } = useMultiChain();
+  const { switchToChain, walletAddress, activeChain, selectedChain } =
+    useMultiChain();
 
   const vaultIdStr = Array.isArray(vaultID) ? vaultID[0] : vaultID;
 
@@ -187,13 +190,8 @@ const VaultsDetailContainer: React.FC<{
 
   const handleChainSelect = useCallback(
     async (chain: Chain) => {
+      console.log('handleChainSelect', chain.id)
       await switchToChain(chain);
-
-      if (vaultID) {
-        updateLocalStorageObject(vaultID.toString(), {
-          selectedChain: JSON.stringify(chain, bigIntReplacer),
-        });
-      }
     },
     [vaultID, switchToChain],
   );
@@ -216,11 +214,6 @@ const VaultsDetailContainer: React.FC<{
   useEffect(() => {
     const checkTransactionState = () => {
       if (!vaultID) return;
-
-      if (!user?.address && !wallet?.publicKey) {
-        localStorage.removeItem(vaultID.toString());
-        return;
-      }
 
       const isTxInProgress = CheckTheTxIsInProgress(vaultID.toString());
       const vaultTxData = getLocalStorageObject(vaultID.toString());
@@ -390,9 +383,10 @@ const VaultsDetailContainer: React.FC<{
   );
 
   const handleChainAndTokenSelect = useCallback(
-    (chain: Chain, token: Token) => {
-      handleChainSelect(chain);
+    async (chain: Chain, token: Token) => {
       handleTokenSelect(token);
+      console.log('handleChainAndTokenSelect')
+      handleChainSelect(chain);
     },
     [handleChainSelect, handleTokenSelect],
   );
