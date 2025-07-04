@@ -75,9 +75,8 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
         : "--";
 
       const textClass = classNames("font-bold text-xl leading-5", {
-        "text-red-error": isNegative,
-        "text-white": isLow || !isDefined,
-        "text-green-accent": isHigh,
+        "text-white": isNegative || !isDefined,
+        "text-green-accent": isHigh || isLow,
       });
 
       const arrowColor = isNegative ? "#FF1E1E" : isLow ? "#FFA500" : "#05D47F";
@@ -189,7 +188,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                   <p
                     className={classNames("font-bold text-xl leading-5", {
                       "text-green-accent": isPredictionUp,
-                      "text-red-error": !isPredictionUp,
+                      "text-white": !isPredictionUp,
                     })}
                   >
                     {(!isPredictionUp ? "-" : "") + MOCK_DIGITS}%

@@ -222,7 +222,7 @@ export enum MulticallVersion {
 
 export const solanaChain = {
   id: CHAIN_ID.solana,
-  name: deployEnv === "testnet" ? "devnet" : "mainnet",
+  name: "Solana",
   shortName: "sol",
   chain: "Solana",
   rpcUrls: {
@@ -257,6 +257,7 @@ export const chainsMainnet = [
   bsc,
   avalanche,
   arbitrum,
+  solanaChain,
 ];
 const chainsTestnet = [
   zetachainAthensTestnet,
@@ -266,6 +267,7 @@ const chainsTestnet = [
   bscTestnet,
   avalancheFuji,
   arbitrumSepolia,
+  solanaChain,
 ];
 
 export const SUPPORTED_CHAINS =
@@ -288,7 +290,9 @@ export const customZetachain = zetaRpcUrl
   : zetaChain;
 
 export const chainsWithCustomRpcs = () => {
-  return SUPPORTED_CHAINS.map((chain) => {
+  return SUPPORTED_CHAINS.filter(
+    (chain) => chain.id !== CHAIN_ID["solana"],
+  ).map((chain) => {
     const customUrl = customRpcsMap[chain.id];
 
     if (customUrl) {

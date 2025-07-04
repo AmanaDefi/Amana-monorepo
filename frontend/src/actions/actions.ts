@@ -2334,7 +2334,7 @@ export async function fetchReceiptTokens(
 
   for (const [chainIdStr, group] of Object.entries(groups)) {
     const chainId = Number(chainIdStr);
-    const rpcUrl = chainConfigs[chainId].rpcUrls.default.http[0];
+    const rpcUrl = chainConfigs[chainId]?.rpcUrls?.default?.http[0];
 
     if (!rpcUrl) continue;
     const provider = new ethers.JsonRpcProvider(rpcUrl, chainId);

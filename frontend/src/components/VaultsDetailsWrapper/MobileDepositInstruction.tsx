@@ -10,7 +10,6 @@ import ConfirmDepositIcon from "../svg/instruction/ConfirmDepositIcon";
 import CrossChainTransferIcon from "../svg/instruction/CrossChainTransferIcon";
 import FinalConfirmationIcon from "../svg/instruction/FinalConfirmationIcon";
 import { useInstructionStepLogic } from "@/hooks/useInstructionStepLogic";
-import { MoonLoader } from "react-spinners";
 
 interface MobileDepositInstructionProps {
   transactionStepFeedback?: TransactionStepMessages;
