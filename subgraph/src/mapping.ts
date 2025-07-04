@@ -45,7 +45,9 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       rewardsContractAddress: null,
       protocolPoints: 0,
       protocolPointsDescription: null,
-      cooldownPeriod: 0
+      cooldownPeriod: 0,
+      minDeposit: 1,
+      maxWithdraw: 1000000,
     };
   }
   
@@ -71,7 +73,9 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       rewardsContractAddress: null,
       protocolPoints: 0,
       protocolPointsDescription: null,
-      cooldownPeriod: 0
+      cooldownPeriod: 0,
+      minDeposit: 1,
+      maxWithdraw: 1000000,
     };
   }
   
@@ -97,7 +101,9 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       rewardsContractAddress: "0x45939657d1CA34A8FA39A924B71D28Fe8431e581",
       protocolPoints: 0,
       protocolPointsDescription: null,
-      cooldownPeriod: 0
+      cooldownPeriod: 0,
+      minDeposit: 1,
+      maxWithdraw: 1000000,
     };
   }
   
@@ -123,7 +129,9 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       rewardsContractAddress: null,
       protocolPoints: 0,
       protocolPointsDescription: null,
-      cooldownPeriod: 0
+      cooldownPeriod: 0,
+      minDeposit: 1,
+      maxWithdraw: 1000000,
     };
   }
   
@@ -149,7 +157,9 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       rewardsContractAddress: "0x442E773FFB0043551417D5A37E10c17990fB075c",
       protocolPoints: 0,
       protocolPointsDescription: null,
-      cooldownPeriod: 0
+      cooldownPeriod: 0,
+      minDeposit: 1,
+      maxWithdraw: 1000000,
     };
   }
   
@@ -175,7 +185,9 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       rewardsContractAddress: "0x60eF3c53c86E1eCEc76d900B6cf2f0B39ffD98B2",
       protocolPoints: 0,
       protocolPointsDescription: null,
-      cooldownPeriod: 0
+      cooldownPeriod: 0,
+      minDeposit: 1,
+      maxWithdraw: 1000000,
     };
   }
   
@@ -201,7 +213,9 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       rewardsContractAddress: "0xD4f9bCc2e0e920e23763FA8e37eCbC4135959dB4",
       protocolPoints: 0,
       protocolPointsDescription: null,
-      cooldownPeriod: 0
+      cooldownPeriod: 0,
+      minDeposit: 1,
+      maxWithdraw: 1000000,
     };
   }
   
@@ -227,7 +241,9 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       rewardsContractAddress: "0x50355F3Bb70317E518905664CE09333FA8b90645",
       protocolPoints: 0,
       protocolPointsDescription: null,
-      cooldownPeriod: 0
+      cooldownPeriod: 0,
+      minDeposit: 1,
+      maxWithdraw: 1000000,
     };
   }
   
@@ -252,7 +268,9 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
     rewardsContractAddress: null,
     protocolPoints: 0,
     protocolPointsDescription: null,
-    cooldownPeriod: 0
+    cooldownPeriod: 0,
+    minDeposit: 1,
+    maxWithdraw: 1000000,
   };
 }
 
@@ -277,6 +295,8 @@ class VaultMetadata {
   protocolPoints: i32;
   protocolPointsDescription: string | null;
   cooldownPeriod: i32;
+  minDeposit: i32;
+  maxWithdraw: i32;
 }
 
 // Legacy function for backward compatibility
@@ -384,6 +404,8 @@ export function handleVaultInitialized(event: VaultInitialized): void {
   entity.protocolPoints = metadata.protocolPoints;
   entity.protocolPointsDescription = metadata.protocolPointsDescription;
   entity.cooldownPeriod = metadata.cooldownPeriod;
+  entity.minDeposit = metadata.minDeposit;
+  entity.maxWithdraw = metadata.maxWithdraw;
   
   // Set rewards contract address if provided
   if (metadata.rewardsContractAddress != null) {
@@ -460,6 +482,8 @@ export function handleStrategyUpdated(event: StrategyUpdated): void {
     entity.protocolPoints = metadata.protocolPoints;
     entity.protocolPointsDescription = metadata.protocolPointsDescription;
     entity.cooldownPeriod = metadata.cooldownPeriod;
+    entity.minDeposit = metadata.minDeposit;
+    entity.maxWithdraw = metadata.maxWithdraw;
     
     // Set rewards contract address if provided
     if (metadata.rewardsContractAddress != null) {
