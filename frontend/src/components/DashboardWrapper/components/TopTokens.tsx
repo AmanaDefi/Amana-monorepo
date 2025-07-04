@@ -7,14 +7,11 @@ const TopTokens = ({
   vaults,
   userVaultBalances,
 }: {
-  vaults?: VaultData[];
-  userVaultBalances?: UserVaultBalance[];
+  vaults: VaultData[];
+  userVaultBalances: UserVaultBalance[];
 }) => {
   const [showAll, setShowAll] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  if (!vaults || !userVaultBalances) {
-    return null;
-  }
   const balanceMap = new Map(
     userVaultBalances.map((balance) => [balance.vaultId, balance.balance]),
   );
