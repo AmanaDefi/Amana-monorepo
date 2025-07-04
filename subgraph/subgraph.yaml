@@ -289,9 +289,9 @@ dataSources:
     name: YieldFiUSDC_Vault
     network: zetachain
     source:
-      address: "0xCF18fc631e05BA7DcBCadCd212176C381256FAA8"
+      address: "0x86351CA28FfADC520c940FA6b5DbE441289b55CB"
       abi: AmanaVault
-      startBlock: 8833067
+      startBlock: 9001330
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7

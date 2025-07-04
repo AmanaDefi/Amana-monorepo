@@ -248,7 +248,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
   }
 
     // YieldFi vyUSD Vault -> Ethereum
-  if (addr == "0xcf18fc631e05ba7dcbcadcd212176c381256faa8") {
+  if (addr == "0x86351ca28ffadc520c940fa6b5dbe441289b55cb") {
     return {
       type: "Yield-Bearing Stablecoin",
       name: "YieldFi vyUSD",
@@ -266,7 +266,12 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       protocolDescription: "YieldFi is a yield automation protocol designed to simplify and maximize returns on stablecoin deposits. Users deposit stable assets like USDC or YUSD, which YieldFi routes through optimized on-chain strategies to generate yield. The protocol automatically aggregates and compounds rewards, offering a seamless experience for earning stable, passive income in DeFi.",
       networkDescription: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
       riskLevel: 3,
-      rewardsContractAddress: "0x50355F3Bb70317E518905664CE09333FA8b90645"
+      rewardsContractAddress: null,
+      protocolPoints: 5,
+      protocolPointsDescription: "YieldCrumbs",
+      cooldownPeriod: 0,
+      minDeposit: 10,
+      maxWithdraw: 100,
     };
   }
   
