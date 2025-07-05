@@ -391,6 +391,8 @@ const VaultsDetailContainer: React.FC<{
     isDeposit &&
     (Object.keys(lastTransactionStepFeedback).length > 0 ||
       Object.keys(transactionStepFeedback).length > 0);
+  
+  console.log(lastDepositInfo, finishedTransaction)  
 
   return vaultData ? (
     <div className=" font-gotham">

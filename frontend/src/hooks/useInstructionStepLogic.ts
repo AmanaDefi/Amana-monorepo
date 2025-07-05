@@ -101,6 +101,7 @@ const getUserStepStatus = (
   feedback: TransactionStepMessages,
   isType2Transaction: boolean,
   isDeposit: boolean = true,
+  shouldShowFinalStep: boolean,
 ): {
   status: TransactionStepStatus;
   description: string;
@@ -128,6 +129,13 @@ const getUserStepStatus = (
       description = actionFeedback.description || description;
       txHash = actionFeedback.txHash || txHash;
       isWaitingTooLong = actionFeedback.isWaitingTooLong || isWaitingTooLong;
+
+      if (
+        shouldShowFinalStep &&
+        actionFeedback.status !== TransactionStepStatus.error
+      ) {
+        latestStatus = TransactionStepStatus.completed;
+      }
 
       if (
         latestStatus === TransactionStepStatus.processing ||
@@ -166,6 +174,13 @@ export const useInstructionStepLogic = ({
     isTransactionProcessing,
     isButtonDisabled,
   } = useTransactionStore();
+
+  const shouldShowFinalStep =
+    finishedTransaction &&
+    (Object.keys(lastTransactionStepFeedback).length > 0 ||
+      Object.keys(transactionStepFeedback).length > 0);
+
+  console.log({shouldShowFinalStep});
 
   const isUserOnZetachain = activeChainId ? isZetachain(activeChainId) : false;
   const isVaultOnZetachain = vaultStrategyChainId
@@ -268,6 +283,7 @@ export const useInstructionStepLogic = ({
             activeFeedback,
             isType2Transaction,
             isDeposit,
+            shouldShowFinalStep,
           );
           if (
             stepStatus.status === TransactionStepStatus.processing &&
@@ -282,6 +298,7 @@ export const useInstructionStepLogic = ({
           activeFeedback,
           isType2Transaction,
           isDeposit,
+          shouldShowFinalStep,
         );
 
         if (stepStatus.status === TransactionStepStatus.completed) {
@@ -307,6 +324,7 @@ export const useInstructionStepLogic = ({
       activeFeedback,
       isType2Transaction,
       isDeposit,
+      shouldShowFinalStep,
     );
     currentDesc = currentStepStatusObj.description;
 
@@ -335,6 +353,7 @@ export const useInstructionStepLogic = ({
     isType2Transaction,
     isDeposit,
     steps,
+    shouldShowFinalStep
   ]);
 
   return {

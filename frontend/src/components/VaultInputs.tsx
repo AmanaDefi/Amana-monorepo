@@ -1500,6 +1500,7 @@ export default function VaultInputs({
           hideStepsDisplay={true}
           setLabel={setLabel}
           label={label}
+          outputAmountFormatted={conversionOutput.outputAmountFormatted}
         />
       )}
     </>

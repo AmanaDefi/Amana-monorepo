@@ -39,13 +39,13 @@ const Roadmap = () => {
         "Smart Account Passkey UX",
         "Reg-compliant Stablecoin Vaults",
       ],
-      isHighlighted: true,
-      highlightLabel: "We are Here",
-      highlightDescription: "Introduce Smart Account Sign-in",
     },
     {
       quarter: "Q3",
       title: "Institutional Growth",
+      isHighlighted: true,
+      highlightLabel: "We are Here",
+      highlightDescription: "Enhanced Swap/Routing Engine for deeper Liquidity",
       tasks: [
         "Onboard first Institutional Vault Partners",
         "Intelligent Vaults (AI Rebalancing)",
@@ -121,7 +121,6 @@ const Roadmap = () => {
             {ROADMAP_DATA.map((item, index) => (
               <div key={index} className="w-full flex-shrink-0 px-8">
                 {item.isHighlighted ? (
-                  // Окрема синя картка для highlighted
                   <div
                     className="max-w-xs mx-auto p-6 rounded-[24px] pb-[93px]"
                     style={{
@@ -133,10 +132,10 @@ const Roadmap = () => {
                       Roadmap
                     </div>
                     <div className="font-medium text-[24px] text-white mb-2">
-                      We are Here
+                      {item.highlightLabel}
                     </div>
                     <div className="text-sm text-[#9A9CB3] mb-[146px]">
-                      Introduce Smart Account Sign-in
+                      {item.highlightDescription}
                     </div>
                     <h2
                       className="font-bold text-[32px] mb-2"
@@ -172,7 +171,6 @@ const Roadmap = () => {
                     </ul>
                   </div>
                 ) : (
-                  // Звичайна картка для всіх інших
                   <div className="max-w-xs mx-auto h-full flex flex-col justify-end pb-[93px]">
                     <h2
                       className="font-bold text-[32px] mb-2"
