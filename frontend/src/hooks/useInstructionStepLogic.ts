@@ -319,6 +319,12 @@ export const useInstructionStepLogic = ({
       currentStepIdx = DepositStep.SELECT_TOKEN;
     }
 
+
+    if (shouldShowFinalStep) {
+      currentStepIdx = 4;
+      completedStepsCount = 4;
+    }
+
     const currentStepStatusObj = getUserStepStatus(
       steps[currentStepIdx] || DepositStep.SELECT_TOKEN,
       activeFeedback,

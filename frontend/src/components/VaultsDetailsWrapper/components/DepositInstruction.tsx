@@ -168,7 +168,7 @@ const progressVariants: Variants = {
 };
 
 const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
-  const { isDeposit = true } = props;
+  const { isDeposit = true, finishedTransaction = false } = props;
 
   const {
     isFirstStepActive,
@@ -256,6 +256,7 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
               activeFeedback,
               isType2Transaction,
               isDeposit,
+              finishedTransaction
             );
           }
 
