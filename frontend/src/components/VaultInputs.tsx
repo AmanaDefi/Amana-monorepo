@@ -731,7 +731,7 @@ export default function VaultInputs({
       let assetsConversionAmount: bigint = inputAmountValue;
 
       // Step 1: Convert input token to vault token if needed
-      if (actualInputToken.address !== vaultData.inputToken.address) {
+      if (actualInputToken.address.toLowerCase() !== vaultData.inputToken.address.toLowerCase()) {
         const result = await getPathDataAndAmountOut(
           inputAmountValue,
           actualInputToken,

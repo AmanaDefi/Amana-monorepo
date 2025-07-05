@@ -138,7 +138,7 @@ export const convertGasFeeToInputToken = async (
   }
 
   // If input token differs from vault token, convert gas fee back to input token terms
-  if (inputTokenZeta.address !== vaultData.inputToken.address) {
+  if (inputTokenZeta.address.toLowerCase() !== vaultData.inputToken.address.toLowerCase()) {
     const { amountOut } = await getPathDataAndAmountOut(
       gasFeeInVaultAsset,
       vaultData.inputToken,

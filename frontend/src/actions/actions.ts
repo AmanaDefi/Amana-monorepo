@@ -947,7 +947,7 @@ const getPathDataAndMinSharesOut = async (
   let assetsConversionAmount: bigint = transactionAmount;
   let swapPath: `0x${string}` = "0x";
 
-  if (inputTokenZeta.address !== vaultData.inputToken.address) {
+  if (inputTokenZeta.address.toLowerCase() !== vaultData.inputToken.address.toLowerCase()) {
     const { encodedPath, amountOut } = await getPathDataAndAmountOut(
       transactionAmount,
       inputTokenZeta,
@@ -994,7 +994,7 @@ const getPathDataAndMinAmountOut = async (
 
   let swapPath: `0x${string}` = "0x";
 
-  if (outputToken.address !== vaultData.inputToken.address) {
+  if (outputToken.address.toLowerCase() !== vaultData.inputToken.address.toLowerCase()) {
     const result = await getPathDataAndAmountOut(
       transactionAmount,
       vaultData.inputToken,
@@ -2209,7 +2209,7 @@ export const getSharesFromDeposit = async (
     throw new Error(errorMsg);
   }
 
-  try {
+  // try {
     const sharesAsBigInt = await publicClient.readContract({
       address: vaultData.id,
       abi: previewDepositAbi,
@@ -2223,9 +2223,9 @@ export const getSharesFromDeposit = async (
     );
 
     return formattedShares;
-  } catch (e) {
-    return "0";
-  }
+  // } catch (e) {
+  //   return "0";
+  // }
 };
 
 export const getAssetsFromShares = async (
