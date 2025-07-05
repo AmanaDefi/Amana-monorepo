@@ -83,6 +83,7 @@ export interface VaultInputsProps {
   vaultId: string;
   isDeposit: boolean;
   onTabChange: (tab: string) => void;
+  APY7DValue: string
 }
 
 export type ConversionOutput = {
@@ -113,6 +114,7 @@ export default function VaultInputs({
   isDeposit,
   onTabChange,
   selectedChain,
+  APY7DValue
 }: VaultInputsProps): JSX.Element {
   const router = useRouter();
   const pathname = usePathname();
@@ -1470,7 +1472,7 @@ export default function VaultInputs({
           </motion.div>
         )}
       </AnimatePresence>
-      <APYChangeCard isDeposit={isDeposit} minReceived={minReceived} />
+      <APYChangeCard isDeposit={isDeposit} minReceived={minReceived} APYValue={APY7DValue} />
 
       {!(
         isDeposit &&

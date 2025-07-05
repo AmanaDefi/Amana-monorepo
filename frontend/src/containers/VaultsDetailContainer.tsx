@@ -606,6 +606,9 @@ const VaultsDetailContainer: React.FC<{
                   onSelectChain={handleChainSelect}
                   onSelectChainAndToken={handleChainAndTokenSelect}
                   vaultId={vaultID.toString()}
+                  APY7DValue={
+                    vaultAPYs.find((a) => a.vaultId === vaultID.toString())?.APY7d?.toString() ?? '0.00'
+                  }
                 />
               </div>
             </motion.div>
