@@ -1184,7 +1184,7 @@ const executeCrossChainDeposit = async (
 
     console.log("txHash:", txHash);
 
-    const publicClient = getPublicClient(SUPPORTED_CHAINS[0].id);
+    const publicClient = getPublicClient(activeChain.id);
     if (publicClient) {
       const receipt = await publicClient.waitForTransactionReceipt({
         hash: txHash,
@@ -1246,13 +1246,13 @@ const executeCrossChainDeposit = async (
           payload,
           revertOptions,
         ],
-        chain: walletClient.chain,
+        chain: activeChain,
         account: activeAccount.address,
       });
 
       console.log("depositAndCall txHash:", txHash);
 
-      const publicClient = getPublicClient(SUPPORTED_CHAINS[0].id);
+      const publicClient = getPublicClient(activeChain.id);
       if (!publicClient) {
         console.warn(`Failed to get ${activeChain.id}.`);
         setcrossChainTxId(transactionId);
