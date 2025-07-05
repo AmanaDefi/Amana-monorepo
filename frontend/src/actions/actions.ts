@@ -959,7 +959,7 @@ const getPathDataAndMinSharesOut = async (
     assetsConversionAmount = amountOut;
   }
   const publicClient = getPublicClient(
-    SUPPORTED_CHAINS[0].id,
+    vaultData.protocol.chainId
   );
   if (!publicClient) throw new Error("Error get public client");
 
