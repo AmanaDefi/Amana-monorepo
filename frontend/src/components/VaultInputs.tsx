@@ -19,6 +19,7 @@ import {
   CHAIN_ID,
   chainConfigs,
   chainsWithCustomRpcs,
+  SUPPORTED_CHAINS,
 } from "@/constants/chainConfig";
 import {
   determineVaultTokenFromApprovedTokens,
@@ -751,11 +752,10 @@ export default function VaultInputs({
       let gasFeeInUSD = "0";
       let gasFeeInETH = "0";
       let netDepositToVaultUSD = "0";
-      if (!selectedChain?.id) return;
 
       const publicClient = await getPublicClient(
         activeWallet,
-        selectedChain.id,
+        SUPPORTED_CHAINS[0].id,
       );
       if (!vaultData.depositFeePaidFromGasTank && !!publicClient) {
         const gasLimitForWithdrawAndCall = await publicClient.readContract({

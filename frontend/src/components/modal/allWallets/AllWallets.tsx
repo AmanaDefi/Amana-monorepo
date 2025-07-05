@@ -103,7 +103,7 @@ const AllWAllets = () => {
     connect(
       {
         connector,
-        chainId: fundWalletStep === "connectWallet" ? chain.id : chosenChain,
+        chainId: fundWalletStep === "connectWallet" ? chain.id : chosenChain?.id,
       },
       {
         onError: (error) => {

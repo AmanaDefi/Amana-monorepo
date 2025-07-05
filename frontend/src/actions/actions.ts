@@ -5,6 +5,7 @@ import {
   EVM_GATEWAY_ADDRESSES,
   chainConfigs,
   MULTICALL_ADDRS,
+  SUPPORTED_CHAINS,
 } from "../constants/chainConfig";
 import { ethers, getAddress, Interface, solidityPacked } from "ethers";
 
@@ -959,7 +960,7 @@ const getPathDataAndMinSharesOut = async (
   }
   const publicClient = await getPublicClient(
     activeWallet,
-    vaultData.protocol.chainId,
+    SUPPORTED_CHAINS[0].id,
   );
   if (!publicClient) throw new Error("Error get public client");
 
@@ -1975,11 +1976,11 @@ export const fetchUserVaultBalance = async (
 
   const publicClient = await getPublicClient(
     activeAccount,
-    chainsWithCustomRpcs()[0].id,
+    SUPPORTED_CHAINS[0].id,
   );
   if (!publicClient) {
     console.log(
-      `Failed to fetch public client for chai id ID ${chainsWithCustomRpcs()[0].id}`,
+      `Failed to fetch public client for chai id ID ${SUPPORTED_CHAINS[0].id}`,
     );
     return null;
   }
@@ -2023,10 +2024,10 @@ export const fetchUserVaultMaxRedeem = async (
 
   const publicClient = await getPublicClient(
     activeWallet,
-    chainsWithCustomRpcs()[0].id,
+    SUPPORTED_CHAINS[0].id,
   );
   if (!publicClient) {
-    console.log(`Error get public client ${chainsWithCustomRpcs()[0].id}`);
+    console.log(`Error get public client ${SUPPORTED_CHAINS[0].id}`);
     return null;
   }
 
@@ -2059,7 +2060,7 @@ export const fetchUserVaultMaxWithdraw = async (
 
   const publicClient = await getPublicClient(
     activeWallet,
-    chainsWithCustomRpcs()[0].id,
+    SUPPORTED_CHAINS[0].id,
   );
   if (!publicClient) throw new Error("failed to get publicClient");
   const maxWithdraw = await publicClient.readContract({
@@ -2200,11 +2201,11 @@ export const getSharesFromDeposit = async (
 
   const publicClient = await getPublicClient(
     activeWallet,
-    chainsWithCustomRpcs()[0].id,
+    SUPPORTED_CHAINS[0].id,
   );
 
   if (!publicClient) {
-    const errorMsg = `can't get publicClient for chain with id: ${chainsWithCustomRpcs()[0].id}`;
+    const errorMsg = `can't get publicClient for chain with id: ${SUPPORTED_CHAINS[0].id}`;
     throw new Error(errorMsg);
   }
 
@@ -2243,7 +2244,7 @@ export const getAssetsFromShares = async (
     },
   ] as const;
 
-  const publicClient = await getPublicClient(activeWallet, chainId);
+  const publicClient = await getPublicClient(activeWallet, SUPPORTED_CHAINS[0].id);
 
   if (!publicClient) {
     console.log(`error get publicClient  for chain with ID ${chainId}`);
@@ -2269,8 +2270,7 @@ export const getPerformanceFee = async (
   chainId: number,
   activeWallet: ConnectedWallet,
 ) => {
-  console.log(chainId, 'getPerformanceFee')
-  const publicClient = await getPublicClient(activeWallet, chainId);
+  const publicClient = await getPublicClient(activeWallet, SUPPORTED_CHAINS[0].id);
   if (!publicClient) return 1;
   const abi = [
     {
