@@ -147,33 +147,36 @@ const BenefitCard = ({
     viewport={{ once: true }}
     whileHover={{ scale: 1.05 }}
     className={`
-      flex items-center gap-3 px-[23px] py-4 
-      rounded-[2000px] w-fit h-[56px]
+      flex items-center gap-3 px-[20px] md:px-[20px] lg:px-[23px] py-4 
+      rounded-[2000px] w-fit h-[56px] md:h-[58px] lg:h-[56px]
       backdrop-blur-[20px] 
       shadow-[inset_0_2px_4px_0_rgba(82,81,197,0.25)]
       bg-[var(--main)] text-[var(--white)]
-      font-normal text-base
+      font-normal text-base md:text-base lg:text-base
       ${hasGradientBorder ? "before-gradient-border" : ""}
     `}
   >
     {icon}
-    <span className="whitespace-nowrap">{title}</span>
+    <span className="whitespace-nowrap text-sm md:text-sm lg:text-base">
+      {title}
+    </span>
   </motion.div>
 );
 
 const MobileBenefits = () => {
   return (
-    <section className="mt-[64px] lg:mt-[109px]">
+    <section className="mt-[64px] md:mt-[86px] lg:mt-[109px]">
       <motion.h1
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
         viewport={{ once: true }}
-        className="hidden md:block text-white text-[48px] leading-[-0.04em] text-center font-bold mb-16"
+        className="hidden md:block text-white text-[36px] md:text-[42px] lg:text-[48px] leading-[-0.04em] text-center font-bold mb-12 md:mb-14 lg:mb-16"
       >
         Amana Benefits
       </motion.h1>
 
+      {/* Mobile layout */}
       <div className="md:hidden px-4">
         <div className="flex flex-col space-y-8 max-w-xs mx-auto">
           {MOBILE_BENEFITS_DATA.map((benefit, index) => (
@@ -192,8 +195,66 @@ const MobileBenefits = () => {
         </div>
       </div>
 
-      <div className="hidden md:block">
-        <div className="flex flex-col gap-8 max-w-[767px] lg:max-w-7xl mx-auto">
+      {/* Tablet layout */}
+      <div className="hidden md:block lg:hidden px-4">
+        <div className="flex flex-col gap-5 max-w-[800px] mx-auto">
+          {/* First row - 2 cards */}
+          <div className="flex flex-wrap justify-center gap-3">
+            {BENEFITS_DATA.slice(0, 2).map((benefit, index) => (
+              <BenefitCard
+                key={benefit.id}
+                title={benefit.title}
+                icon={benefit.icon}
+                hasGradientBorder={benefit.hasGradientBorder}
+                index={index}
+              />
+            ))}
+          </div>
+
+          {/* Second row - 3 cards */}
+          <div className="flex flex-wrap justify-center gap-3">
+            {BENEFITS_DATA.slice(2, 5).map((benefit, index) => (
+              <BenefitCard
+                key={benefit.id}
+                title={benefit.title}
+                icon={benefit.icon}
+                hasGradientBorder={benefit.hasGradientBorder}
+                index={index + 2}
+              />
+            ))}
+          </div>
+
+          {/* Third row - 2 cards */}
+          <div className="flex flex-wrap justify-center gap-3">
+            {BENEFITS_DATA.slice(5, 7).map((benefit, index) => (
+              <BenefitCard
+                key={benefit.id}
+                title={benefit.title}
+                icon={benefit.icon}
+                hasGradientBorder={benefit.hasGradientBorder}
+                index={index + 5}
+              />
+            ))}
+          </div>
+
+          {/* Fourth row - 2 cards */}
+          <div className="flex flex-wrap justify-center gap-3">
+            {BENEFITS_DATA.slice(7).map((benefit, index) => (
+              <BenefitCard
+                key={benefit.id}
+                title={benefit.title}
+                icon={benefit.icon}
+                hasGradientBorder={benefit.hasGradientBorder}
+                index={index + 7}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop layout */}
+      <div className="hidden lg:block">
+        <div className="flex flex-col gap-8 max-w-[767px] lg:max-w-4xl xl:max-w-7xl mx-auto">
           <div className="flex flex-wrap justify-center gap-8">
             {BENEFITS_DATA.slice(0, 5).map((benefit, index) => (
               <BenefitCard

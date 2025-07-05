@@ -43,7 +43,7 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
         <GlowIcon position={isMobile ? "bottom-mobile" : "bottom-left"} />
 
         <div className="flex flex-col flex-1 mx-auto w-full min-h-screen">
-          <div className="pt-4 md:pt-6 lg:pt-10 px-4 md:px-0 md:pr-[44px]">
+          <div className="pt-4 md:pt-6 lg:pt-10 px-4  lg:pr-[44px]">
             <Header activeSection={activeSection} />
           </div>
           <div
@@ -63,17 +63,18 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
             {children}
           </div>
         </div>
+        <AppModals />
       </div>
     );
   }
 
   return (
-    <div className="relative overflow-hidden min-h-screen z-0">
+    <div className="relative  overflow-hidden min-h-screen z-0">
       <GlowIcon position={isMobile ? "top-mobile" : "top-right"} />
       <GlowIcon position={isMobile ? "bottom-mobile" : "bottom-left"} />
 
       {isConnected ? (
-        <div className="flex flex-col mx-auto w-full min-h-screen pt-4 md:py-6 lg:pt-[60px] pb-[30px] px-4 md:px-[44px] lg:px-0">
+        <div className="flex flex-col mx-auto w-full min-h-screen pt-4 md:py-6 lg:pt-[60px] pb-[30px] px-4 md:px-[44px] lg:px-0 ">
           <Header activeSection={activeSection} />
           <div className="flex flex-1">
             <div className="flex-shrink-0 lg:min-h-[908px] max-h-[1001px]">

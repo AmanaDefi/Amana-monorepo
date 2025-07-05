@@ -41,6 +41,7 @@ const Roadmap = () => {
       ],
       isHighlighted: true,
       highlightLabel: "We are Here",
+      highlightDescription: "Introduce Smart Account Sign-in",
     },
     {
       quarter: "Q3",
@@ -98,11 +99,13 @@ const Roadmap = () => {
   };
 
   return (
-    <section className="mt-[275px] relative">
-      <div className="relative z-30 right-1">
+    <section className="mt-[167px] md:mt-[275px] relative">
+      <div className="relative z-30 right-1 -bottom-3 lg:-bottom-2 xl:-bottom-0 ">
         <RoadmapIcon />
       </div>
-      <div className="md:hidden relative z-20">
+
+      {/* Mobile layout */}
+      <div className="md:hidden relative z-20 -mt-60">
         <div
           className="overflow-hidden relative z-20 pointer-events-auto"
           onTouchStart={handleTouchStart}
@@ -118,25 +121,25 @@ const Roadmap = () => {
             {ROADMAP_DATA.map((item, index) => (
               <div key={index} className="w-full flex-shrink-0 px-8">
                 {item.isHighlighted ? (
+                  // Окрема синя картка для highlighted
                   <div
-                    className="mx-auto pt-[22px] pl-4 pr-4 pb-6"
+                    className="max-w-xs mx-auto p-6 rounded-[24px] pb-[93px]"
                     style={{
                       background:
                         "linear-gradient(180deg, #101219 0%, #1b46e0 100%)",
-                      borderRadius: "24px",
-                      width: "301px",
-                      minHeight: "615px",
                     }}
                   >
-                    <div className="font-normal text-[16px] text-[#9A9CB3] mb-4">
+                    <div className="font-normal text-[14px] text-[#9A9CB3] mb-[49px]">
                       Roadmap
                     </div>
-                    <div className="font-normal text-[32px] text-white mb-8">
-                      {item.highlightLabel}
+                    <div className="font-medium text-[24px] text-white mb-2">
+                      We are Here
                     </div>
-
+                    <div className="text-sm text-[#9A9CB3] mb-[146px]">
+                      Introduce Smart Account Sign-in
+                    </div>
                     <h2
-                      className="font-bold text-[48px] mb-4"
+                      className="font-bold text-[32px] mb-2"
                       style={{
                         background:
                           "linear-gradient(180deg, #f6faff 11%, #1b46e0 84.13%)",
@@ -148,7 +151,7 @@ const Roadmap = () => {
                       {item.quarter}
                     </h2>
 
-                    <h3 className="font-medium text-[24px] text-white mb-6">
+                    <h3 className="font-medium text-base text-white mb-6">
                       {item.title}
                     </h3>
 
@@ -156,7 +159,7 @@ const Roadmap = () => {
                       {item.tasks.map((task, taskIndex) => (
                         <li
                           key={taskIndex}
-                          className="font-normal text-[16px] text-[#9A9CB3] flex items-start gap-3"
+                          className="font-normal text-sm text-[#9A9CB3] flex items-start gap-3"
                         >
                           <div
                             className={`w-[10px] h-[10px] rounded-full mt-1 flex-shrink-0 ${
@@ -169,7 +172,8 @@ const Roadmap = () => {
                     </ul>
                   </div>
                 ) : (
-                  <div className="relative max-w-xs mx-auto">
+                  // Звичайна картка для всіх інших
+                  <div className="max-w-xs mx-auto h-full flex flex-col justify-end pb-[93px]">
                     <h2
                       className="font-bold text-[32px] mb-2"
                       style={{
@@ -205,7 +209,7 @@ const Roadmap = () => {
           </div>
         </div>
 
-        <div className="flex justify-center gap-4 mt-8">
+        <div className="flex justify-center gap-4 mt-6">
           <button
             onClick={goToPrevSlide}
             className="w-10 h-10 flex items-center justify-center disabled:opacity-50 transition-opacity rounded-full"
@@ -250,7 +254,162 @@ const Roadmap = () => {
         </div>
       </div>
 
-      <div className="hidden md:flex flex-row justify-between items-start px-2">
+      {/* Tablet layout */}
+      <div className="hidden md:block xl:hidden relative z-20 -mt-60">
+        <div
+          className="overflow-hidden relative z-20 pointer-events-auto"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          <div
+            className="flex transition-transform duration-300 ease-out"
+            style={{
+              transform: `translateX(-${currentSlide * 100}%)`,
+            }}
+          >
+            {ROADMAP_DATA.map((item, index) => (
+              <div
+                key={index}
+                className="w-full flex-shrink-0 px-8 md:px-12 lg:px-16"
+              >
+                {item.isHighlighted ? (
+                  <div
+                    className="mx-auto max-w-[450px] p-6 rounded-[24px] pb-[93px] "
+                    style={{
+                      background:
+                        "linear-gradient(180deg, #101219 0%, #1b46e0 100%)",
+                    }}
+                  >
+                    <div className="font-normal text-[14px] md:text-[15px] text-[#9A9CB3] mb-[49px]">
+                      Roadmap
+                    </div>
+                    <div className="font-medium text-[24px] md:text-[28px] text-white mb-2">
+                      {item.highlightLabel}
+                    </div>
+                    <div className="text-sm md:text-[16px] text-[#9A9CB3] mb-[146px]">
+                      {item.highlightDescription}
+                    </div>
+
+                    <h2
+                      className="font-bold text-[32px] md:text-[40px] mb-2"
+                      style={{
+                        background:
+                          "linear-gradient(180deg, #f6faff 11%, #1b46e0 84.13%)",
+                        backgroundClip: "text",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                      }}
+                    >
+                      {item.quarter}
+                    </h2>
+
+                    <h3 className="font-medium text-base md:text-[18px] text-white mb-6">
+                      {item.title}
+                    </h3>
+
+                    <ul className="flex flex-col gap-4 md:gap-6">
+                      {item.tasks.map((task, taskIndex) => (
+                        <li
+                          key={taskIndex}
+                          className="font-normal text-sm md:text-[16px] text-[#9A9CB3] flex items-start gap-3"
+                        >
+                          <div
+                            className={`w-[10px] h-[10px] rounded-full mt-1 flex-shrink-0 ${
+                              taskIndex !== 2 ? "bg-[#1B46E0]" : "bg-white"
+                            }`}
+                          ></div>
+                          <span>{task}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  // Звичайна картка - контент прижатий до низу
+                  <div className="mx-auto max-w-[450px] h-full flex flex-col justify-end pb-[93px]">
+                    <h2
+                      className="font-bold text-[32px] md:text-[40px] mb-2"
+                      style={{
+                        background:
+                          "linear-gradient(180deg, #f6faff 11%, #1b46e0 84.13%)",
+                        backgroundClip: "text",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                      }}
+                    >
+                      {item.quarter}
+                    </h2>
+
+                    <h3 className="font-medium text-base md:text-[18px] text-white mb-6">
+                      {item.title}
+                    </h3>
+
+                    <ul className="flex flex-col gap-4 md:gap-6">
+                      {item.tasks.map((task, taskIndex) => (
+                        <li
+                          key={taskIndex}
+                          className="font-normal text-sm md:text-[16px] text-[#9A9CB3] flex items-start gap-3"
+                        >
+                          <div className="w-[10px] h-[10px] bg-white rounded-full mt-1 flex-shrink-0"></div>
+                          <span>{task}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Navigation buttons for tablet */}
+        <div className="flex justify-center gap-4 mt-8">
+          <button
+            onClick={goToPrevSlide}
+            className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center disabled:opacity-50 transition-opacity rounded-full"
+            style={{
+              background: "rgba(217, 217, 217, 0.1)",
+            }}
+            disabled={currentSlide === 0}
+          >
+            <div
+              className="w-6 h-6 md:w-7 md:h-7 flex items-center justify-center"
+              style={{
+                background: "#1B46E0",
+                borderRadius: "100%",
+              }}
+            >
+              <div style={{ fill: "white" }}>
+                <ArrowLeftIcon />
+              </div>
+            </div>
+          </button>
+          <button
+            onClick={goToNextSlide}
+            className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center disabled:opacity-50 transition-opacity rounded-full"
+            style={{
+              background: "rgba(217, 217, 217, 0.1)",
+              transform: "rotate(-180deg)",
+            }}
+            disabled={currentSlide === ROADMAP_DATA.length - 1}
+          >
+            <div
+              className="w-6 h-6 md:w-7 md:h-7 flex items-center justify-center"
+              style={{
+                background: "#1B46E0",
+                borderRadius: "100%",
+              }}
+            >
+              <div style={{ fill: "white" }}>
+                <ArrowLeftIcon />
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* Extra large layout (xl) - horizontal */}
+      <div className="hidden xl:flex flex-row justify-between items-start px-5">
         {ROADMAP_DATA.map((item, index) => (
           <motion.div
             key={index}
@@ -266,7 +425,7 @@ const Roadmap = () => {
                 whileInView={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.8, delay: 0.3 }}
                 viewport={{ once: true }}
-                className="absolute top-[-281px] left-0 max-w-[360px] h-[748px] rounded-[24px] pt-[22px] pl-4 z-10"
+                className="absolute top-[-281px] left-0 max-w-[360px] h-[748px] rounded-[24px] pt-[22px] px-4 z-10"
                 style={{
                   background:
                     "linear-gradient(180deg, #101219 0%, #1b46e0 100%)",
@@ -324,7 +483,7 @@ const Roadmap = () => {
 
             <div>
               <h2
-                className="font-bold text-[48px] mb-4 "
+                className="font-bold text-[48px] mb-4 min-w-[350px]"
                 style={{
                   background:
                     "linear-gradient(180deg, #f6faff 11%, #1b46e0 84.13%)",
