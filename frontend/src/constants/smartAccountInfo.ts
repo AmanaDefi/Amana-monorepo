@@ -76,7 +76,7 @@ export const smartAccountInfo: SmartAccountInfo[] = [
       {
         text: "You can do this by either:",
         subItems: [
-          { text: "Send crypto from another wallet" },
+          { text: "Sending crypto from another wallet" },
           { text: "Paying by credit card" },
         ],
       },

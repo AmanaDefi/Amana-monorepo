@@ -16,7 +16,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   CHAINS_EXPLORER_BASE_URL_MAINNET,
   CHAIN_ICONS,
-
   CHAIN_ID,
 } from "@/constants/chainConfig";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
@@ -190,7 +189,7 @@ const VaultsDetailContainer: React.FC<{
 
   const handleChainSelect = useCallback(
     async (chain: Chain) => {
-      console.log('handleChainSelect', chain.id)
+      console.log("handleChainSelect", chain.id);
       await switchToChain(chain);
     },
     [vaultID, switchToChain],
@@ -366,7 +365,7 @@ const VaultsDetailContainer: React.FC<{
   const handleChainAndTokenSelect = useCallback(
     async (chain: Chain, token: Token) => {
       handleTokenSelect(token);
-      console.log('handleChainAndTokenSelect')
+      console.log("handleChainAndTokenSelect");
       handleChainSelect(chain);
     },
     [handleChainSelect, handleTokenSelect],
@@ -391,8 +390,6 @@ const VaultsDetailContainer: React.FC<{
     isDeposit &&
     (Object.keys(lastTransactionStepFeedback).length > 0 ||
       Object.keys(transactionStepFeedback).length > 0);
-  
-  console.log(lastDepositInfo, finishedTransaction)  
 
   return vaultData ? (
     <div className=" font-gotham">
@@ -418,27 +415,29 @@ const VaultsDetailContainer: React.FC<{
         </Button>
 
         <>
-          <button
-            ref={giftButtonRef}
-            onClick={() => {
-              setShowMobileInvestment((prev) => !prev);
-            }}
-            className="text-white rounded-full p-1 flex md:hidden hover:bg-gray-800/50 transition-colors cursor-pointer"
-            type="button"
-          >
-            {!walletAddress || isDeposit ? (
-              <ErrorInputIcon className="w-5 h-5 text-white" />
-            ) : (
-              <div className="rounded-[4px] w-6 h-6 flex items-center justify-center bg-[#0C1015]">
-                <Image
-                  src="/rewards.png"
-                  alt="reward star"
-                  width={20}
-                  height={18}
-                />
-              </div>
-            )}
-          </button>
+          {walletAddress && !isDeposit ? (
+            <button
+              ref={giftButtonRef}
+              onClick={() => {
+                setShowMobileInvestment((prev) => !prev);
+              }}
+              className="text-white rounded-full p-1 flex md:hidden hover:bg-gray-800/50 transition-colors cursor-pointer"
+              type="button"
+            >
+              {!walletAddress || isDeposit ? (
+                <ErrorInputIcon className="w-5 h-5 text-white" />
+              ) : (
+                <div className="rounded-[4px] w-6 h-6 flex items-center justify-center bg-[#0C1015]">
+                  <Image
+                    src="/rewards.png"
+                    alt="reward star"
+                    width={20}
+                    height={18}
+                  />
+                </div>
+              )}
+            </button>
+          ) : null}
 
           <MobileInfoModal
             vaultData={vaultData}
@@ -560,7 +559,7 @@ const VaultsDetailContainer: React.FC<{
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
             >
-              <div className="block md:hidden">
+              <div className="flex flex-row items-center w-full md:hidden">
                 <VaultOverviewBlock
                   vault={vaultData}
                   vaultAPY={vaultAPYs.find(
@@ -587,7 +586,9 @@ const VaultsDetailContainer: React.FC<{
                 </VaultCardInfoBlock>
               </div>
 
-              {walletAddress && isWithdraw && <WithdrawalNotice vault={vaultData} />}
+              {walletAddress && isWithdraw && (
+                <WithdrawalNotice vault={vaultData} />
+              )}
 
               <div className="bg-[#14171F] pb-8 pt-6 px-4 md:px-5 min-w-[343px] lg:min-w-[490px] 2xl:min-w-[526px] rounded-[16px] w-full xl:max-w-[526px] mt-4 md:mt-4">
                 <VaultInputs
