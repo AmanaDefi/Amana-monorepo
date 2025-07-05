@@ -130,7 +130,7 @@ const handleDepositTransaction = async (
     } else {
       console.log("EVM transaction, waiting for receipt confirmation");
 
-      const publicClient = await getPublicClient(activeAccount);
+      const publicClient = getPublicClient(activeChain.id);
       if (
         publicClient &&
         receipt.transactionHash &&
@@ -251,7 +251,7 @@ const handleWithdrawTransaction = async (
 
     if (activeChain.id === CHAIN_ID.solana) {
     } else {
-      const publicClient = await getPublicClient(activeAccount);
+      const publicClient = getPublicClient(activeChain.id);
       if (
         publicClient &&
         receipt?.transactionHash &&
