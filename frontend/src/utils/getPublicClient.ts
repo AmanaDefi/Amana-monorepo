@@ -16,17 +16,22 @@ export const getPublicClient = async (
   wallet?: ConnectedWallet,
   activeChainId?: number,
 ): Promise<PublicClient | null> => {
+
   const chainId = activeChainId
     ? activeChainId.toString()
     : (wallet?.chainId?.split(":")[1] ?? "7000");
+
     
   if (clientCache.has(chainId)) {
     return clientCache.get(chainId)!;
+    
   }
+ 
 
-  const chain =
-    chainsWithCustomRpcs().find((chain) => chain.id === Number(chainId)) ?? customZetachain;
-    console.log('chain.rpcUrls.default.http[0]',chain.rpcUrls.default.http[0])
+  const chain = chainsWithCustomRpcs().find((chain) => chain.id === Number(chainId)) ?? customZetachain; 
+ 
+
+
 
   if (!wallet || !!activeChainId) {
     return createPublicClient({
@@ -43,7 +48,6 @@ export const getPublicClient = async (
     );
     return null;
   }
-
   const client = createPublicClient({
     chain: chain,
     transport: custom(provider),
