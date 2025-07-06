@@ -19,10 +19,10 @@ export const InfoPopup = ({
   return (
     <span
       className={classNames(
-        "relative rounded-lg px-[19px] py-[14px] z-20 text-white text-sm leading-4 bg-blue-button inline-block",
+        "relative rounded-lg px-3 md:px-[19px] py-3 md:py-[14px] z-20 text-white text-xs md:text-sm leading-4 bg-blue-button inline-block",
         {
-          "w-[330px]": !autoWidth,
-          "w-max max-w-sm": autoWidth,
+          "w-64 md:w-[330px]": !autoWidth,
+          "w-max max-w-48 sm:max-w-64 md:max-w-sm": autoWidth,
         },
       )}
     >
@@ -31,7 +31,7 @@ export const InfoPopup = ({
         className={classNames("absolute -bottom-4", {
           "right-3": isRight,
           "left-3": !isRight && !isMiddle && !isLeft,
-          "left-[125px]": isMiddle,
+          "left-[125px]": isMiddle, 
           "left-1": isLeft,
         })}
       >

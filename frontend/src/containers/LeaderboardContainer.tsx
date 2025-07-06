@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useMemo, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import SearchIcon from "@/components/svg/Search";
 import { InfoBlock } from "@/components/VaultsWrapper/components/InfoBlock.tsx";
@@ -131,7 +131,12 @@ export default function LeaderboardContainer() {
   const { wallets } = useWallets();
   const currentUserAccount = wallets[0] || ZERO_ACCOUNT;
 
-  // Коли API буде готовий, розкоментуйте цей блок:
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   // const {
   //   data: leaderboardData,
   //   isLoading,
@@ -213,29 +218,35 @@ export default function LeaderboardContainer() {
 
   const PaginationControls = () => (
     <motion.div
-      className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 px-4 items-center justify-between"
+      className="flex items-center justify-between mt-4 px-0 md:px-4"
       variants={itemVariants}
     >
-      <div className="flex items-center justify-between gap-2">
+      <div className="text-gray-400 text-xs md:text-sm lg:text-base whitespace-nowrap md:hidden">
+        Total users: {totalItems}
+      </div>
+
+      <div className="flex items-center gap-4 md:absolute md:left-1/2 md:transform md:-translate-x-1/2">
         <motion.button
           onClick={() => handlePageChange(searchParams.page - 1)}
           disabled={searchParams.page === 1}
           className="px-3 py-1 border border-gray-700 rounded-lg disabled:opacity-50
-                             disabled:cursor-not-allowed hover:bg-gray-800 text-sm lg:text-base transition-colors duration-200"
+                         disabled:cursor-not-allowed hover:bg-gray-800 text-xs md:text-sm lg:text-base transition-colors duration-200"
           whileHover={{ y: -1, scale: 1.02 }}
           whileTap={{ y: 0, scale: 0.98 }}
           transition={{ type: "spring", stiffness: 300, damping: 25 }}
         >
           Previous
         </motion.button>
-        <span className="text-gray-400 text-sm lg:text-base whitespace-nowrap">
+
+        <span className="text-gray-400 text-xs md:text-sm lg:text-base whitespace-nowrap">
           Page {searchParams.page} of {totalPages}
         </span>
+
         <motion.button
           onClick={() => handlePageChange(searchParams.page + 1)}
           disabled={searchParams.page === totalPages}
           className="px-3 py-1 border border-gray-700 rounded-lg disabled:opacity-50
-                             disabled:cursor-not-allowed hover:bg-gray-800 text-sm lg:text-base transition-colors duration-200"
+                         disabled:cursor-not-allowed hover:bg-gray-800 text-xs md:text-sm lg:text-base transition-colors duration-200"
           whileHover={{ y: -1, scale: 1.02 }}
           whileTap={{ y: 0, scale: 0.98 }}
           transition={{ type: "spring", stiffness: 300, damping: 25 }}
@@ -243,12 +254,12 @@ export default function LeaderboardContainer() {
           Next
         </motion.button>
       </div>
-      <div className="text-gray-400 text-sm lg:text-base text-end whitespace-nowrap">
+
+      <div className="hidden md:block text-gray-400 text-xs md:text-sm lg:text-base text-right whitespace-nowrap">
         Total users: {totalItems}
       </div>
     </motion.div>
   );
-
   const top3Users =
     leaderboardData?.data?.filter((item) => item.position <= 3) || [];
   const otherUsers =
@@ -260,7 +271,6 @@ export default function LeaderboardContainer() {
         className="flex  items-center flex-col md:flex-row justify-start  md:justify-between px-4 md:px-0 gap-4 md:gap-0"
         variants={itemVariants}
       >
-        {/* Tabs Section */}
         <div className="rounded-lg shadow-custom bg-[#14171F] flex justify-between gap-2 w-full md:max-w-[363px]">
           {leaderboardTabs.map((tab, index) => (
             <motion.div
@@ -293,7 +303,6 @@ export default function LeaderboardContainer() {
           ))}
         </div>
 
-        {/* Search Section */}
         <motion.div
           className="focus-within:border-blue-button hover:border-blue-button transition-all duration-300 bg-[#14171F] 
              w-full min-w-[48px] sm:min-w-[190px] 
@@ -336,7 +345,6 @@ export default function LeaderboardContainer() {
         variants={itemVariants}
       >
         <div>
-          {/* Header */}
           <motion.div
             className="grid grid-cols-[112px_83px_103px] md:grid-cols-[minmax(0,360px)_minmax(0,226px)_minmax(0,220px)] justify-between w-full px-0 md:px-8 py-0 md:py-3 text-[#9A9CB3] text-xs md:text-lg font-normal mb-5 md:mb-6"
             variants={itemVariants}
@@ -345,7 +353,13 @@ export default function LeaderboardContainer() {
             <div className="flex items-center gap-1 md:gap-2 justify-center md:justify-start">
               <span className="truncate">Points</span>
               <div>
-                <InfoBlock isLeft>
+                <InfoBlock
+                  isLeft
+                  isMiddle={
+                    !isMounted ||
+                    (typeof window !== "undefined" && window.innerWidth < 768)
+                  }
+                >
                   💡 Points are earned for total amount deposited across vaults
                   (converted to USD equivalent at current asset price)
                   multiplied by the length of time the deposits have been / were
@@ -356,7 +370,6 @@ export default function LeaderboardContainer() {
             <div className="text-left">User Address</div>
           </motion.div>
 
-          {/* Content */}
           <div className="">
             <AnimatePresence mode="wait">
               {isLoading ? (
