@@ -301,7 +301,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     async (walletAddress: string) => {
       if (!privyWallet?.chainId || !walletAddress) return;
 
-      const publicClient = await getPublicClient(privyWallet);
+      const publicClient = getPublicClient(activeChain.id);
       if (!publicClient) return;
 
       try {

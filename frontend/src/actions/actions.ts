@@ -5,6 +5,7 @@ import {
   EVM_GATEWAY_ADDRESSES,
   chainConfigs,
   MULTICALL_ADDRS,
+  SUPPORTED_CHAINS,
 } from "../constants/chainConfig";
 import { ethers, getAddress, Interface, solidityPacked } from "ethers";
 
@@ -95,7 +96,7 @@ export async function calculateEddyAPY(
     },
   ] as const;
 
-  const publicClient = await getPublicClient(wallet, strategyChain.id);
+  const publicClient = getPublicClient(strategyChain.id);
 
   if (!publicClient) {
     console.log(`Failed to get public client ID ${strategyChain.id}`);
@@ -262,7 +263,7 @@ export async function calculateAaveAPY(
         type: "function",
       },
     ] as const;
-    const publicClient = await getPublicClient(wallet, strategyChain.id);
+    const publicClient = getPublicClient(strategyChain.id);
 
     if (!publicClient) {
       console.log(`Failed to fetch public client for id: ${strategyChain.id}`);
@@ -379,7 +380,7 @@ export async function calculateConvexEthereumRewardsAPY(
     },
   ] as const;
 
-  const publicClient = await getPublicClient(wallet, strategyChain.id);
+  const publicClient = getPublicClient(strategyChain.id);
   if (!publicClient) {
     console.log(
       `Failed to get public client for chain id: ${strategyChain.id}`,
@@ -474,7 +475,7 @@ export async function calculateConvexArbitrumRewardsAPY(
       },
     ] as const;
 
-    const publicClient = await getPublicClient(wallet, strategyChain.id);
+    const publicClient = getPublicClient(strategyChain.id);
     if (!publicClient) {
       return 0;
     }
@@ -637,7 +638,7 @@ export async function calculateCompoundAPY(
   strategyChain: Chain,
   wallet: ConnectedWallet,
 ) {
-  const publicClient = await getPublicClient(wallet, strategyChain.id);
+  const publicClient = getPublicClient( strategyChain.id);
   if (!publicClient) {
     console.log(`Failed to get public client with id ${strategyChain.id}`);
     return 0;
@@ -694,7 +695,7 @@ export async function calculateVenusAPY(
     },
   ] as const;
 
-  const publicClient = await getPublicClient(wallet, strategyChain.id);
+  const publicClient = getPublicClient(strategyChain.id);
   if (!publicClient) {
     console.log(`Failed to get client for chain: ID ${strategyChain.id}`);
     return 0;
@@ -903,7 +904,7 @@ export const Approvedeposit = async (
     });
     console.log({ txHash });
 
-    const publicClient = await getPublicClient(activeAccount, activeChain.id);
+    const publicClient = getPublicClient(activeChain.id);
     if (!publicClient) {
       console.log("no public client");
       return false;
@@ -946,7 +947,7 @@ const getPathDataAndMinSharesOut = async (
   let assetsConversionAmount: bigint = transactionAmount;
   let swapPath: `0x${string}` = "0x";
 
-  if (inputTokenZeta.address !== vaultData.inputToken.address) {
+  if (inputTokenZeta.address.toLowerCase() !== vaultData.inputToken.address.toLowerCase()) {
     const { encodedPath, amountOut } = await getPathDataAndAmountOut(
       transactionAmount,
       inputTokenZeta,
@@ -957,9 +958,8 @@ const getPathDataAndMinSharesOut = async (
     swapPath = encodedPath ?? "0x";
     assetsConversionAmount = amountOut;
   }
-  const publicClient = await getPublicClient(
-    activeWallet,
-    vaultData.protocol.chainId,
+  const publicClient = getPublicClient(
+    vaultData.protocol.chainId
   );
   if (!publicClient) throw new Error("Error get public client");
 
@@ -993,7 +993,7 @@ const getPathDataAndMinAmountOut = async (
 
   let swapPath: `0x${string}` = "0x";
 
-  if (outputToken.address !== vaultData.inputToken.address) {
+  if (outputToken.address.toLowerCase() !== vaultData.inputToken.address.toLowerCase()) {
     const result = await getPathDataAndAmountOut(
       transactionAmount,
       vaultData.inputToken,
@@ -1184,7 +1184,7 @@ const executeCrossChainDeposit = async (
 
     console.log("txHash:", txHash);
 
-    const publicClient = await getPublicClient(activeAccount);
+    const publicClient = getPublicClient(activeChain.id);
     if (publicClient) {
       const receipt = await publicClient.waitForTransactionReceipt({
         hash: txHash,
@@ -1246,13 +1246,13 @@ const executeCrossChainDeposit = async (
           payload,
           revertOptions,
         ],
-        chain: walletClient.chain,
+        chain: activeChain,
         account: activeAccount.address,
       });
 
       console.log("depositAndCall txHash:", txHash);
 
-      const publicClient = await getPublicClient(activeAccount);
+      const publicClient = getPublicClient(activeChain.id);
       if (!publicClient) {
         console.warn(`Failed to get ${activeChain.id}.`);
         setcrossChainTxId(transactionId);
@@ -1408,7 +1408,7 @@ const executeDirectWalletTopup = async (
         chain: activeChain,
       });
 
-      const publicClient = await getPublicClient(activeAccount, activeChain.id);
+      const publicClient = getPublicClient(activeChain.id);
       if (!publicClient) {
         console.log("No public client found");
         return { transactionHash: txHash };
@@ -1432,7 +1432,7 @@ const executeDirectWalletTopup = async (
         chain: activeChain,
       });
 
-      const publicClient = await getPublicClient(activeAccount, activeChain.id);
+      const publicClient = getPublicClient(activeChain.id);
       if (!publicClient) {
         console.log("No public client found");
         return { transactionHash: txHash };
@@ -1566,7 +1566,7 @@ const executeCrossChainWalletTopup = async (
         }),
       });
 
-      const publicClient = await getPublicClient(activeAccount);
+      const publicClient = getPublicClient(activeChain.id);
       if (!publicClient) {
         console.log("No public client found");
         if (setcrossChainTxId) {
@@ -1602,7 +1602,7 @@ const executeCrossChainWalletTopup = async (
         account: activeAccount.address,
       });
 
-      const publicClient = await getPublicClient(activeAccount);
+      const publicClient = getPublicClient(activeChain.id);
       if (!publicClient) {
         console.log("No public client found");
         if (setcrossChainTxId) {
@@ -1825,13 +1825,13 @@ const executeDirectWithdrawal = async (
       activeAccount?.address,
       activeAccount?.address,
     ],
-    chain: walletClient.chain,
+    chain: SUPPORTED_CHAINS[0],
     account: activeAccount?.address,
   });
 
   console.log("executeDirectWithdrawal txHash:", txHash);
 
-  const publicClient = await getPublicClient(activeAccount);
+  const publicClient = getPublicClient(SUPPORTED_CHAINS[0].id);
   if (!publicClient) {
     console.warn(`failed to get publicClient for chain id: ${activeChain.id}.`);
     return { transactionHash: null };
@@ -1927,7 +1927,7 @@ const executeCrossChainWithdrawal = async (
       account: activeAccount.address,
     });
 
-    const publicClient = await getPublicClient(activeAccount);
+    const publicClient = getPublicClient(activeChain.id);
     if (!publicClient) {
       console.warn(`failed to get public client ${activeChain.id}.`);
       return { transactionHash: null };
@@ -1973,13 +1973,12 @@ export const fetchUserVaultBalance = async (
     },
   ] as const;
 
-  const publicClient = await getPublicClient(
-    activeAccount,
-    chainsWithCustomRpcs()[0].id,
+  const publicClient = getPublicClient(
+    SUPPORTED_CHAINS[0].id,
   );
   if (!publicClient) {
     console.log(
-      `Failed to fetch public client for chai id ID ${chainsWithCustomRpcs()[0].id}`,
+      `Failed to fetch public client for chai id ID ${SUPPORTED_CHAINS[0].id}`,
     );
     return null;
   }
@@ -2021,12 +2020,11 @@ export const fetchUserVaultMaxRedeem = async (
     },
   ] as const;
 
-  const publicClient = await getPublicClient(
-    activeWallet,
-    chainsWithCustomRpcs()[0].id,
+  const publicClient = getPublicClient(
+    SUPPORTED_CHAINS[0].id,
   );
   if (!publicClient) {
-    console.log(`Error get public client ${chainsWithCustomRpcs()[0].id}`);
+    console.log(`Error get public client ${SUPPORTED_CHAINS[0].id}`);
     return null;
   }
 
@@ -2057,9 +2055,8 @@ export const fetchUserVaultMaxWithdraw = async (
     decimals,
   });
 
-  const publicClient = await getPublicClient(
-    activeWallet,
-    chainsWithCustomRpcs()[0].id,
+  const publicClient = getPublicClient(
+    SUPPORTED_CHAINS[0].id,
   );
   if (!publicClient) throw new Error("failed to get publicClient");
   const maxWithdraw = await publicClient.readContract({
@@ -2198,17 +2195,16 @@ export const getSharesFromDeposit = async (
     },
   ] as const;
 
-  const publicClient = await getPublicClient(
-    activeWallet,
-    chainsWithCustomRpcs()[0].id,
+  const publicClient = getPublicClient(
+    SUPPORTED_CHAINS[0].id,
   );
 
   if (!publicClient) {
-    const errorMsg = `can't get publicClient for chain with id: ${chainsWithCustomRpcs()[0].id}`;
+    const errorMsg = `can't get publicClient for chain with id: ${SUPPORTED_CHAINS[0].id}`;
     throw new Error(errorMsg);
   }
 
-  try {
+  // try {
     const sharesAsBigInt = await publicClient.readContract({
       address: vaultData.id,
       abi: previewDepositAbi,
@@ -2222,9 +2218,9 @@ export const getSharesFromDeposit = async (
     );
 
     return formattedShares;
-  } catch (e) {
-    return "0";
-  }
+  // } catch (e) {
+  //   return "0";
+  // }
 };
 
 export const getAssetsFromShares = async (
@@ -2243,7 +2239,7 @@ export const getAssetsFromShares = async (
     },
   ] as const;
 
-  const publicClient = await getPublicClient(activeWallet, chainId);
+  const publicClient = getPublicClient(SUPPORTED_CHAINS[0].id);
 
   if (!publicClient) {
     console.log(`error get publicClient  for chain with ID ${chainId}`);
@@ -2269,8 +2265,7 @@ export const getPerformanceFee = async (
   chainId: number,
   activeWallet: ConnectedWallet,
 ) => {
-  console.log(chainId, 'getPerformanceFee')
-  const publicClient = await getPublicClient(activeWallet, chainId);
+  const publicClient = getPublicClient(SUPPORTED_CHAINS[0].id);
   if (!publicClient) return 1;
   const abi = [
     {
@@ -2370,7 +2365,7 @@ export async function fetchReceiptTokens(
     } else {
       for (const v of group) {
         try {
-          const publicClient = await getPublicClient(activeAccount, chainId);
+          const publicClient = getPublicClient(chainId);
           if (!publicClient) {
             console.log(`Failed to get public client for chain id: ${chainId}`);
             result[v.id] = ethers.ZeroAddress;

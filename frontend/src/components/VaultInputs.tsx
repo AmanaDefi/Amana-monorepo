@@ -19,6 +19,7 @@ import {
   CHAIN_ID,
   chainConfigs,
   chainsWithCustomRpcs,
+  SUPPORTED_CHAINS,
 } from "@/constants/chainConfig";
 import {
   determineVaultTokenFromApprovedTokens,
@@ -65,6 +66,7 @@ import { useWallets } from "@privy-io/react-auth";
 import { useTransactionStore } from "@/store/transactionStore";
 import { formatTokenBalance, formatUSDValue } from "@/utils/tokenFormat";
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
+import { zetachain } from "viem/chains";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -81,6 +83,7 @@ export interface VaultInputsProps {
   vaultId: string;
   isDeposit: boolean;
   onTabChange: (tab: string) => void;
+  APY7DValue: string
 }
 
 export type ConversionOutput = {
@@ -111,10 +114,13 @@ export default function VaultInputs({
   isDeposit,
   onTabChange,
   selectedChain,
+  APY7DValue
 }: VaultInputsProps): JSX.Element {
   const router = useRouter();
   const pathname = usePathname();
-  const [inputToken, setInputToken] = useState<Token | undefined>(selectedToken);
+  const [inputToken, setInputToken] = useState<Token | undefined>(
+    selectedToken,
+  );
   const [inputBalance, setInputBalance] = useState<Balance>(EMPTY_BALANCE);
   const [displayValue, setDisplayValue] = useState<string>("0.00");
   const [debouncedInputBalance, setDebouncedInputBalance] =
@@ -149,10 +155,8 @@ export default function VaultInputs({
   const [step, setStep] = useState<number>(0);
   const [action, setAction] = useState<Action>(steps[0]);
   const [performanceFee, setPerformanceFee] = useState<number>(0);
-  const {
-    selectedChainFromModal,
-    setSelectedTokenFromModal,
-  } = useChainTokenModalStore();
+  const { selectedChainFromModal, setSelectedTokenFromModal } =
+    useChainTokenModalStore();
 
   useEffect(() => {
     async function handlePerformanceFee() {
@@ -229,7 +233,14 @@ export default function VaultInputs({
 
   useEffect(() => {
     const setToken = () => {
-      if (selectChain?.id === selectedChainFromModal?.id && inputToken) {
+      if (
+        selectChain?.id === selectedChainFromModal?.id &&
+        inputToken &&
+        !(
+          selectChain?.id === zetachain.id &&
+          inputToken.address !== vaultData?.inputToken?.address
+        )
+      ) {
         return;
       }
       if (
@@ -684,7 +695,6 @@ export default function VaultInputs({
 
       const slippageAmountInUSDFormatted = formatUSDValue(
         calculatedSlippageUSD,
-
       );
 
       if (inputAmountValue === debouncedInputBalance.value) {
@@ -730,7 +740,10 @@ export default function VaultInputs({
       let assetsConversionAmount: bigint = inputAmountValue;
 
       // Step 1: Convert input token to vault token if needed
-      if (actualInputToken.address !== vaultData.inputToken.address) {
+      if (
+        actualInputToken.address.toLowerCase() !==
+        vaultData.inputToken.address.toLowerCase()
+      ) {
         const result = await getPathDataAndAmountOut(
           inputAmountValue,
           actualInputToken,
@@ -751,12 +764,8 @@ export default function VaultInputs({
       let gasFeeInUSD = "0";
       let gasFeeInETH = "0";
       let netDepositToVaultUSD = "0";
-      if (!selectedChain?.id) return;
 
-      const publicClient = await getPublicClient(
-        activeWallet,
-        selectedChain.id,
-      );
+      const publicClient = getPublicClient(SUPPORTED_CHAINS[0].id);
       if (!vaultData.depositFeePaidFromGasTank && !!publicClient) {
         const gasLimitForWithdrawAndCall = await publicClient.readContract({
           address: vaultData.id as Address,
@@ -953,8 +962,8 @@ export default function VaultInputs({
       debouncedInputBalance.value > 0n &&
       Number(conversionOutput.outputAmountFormatted) === 0 &&
       !isGasFeeSpecialCase &&
-      !loadingOutputToken && 
-      conversionOutput.outputAmountFormatted !== "0.00" 
+      !loadingOutputToken &&
+      conversionOutput.outputAmountFormatted !== "0.00"
     ) {
       console.log("Swap route not found - setting error message", {
         debouncedInputBalance: debouncedInputBalance.value.toString(),
@@ -968,7 +977,7 @@ export default function VaultInputs({
       setOutputBoxErrorMessage("");
     }
   }, [
-    conversionOutput.outputAmountFormatted, 
+    conversionOutput.outputAmountFormatted,
     conversionOutput.inputAmountInUSDFormatted,
     conversionOutput.gasFeeInUSD,
     debouncedInputBalance,
@@ -1024,7 +1033,7 @@ export default function VaultInputs({
     if (!inputBalance.formatted || Number(inputBalance.formatted) <= 0) {
       setConversionOutput(initialConversionOutput);
       setDebouncedInputBalance(inputBalance);
-      setLoadingOutputToken(false); 
+      setLoadingOutputToken(false);
       return;
     }
 
@@ -1463,38 +1472,39 @@ export default function VaultInputs({
           </motion.div>
         )}
       </AnimatePresence>
-      <APYChangeCard isDeposit={isDeposit} minReceived={minReceived} />
+      <APYChangeCard isDeposit={isDeposit} minReceived={minReceived} APYValue={APY7DValue} />
 
       {!(
-          isDeposit &&
-          !vaultData.depositFeePaidFromGasTank &&
-          conversionOutput.gasFeeInVaultAsset &&
-          debouncedInputBalance.value > 0n &&
-          Number(
-            conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, ""),
-          ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, ""))
-        ) && (
-          <InteractionContainer
-            step={step}
-            setStep={setStep}
-            action={action}
-            setAction={setAction}
-            _inputToken={inputToken}
-            _inputBalance={inputBalance}
-            vaultData={vaultData}
-            setTransactionCompleted={setTransactionCompleted}
-            activeChain={selectedChain as Chain}
-            _action={steps[0]}
-            actions={steps}
-            setInputBalance={setInputBalance}
-            errorMessage={errorMessage || outputBoxErrorMessage || ""}
-            isDeposit={isDeposit}
-            refreshBalance={fetchBalance}
-            hideStepsDisplay={true}
-            setLabel={setLabel}
-            label={label}
-          />
-        )}
+        isDeposit &&
+        !vaultData.depositFeePaidFromGasTank &&
+        conversionOutput.gasFeeInVaultAsset &&
+        debouncedInputBalance.value > 0n &&
+        Number(
+          conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, ""),
+        ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, ""))
+      ) && (
+        <InteractionContainer
+          step={step}
+          setStep={setStep}
+          action={action}
+          setAction={setAction}
+          _inputToken={inputToken}
+          _inputBalance={inputBalance}
+          vaultData={vaultData}
+          setTransactionCompleted={setTransactionCompleted}
+          activeChain={selectedChain as Chain}
+          _action={steps[0]}
+          actions={steps}
+          setInputBalance={setInputBalance}
+          errorMessage={errorMessage || outputBoxErrorMessage || ""}
+          isDeposit={isDeposit}
+          refreshBalance={fetchBalance}
+          hideStepsDisplay={true}
+          setLabel={setLabel}
+          label={label}
+          outputAmountFormatted={conversionOutput.outputAmountFormatted}
+        />
+      )}
     </>
   );
 }

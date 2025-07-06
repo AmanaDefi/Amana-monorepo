@@ -22,18 +22,12 @@ export const FinishDeposit = () => {
 
   const blockchainExplorerBaseUrl = getBlockchainExplorerBaseUrl(chain?.id);
 
-  console.log(blockchainExplorerBaseUrl)
-
   const explorerUrl = useMemo(() => {
     if (!blockchainExplorerBaseUrl || !transactionHash) return "#";
     return `${blockchainExplorerBaseUrl}/tx/${transactionHash}`;
   }, [blockchainExplorerBaseUrl, transactionHash]);
 
   const handleLink = () => {};
-
-  console.log(
-    explorerUrl
-  )
 
   return (
     <Modal

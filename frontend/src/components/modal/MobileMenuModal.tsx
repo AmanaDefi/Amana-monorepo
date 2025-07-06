@@ -99,17 +99,23 @@ const MobileMenuModal: React.FC<MobileMenuProps> = ({ toggleMenu, isOpen }) => {
 
           <div className="flex flex-col gap-6 items-center w-full">
             {menuItems.map((link) => {
+              const isDisabled = link.path === "/activity";
               return (
                 <Link
+                  aria-disabled={isDisabled}
                   key={link.path}
                   onClick={toggleMenu}
                   href={link.path}
                   className={classNames(
                     "flex cursor-pointer flex-row items-center gap-[6px] text-white z-[105]",
                     {
-                      "text-blue-button":
+                      "!text-blue-button":
                         path === link.path ||
                         (link.path === "/" && path === "/earn"),
+                    },
+                    {
+                      "!text-gray-500 pointer-events-none !cursor-not-allowed":
+                        isDisabled,
                     },
                   )}
                 >

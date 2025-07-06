@@ -76,6 +76,7 @@ const MobileDepositInstruction: React.FC<MobileDepositInstructionProps> = (
         activeFeedback,
         isType2Transaction,
         isDeposit,
+        props?.finishedTransaction ?? false
       );
       currentStepStatus = stepStatus.status;
       showLoader = currentStepStatus === TransactionStepStatus.processing;

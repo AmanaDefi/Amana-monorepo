@@ -624,7 +624,7 @@ export const getERC20TokenBalance = async (
       };
     }
 
-    const publicClient = await getPublicClient(activeWallet, chain.id);
+    const publicClient = getPublicClient(chain.id);
     if (!publicClient) {
       console.log("NO publicClient for chainId", chain.id);
       return {
