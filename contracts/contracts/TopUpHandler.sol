@@ -95,8 +95,18 @@ contract TopUpHandler is
         bytes calldata message
     ) external override onlyGateway {
         address smartAccount = abi.decode(message, (address));
-        IERC20(zrc20).safeTransfer(smartAccount, amount);
+
+        if (zrc20 == address(0)) {
+            // Native ZETA received
+            (bool sent, ) = payable(smartAccount).call{value: amount}("");
+            require(sent, "ZETA send failed");
+        } else {
+            // ZRC20 token received
+            IERC20(zrc20).safeTransfer(smartAccount, amount);
+        }
+
         _maybeFundZeta(smartAccount);
+
         emit TopUpHandled(context.sender, smartAccount, zrc20, amount);
     }
 
