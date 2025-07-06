@@ -63,8 +63,7 @@ export const useMultichainTokenBalanceForModal = (
             const { getPublicClient } = await import("@/utils/getPublicClient");
             const { formatEther } = await import("viem");
 
-            const publicClient = await getPublicClient(
-              activeWallet,
+            const publicClient = getPublicClient(
               currentChain.id,
             );
 

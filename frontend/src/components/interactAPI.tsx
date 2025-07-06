@@ -130,7 +130,7 @@ const handleDepositTransaction = async (
     } else {
       console.log("EVM transaction, waiting for receipt confirmation");
 
-      const publicClient = await getPublicClient(activeAccount);
+      const publicClient = getPublicClient(activeChain.id);
       if (
         publicClient &&
         receipt.transactionHash &&
@@ -251,7 +251,7 @@ const handleWithdrawTransaction = async (
 
     if (activeChain.id === CHAIN_ID.solana) {
     } else {
-      const publicClient = await getPublicClient(activeAccount);
+      const publicClient = getPublicClient(activeChain.id);
       if (
         publicClient &&
         receipt?.transactionHash &&
@@ -320,6 +320,7 @@ export default function InteractionContainer({
   hideStepsDisplay = false,
   setLabel,
   label,
+  outputAmountFormatted
 }: {
   step: number;
   setStep: Function;
@@ -339,6 +340,7 @@ export default function InteractionContainer({
   hideStepsDisplay?: boolean;
   setLabel: Dispatch<SetStateAction<string>>;
   label: string;
+  outputAmountFormatted: string
 }): JSX.Element {
   // Core transaction state
   const [crosschainInvestHash, setCrosschainInvestHash] = useState("");
@@ -347,6 +349,7 @@ export default function InteractionContainer({
   const [lastEventTxHash, setLastEventTxHash] = useState("");
   const {
     setFinishedTransaction,
+    setLastDepositInfo,
     setLastTransactionStepFeedback,
     setTransactionStepFeedback,
     transactionStepFeedback,
@@ -865,6 +868,7 @@ export default function InteractionContainer({
         isTrackingActiveRef={isTrackingActiveRef}
         isDeposit={isDeposit}
         hideStepsDisplay={hideStepsDisplay}
+        outputAmountFormatted={outputAmountFormatted}
       />
     </div>
   );
@@ -905,6 +909,7 @@ function Interaction({
   isDeposit,
   hideStepsDisplay = false,
   lastEventTxHash,
+  outputAmountFormatted,
 }: {
   setStep: Function;
   setAction: Function;
@@ -942,6 +947,7 @@ function Interaction({
   isTrackingActiveRef: React.MutableRefObject<boolean>;
   isDeposit: boolean;
   hideStepsDisplay?: boolean;
+  outputAmountFormatted: string
 }): JSX.Element {
   const { wallets } = useWallets();
   const activeAccount = wallets[0];
@@ -965,7 +971,7 @@ function Interaction({
     };
   }, []);
 
-  const { isButtonDisabled } = useTransactionStore();
+  const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
 
   // Simplified feedback update for local transactions only
   function updateLocalTransactionFeedback(
@@ -1281,14 +1287,6 @@ function Interaction({
     refreshBalance();
   }, [refreshBalance, vaultData?.id]);
 
-  useEffect(() => {
-    if (prevLebel.current !== "" && prevLebel.current !== label) {
-      console.log("handleDone, ", prevLebel.current, label);
-      handleDone();
-    }
-    prevLebel.current = label;
-  }, [label, handleDone]);
-
   const handleWalletConnect = () => {
     if (activeChain.id === zetachain.id) {
       openStep(isMobile ? "mobileOptionsA" : "optionsA");
@@ -1505,6 +1503,12 @@ function Interaction({
         };
       case Action.deposit:
         return async () => {
+          setLastDepositInfo({
+            inputAmount: inputBalance.formatted,
+            outputAmount: outputAmountFormatted,
+            inputSymbol: inputToken?.symbol || "",
+            outputSymbol: vaultData.symbol,
+          });
           const result = await handleDepositTransaction(
             vaultData,
             inputBalance,

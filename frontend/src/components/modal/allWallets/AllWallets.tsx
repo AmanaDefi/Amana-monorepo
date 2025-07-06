@@ -103,7 +103,8 @@ const AllWAllets = () => {
     connect(
       {
         connector,
-        chainId: fundWalletStep === "connectWallet" ? chain.id : chosenChain?.id,
+        chainId:
+          fundWalletStep === "connectWallet" ? chain.id : chosenChain?.id,
       },
       {
         onError: (error) => {
@@ -133,9 +134,10 @@ const AllWAllets = () => {
   const solanaConnectors = solanaAdapters
     .filter((adapter) => {
       if (
-        adapter.adapter.name.toLowerCase() === "metamask" &&
-        !(adapter.adapter as WalletAdapter & { wallet?: { client?: any } })
-          ?.wallet?.client
+        (adapter.adapter.name.toLowerCase() === "metamask" &&
+          !(adapter.adapter as WalletAdapter & { wallet?: { client?: any } })
+            ?.wallet?.client) ||
+        adapter.adapter.name.toLowerCase() === "phantom"
       ) {
         return false;
       }
@@ -177,6 +179,10 @@ const AllWAllets = () => {
     ? fundWalletStep && chain.id !== CHAIN_ID["solana"]
     : true;
 
+  const filteredEvmConnectors = connectors.filter(
+    (con) => con.id !== "app.phantom",
+  );
+
   return (
     <Modal
       isOpen={
@@ -215,7 +221,7 @@ const AllWAllets = () => {
                     EVM chains connectors
                   </p>
                   <div className="flex max-w-[500px] flex-row flex-wrap gap-2 min-h-fit">
-                    {connectors.map((connector) => (
+                    {filteredEvmConnectors.map((connector) => (
                       <ModalButton
                         variant="allWallets"
                         key={connector.id}

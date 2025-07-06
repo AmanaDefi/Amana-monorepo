@@ -134,7 +134,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
           </div>
 
           <div className="lg:hidden flex flex-row items-center gap-2">
-            {path === "/" && (
+            {(path === "/" || path === "/about") && (
               <div className="lg:hidden flex">
                 {!isConnected ? (
                   <Button variant="signIn" onClick={handleSignInClick}>

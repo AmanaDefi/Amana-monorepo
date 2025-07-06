@@ -25,7 +25,7 @@ export default function LargeCardStat({
   };
 
   const cardContent = (
-    <div className="w-full">
+    <div className={classNames("w-full", {"flex flex-col items-center justify-center": label === 'Your Wallet'}, {"flex flex-col items-end justify-center": label === 'Your rewards'})}>
       <div className="flex items-center gap-2 mb-1">
         <div className="text-[#535E73] font-normal text-sm md:text-[16px] whitespace-nowrap">
           {label}
@@ -82,7 +82,7 @@ export default function LargeCardStat({
           }
           subId={id}
         >
-          <div className="inline-block">{cardContent}</div>
+          <div className="inline-block w-full">{cardContent}</div>
         </WithTooltip>
       </div>
     );

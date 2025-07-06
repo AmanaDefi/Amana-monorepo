@@ -184,23 +184,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                 <p className="font-normal text-sm leading-4 text-white">
                   30d prediction
                 </p>
-                <div className="flex flex-row justify-between">
-                  <p
-                    className={classNames("font-bold text-xl leading-5", {
-                      "text-green-accent": isPredictionUp,
-                      "text-white": !isPredictionUp,
-                    })}
-                  >
-                    {(!isPredictionUp ? "-" : "") + MOCK_DIGITS}%
-                  </p>
-                  <div
-                    className={classNames({ "rotate-180": !isPredictionUp })}
-                  >
-                    <DynamicArrowIcon
-                      color={isPredictionUp ? "#05D47F" : "#FF1E1E"}
-                    />
-                  </div>
-                </div>
+                {renderAPYDisplay()}
                 <div className="hover:cursor-pointer absolute right-[-10px] top-[-10px]">
                   <InfoIcon />
                 </div>

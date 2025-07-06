@@ -26,7 +26,7 @@ export const MobileModal = ({
   paddingClass = "pt-[20px] px-[20px] pb-[20px]",
   roundedClass = "rounded-t-[24px]",
   customCloseButton,
-  height = "full",
+  height = "h-full",
   maxHeight,
   noBlur = false,
   showHeader = false,

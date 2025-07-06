@@ -29,10 +29,6 @@ export const FinishDeposit = () => {
 
   const handleLink = () => {};
 
-  console.log(
-    explorerUrl
-  )
-
   return (
     <Modal
       isOpen={step === "finishDeposit"}
