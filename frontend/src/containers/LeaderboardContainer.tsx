@@ -271,7 +271,7 @@ export default function LeaderboardContainer() {
         className="flex  items-center flex-col md:flex-row justify-start  md:justify-between px-4 md:px-0 gap-4 md:gap-0"
         variants={itemVariants}
       >
-        <div className="rounded-lg shadow-custom bg-[#14171F] flex justify-between gap-2 w-full md:max-w-[363px]">
+        <div className="rounded-lg shadow-custom bg-[#14171F] flex justify-between w-full max-w-[327px] md:max-w-[363px]">
           {leaderboardTabs.map((tab, index) => (
             <motion.div
               key={tab.id}
@@ -306,7 +306,7 @@ export default function LeaderboardContainer() {
         <motion.div
           className="focus-within:border-blue-button hover:border-blue-button transition-all duration-300 bg-[#14171F] 
              w-full min-w-[48px] sm:min-w-[190px] 
-             focus-within:w-full sm:focus-within:md:w-[340px] sm:md:w-[340px]
+             focus-within:w-full sm:focus-within:md:w-[340px] max-w-[327px] md:max-w-[363px]
              px-3 sm:px-4 py-2 md:py-3 pl-[44px] sm:pl-[56px] 
              rounded-lg border border-[#454363] relative justify-self-end items-center"
           whileHover={{
