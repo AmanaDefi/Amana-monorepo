@@ -93,6 +93,14 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
       );
     };
 
+    const renderPredictionDisplay = () => {
+      return (
+        <div className="flex flex-row justify-between">
+          <p className="font-semibold text-xl leading-5 text-gray-400">N/A</p>
+        </div>
+      );
+    };
+
     return (
       <div
         onClick={() => {
@@ -184,7 +192,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                 <p className="font-normal text-sm leading-4 text-white">
                   30d prediction
                 </p>
-                {renderAPYDisplay()}
+                {renderPredictionDisplay()}
                 <div className="hover:cursor-pointer absolute right-[-10px] top-[-10px]">
                   <InfoIcon />
                 </div>
