@@ -26,8 +26,8 @@ const EmailIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
         y2="2.54682"
         gradientUnits="userSpaceOnUse"
       >
-        <stop offset="0.309977" stop-color="#F6FAFF" />
-        <stop offset="0.841346" stop-color="#1B46E0" />
+        <stop offset="0.309977" stopColor="#F6FAFF" />
+        <stop offset="0.841346" stopColor="#1B46E0" />
       </linearGradient>
     </defs>
   </svg>

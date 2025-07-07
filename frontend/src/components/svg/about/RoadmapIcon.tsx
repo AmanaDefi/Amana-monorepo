@@ -22,7 +22,7 @@ const RoadmapIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
       rx="18.8889"
       ry="20"
       fill="#D9D9D9"
-      fill-opacity="0.1"
+      fillOpacity="0.1"
     />
     <ellipse cx="56.6668" cy="180" rx="7.55556" ry="8" fill="#1B46E0" />
     <rect x="396.667" width="0.944444" height="181" fill="#1B46E0" />
@@ -32,7 +32,7 @@ const RoadmapIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
       rx="18.8889"
       ry="20"
       fill="#D9D9D9"
-      fill-opacity="0.1"
+      fillOpacity="0.1"
     />
     <ellipse cx="396.667" cy="180" rx="7.55556" ry="8" fill="#1B46E0" />
     <rect x="736.667" width="0.944444" height="181" fill="#1B46E0" />
@@ -42,7 +42,7 @@ const RoadmapIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
       rx="18.8889"
       ry="20"
       fill="#D9D9D9"
-      fill-opacity="0.1"
+      fillOpacity="0.1"
     />
     <ellipse cx="736.667" cy="180" rx="7.55556" ry="8" fill="#1B46E0" />
     <rect x="1076.67" width="0.944444" height="181" fill="#1B46E0" />
@@ -52,7 +52,7 @@ const RoadmapIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
       rx="18.8889"
       ry="20"
       fill="#D9D9D9"
-      fill-opacity="0.1"
+      fillOpacity="0.1"
     />
     <ellipse cx="1076.67" cy="180" rx="7.55556" ry="8" fill="#1B46E0" />
   </svg>
