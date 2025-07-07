@@ -3,11 +3,12 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 
 import { VaultAPY, VaultData, VaultTotalAssets } from "@/types/types";
-import { formatNumberWithSuffix } from "@/utils/utils";
+import { formatTVLInUSD } from "@/utils/utils";
 import FlashIcon from "@/components/svg/Flash";
 import { AppButton } from "@/components/button/AppButton";
 import classNames from "classnames";
 import { useMultiChain } from "@/providers/MultiChainProvider";
+import { useTokenPriceBySymbol } from "@/hooks/hooks";
 
 type Props = {
   vault: VaultData;
@@ -19,6 +20,8 @@ export const VaultRow: FC<Props> = React.memo(
   ({ vault, vaultAPYs, vaultTotalAssets }) => {
     const router = useRouter();
     const { walletAddress } = useMultiChain();
+    const tokenPrice = useTokenPriceBySymbol(vault.inputToken.symbol);
+
     const vaultAPY = vaultAPYs.find((apy) => apy.vaultId === vault.id);
     const totalAssets = vaultTotalAssets.find(
       (asset) => asset.vaultId === vault.id,
@@ -65,8 +68,10 @@ export const VaultRow: FC<Props> = React.memo(
         </div>
         <div className="flex w-[60%] flex-row xl:gap-14 gap-10 items-center justify-end">
           <div className="flex w-[40%] flex-row gap-14 items-center justify-center">
-            <p className="text-white font-bold text-lg leading-5 -tracking-1 w-[50%] text-center">
-              ${formatNumberWithSuffix(Number(totalAssets?.totalAssets || 0))}
+            <p className="text-white font-bold text-lg leading-5 -tracking-1 w-[50%]">
+              {totalAssets?.totalAssets
+                ? `$${formatTVLInUSD(Number(totalAssets.totalAssets), vault.inputToken.symbol, tokenPrice)}`
+                : "$0"}
             </p>
             <div className="w-[50%] flex items-center justify-center">
               <div className="rounded-full bg-green-accent h-6 w-6 flex items-center justify-center">
