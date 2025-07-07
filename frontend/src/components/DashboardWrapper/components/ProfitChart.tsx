@@ -8,9 +8,13 @@ import { ApexOptions } from "apexcharts";
 
 interface ProfitChartProps {
   className?: string;
+  showComingSoon?: boolean;
 }
 
-const ProfitChart: React.FC<ProfitChartProps> = ({ className = "" }) => {
+const ProfitChart: React.FC<ProfitChartProps> = ({
+  className = "",
+  showComingSoon = true,
+}) => {
   const [selectedPeriod, setSelectedPeriod] = useState("5y");
 
   const mockData = {
@@ -134,6 +138,27 @@ const ProfitChart: React.FC<ProfitChartProps> = ({ className = "" }) => {
     }),
   };
 
+  const comingSoonVariants: Variants = {
+    hidden: { opacity: 0, scale: 0.8 },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      transition: {
+        duration: 0.6,
+        ease: [0.25, 0.1, 0.25, 1],
+      },
+    },
+    pulse: {
+      scale: [1, 1.05, 1],
+      opacity: [1, 0.8, 1],
+      transition: {
+        duration: 2,
+        repeat: Infinity,
+        ease: "easeInOut",
+      },
+    },
+  };
+
   return (
     <motion.div
       className={`relative justify-center items-center ${className}`}
@@ -152,8 +177,51 @@ const ProfitChart: React.FC<ProfitChartProps> = ({ className = "" }) => {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.5 }}
+            className="relative"
           >
-            <Chart options={options} series={series} type="area" width="100%" />
+            <div className={showComingSoon ? "opacity-30 blur-sm" : ""}>
+              <Chart
+                options={options}
+                series={series}
+                type="area"
+                width="100%"
+              />
+            </div>
+
+            {showComingSoon && (
+              <motion.div
+                className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-20 backdrop-blur-sm"
+                variants={comingSoonVariants}
+                initial="hidden"
+                animate={["visible", "pulse"]}
+              >
+                <motion.div
+                  className="bg-gradient-to-r from-[#034A9F] to-[#030399] px-8 py-4 rounded-xl shadow-2xl border border-blue-500 border-opacity-40"
+                  whileHover={{
+                    scale: 1.05,
+                    boxShadow: "0 20px 40px rgba(3, 74, 159, 0.5)",
+                  }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <motion.h3
+                    className="text-white text-lg font-semibold text-center tracking-wide"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2, duration: 0.5 }}
+                  >
+                    Coming Soon
+                  </motion.h3>
+                  <motion.p
+                    className="text-blue-100 text-sm text-center mt-2 opacity-90"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4, duration: 0.5 }}
+                  >
+                    Real-time data integration in progress
+                  </motion.p>
+                </motion.div>
+              </motion.div>
+            )}
           </motion.div>
         </AnimatePresence>
 
@@ -190,11 +258,12 @@ const ProfitChart: React.FC<ProfitChartProps> = ({ className = "" }) => {
               selectedPeriod === period
                 ? "bg-blue-600 text-white"
                 : "bg-[#171d26] text-white hover:bg-[#222936]"
-            }`}
+            } ${showComingSoon ? "opacity-50 cursor-not-allowed" : ""}`}
             variants={buttonVariants}
-            whileHover="hover"
-            whileTap="tap"
+            whileHover={showComingSoon ? {} : "hover"}
+            whileTap={showComingSoon ? {} : "tap"}
             custom={index}
+            disabled={showComingSoon}
           >
             {period}
           </motion.button>
