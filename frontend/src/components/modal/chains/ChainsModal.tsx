@@ -188,16 +188,11 @@ const TokenBalanceItem = React.memo(
           whileHover="hover"
           whileTap="tap"
           animate={isSelected ? "selected" : "unselected"}
-          className={`flex items-center gap-3 rounded-[8px] border transition-colors duration-200 ${
+          className={`flex items-center gap-3 rounded-[8px] border transition-colors duration-200 w-full  h-[60px] md:h-[64px] p-[11px_12px] md:p-[11px_12px] ${
             isSelected
               ? "bg-[#0C1015] border-[#3E73C4]"
               : "bg-transparent border-[#1D2A41] hover:bg-[#0C1015] hover:border-[#3E73C4] focus:bg-[#0C1015] focus:border-[#3E73C4]"
           }`}
-          style={{
-            padding: "11px 12px",
-            width: "358px",
-            height: "64px",
-          }}
         >
           <motion.div
             className="w-8 h-8 flex-shrink-0"
@@ -209,9 +204,6 @@ const TokenBalanceItem = React.memo(
           <div className="flex-1 text-left">
             <motion.div
               className="text-white text-[16px] font-normal"
-              style={{
-                fontWeight: 400,
-              }}
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.02 }}
@@ -219,11 +211,7 @@ const TokenBalanceItem = React.memo(
               {getOnlyTokenSymbol(token.symbol)}
             </motion.div>
             <motion.div
-              className="text-[#535E73] text-[16px] font-normal"
-              style={{
-                fontWeight: 400,
-                letterSpacing: "-0.06em",
-              }}
+              className="text-[#535E73] text-[16px] font-normal -tracking-[0.06em]"
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.02 + 0.05 }}
@@ -256,19 +244,11 @@ const TokenBalanceItem = React.memo(
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                 >
-                  <div
-                    className="text-white text-[14px] font-normal"
-                    style={{
-                      fontWeight: 400,
-                    }}
-                  >
+                  <div className="text-white text-[14px] font-normal">
                     {formattedBalance}
                   </div>
                   <motion.div
                     className="text-[#9A9CB3] text-[12px] font-normal"
-                    style={{
-                      fontWeight: 400,
-                    }}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.1 }}
@@ -341,22 +321,6 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
     },
     [vaultDataForModal, propVaultData],
   );
-
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkIsMobile = () => {
-      setIsMobile(window?.innerWidth < 1024);
-    };
-
-    checkIsMobile();
-
-    window?.addEventListener("resize", checkIsMobile);
-
-    return () => {
-      window?.removeEventListener("resize", checkIsMobile);
-    };
-  }, []);
 
   const availableTokens = useMemo(() => {
     if (!selectedChainLocal) return [];
@@ -467,7 +431,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
   const handleWalletConnect = () => {
     setChain(selectedChainLocal);
     if (activeChain?.id === zetachain.id) {
-      openStep(isMobile ? "mobileOptionsA" : "optionsA");
+      openStep(window?.innerWidth < 768 ? "mobileOptionsA" : "optionsA");
     } else {
       if (
         (selectedChain === "solana" &&
@@ -494,10 +458,10 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
     <Modal
       isOpen={isOpen}
       onClose={closeModal}
-      paddingClass="pt-[50px] pl-[45px] pr-[36px] pb-[50px]"
+      paddingClass="p-[24px] md:pt-[50px] md:pl-[45px] md:pr-[36px] md:pb-[50px]"
       roundedClass="rounded-[24px]"
-      maxWidth="max-w-[760px]"
-      minHeight="min-h-[714px]"
+      maxWidth="w-full max-w-[343px] md:max-w-[760px]"
+      minHeight="min-h-[600px] md:min-h-[714px]"
       customCloseButton={
         <motion.button
           onClick={closeModal}
@@ -512,7 +476,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
       }
     >
       <motion.div
-        className="w-full min-w-[679px]"
+        className="w-full min-w-[295px] md:min-w-[679px]"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -521,40 +485,33 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
           className="mb-4 flex items-center justify-between"
           variants={itemVariants}
         >
-          <h2
-            className="text-white text-[24px] font-normal leading-none"
-            style={{
-              fontWeight: 400,
-              letterSpacing: "-0.04em",
-            }}
-          >
+          <h2 className="text-white text-[16px] md:text-[24px] font-normal leading-none -tracking-[0.04em]">
             From
           </h2>
         </motion.div>
 
         <motion.div
-          className="w-full h-px bg-[#1D2A41] mb-6"
+          className="w-full h-px bg-[#1D2A41] mb-4 md:mb-6"
           variants={itemVariants}
           initial={{ scaleX: 0 }}
           animate={{ scaleX: 1 }}
           transition={{ duration: 0.5, delay: 0.1 }}
         />
 
-        <motion.div className="w-full flex" variants={itemVariants}>
-          <div className="flex-1 max-w-[240px]">
+        <motion.div
+          className="w-full flex flex-col md:flex-row"
+          variants={itemVariants}
+        >
+          <div className="w-full md:flex-1 md:max-w-[240px]">
             <motion.h3
-              className="text-[#535E73] text-[24px] font-normal leading-none mb-3"
-              style={{
-                fontWeight: 400,
-                letterSpacing: "-0.04em",
-              }}
+              className="text-[#535E73] text-[16px] md:text-[24px] font-normal leading-none mb-4 md:mb-3 -tracking-[0.04em]"
               variants={itemVariants}
             >
               Chains
             </motion.h3>
 
             <motion.div
-              className="flex flex-col gap-4"
+              className="flex flex-col gap-4 h-[152px] md:h-auto overflow-x-hidden overflow-y-auto md:overflow-visible"
               variants={containerVariants}
             >
               {chainList.map((chainConfig, index) => {
@@ -572,7 +529,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
                       whileHover="hover"
                       whileTap="tap"
                       animate={isSelected ? "selected" : "unselected"}
-                      className={`relative flex items-center gap-3 px-3 py-[10px] rounded-[8px] border transition-colors duration-200 w-full ${
+                      className={`relative flex items-center gap-3 rounded-[8px] border transition-colors duration-200 w-[240px] h-[40px] md:w-full md:h-auto p-[10px_12px] md:px-3 md:py-[10px] ${
                         isSelected
                           ? "bg-[#0C1015] border-[#3E73C4]"
                           : "bg-transparent border-[#1D2A41] hover:bg-[#0C1015] hover:border-[#3E73C4] focus:bg-[#0C1015] focus:border-[#3E73C4]"
@@ -593,13 +550,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
                           height={20}
                         />
                       </motion.div>
-                      <span
-                        className="text-white text-[16px] font-normal"
-                        style={{
-                          fontWeight: 400,
-                          letterSpacing: "-0.06em",
-                        }}
-                      >
+                      <span className="text-white text-[16px] font-normal -tracking-[0.06em]">
                         {chainConfig.name}
                       </span>
 
@@ -616,7 +567,14 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
           </div>
 
           <motion.div
-            className="w-px bg-[#1D2A41] flex-shrink-0 mx-10"
+            className="w-full h-px bg-[#1D2A41] my-4 md:hidden"
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          />
+
+          <motion.div
+            className="hidden md:block w-px bg-[#1D2A41] flex-shrink-0 mx-10"
             initial={{ scaleY: 0 }}
             animate={{ scaleY: 1 }}
             transition={{ duration: 0.5, delay: 0.2 }}
@@ -638,17 +596,19 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
                     onBlur={() => setIsSearchFocused(false)}
                     variants={searchVariants}
                     animate={isSearchFocused ? "focus" : "blur"}
-                    className="w-full h-10 pl-10 pr-3 py-2 bg-transparent border border-[#1D2A41] rounded-[8px] text-white placeholder-gray-400 focus:outline-none hover:bg-[#0C1015] hover:border-[#3E73C4] focus:bg-[#0C1015] focus:border-[#3E73C4] transition-all"
-                    style={{
-                      padding: "8px 10px",
-                      paddingLeft: "40px",
-                    }}
+                    className="w-full bg-transparent border border-[#1D2A41] rounded-[8px] text-white placeholder-gray-400 focus:outline-none hover:bg-[#0C1015] hover:border-[#3E73C4] focus:bg-[#0C1015] focus:border-[#3E73C4] transition-all h-[40px] p-[8px_10px] pl-[40px]"
                   />
                 </div>
               </motion.div>
 
+              <motion.div className="mb-4" variants={itemVariants}>
+                <h3 className="text-[#535E73] text-[16px] font-normal leading-none -tracking-[0.04em]">
+                  Tokens
+                </h3>
+              </motion.div>
+
               <motion.div
-                className="flex flex-col gap-2 h-full overflow-y-auto overflow-x-hidden"
+                className="flex flex-col gap-2 h-[264px] md:h-[400px] overflow-y-auto overflow-x-hidden"
                 variants={containerVariants}
               >
                 <AnimatePresence mode="wait">
