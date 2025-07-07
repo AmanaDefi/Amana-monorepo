@@ -146,7 +146,7 @@ const YourInvestment = ({
           </p>
           <p className="flex flex-row gap-1 text-[#3E73C4] items-center text-xs lg:text-base whitespace-nowrap">
             <ErrorInputIcon width={14} height={15} className="fill-[#1B46E0]" />
-            Points Earned: 0 Aegies Points
+            Points Earned: 0 Aegis Points
           </p>
         </div>
         <Button

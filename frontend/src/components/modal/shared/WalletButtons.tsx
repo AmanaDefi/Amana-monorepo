@@ -32,13 +32,13 @@ const WalletButtons = ({
         icon={<SmartWalletIcon width={22} height={19} />}
         onClick={handleSmartWallets}
       >
-        <div className="flex flex-row gap-2 mr-4 items-center">
+        <div className="flex flex-row gap-2 items-center">
           <GoogleEmailIcon width={19} height={14} />
           <GooglePasskeyIcon width={19} height={19} />
         </div>
       </ModalButton>
       <ModalButton
-        label="All Wallets"
+        label="Crypto Wallets"
         icon={<AllWalletsIcon width={20} height={20} />}
         onClick={handleAllWalletsClick}
       >

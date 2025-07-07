@@ -47,7 +47,7 @@ export const ChooseBuyWith = () => {
           </h2>
           <div className="flex flex-col gap-4">
             <ModalButton
-              text="Apple Pay, card or bank transfer"
+              text="Using Card"
               className="w-[316px] md:w-[484px]"
               label="Buy crypto"
               withArrow
