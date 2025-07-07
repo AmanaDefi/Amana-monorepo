@@ -76,7 +76,7 @@ const AboutContainer = ({}) => {
         </motion.p>
 
         <div className="text-[48px] md:text-[72px] lg:text-[96px] font-bold leading-tight">
-          <div className="flex flex-col lg:flex-row lg:flex-wrap justify-center items-start lg:items-center gap-0 lg:gap-2">
+          <div className="flex flex-col lg:flex-row lg:flex-wrap justify-center items-start lg:items-center gap-0 lg:gap-5">
             {/* Mobile version */}
             <div className="flex items-center justify-center gap-2 md:hidden">
               <motion.span
@@ -114,7 +114,7 @@ const AboutContainer = ({}) => {
                   rotate: [0, -10, 10, -5, 0],
                   transition: { duration: 0.5 },
                 }}
-                className="cursor-pointer w-[67px] h-[39px]"
+                className="cursor-pointer w-[67px] h-[39px] md:ml-10"
               >
                 <Image
                   src="/amanaAbout.png"

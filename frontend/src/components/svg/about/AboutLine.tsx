@@ -5,6 +5,8 @@ const AboutLine: React.FC<React.SVGProps<SVGSVGElement>> = ({
   ...props
 }) => (
   <svg
+    width="1512"
+    height="201"
     viewBox="0 0 1512 685"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
