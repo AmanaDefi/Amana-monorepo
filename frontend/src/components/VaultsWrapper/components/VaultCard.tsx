@@ -65,18 +65,19 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
 
     const renderAPYDisplay = () => {
       const apyValue = vaultAPY?.apy30d;
-      const isDefined = typeof apyValue === "number";
+      const isDefined = typeof apyValue === "number" && !isNaN(apyValue);
       const isNegative = isDefined && apyValue < 0;
       const isLow = isDefined && apyValue >= 0 && apyValue <= 0.5;
       const isHigh = isDefined && apyValue > 0.5;
 
       const displayText = isDefined
         ? `${isNegative ? "-" : ""}${Math.abs(apyValue!).toFixed(2)}%`
-        : "--";
+        : "N/A";
 
       const textClass = classNames("font-bold text-xl leading-5", {
         "text-white": isNegative || !isDefined,
         "text-green-accent": isHigh || isLow,
+        "text-gray-400": !isDefined,
       });
 
       const arrowColor = isNegative ? "#FF1E1E" : isLow ? "#FFA500" : "#05D47F";

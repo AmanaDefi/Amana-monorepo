@@ -48,6 +48,8 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import { zetaProvider } from "@/utils/providers";
 import { ethers, Interface } from "ethers";
 import { apiService } from "@/service";
+import { getVault30dAvgAPY } from '@/utils/defillama';
+import { VAULT_TO_DEFILLAMA_POOL } from "@/constants/defillamaPoolMapping";
 
 type CashedVaultData = {
   vaultId: string;
@@ -638,12 +640,17 @@ export const useUpdateAPYs = (
                 APY7d = RewardsAPY;
               }
 
+              const realApy30d = await getVault30dAvgAPY(vault.id);
+              console.log('[30d APY DEBUG]', {
+                vaultId: vault.id,
+                vaultName: vault.name,
+                realApy30d,
+                mapping: VAULT_TO_DEFILLAMA_POOL?.[vault.id] || null,
+              });
               return {
                 vaultId: vault.id,
                 APY7d,
-                apy30d: [-2.5, 0.25, 0.5, 0.75, 2.1][
-                  Math.floor(Math.random() * 5)
-                ], //mocked
+                apy30d: realApy30d,
               };
             } catch (error) {
               return { vaultId: vault.id, APY7d: 0 };
