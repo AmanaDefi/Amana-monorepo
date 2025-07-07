@@ -26,7 +26,7 @@ const teamData = [
   {
     id: 3,
     name: "Rohit Kumar Suman",
-    position: "Co-founder",
+    position: "Web3 Fron End Dev",
     image: "/team/Rohit.png",
     linkedin: "#",
     twitter: "#",

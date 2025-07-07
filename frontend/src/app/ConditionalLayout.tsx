@@ -9,6 +9,7 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import { getActiveSectionFromPathname } from "@/utils/getActiveSectionFromPathname";
 import { usePathname } from "next/navigation";
 import React, { useState, useEffect } from "react";
+import AboutLine from "@/components/svg/about/AboutLine";
 
 const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
   const { walletAddress } = useMultiChain();
@@ -42,8 +43,8 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
         <GlowIcon position={isMobile ? "top-mobile" : "top-right"} />
         <GlowIcon position={isMobile ? "bottom-mobile" : "bottom-left"} />
 
-        <div className="flex flex-col flex-1 mx-auto w-full min-h-screen">
-          <div className="pt-4 md:pt-6 lg:pt-10 px-4  lg:pr-[44px]">
+        <div className="flex flex-col flex-1 mx-auto w-full min-h-screen relative z-10">
+          <div className="pt-4 md:pt-6 lg:pt-[60px] px-4 lg:px-0">
             <Header activeSection={activeSection} />
           </div>
           <div
@@ -63,11 +64,30 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
             {children}
           </div>
         </div>
+        <div className="absolute -left-2 right-0 -bottom-1 pointer-events-none z-0">
+          <div
+            className="w-full h-[336px] md:h-[500px] lg:h-[683px]"
+            style={{
+              width: "100vw",
+              marginLeft: "50%",
+              transform: "translateX(-50%)",
+            }}
+          >
+            <AboutLine
+              className="w-full h-full"
+              style={{
+                width: "100%",
+                height: "100%",
+                minWidth: "100vw",
+              }}
+            />
+          </div>
+        </div>
+
         <AppModals />
       </div>
     );
   }
-
   return (
     <div className="relative  overflow-hidden min-h-screen z-0">
       <GlowIcon position={isMobile ? "top-mobile" : "top-right"} />
