@@ -26,7 +26,7 @@ const teamData = [
   {
     id: 3,
     name: "Rohit Kumar Suman",
-    position: "Web3 Fron End Dev",
+    position: "Web3 Front End Dev",
     image: "/team/Rohit.png",
     linkedin: "#",
     twitter: "#",
@@ -99,7 +99,6 @@ const Team = () => {
         Meet Our Team
       </motion.h1>
 
-      {/* Mobile layout - фіксована структура як в Roadmap */}
       <div className="md:hidden relative z-20">
         <div
           className="overflow-hidden relative z-20 pointer-events-auto"
