@@ -424,8 +424,10 @@ const VaultsDetailContainer: React.FC<{
               onClick={() => {
                 if (!walletAddress || isDeposit) {
                   openStep("mobileInfo");
-                } else {
+                } else if (vaultData?.protocolPoints && vaultData.protocolPoints > 0) {
                   setShowMobileInvestment((prev) => !prev);
+                } else {
+                  openStep("mobileInfo");
                 }
               }}
               className="text-white rounded-full p-1 flex md:hidden hover:bg-gray-800/50 transition-colors cursor-pointer"
@@ -435,7 +437,7 @@ const VaultsDetailContainer: React.FC<{
                 <ErrorInputIcon className="w-5 h-5 text-white" />
               ) : isDeposit ? (
                 <ErrorInputIcon className="w-5 h-5 text-white" />
-              ) : (
+              ) : vaultData?.protocolPoints && vaultData.protocolPoints > 0 ? (
                 <div className="rounded-[4px] w-6 h-6 flex items-center justify-center bg-[#0C1015]">
                   <Image
                     src="/rewards.png"
@@ -444,6 +446,8 @@ const VaultsDetailContainer: React.FC<{
                     height={18}
                   />
                 </div>
+              ) : (
+                <ErrorInputIcon className="w-5 h-5 text-white" />
               )}
             </button>
             <MobileInfoModal
@@ -458,12 +462,13 @@ const VaultsDetailContainer: React.FC<{
             />
 
             <MobileInvestmentPopover
-              isVisible={showMobileInvestment && isWithdraw && !!walletAddress}
+              isVisible={showMobileInvestment && isWithdraw && !!walletAddress && !!(vaultData?.protocolPoints && vaultData.protocolPoints > 0)}
               onClose={() => setShowMobileInvestment(false)}
               triggerRef={giftButtonRef}
               depositAmount={depositData.amount}
               vaultTokenSymbol={depositData.symbol}
               depositUSDValue={depositData.usdValue}
+              vaultData={vaultData}
             />
           </>
         )}
@@ -627,11 +632,12 @@ const VaultsDetailContainer: React.FC<{
         </AnimatePresence>
 
         <div className="hidden md:flex flex-col w-full 2xl:max-w-[576px] mt-8 md:mt-0 space-y-4 font-gotham">
-          {isWithdraw && walletAddress && (
+          {isWithdraw && walletAddress && (vaultData?.protocolPoints ?? 0) > 0 && (
             <YourInvestment
               depositAmount={userVaultBalance?.formatted || "0"}
               vaultTokenSymbol={vaultData?.inputToken.symbol || ""}
               depositUSDValue={0}
+              vaultData={vaultData}
             />
           )}
           {walletAddress && isDeposit && (
