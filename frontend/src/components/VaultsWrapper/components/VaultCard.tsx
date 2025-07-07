@@ -71,7 +71,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
       const isHigh = isDefined && apyValue > 0.5;
 
       const displayText = isDefined
-        ? `${isNegative ? "-" : ""}${Math.abs(apyValue!).toFixed(2)}%`
+        ? `${isNegative ? "-" : ""}${(Math.abs(apyValue!) * 100).toFixed(2)}%`
         : "--";
 
       const textClass = classNames("font-bold text-xl leading-5", {
