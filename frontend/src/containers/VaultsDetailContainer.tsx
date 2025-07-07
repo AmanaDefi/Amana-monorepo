@@ -68,6 +68,7 @@ import VaultStats from "@/components/VaultsDetailsWrapper/components/VaultStats"
 
 import ChainsModal from "@/components/modal/chains/ChainsModal";
 import Image from "next/image";
+import { useAuthStore } from "@/store/authStore";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -94,6 +95,8 @@ const VaultsDetailContainer: React.FC<{
   const [isDeposit, setIsDeposit] = useState<boolean>(initialIsDeposit);
   const [showMobileInvestment, setShowMobileInvestment] = useState(false);
   const giftButtonRef = useRef<HTMLButtonElement>(null);
+    const {openStep } = useAuthStore();
+
 
   const [openDropdown, setOpenDropdown] = useState<string | null>(
     "transaction-progress",
@@ -414,17 +417,23 @@ const VaultsDetailContainer: React.FC<{
           </p>
         </Button>
 
-        <>
-          {walletAddress && !isDeposit ? (
+        {(!walletAddress || walletAddress) && (
+          <>
             <button
               ref={giftButtonRef}
               onClick={() => {
-                setShowMobileInvestment((prev) => !prev);
+                if (!walletAddress || isDeposit) {
+                  openStep("mobileInfo");
+                } else {
+                  setShowMobileInvestment((prev) => !prev);
+                }
               }}
               className="text-white rounded-full p-1 flex md:hidden hover:bg-gray-800/50 transition-colors cursor-pointer"
               type="button"
             >
-              {!walletAddress || isDeposit ? (
+              {!walletAddress ? (
+                <ErrorInputIcon className="w-5 h-5 text-white" />
+              ) : isDeposit ? (
                 <ErrorInputIcon className="w-5 h-5 text-white" />
               ) : (
                 <div className="rounded-[4px] w-6 h-6 flex items-center justify-center bg-[#0C1015]">
@@ -437,28 +446,28 @@ const VaultsDetailContainer: React.FC<{
                 </div>
               )}
             </button>
-          ) : null}
+            <MobileInfoModal
+              vaultData={vaultData}
+              walletAddress={walletAddress || undefined}
+              isWithdraw={isWithdraw}
+              selectedToken={selectedToken}
+              selectedChain={activeChain ?? zetachain}
+              vaultExplorerBaseUrl={vaultExplorerBaseUrl}
+              strategyExplorerBaseUrl={strategyExplorerBaseUrl}
+              depositData={depositData}
+            />
 
-          <MobileInfoModal
-            vaultData={vaultData}
-            walletAddress={walletAddress || undefined}
-            isWithdraw={isWithdraw}
-            selectedToken={selectedToken}
-            selectedChain={activeChain ?? zetachain}
-            vaultExplorerBaseUrl={vaultExplorerBaseUrl}
-            strategyExplorerBaseUrl={strategyExplorerBaseUrl}
-            depositData={depositData}
-          />
+            <MobileInvestmentPopover
+              isVisible={showMobileInvestment && isWithdraw && !!walletAddress}
+              onClose={() => setShowMobileInvestment(false)}
+              triggerRef={giftButtonRef}
+              depositAmount={depositData.amount}
+              vaultTokenSymbol={depositData.symbol}
+              depositUSDValue={depositData.usdValue}
+            />
+          </>
+        )}
 
-          <MobileInvestmentPopover
-            isVisible={showMobileInvestment && isWithdraw && !!walletAddress}
-            onClose={() => setShowMobileInvestment(false)}
-            triggerRef={giftButtonRef}
-            depositAmount={depositData.amount}
-            vaultTokenSymbol={depositData.symbol}
-            depositUSDValue={depositData.usdValue}
-          />
-        </>
         <div className={`hidden md:flex items-center gap-4`}>
           <p className="text-white text-[18px] font-bold">
             Invest from any chain
@@ -607,7 +616,9 @@ const VaultsDetailContainer: React.FC<{
                   onSelectChainAndToken={handleChainAndTokenSelect}
                   vaultId={vaultID.toString()}
                   APY7DValue={
-                    vaultAPYs.find((a) => a.vaultId === vaultID.toString())?.APY7d?.toString() ?? '0.00'
+                    vaultAPYs
+                      .find((a) => a.vaultId === vaultID.toString())
+                      ?.APY7d?.toString() ?? "0.00"
                   }
                 />
               </div>
