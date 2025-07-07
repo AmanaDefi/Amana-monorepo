@@ -278,7 +278,7 @@ const AboutContainer = ({}) => {
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
         viewport={{ once: true }}
-        className="flex flex-col justify-center items-center mt-[116px] md:mt-[160px] lg:mt-[217px]"
+        className="flex flex-col justify-center items-center mt-[116px] md:mt-[160px] lg:mt-[217px] mb-[356px] lg:mb-[493px]"
       >
         <motion.span
           whileHover={{
@@ -347,7 +347,6 @@ const AboutContainer = ({}) => {
           <DiscordLogo height={18} className="w-[22px] h-[26px]" />
         </Link>
       </div>
-      <AboutLine className="relative -mt-0 md:-mt-[180px] lg:-mt-[220px] w-[881px] h-[336px] md:w-[1200px] md:h-[500px] lg:w-full lg:h-[683px] md:-mb-40 lg:-mb-8  lg:-ml-3 " />
     </div>
   );
 };
