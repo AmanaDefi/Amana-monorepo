@@ -158,14 +158,14 @@ const Roadmap = () => {
                       {item.tasks.map((task, taskIndex) => (
                         <li
                           key={taskIndex}
-                          className="font-normal text-sm text-[#9A9CB3] flex items-start gap-3"
+                          className="font-normal text-sm text-[#9A9CB3] flex items-center gap-3"
                         >
                           <div
-                            className={`w-[10px] h-[10px] rounded-full mt-1 flex-shrink-0 ${
+                            className={`w-[10px] h-[10px] rounded-full flex-shrink-0 ${
                               taskIndex !== 2 ? "bg-[#1B46E0]" : "bg-white"
                             }`}
                           ></div>
-                          <span>{task}</span>
+                          <span className="leading-tight">{task}</span>
                         </li>
                       ))}
                     </ul>
@@ -193,10 +193,10 @@ const Roadmap = () => {
                       {item.tasks.map((task, taskIndex) => (
                         <li
                           key={taskIndex}
-                          className="font-normal text-sm text-[#9A9CB3] flex items-start gap-3"
+                          className="font-normal text-sm text-[#9A9CB3] flex items-center gap-3"
                         >
-                          <div className="w-[10px] h-[10px] bg-white rounded-full mt-1 flex-shrink-0"></div>
-                          <span>{task}</span>
+                          <div className="w-[10px] h-[10px] bg-white rounded-full flex-shrink-0"></div>
+                          <span className="leading-tight">{task}</span>
                         </li>
                       ))}
                     </ul>
@@ -310,14 +310,14 @@ const Roadmap = () => {
                       {item.tasks.map((task, taskIndex) => (
                         <li
                           key={taskIndex}
-                          className="font-normal text-sm md:text-[16px] text-[#9A9CB3] flex items-start gap-3"
+                          className="font-normal text-sm md:text-[16px] text-[#9A9CB3] flex items-center gap-3"
                         >
                           <div
-                            className={`w-[10px] h-[10px] rounded-full mt-1 flex-shrink-0 ${
+                            className={`w-[10px] h-[10px] rounded-full flex-shrink-0 ${
                               taskIndex !== 2 ? "bg-[#1B46E0]" : "bg-white"
                             }`}
                           ></div>
-                          <span>{task}</span>
+                          <span className="leading-tight">{task}</span>
                         </li>
                       ))}
                     </ul>
@@ -345,10 +345,10 @@ const Roadmap = () => {
                       {item.tasks.map((task, taskIndex) => (
                         <li
                           key={taskIndex}
-                          className="font-normal text-sm md:text-[16px] text-[#9A9CB3] flex items-start gap-3"
+                          className="font-normal text-sm md:text-[16px] text-[#9A9CB3] flex items-center gap-3"
                         >
-                          <div className="w-[10px] h-[10px] bg-white rounded-full mt-1 flex-shrink-0"></div>
-                          <span>{task}</span>
+                          <div className="w-[10px] h-[10px] bg-white rounded-full flex-shrink-0"></div>
+                          <span className="leading-tight">{task}</span>
                         </li>
                       ))}
                     </ul>
@@ -464,14 +464,14 @@ const Roadmap = () => {
                         delay: 0.6 + taskIndex * 0.1,
                       }}
                       viewport={{ once: true }}
-                      className="font-normal text-[16px] text-[#9A9CB3] flex items-start gap-3"
+                      className="font-normal text-[16px] text-[#9A9CB3] flex items-center gap-3 "
                     >
                       <div
-                        className={`w-[10px] h-[10px] rounded-full mt-1 flex-shrink-0 ${
+                        className={`w-[10px] h-[10px] rounded-full flex-shrink-0 ${
                           taskIndex !== 2 ? "bg-[#1B46E0]" : "bg-white"
                         }`}
                       ></div>
-                      <span>{task}</span>
+                      <span className="leading-tight">{task}</span>
                     </motion.li>
                   ))}
                 </ul>
@@ -504,10 +504,10 @@ const Roadmap = () => {
                     whileInView={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.4, delay: 0.3 + taskIndex * 0.1 }}
                     viewport={{ once: true }}
-                    className="font-normal text-[16px] text-[#9A9CB3] flex items-start gap-3"
+                    className="font-normal text-[16px] text-[#9A9CB3] flex items-center gap-3"
                   >
-                    <div className="w-[10px] h-[10px] bg-white rounded-full mt-1 flex-shrink-0"></div>
-                    <span>{task}</span>
+                    <div className="w-[10px] h-[10px] bg-white rounded-full flex-shrink-0"></div>
+                    <span className="leading-tight">{task}</span>
                   </motion.li>
                 ))}
               </ul>

@@ -20,6 +20,7 @@ const Advice = () => {
           alt="wallet icon"
           width="29"
           height="25"
+          quality={100}
         />
       ),
     },
@@ -33,6 +34,7 @@ const Advice = () => {
           alt="deposit icon"
           width="29"
           height="25"
+          quality={100}
         />
       ),
     },
@@ -41,7 +43,13 @@ const Advice = () => {
       description:
         "Your assets will be automatically allocated to the highest-yield strategies available. Amana manages everything in the background, allowing you to passively earn yield.",
       icon: (
-        <Image src="/earn-about.png" alt="earn icon" width="20" height="28" />
+        <Image
+          src="/earn-about.png"
+          alt="earn icon"
+          width="20"
+          height="28"
+          quality={100}
+        />
       ),
     },
     {
@@ -54,6 +62,7 @@ const Advice = () => {
           alt="withdraw icon"
           width="24"
           height="24"
+          quality={100}
         />
       ),
     },

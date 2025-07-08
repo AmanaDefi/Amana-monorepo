@@ -64,9 +64,10 @@ const FeatureCard: FC<FeatureCardProps> = ({
     >
       <Image
         src={image}
+        quality={100}
         alt={alt}
-        width={40}
-        height={40}
+        width={64} 
+        height={64}
         className="w-8 h-8 sm:w-10 sm:h-10 md:w-[52px] md:h-[52px] lg:w-[64px] lg:h-[64px]"
       />
     </motion.div>
