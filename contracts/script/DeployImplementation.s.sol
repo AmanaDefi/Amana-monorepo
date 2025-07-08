@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 import "forge-std/Script.sol";
-import {AegisERC20Strategy} from "../contracts/strategies/AegisERC20Strategy.sol";
+import {WithdrawHelper} from "../contracts/WithdrawHelper.sol";
 import {console} from "forge-std/console.sol";
 
 contract DeployImplementation is Script {
@@ -23,7 +23,7 @@ contract DeployImplementation is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // ✅ Deploy the new implementation
-        AegisERC20Strategy newImpl = new AegisERC20Strategy();
+        WithdrawHelper newImpl = new WithdrawHelper();
         console.log(" New implementation deployed at:", address(newImpl));
         vm.stopBroadcast();
     }
