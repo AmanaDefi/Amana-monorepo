@@ -33,8 +33,11 @@ const ConnectChosenChain = () => {
   } = useFundWalletStore();
 
   const { wallets } = useWallets();
+  const filteredWallets = wallets.filter(
+    (wallet) => wallet.meta.id !== "app.phantom",
+  );
   const { logout } = usePrivy();
-  const activeAccount = wallets[0];
+  const activeAccount = filteredWallets[0];
 
   const {
     wallets: solanaAdapters,

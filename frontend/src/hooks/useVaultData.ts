@@ -61,7 +61,10 @@ export const useVaultData = () => {
 
   const { walletAddress } = useMultiChain();
   const { wallets } = useWallets();
-  const wallet = wallets[0];
+  const filteredWallets = wallets.filter(
+    (wallet) => wallet.meta.id !== "app.phantom",
+  );
+  const wallet = filteredWallets[0];
 
   const stableSetVaultAPYs = useCallback((vaultAPYs: VaultAPY[]) => {
     setVaultAPYs(vaultAPYs);
@@ -273,7 +276,10 @@ export const useVaultDataPaginated = (
   sortOrder: "asc" | "desc" = "desc",
 ) => {
   const { wallets } = useWallets();
-  const wallet = wallets[0];
+  const filteredWallets = wallets.filter(
+    (wallet) => wallet.meta.id !== "app.phantom",
+  );
+  const wallet = filteredWallets[0];
   const [loading, setLoading] = useState<boolean>(true);
   const [vaultAPYs, setVaultAPYs] = useState<VaultAPY[]>([]);
   const [userVaultBalances, setUserVaultBalances] = useState<
@@ -538,7 +544,10 @@ export const useVaultDataWithSearch = (
   protocolFilter: string = "",
 ) => {
   const { wallets } = useWallets();
-  const wallet = wallets[0];
+  const filteredWallets = wallets.filter(
+    (wallet) => wallet.meta.id !== "app.phantom",
+  );
+  const wallet = filteredWallets[0];
   const [loading, setLoading] = useState<boolean>(true);
   const [vaultAPYs, setVaultAPYs] = useState<VaultAPY[]>([]);
   const [userVaultBalances, setUserVaultBalances] = useState<

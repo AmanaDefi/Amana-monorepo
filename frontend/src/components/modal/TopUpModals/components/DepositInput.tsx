@@ -41,7 +41,10 @@ export const DepositInput = ({
   } = useFundWalletStore();
   const [tokenBalance, setTokenBalance] = useState<Balance>(EMPTY_BALANCE);
   const { wallets } = useWallets();
-  const activeWallet = wallets[0];
+  const filteredWallets = wallets.filter(
+    (wallet) => wallet.meta.id !== "app.phantom",
+  );
+  const activeWallet = filteredWallets[0];
 
   const fetchTokenBalance = useCallback(
     async (token: Token) => {

@@ -10,7 +10,10 @@ import { useWallets } from "@privy-io/react-auth";
 
 function Index({}) {
   const { wallets } = useWallets();
-  const account = wallets[0];
+  const filteredWallets = wallets.filter(
+    (wallet) => wallet.meta.id !== "app.phantom",
+  );
+  const account = filteredWallets[0];
   const { id } = useParams();
   const wallet = useWallet();
   const [vaultSymbol, setVaultSymbol] = useState<string | null>(null);
