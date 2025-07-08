@@ -39,3 +39,27 @@ export const shouldShowUSDLoader = (
 ): boolean => {
   return !!loadingOutputToken && !!isOutput;
 };
+
+export const formatUSDAmount = (
+  value: number,
+  options: {
+    ensureNonNegative?: boolean;
+    minimumFractionDigits?: number;
+    maximumFractionDigits?: number;
+  } = {},
+): string => {
+  const {
+    ensureNonNegative = true,
+    minimumFractionDigits = 2,
+    maximumFractionDigits = 2,
+  } = options;
+
+  const processedValue = ensureNonNegative ? Math.max(0, value) : value;
+
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits,
+    maximumFractionDigits,
+  }).format(processedValue);
+};

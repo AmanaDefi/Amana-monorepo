@@ -100,8 +100,8 @@ const Roadmap = () => {
 
   return (
     <section className="mt-[167px] md:mt-[275px] relative">
-      <div className="relative z-30 right-1 -bottom-3 lg:-bottom-2 xl:-bottom-0 ">
-        <RoadmapIcon />
+      <div className="relative z-30 right-[192px] xl:right-4 -bottom-3 lg:-bottom-2 xl:-bottom-0 w-full">
+        <RoadmapIcon className="w-full" />
       </div>
 
       {/* Mobile layout */}
@@ -119,10 +119,10 @@ const Roadmap = () => {
             }}
           >
             {ROADMAP_DATA.map((item, index) => (
-              <div key={index} className="w-full flex-shrink-0 px-8">
+              <div key={index} className="w-full flex-shrink-0 px-8 ">
                 {item.isHighlighted ? (
                   <div
-                    className="max-w-xs mx-auto p-6 rounded-[24px] pb-[93px]"
+                    className="max-w-[340px] mx-auto p-6 rounded-[24px] pb-[93px]"
                     style={{
                       background:
                         "linear-gradient(180deg, #101219 0%, #1b46e0 100%)",
@@ -171,7 +171,7 @@ const Roadmap = () => {
                     </ul>
                   </div>
                 ) : (
-                  <div className="max-w-xs mx-auto h-full flex flex-col justify-end pb-[93px]">
+                  <div className="max-w-[330px] mx-auto h-full flex flex-col justify-end pb-[93px]">
                     <h2
                       className="font-bold text-[32px] mb-2"
                       style={{
@@ -273,7 +273,7 @@ const Roadmap = () => {
               >
                 {item.isHighlighted ? (
                   <div
-                    className="mx-auto max-w-[450px] p-6 rounded-[24px] pb-[93px] "
+                    className="mx-auto max-w-[340px] p-6 rounded-[24px] pb-[93px] "
                     style={{
                       background:
                         "linear-gradient(180deg, #101219 0%, #1b46e0 100%)",
@@ -323,8 +323,7 @@ const Roadmap = () => {
                     </ul>
                   </div>
                 ) : (
-                  // Звичайна картка - контент прижатий до низу
-                  <div className="mx-auto max-w-[450px] h-full flex flex-col justify-end pb-[93px]">
+                  <div className="mx-auto max-w-[340px] h-full flex flex-col justify-end pb-[93px]">
                     <h2
                       className="font-bold text-[32px] md:text-[40px] mb-2"
                       style={{
@@ -407,7 +406,7 @@ const Roadmap = () => {
       </div>
 
       {/* Extra large layout (xl) - horizontal */}
-      <div className="hidden xl:flex flex-row justify-between items-start px-5">
+      <div className="hidden xl:flex flex-row justify-between items-start px-5 max-w-[1400px] mx-auto">
         {ROADMAP_DATA.map((item, index) => (
           <motion.div
             key={index}
@@ -415,7 +414,7 @@ const Roadmap = () => {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: index * 0.15 }}
             viewport={{ once: true }}
-            className="relative max-w-[360px]"
+            className="relative max-w-[330px]"
           >
             {item.isHighlighted ? (
               <motion.div
@@ -423,7 +422,7 @@ const Roadmap = () => {
                 whileInView={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.8, delay: 0.3 }}
                 viewport={{ once: true }}
-                className="absolute top-[-281px] left-0 max-w-[360px] h-[748px] rounded-[24px] pt-[22px] px-4 z-10"
+                className="absolute top-[-281px] left-0 min-w-[340px] h-[748px] rounded-[24px] pt-[22px] px-4 z-10"
                 style={{
                   background:
                     "linear-gradient(180deg, #101219 0%, #1b46e0 100%)",
@@ -438,7 +437,7 @@ const Roadmap = () => {
                 </div>
 
                 <h2
-                  className="font-bold text-[48px] mb-4"
+                  className="font-bold text-[48px] mb-2"
                   style={{
                     background:
                       "linear-gradient(180deg, #f6faff 11%, #1b46e0 84.13%)",
@@ -479,9 +478,9 @@ const Roadmap = () => {
               </motion.div>
             ) : null}
 
-            <div>
+            <div className="pl-3">
               <h2
-                className="font-bold text-[48px] mb-4 min-w-[350px]"
+                className="font-bold text-[48px] mb-2 min-w-[350px]"
                 style={{
                   background:
                     "linear-gradient(180deg, #f6faff 11%, #1b46e0 84.13%)",
@@ -497,7 +496,7 @@ const Roadmap = () => {
                 {item.title}
               </h3>
 
-              <ul className="flex flex-col gap-8">
+              <ul className="flex flex-col gap-8 pl-2">
                 {item.tasks.map((task, taskIndex) => (
                   <motion.li
                     key={taskIndex}
