@@ -127,7 +127,7 @@ const MobileAllWallets = () => {
   };
 
   const filteredEvmConnectors = connectors.filter(
-    (con) => con.id !== "app.phantom",
+    (con) => con.id !== "app.phantom" && con.name.toLowerCase() !== "injected",
   );
 
   const solanaConnectors = solanaAdapters

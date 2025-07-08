@@ -22,24 +22,36 @@ import {
 } from "viem/chains";
 import { createConfig, WagmiProvider } from "wagmi";
 import { http } from "wagmi";
-import { walletConnect } from "wagmi/connectors";
+import {
+  walletConnect,
+  metaMask,
+  coinbaseWallet,
+  injected,
+} from "wagmi/connectors";
 
 export default function CustomPrivyProvider({ children }: PropsWithChildren) {
   const walletConnectProjectId =
     process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID ||
     "fc48f2e065ff110cc6683b9af8b654c5";
 
+  const providers = [
+    metaMask(),
+    coinbaseWallet({
+      appName: "Amana",
+    }),
+    walletConnect({
+      projectId: walletConnectProjectId,
+      showQrModal: true,
+      qrModalOptions: {
+        themeMode: "dark",
+      },
+    }),
+    injected(),
+  ];
+
   const wagmiConfig = createConfig({
     ssr: true,
-    connectors: [
-      walletConnect({
-        projectId: walletConnectProjectId,
-        showQrModal: true,
-        qrModalOptions: {
-          themeMode: "dark",
-        },
-      }),
-    ],
+    connectors: providers,
     chains: [
       zetachain,
       bsc,
@@ -83,23 +95,23 @@ export default function CustomPrivyProvider({ children }: PropsWithChildren) {
   });
   const queryClient = new QueryClient();
   return (
-    <WagmiProvider config={wagmiConfig}>
-      <PrivyProvider
-        appId={
-          process.env.NEXT_PUBLIC_PRIVY_APP_ID || "cmca71qv600kfl40m18l83vcc"
-        }
-        config={{
-          embeddedWallets: {
-            createOnLogin: "users-without-wallets",
-          },
-          defaultChain: customZetachain,
-          supportedChains: chainsWithCustomRpcs(),
-        }}
-      >
+    <PrivyProvider
+      appId={
+        process.env.NEXT_PUBLIC_PRIVY_APP_ID || "cmca71qv600kfl40m18l83vcc"
+      }
+      config={{
+        embeddedWallets: {
+          createOnLogin: "users-without-wallets",
+        },
+        defaultChain: customZetachain,
+        supportedChains: chainsWithCustomRpcs(),
+      }}
+    >
+      <WagmiProvider config={wagmiConfig}>
         <QueryClientProvider client={queryClient}>
           {children}
         </QueryClientProvider>
-      </PrivyProvider>
-    </WagmiProvider>
+      </WagmiProvider>
+    </PrivyProvider>
   );
 }
