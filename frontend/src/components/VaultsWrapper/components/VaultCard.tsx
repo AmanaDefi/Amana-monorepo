@@ -18,6 +18,8 @@ import { AppButton } from "@/components/button/AppButton";
 import { VaultOverviewBlock } from "@/components/VaultOverviewBlock";
 import TableChart from "@/components/TableChart";
 import { useChartStore } from "@/store/chartStore";
+import { useAPYStore } from "@/store/APYStore";
+import { useTransactionStore } from "@/store/transactionStore";
 
 const MOCK_DIGITS = 6.43;
 
@@ -67,8 +69,13 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
       const apyValue = vaultAPY?.apy30d;
       const isDefined = typeof apyValue === "number";
       const isNegative = isDefined && apyValue < 0;
-      const isLow = isDefined && apyValue >= 0 && apyValue <= 0.5;
-      const isHigh = isDefined && apyValue > 0.5;
+
+      const { getAPYDirection, hasAPYChangeData, activeTransactionVaultId } =
+        useAPYStore();
+      const { finishedTransaction } = useTransactionStore();
+
+      const apyDirection = getAPYDirection(vault.id);
+      const hasChangeData = hasAPYChangeData(vault.id);
 
       const displayText = isDefined
         ? `${isNegative ? "-" : ""}${(Math.abs(apyValue!) * 100).toFixed(2)}%`
@@ -76,16 +83,57 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
 
       const textClass = classNames("font-bold text-xl leading-5", {
         "text-white": isNegative || !isDefined,
-        "text-green-accent": isHigh || isLow,
+        "text-green-accent": !isNegative && isDefined,
       });
 
-      const arrowColor = isNegative ? "#FF1E1E" : isLow ? "#FFA500" : "#05D47F";
+      let arrowColor: string;
+      let shouldRotate = false;
+      let shouldRotateRight = false;
+
+      if (!isDefined) {
+        arrowColor = "#666666";
+      } else {
+        const shouldShowAPYChange =
+          hasChangeData &&
+          finishedTransaction &&
+          activeTransactionVaultId === vault.id;
+
+        if (shouldShowAPYChange) {
+          switch (apyDirection) {
+            case "up":
+              arrowColor = "#05D47F";
+              shouldRotate = false;
+              break;
+            case "down":
+              arrowColor = "#FF1E1E";
+              shouldRotate = true;
+              break;
+            case "unchanged":
+              arrowColor = "#fff";
+              shouldRotateRight = true;
+              break;
+          }
+        } else {
+          if (isNegative) {
+            arrowColor = "#FF1E1E";
+            shouldRotate = true;
+          } else {
+            arrowColor = "#05D47F";
+            shouldRotate = false;
+          }
+        }
+      }
 
       return (
         <div className="flex flex-row justify-between">
           <p className={textClass}>{displayText}</p>
           {isDefined && (
-            <div className={classNames({ "rotate-180": isNegative })}>
+            <div
+              className={classNames({
+                "rotate-180": shouldRotate,
+                "rotate-90": shouldRotateRight,
+              })}
+            >
               <DynamicArrowIcon color={arrowColor} />
             </div>
           )}
