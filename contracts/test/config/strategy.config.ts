@@ -437,4 +437,33 @@ export const strategyConfigs: StrategyTestConfig[] = [
     minAmountOut: ethers.utils.parseUnits("90", 6),
     slippage: 10000,
   },
+  {
+    name: "Convex tacBTC-cbBTC-FBTC Strategy - Ethereum",
+    gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed",
+    strategyContractName: "ConvexERC20StrategyStableSwapNG",
+    strategyChainId: 1,
+    receiptTokenContractName: "ICurveStableSwapNG",
+    swapHelperContractName: "SwapHelperEthereum",
+    rewardsContractName: "IConvexRewardPool",
+    forkBlock: 22873159,
+    inputTokenAddress: "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf", // cbBTC on Ethereum
+    inputTokenStorageSlot: 9,
+    inputTokenIndexOrPlaceholder: 1,
+    receiptTokenAddress: "0xFfF8634dE89271b6075C55FA89B4E9A087Fdb9FE",
+    rewardsContractAddress: "0xca55D40f6703a5FcC46d8277D1D78751acCe9305",
+    rewardsTokenAddress: "0xD533a949740bb3306d119CC777fa900bA034cd52", // crv 
+    originChainId: 8453,
+    withdrawZRC20: ZC_USDC_BASE_ADDRESS,
+    otherErc20Address: ETH_USDC_ADDRESS,
+    otherErc20BalanceStorageSlot: 9,
+    isNative: false,
+    depositAmount: ethers.utils.parseUnits("100", 6),
+    minSharesOut: ethers.utils.parseUnits("90", 6),
+    withdrawAmount: ethers.utils.parseUnits("100", 6),
+    minAmountOut: ethers.utils.parseUnits("90", 6),
+    slippage: 10000,
+    convexBooster: "0xF403C135812408BFbE8713b5A23a04b3D48AAE31",
+    cvxTokenAddress: "0x4e3fbd56cd56c3e72c1403e103b45db9da5b9d2b",
+    convexPoolId: 454 // find on convex website
+  },
 ];

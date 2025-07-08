@@ -134,7 +134,6 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       if (isConvexStrategy(config.strategyContractName) || isBalancerStrategy(config.strategyContractName)) {
         strategyBalanceBefore = await rewardsContract.balanceOf(strategy.address);
       } else {
-        console.log("receiptTokenContract", receiptTokenContract.address);
         strategyBalanceBefore = await receiptTokenContract.balanceOf(strategy.address);
       }
       console.log("Strategy balance before deposit:", strategyBalanceBefore.toString());
