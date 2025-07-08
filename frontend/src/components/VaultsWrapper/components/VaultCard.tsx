@@ -84,8 +84,10 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
       const isHigh = isDefined && apyValue > 0.5;
 
       const displayText = isDefined
+
         ? `${isNegative ? "-" : ""}${Math.abs(apyValue!).toFixed(2)}%`
         : "N/A";
+
 
       const textClass = classNames("font-bold text-xl leading-5", {
         "text-white": isNegative || !isDefined,
@@ -107,6 +109,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
       );
     };
 
+
     useEffect(() => {
       getVaultHistoricalAPY(vault.id).then(data => {
         if (data && Array.isArray(data)) {
@@ -118,6 +121,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
 
     // Calculate latest APY value
     const latestAPY = filteredChartPoints.length > 0 ? filteredChartPoints[filteredChartPoints.length - 1] : null;
+
 
     return (
       <div
@@ -210,7 +214,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                 <p className="font-normal text-sm leading-4 text-white">
                   30d prediction
                 </p>
-                {renderAPYDisplay()}
+                {renderPredictionDisplay()}
                 <div className="hover:cursor-pointer absolute right-[-10px] top-[-10px]">
                   <InfoIcon />
                 </div>

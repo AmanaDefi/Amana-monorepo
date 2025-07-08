@@ -192,6 +192,8 @@ export default function InputTokenWithError({
     );
   };
 
+  const shouldSwapValues = isOutput && isDeposit;
+
   const topSectionData = renderTopSection();
 
   return (
@@ -215,7 +217,7 @@ export default function InputTokenWithError({
             gap: "4px 8px",
           }}
           className={clsx(
-            "w-full max-h-[77px] md:max-h-[75px] bg-[#161C27] pl-5 py-[11px] pr-[10px] rounded-lg border transition-all duration-200",
+            "w-full max-h-[77px] md:max-h-[75px] bg-[#161C27] pl-5 py-2 pr-[10px] rounded-lg border transition-all duration-200",
             errorMessage ? "border-red-500" : "border-[#535E73]",
             "hover:border-[#3E73C4]",
             isInputFocused && "border-[#3E73C4]",
@@ -245,13 +247,30 @@ export default function InputTokenWithError({
 
           <div
             style={{ gridArea: "top-right" }}
-            className="flex items-center justify-end text-sm"
+            className={
+              shouldSwapValues
+                ? "flex justify-end items-start"
+                : "flex justify-end items-start text-sm"
+            }
           >
-            <p className="group-hover/max:text-white">{renderUSDValue()}</p>
+            {shouldSwapValues ? (
+              <span className="text-white text-2xl">{renderMainValue()}</span>
+            ) : (
+              <p className="group-hover/max:text-white">{renderUSDValue()}</p>
+            )}
           </div>
 
-          <div style={{ gridArea: "main-left" }} className="flex items-center">
-            <span className="text-white text-2xl">{renderMainValue()}</span>
+          <div
+            style={{ gridArea: "main-left" }}
+            className={shouldSwapValues ? "flex text-sm" : "flex "}
+          >
+            {shouldSwapValues ? (
+              <p className="group-hover/max:text-white text-[#535E73]">
+                {renderUSDValue()}
+              </p>
+            ) : (
+              <span className="text-white text-2xl">{renderMainValue()}</span>
+            )}
           </div>
 
           <div

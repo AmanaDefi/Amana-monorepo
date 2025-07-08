@@ -2,13 +2,23 @@ import React from "react";
 
 const AboutLine: React.FC<React.SVGProps<SVGSVGElement>> = ({
   className,
+  style,
   ...props
 }) => (
   <svg
+    width="1512"
+    height="201"
     viewBox="0 0 1512 685"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
     className={className}
+    style={{
+      ...style,
+      width: "100%",
+      height: "100%",
+      minWidth: "100vw",
+    }}
+    preserveAspectRatio="none"
     {...props}
   >
     <path
@@ -42,4 +52,3 @@ const AboutLine: React.FC<React.SVGProps<SVGSVGElement>> = ({
 );
 
 export default AboutLine;
-

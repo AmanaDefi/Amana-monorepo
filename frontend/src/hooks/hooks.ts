@@ -553,11 +553,11 @@ export const useUpdateAPYs = (
                 APY7d = await calculateAaveAPY(receiptTokenAddress as Address, strategyChain, activeAccount);
               } else if (vault.protocol.name === "Aegis") {
                 APY7d = await fetchAegisAPR();
-               } else if (vault.protocol.name === "YieldFi") {
-                 APY7d = await fetchYieldFiAPY();
-               } else if (vault.protocol.name === "NoonCapital") {
-                 APY7d = await fetchNoonCapitalAPY();
-               } else if (vault.protocol.name === "Compound") {
+              } else if (vault.protocol.name === "YieldFi") {
+                APY7d = await fetchYieldFiAPY();
+              } else if (vault.protocol.name === "NoonCapital") {
+                APY7d = await fetchNoonCapitalAPY();
+              } else if (vault.protocol.name === "Compound") {
                 APY7d = await calculateCompoundAPY(
                   receiptTokenAddress as Address,
                   strategyChain,
@@ -650,7 +650,9 @@ export const useUpdateAPYs = (
               return {
                 vaultId: vault.id,
                 APY7d,
+
                 apy30d: realApy30d,
+
               };
             } catch (error) {
               return { vaultId: vault.id, APY7d: 0 };

@@ -56,11 +56,11 @@ const ProfileInfo = () => {
                 : "0"}{" "}
               {activeChain?.nativeCurrency?.symbol || ""}
             </div>
-            <p
+            {/* <p
               className={`md:hidden ${205.6 > 0 ? "text-[#05D47F]" : "text-white"}`}
             >
               +$205.60(+8,54%)
-            </p>
+            </p> */}
 
             <WalletActions />
           </div>
