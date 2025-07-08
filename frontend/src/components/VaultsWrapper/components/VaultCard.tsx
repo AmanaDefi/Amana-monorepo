@@ -18,8 +18,7 @@ import { AppButton } from "@/components/button/AppButton";
 import { VaultOverviewBlock } from "@/components/VaultOverviewBlock";
 import TableChart from "@/components/TableChart";
 import { useChartStore } from "@/store/chartStore";
-import { useAPYStore } from "@/store/APYStore";
-import { useTransactionStore } from "@/store/transactionStore";
+import { useAPYDisplay } from "@/hooks/useAPYDisplay";
 
 const MOCK_DIGITS = 6.43;
 
@@ -51,12 +50,14 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
     const percentageChange = getPercentageChange(vault.id);
     const hasChartData = hasHistoricalData(vault.id);
 
+    const apyDisplay = useAPYDisplay({
+      apyValue: vaultAPY?.apy30d,
+      vaultId: vault.id,
+    });
+
     const handleVaultClick = (vaultId: string) => {
       router.push(`/vaults/${vaultId}`);
     };
-
-    const is30dAPYUp = true;
-    const isPredictionUp = false;
 
     const handlePressButton = (
       e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
@@ -66,75 +67,17 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
     };
 
     const renderAPYDisplay = () => {
-      const apyValue = vaultAPY?.apy30d;
-      const isDefined = typeof apyValue === "number";
-      const isNegative = isDefined && apyValue < 0;
-
-      const { getAPYDirection, hasAPYChangeData, activeTransactionVaultId } =
-        useAPYStore();
-      const { finishedTransaction } = useTransactionStore();
-
-      const apyDirection = getAPYDirection(vault.id);
-      const hasChangeData = hasAPYChangeData(vault.id);
-
-      const displayText = isDefined
-        ? `${isNegative ? "-" : ""}${(Math.abs(apyValue!) * 100).toFixed(2)}%`
-        : "--";
-
-      const textClass = classNames("font-bold text-xl leading-5", {
-        "text-white": isNegative || !isDefined,
-        "text-green-accent": !isNegative && isDefined,
-      });
-
-      let arrowColor: string;
-      let shouldRotate = false;
-      let shouldRotateRight = false;
-
-      if (!isDefined) {
-        arrowColor = "#666666";
-      } else {
-        const shouldShowAPYChange =
-          hasChangeData &&
-          finishedTransaction &&
-          activeTransactionVaultId === vault.id;
-
-        if (shouldShowAPYChange) {
-          switch (apyDirection) {
-            case "up":
-              arrowColor = "#05D47F";
-              shouldRotate = false;
-              break;
-            case "down":
-              arrowColor = "#FF1E1E";
-              shouldRotate = true;
-              break;
-            case "unchanged":
-              arrowColor = "#fff";
-              shouldRotateRight = true;
-              break;
-          }
-        } else {
-          if (isNegative) {
-            arrowColor = "#FF1E1E";
-            shouldRotate = true;
-          } else {
-            arrowColor = "#05D47F";
-            shouldRotate = false;
-          }
-        }
-      }
-
       return (
         <div className="flex flex-row justify-between">
-          <p className={textClass}>{displayText}</p>
-          {isDefined && (
+          <p className={apyDisplay.textClass}>{apyDisplay.displayText}</p>
+          {apyDisplay.isDefined && (
             <div
               className={classNames({
-                "rotate-180": shouldRotate,
-                "rotate-90": shouldRotateRight,
+                "rotate-180": apyDisplay.shouldRotate,
+                "rotate-90": apyDisplay.shouldRotateRight,
               })}
             >
-              <DynamicArrowIcon color={arrowColor} />
+              <DynamicArrowIcon color={apyDisplay.arrowColor} />
             </div>
           )}
         </div>
