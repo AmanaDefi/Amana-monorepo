@@ -48,6 +48,8 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import { zetaProvider } from "@/utils/providers";
 import { ethers, Interface } from "ethers";
 import { apiService } from "@/service";
+import { getVault30dAvgAPY, getVaultHistoricalAPY } from '@/utils/defillama';
+import { VAULT_TO_DEFILLAMA_POOL } from "@/constants/defillamaPoolMapping";
 
 type CashedVaultData = {
   vaultId: string;
@@ -638,10 +640,19 @@ export const useUpdateAPYs = (
                 APY7d = RewardsAPY;
               }
 
+              const realApy30d = await getVault30dAvgAPY(vault.id);
+              console.log('[30d APY DEBUG]', {
+                vaultId: vault.id,
+                vaultName: vault.name,
+                realApy30d,
+                mapping: VAULT_TO_DEFILLAMA_POOL?.[vault.id] || null,
+              });
               return {
                 vaultId: vault.id,
                 APY7d,
-                apy30d: APY7d, // 30d APY mirrors 7d APY
+
+                apy30d: realApy30d,
+
               };
             } catch (error) {
               return { vaultId: vault.id, APY7d: 0 };
@@ -814,3 +825,8 @@ export const useUserPortfolioFromGraph = (userAddress?: string) => {
     error
   };
 };
+
+// TEST: Log historical APY for Fluid USDC vault (replace with any mapped vaultId as needed)
+getVaultHistoricalAPY('0x5cd6e196ca1d85b8edfdf162d3a0c77268f42c69').then(data => {
+  console.log('[Historical APY TEST] Fluid USDC:', data);
+});
