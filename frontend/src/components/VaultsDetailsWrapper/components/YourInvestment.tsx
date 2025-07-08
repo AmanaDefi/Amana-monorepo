@@ -3,22 +3,27 @@ import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
 import InvestmentStarIcon from "@/components/svg/InvestmentStar";
 import { formatTokenBalance } from "@/utils/utils";
 import { motion } from "framer-motion";
+import { VaultData } from "@/types/types";
 
 interface YourInvestmentProps {
   depositAmount: string;
   vaultTokenSymbol: string;
   depositUSDValue: number;
+  vaultData: VaultData;
 }
 
 const YourInvestment = ({
   depositAmount,
   vaultTokenSymbol,
   depositUSDValue,
+  vaultData,
 }: YourInvestmentProps) => {
   const formattedDepositAmount = formatTokenBalance(
     depositAmount,
     vaultTokenSymbol,
   );
+
+  const pointsText = vaultData.protocolPointsDescription || `${vaultData.protocol.name} Points`;
 
   return (
     <div className="bg-[#14171F] rounded-2xl py-[22px] px-[42px] lg:py-6 lg:px-[50px] border border-[#2A2D36] flex flex-row items-center justify-start lg:justify-between ">
@@ -144,18 +149,22 @@ const YourInvestment = ({
           <p className="text-[24px] font-medium">
             ${formattedDepositAmount} {vaultTokenSymbol}
           </p>
-          <p className="flex flex-row gap-1 text-[#3E73C4] items-center text-xs lg:text-base whitespace-nowrap">
-            <ErrorInputIcon width={14} height={15} className="fill-[#1B46E0]" />
-            Points Earned: 0 Aegis Points
-          </p>
+          {vaultData.protocolPoints && vaultData.protocolPoints > 0 && (
+            <p className="flex flex-row gap-1 text-[#3E73C4] items-center text-xs lg:text-base whitespace-nowrap">
+              <ErrorInputIcon width={14} height={15} className="fill-[#1B46E0]" />
+              Points Earned: 0 {pointsText}
+            </p>
+          )}
         </div>
-        <Button
-          variant="custom"
-          disabled={true}
-          className="!w-full !h-10 !mt-[23px] !max-w-[274px] !lg:max-w-[294px]"
-        >
-          Claim
-        </Button>
+        {vaultData.protocolPoints && vaultData.protocolPoints > 0 && (
+          <Button
+            variant="custom"
+            disabled={true}
+            className="!w-full !h-10 !mt-[23px] !max-w-[274px] !lg:max-w-[294px]"
+          >
+            Claim
+          </Button>
+        )}
       </div>
     </div>
   );
