@@ -62,7 +62,7 @@ export function getVaultErrorMessage(
   steps: Action[],
   vaultData?: any,
   inputTokenPrice?: number,
-  isDeposit?: boolean
+  isDeposit?: boolean,
 ): string {
   const inputAmount = Number(inputValue);
   const balanceAmount = Number(availableBalance);
@@ -80,12 +80,22 @@ export function getVaultErrorMessage(
   // Check deposit/withdrawal limits if vaultData is provided
   if (vaultData && inputTokenPrice) {
     const amountInUSD = Number(inputValue) * inputTokenPrice;
-    
-    if (isDeposit && vaultData.minDeposit && amountInUSD < vaultData.minDeposit && Number(inputValue) > 0) {
+
+    if (
+      isDeposit &&
+      vaultData.minDeposit &&
+      amountInUSD < vaultData.minDeposit &&
+      Number(inputValue) > 0
+    ) {
       return `Your net deposit amount needs to be greater than $${vaultData.minDeposit}`;
     }
-    
-    if (!isDeposit && vaultData.maxWithdraw && amountInUSD > vaultData.maxWithdraw && Number(inputValue) > 0) {
+
+    if (
+      !isDeposit &&
+      vaultData.maxWithdraw &&
+      amountInUSD > vaultData.maxWithdraw &&
+      Number(inputValue) > 0
+    ) {
       return `You can only withdraw a maximum of $${vaultData.maxWithdraw} instantly`;
     }
   }
@@ -138,7 +148,7 @@ export const selectActions = async (
   walletAddress: string,
   inputBalance: Balance,
   inputToken: Token,
-  activeWallet: ConnectedWallet
+  activeWallet: ConnectedWallet,
 ) => {
   const isNativeToken = inputToken?.address === ZeroAddress;
   const value = Number(inputBalance.value);
@@ -152,7 +162,7 @@ export const selectActions = async (
           activeAccount: walletAddress,
           spender: vaultData.id,
           amount: value,
-          activeWallet
+          activeWallet,
         });
   switch (action) {
     case SmartVaultActionType.Deposit:
@@ -551,6 +561,20 @@ export function getCurrentSlippage(): number {
   return settings.slippage.value;
 }
 
+export function formatSlippageUSD(amount: number): string {
+  if (Number.isNaN(amount)) {
+    return "$0.00";
+  }
+  if (amount == 0) {
+    return "$0.00";
+  }
+
+  const decimals = amount < 0.01 ? 4 : 2;
+  const formatted = amount.toFixed(decimals);
+
+  return `$${formatted}`;
+}
+
 // Converts a USD amount to ETH based on current ETH price
 export function convertUsdToEth(usdAmount: number, ethPrice: number): number {
   if (!ethPrice || ethPrice <= 0) return 0;
@@ -576,7 +600,7 @@ export const getERC20TokenBalance = async (
   walletAddress: string,
   tokenAddress: string,
   chain: any,
-  activeWallet: ConnectedWallet
+  activeWallet: ConnectedWallet,
 ) => {
   try {
     // Skip call for invalid inputs
@@ -639,7 +663,7 @@ export const getERC20TokenBalance = async (
       abi: erc20Abi,
     });
 
-    console.log(publicClient, 'publicClient.account')
+    console.log(publicClient, "publicClient.account");
 
     try {
       // Get token decimals first to avoid potential read issues
@@ -657,7 +681,7 @@ export const getERC20TokenBalance = async (
       // Now get the balance
       const balance = await contract.read.balanceOf([walletAddress]);
 
-      console.log(balance, decimals, 'balance, decimals')
+      console.log(balance, decimals, "balance, decimals");
 
       return {
         balance: balance,
@@ -797,8 +821,17 @@ export function formatNumberWithSuffix(num: number): string {
  */
 export const isStablecoin = (symbol: string): boolean => {
   if (!symbol) return false;
-  const baseSymbol = symbol.split('.')[0].toUpperCase();
-  return ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'FRAX', 'LUSD'].includes(baseSymbol);
+  const baseSymbol = symbol.split(".")[0].toUpperCase();
+  return [
+    "USDT",
+    "USDC",
+    "DAI",
+    "BUSD",
+    "TUSD",
+    "USDP",
+    "FRAX",
+    "LUSD",
+  ].includes(baseSymbol);
 };
 
 /**
@@ -808,13 +841,17 @@ export const isStablecoin = (symbol: string): boolean => {
  * @param tokenPrice - The price of the token in USD (default: 0)
  * @returns string - Formatted TVL in USD with K/M/B suffix
  */
-export const formatTVLInUSD = (totalAssets: string | number, inputTokenSymbol: string, tokenPrice: number = 0): string => {
+export const formatTVLInUSD = (
+  totalAssets: string | number,
+  inputTokenSymbol: string,
+  tokenPrice: number = 0,
+): string => {
   const totalAssetsNumber = Number(totalAssets || 0);
-  
+
   if (totalAssetsNumber === 0) {
     return "0";
   }
-  
+
   // Check if the token is a stablecoin
   if (isStablecoin(inputTokenSymbol)) {
     // For stablecoins, the value is already in USD terms
@@ -875,54 +912,56 @@ export const checkAmount = (amountString: string, amount: string) => {
   }
 };
 
-export function getBlockchainExplorerBaseUrl(chainIdentifier: number | string): string | null {
+export function getBlockchainExplorerBaseUrl(
+  chainIdentifier: number | string,
+): string | null {
   switch (chainIdentifier) {
-    case 1: 
-      return 'https://etherscan.io';
+    case 1:
+      return "https://etherscan.io";
     case 11155111:
-      return 'https://sepolia.etherscan.io';
+      return "https://sepolia.etherscan.io";
     case 56:
-      return 'https://bscscan.com';
+      return "https://bscscan.com";
     case 97:
-      return 'https://testnet.bscscan.com';
+      return "https://testnet.bscscan.com";
     case 8453:
-      return 'https://basescan.org';
-    case 84532: 
-      return 'https://sepolia.basescan.org';
-    case 137: 
-      return 'https://polygonscan.com';
+      return "https://basescan.org";
+    case 84532:
+      return "https://sepolia.basescan.org";
+    case 137:
+      return "https://polygonscan.com";
     case 80002:
-      return 'https://amoy.polygonscan.com';
+      return "https://amoy.polygonscan.com";
     case 42161:
-      return 'https://arbiscan.io';
+      return "https://arbiscan.io";
     case 421614:
-      return 'https://sepolia.arbiscan.io';
+      return "https://sepolia.arbiscan.io";
     case 43114:
-      return 'https://snowtrace.io';
+      return "https://snowtrace.io";
     case 43113:
-      return 'https://testnet.snowtrace.io';
+      return "https://testnet.snowtrace.io";
 
     case 900:
-      return 'https://solscan.io'; 
+      return "https://solscan.io";
 
     case 7000:
-      return 'https://zetascan.com';
+      return "https://zetascan.com";
     case 7001:
-      return 'https://athens.explorer.zetachain.com';
+      return "https://athens.explorer.zetachain.com";
 
     default:
-      return null; 
+      return null;
   }
 }
 
 export function formatDateTimeCustom(date: Date): string {
   const year = date.getFullYear();
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const day = date.getDate().toString().padStart(2, "0");
 
-  const hours = date.getHours().toString().padStart(2, '0');
-  const minutes = date.getMinutes().toString().padStart(2, '0');
-  const seconds = date.getSeconds().toString().padStart(2, '0');
+  const hours = date.getHours().toString().padStart(2, "0");
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+  const seconds = date.getSeconds().toString().padStart(2, "0");
 
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }

@@ -1,4 +1,4 @@
-
+import { useAuthStore } from "@/store/authStore";
 import { ChooseBuyWith } from "./TopUpModals/ChooseBuyWith";
 import { Deposit } from "./TopUpModals/DepositModal";
 import { FinishDeposit } from "./TopUpModals/FinishDepositModal";
@@ -20,8 +20,12 @@ import { Send } from "./send/Send";
 import { SignUpModal } from "./smartWallet/SignUpModal";
 import { VerifyOtpModal } from "./smartWallet/VerifyOtpModal";
 import WelcomeModal from "./welcome/WelcomeModal";
+import { useFundWalletStore } from "@/store/fundWalletStore";
 
 export const AppModals = () => {
+  const { step } = useAuthStore();
+  const { step: fundWalletStep } = useFundWalletStore();
+  console.log(step);
   return (
     <>
       <SignUpModal />
@@ -30,7 +34,6 @@ export const AppModals = () => {
       <OptionsModalB />
       <MobileOptionsModalA />
       <MobileOptionsModalB />
-      <AllWAllets />
       <MobileAllWallets />
       <WelcomeModal />
       <OnboardingModal />
@@ -45,6 +48,9 @@ export const AppModals = () => {
       <TopUpChainsModal />
       <ConnectChosenChain />
       <FinishDeposit />
+      {(step === "allWallets" || fundWalletStep === "connectWallet") && (
+        <AllWAllets />
+      )}
     </>
   );
 };

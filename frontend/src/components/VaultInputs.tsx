@@ -22,16 +22,15 @@ import {
   SUPPORTED_CHAINS,
 } from "@/constants/chainConfig";
 import {
-  determineVaultTokenFromApprovedTokens,
   formatCurrency,
   getCurrentSlippage,
   getVaultErrorMessage,
   isZetachain,
   selectActions,
   convertUsdToEth,
-  getOnlyTokenSymbol,
   bigIntReviver,
   bigIntReplacer,
+  formatSlippageUSD,
 } from "@/utils/utils";
 import InteractionContainer from "./interactAPI";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
@@ -116,8 +115,6 @@ export default function VaultInputs({
   selectedChain,
   APY7DValue,
 }: VaultInputsProps): JSX.Element {
-  const router = useRouter();
-  const pathname = usePathname();
   const [inputToken, setInputToken] = useState<Token | undefined>(
     selectedToken,
   );
@@ -702,7 +699,7 @@ export default function VaultInputs({
       const calculatedSlippageUSD =
         assetsConversionInUSD - tokenConversionInUSD;
 
-      const slippageAmountInUSDFormatted = formatUSDValue(
+      const slippageAmountInUSDFormatted = formatSlippageUSD(
         calculatedSlippageUSD,
       );
 
@@ -868,6 +865,13 @@ export default function VaultInputs({
         100 - (finalConvertedAmountInUSD * 100) / inputAmountValueInUSD,
       );
 
+      const calculatedSlippageUSD =
+        inputAmountValueInUSD - finalConvertedAmountInUSD;
+
+      const slippageAmountInUSDFormatted = formatSlippageUSD(
+        calculatedSlippageUSD,
+      );
+
       if (!vaultData.depositFeePaidFromGasTank && gasFeeInVaultAsset > 0n) {
         const totalLossUSD = inputAmountValueInUSD - finalConvertedAmountInUSD;
         const gasFeeUSD = parseFloat(gasFeeInUSD.replace(/[^0-9.]/g, ""));
@@ -878,6 +882,7 @@ export default function VaultInputs({
       if (inputAmountValue === debouncedInputBalance.value) {
         setConversionOutput({
           slippageActualValue: Number(slippageActualValue.toFixed(2)),
+          slippageAmountInUSDFormatted: slippageAmountInUSDFormatted,
           finalConvertedAmountInUSDFormatted: formatUSDValue(
             finalConvertedAmountInUSD,
           ),
@@ -1384,7 +1389,7 @@ export default function VaultInputs({
               isOutput={false}
               captionText={!isDeposit ? "Output Amount" : ""}
             />
-            <div className="mb-6 md:my-8">
+            <div className="md:my-6">
               <FeeDisplay
                 isDeposit={isDeposit}
                 vaultData={vaultData}
