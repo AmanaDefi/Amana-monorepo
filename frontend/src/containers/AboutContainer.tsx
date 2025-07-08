@@ -9,6 +9,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 import React from "react";
 import DiscordLogo from "@public/logo/discord.svg";
+import Medium from "@public/logo/medium.svg";
 import XLogo from "@public/logo/x.svg";
 import LinkedInLogo from "@public/logo/linkedIn.svg";
 import Link from "next/link";
@@ -345,6 +346,13 @@ const AboutContainer = ({}) => {
           className="w-10 h-10 bg-[#1B46E0] rounded-full flex items-center justify-center"
         >
           <DiscordLogo height={18} className="w-[22px] h-[26px]" />
+        </Link>
+        <Link
+          href="https://medium.com/@amana_defi"
+          target="_blank"
+          className="w-10 h-10 bg-[#1B46E0] rounded-full flex items-center justify-center"
+        >
+          <Medium height={18} className="w-[22px] h-[26px]" />
         </Link>
       </div>
     </div>
