@@ -305,17 +305,11 @@ export default function LeaderboardContainer() {
 
         <motion.div
           className="focus-within:border-blue-button hover:border-blue-button transition-all duration-300 bg-[#14171F] 
-             w-full min-w-[48px] sm:min-w-[190px] 
-             focus-within:w-full sm:focus-within:md:w-[340px] max-w-[327px] md:max-w-[363px]
+             w-full max-w-[327px] md:max-w-[363px]
              px-3 sm:px-4 py-2 md:py-3 pl-[44px] sm:pl-[56px] 
              rounded-lg border border-[#454363] relative justify-self-end items-center"
           whileHover={{
-            y: -1,
-            scale: 1.02,
             boxShadow: "0 4px 12px rgba(27, 70, 224, 0.15)",
-          }}
-          whileFocus={{
-            scale: 1.02,
           }}
           transition={{ type: "spring", stiffness: 300, damping: 25 }}
         >
