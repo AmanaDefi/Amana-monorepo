@@ -22,16 +22,15 @@ import {
   SUPPORTED_CHAINS,
 } from "@/constants/chainConfig";
 import {
-  determineVaultTokenFromApprovedTokens,
   formatCurrency,
   getCurrentSlippage,
   getVaultErrorMessage,
   isZetachain,
   selectActions,
   convertUsdToEth,
-  getOnlyTokenSymbol,
   bigIntReviver,
   bigIntReplacer,
+  formatSlippageUSD,
 } from "@/utils/utils";
 import InteractionContainer from "./interactAPI";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
@@ -53,7 +52,6 @@ import {
   getLocalStorageObject,
   updateLocalStorageObject,
 } from "@/utils/localStorageUtils";
-import DepositModalArrowsIcon from "./svg/DepositModalArrowsIcon";
 import { getPublicClient } from "@/utils/getPublicClient";
 import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
 import ChainSelector from "./VaultsDetailsWrapper/components/ChainSelector";
@@ -83,7 +81,7 @@ export interface VaultInputsProps {
   vaultId: string;
   isDeposit: boolean;
   onTabChange: (tab: string) => void;
-  APY7DValue: string
+  APY7DValue: string;
 }
 
 export type ConversionOutput = {
@@ -114,10 +112,8 @@ export default function VaultInputs({
   isDeposit,
   onTabChange,
   selectedChain,
-  APY7DValue
+  APY7DValue,
 }: VaultInputsProps): JSX.Element {
-  const router = useRouter();
-  const pathname = usePathname();
   const [inputToken, setInputToken] = useState<Token | undefined>(
     selectedToken,
   );
@@ -693,7 +689,7 @@ export default function VaultInputs({
       const calculatedSlippageUSD =
         assetsConversionInUSD - tokenConversionInUSD;
 
-      const slippageAmountInUSDFormatted = formatUSDValue(
+      const slippageAmountInUSDFormatted = formatSlippageUSD(
         calculatedSlippageUSD,
       );
 
@@ -859,6 +855,13 @@ export default function VaultInputs({
         100 - (finalConvertedAmountInUSD * 100) / inputAmountValueInUSD,
       );
 
+      const calculatedSlippageUSD =
+        inputAmountValueInUSD - finalConvertedAmountInUSD;
+
+      const slippageAmountInUSDFormatted = formatSlippageUSD(
+        calculatedSlippageUSD,
+      );
+
       if (!vaultData.depositFeePaidFromGasTank && gasFeeInVaultAsset > 0n) {
         const totalLossUSD = inputAmountValueInUSD - finalConvertedAmountInUSD;
         const gasFeeUSD = parseFloat(gasFeeInUSD.replace(/[^0-9.]/g, ""));
@@ -869,6 +872,7 @@ export default function VaultInputs({
       if (inputAmountValue === debouncedInputBalance.value) {
         setConversionOutput({
           slippageActualValue: Number(slippageActualValue.toFixed(2)),
+          slippageAmountInUSDFormatted: slippageAmountInUSDFormatted,
           finalConvertedAmountInUSDFormatted: formatUSDValue(
             finalConvertedAmountInUSD,
           ),
@@ -1329,7 +1333,7 @@ export default function VaultInputs({
               isOutput={false}
               captionText={!isDeposit ? "Output Amount" : ""}
             />
-            <div className="mb-6 md:my-8">
+            <div className="md:my-6">
               <FeeDisplay
                 isDeposit={isDeposit}
                 vaultData={vaultData}
@@ -1472,7 +1476,11 @@ export default function VaultInputs({
           </motion.div>
         )}
       </AnimatePresence>
-      <APYChangeCard isDeposit={isDeposit} minReceived={minReceived} APYValue={APY7DValue} />
+      <APYChangeCard
+        isDeposit={isDeposit}
+        minReceived={minReceived}
+        APYValue={APY7DValue}
+      />
 
       {!(
         isDeposit &&

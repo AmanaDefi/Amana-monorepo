@@ -1,5 +1,4 @@
 "use client";
-import { getOnlyTokenSymbol } from "@/utils/utils";
 
 import { VaultData } from "@/types/types";
 import { ConversionOutput } from "@/components/VaultInputs";
@@ -38,12 +37,12 @@ export const ExpectedSlippageBlock: React.FC<ExpectedSlippageProps> = ({
 
   return (
     <div
-      className={`flex justify-between items-center py-1 text-white mt-8 ${className}`}
+      className={`flex justify-between items-center py-1 text-white mb-6 ${className}`}
     >
       <span className="text-white">Expected slippage:</span>
       <span className="font-normal flex-row gap-1">
-        ({conversionOutput.slippageActualValue.toFixed(2)}%){" "}
-        <span className="font-medium">{formattedUSDSlippage} </span>
+        {conversionOutput.slippageActualValue.toFixed(2)}%{" "}
+        <span className="font-medium">({formattedUSDSlippage}) </span>
       </span>
     </div>
   );
