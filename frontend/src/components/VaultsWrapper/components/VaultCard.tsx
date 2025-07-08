@@ -214,7 +214,6 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                 <p className="font-normal text-sm leading-4 text-white">
                   30d prediction
                 </p>
-                {renderPredictionDisplay()}
                 <div className="hover:cursor-pointer absolute right-[-10px] top-[-10px]">
                   <InfoIcon />
                 </div>
