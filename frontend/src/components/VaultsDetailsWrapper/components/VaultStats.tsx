@@ -14,7 +14,7 @@ import { formatTokenBalance, getOnlyTokenSymbol } from "@/utils/utils";
 import { APPROVED_TOKENS } from "@/constants/chainConfig";
 import PointsIcon from "@/components/svg/PointsIcon";
 import ResponsiveTooltip from "@/components/common/Tooltip";
-import { getPointsInfo } from "@/utils/helpers";
+
 
 interface VaultStatsProps {
   vaultData: VaultData;
@@ -232,8 +232,8 @@ export default function VaultStats({
   }
 
   return (
-    <div className="w-full flex flex-col md:flex-row md:justify-between space-y-4 md:space-y-0 mt-4 md:mt-0">
-      <div className="grid grid-cols-3 px-[26px] py-4 gap-4 md:gap-6 before-gradient-border rounded-lg max-h-[80px] w-full ">
+    <div className="w-full flex space-y-4 md:space-y-0 mt-4 md:mt-0">
+      <div className="flex flex-row justify-between items-center p-4 gap-4 md:gap-6 before-gradient-border rounded-lg max-h-[80px] w-full ">
         <LargeCardStat
           id="deposits"
           label="Deposits"

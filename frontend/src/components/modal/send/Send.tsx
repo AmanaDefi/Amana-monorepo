@@ -3,10 +3,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Modal } from "../base/Modal";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
 import Button from "@/components/common/Button";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import {
@@ -19,9 +19,16 @@ import {
   CHAIN_ID,
   chainConfigs,
   chainsWithCustomRpcs,
+  APPROVED_TOKENS,
 } from "@/constants/chainConfig";
 import { useWallets } from "@privy-io/react-auth";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { Token, Balance } from "@/types/types";
+import TokenIcon from "@/components/common/TokenIcon";
+import { useMultichainTokenBalanceForModal } from "@/hooks/useMultichainTokenBalanceForModal";
+import { formatTokenBalance, getOnlyTokenSymbol } from "@/utils/utils";
+import { useTokenPriceBySymbol } from "@/hooks/hooks";
+import { MiniSpinner } from "@/components/PendingDots";
 
 const sendSchema = z.object({
   recipientAddress: z
@@ -36,15 +43,135 @@ const sendSchema = z.object({
       return !isNaN(num) && num > 0;
     }, "Amount must be a positive number"),
   network: z.string().min(1, "Please select a network"),
+  token: z.string().optional(),
 });
 
 type SendFormData = z.infer<typeof sendSchema>;
+
+const TokenBalanceItem = ({
+  token,
+  selectedChain,
+  isSelected,
+  onClick,
+  onBalanceUpdate,
+  index,
+}: {
+  token: Token;
+  selectedChain: any;
+  isSelected: boolean;
+  onClick: () => void;
+  onBalanceUpdate: (
+    token: Token,
+    balance: Balance,
+    price: number,
+    isLoading: boolean,
+  ) => void;
+  index: number;
+}) => {
+  const { balance, isLoading } = useMultichainTokenBalanceForModal(
+    token,
+    selectedChain,
+  );
+  const price = useTokenPriceBySymbol(token.symbol) || 0;
+
+  useEffect(() => {
+    onBalanceUpdate(token, balance, price, isLoading);
+  }, [balance, price, isLoading, token, onBalanceUpdate]);
+
+  const balanceUSD = useMemo(() => {
+    if (!balance || !price) return 0;
+    return parseFloat(balance.formatted) * price;
+  }, [balance, price]);
+
+  const formattedBalance = useMemo(() => {
+    if (
+      !balance ||
+      balance.formatted === "0" ||
+      parseFloat(balance.formatted) === 0
+    ) {
+      return `0 ${getOnlyTokenSymbol(token.symbol)}`;
+    }
+    const formatted = formatTokenBalance(balance.formatted, token.symbol);
+    if (formatted.includes(getOnlyTokenSymbol(token.symbol))) {
+      return formatted;
+    }
+    return `${formatted} ${getOnlyTokenSymbol(token.symbol)}`;
+  }, [balance, token.symbol]);
+
+  const displayUSDValue = useMemo(() => {
+    if (
+      !balance ||
+      balance.formatted === "0" ||
+      parseFloat(balance.formatted) === 0
+    ) {
+      return "$0.00";
+    }
+
+    if (balanceUSD > 0 && balanceUSD < 0.01) {
+      return "<$0.01";
+    }
+
+    return `$${balanceUSD.toFixed(2)}`;
+  }, [balanceUSD, balance]);
+
+  return (
+    <motion.button
+      onClick={onClick}
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        layout: { duration: 0.3, ease: "easeInOut" },
+        delay: index * 0.03,
+        duration: 0.2,
+      }}
+      whileHover={{ scale: 0.98 }}
+      whileTap={{ scale: 0.98 }}
+      className={`flex items-center gap-3 rounded-[8px] border transition-colors duration-200 p-3 w-full ${
+        isSelected
+          ? "bg-[#0C1015] border-[#3E73C4]"
+          : "bg-transparent border-[#1D2A41] hover:bg-[#0C1015] hover:border-[#3E73C4]"
+      }`}
+    >
+      <div className="w-8 h-8 flex-shrink-0">
+        <TokenIcon token={token} icon={token.imgURL} imageSize="w-8 h-8" />
+      </div>
+      <div className="flex-1 text-left">
+        <div className="text-white text-[16px] font-normal">
+          {getOnlyTokenSymbol(token.symbol)}
+        </div>
+        <div className="text-[#535E73] text-[14px] font-normal">
+          {selectedChain?.name}
+        </div>
+      </div>
+      <div className="text-right">
+        <AnimatePresence mode="wait">
+          {isLoading ? (
+            <MiniSpinner size={12} color="#9A9CB3" />
+          ) : (
+            <div>
+              <div className="text-white text-[14px] font-normal">
+                {formattedBalance}
+              </div>
+              <div className="text-[#9A9CB3] text-[12px] font-normal">
+                {displayUSDValue}
+              </div>
+            </div>
+          )}
+        </AnimatePresence>
+      </div>
+    </motion.button>
+  );
+};
 
 export const Send = () => {
   const { step, closeAll, updateField, setLoading, setError, openStep } =
     useAuthStore();
   const [showNetworkSelection, setShowNetworkSelection] = useState(false);
+  const [showTokenSelection, setShowTokenSelection] = useState(false);
   const [networkSearchQuery, setNetworkSearchQuery] = useState("");
+  const [tokenSearchQuery, setTokenSearchQuery] = useState("");
+  const [selectedToken, setSelectedToken] = useState<Token | null>(null);
 
   const { walletAddress, activeChain, switchToChain, balance } =
     useMultiChain();
@@ -52,15 +179,124 @@ export const Send = () => {
   const activeWallet = wallets[0];
   const { connected } = useWallet();
 
+  const [tokenBalances, setTokenBalances] = useState<
+    Map<
+      string,
+      {
+        balance: Balance;
+        price: number;
+        isLoading: boolean;
+      }
+    >
+  >(new Map());
+
+  const getTokensForChain = useCallback((chain: any): Token[] => {
+    if (chain?.id === 7000 || chain?.id === 7001) {
+      return APPROVED_TOKENS[chain.id] || [];
+    }
+    return APPROVED_TOKENS[chain.id] || [];
+  }, []);
+
+  const availableTokens = useMemo(() => {
+    if (!activeChain) return [];
+    return getTokensForChain(activeChain);
+  }, [activeChain, getTokensForChain]);
+
+  const displayTokens = useMemo(() => {
+    let tokens = availableTokens;
+
+    if (tokenSearchQuery) {
+      const query = tokenSearchQuery.toLowerCase();
+      tokens = tokens.filter(
+        (token) =>
+          token.symbol.toLowerCase().includes(query) ||
+          token.address.toLowerCase().includes(query),
+      );
+    }
+
+    if (activeWallet?.walletClientType === "privy") {
+      return tokens.filter((token) => {
+        const tokenKey = `${token.address.toLowerCase()}-${activeChain?.id}`;
+        const tokenData = tokenBalances.get(tokenKey);
+
+        if (tokenData?.isLoading) return true;
+
+        return (
+          tokenData?.balance && parseFloat(tokenData.balance.formatted) > 0
+        );
+      });
+    }
+    return tokens;
+  }, [
+    availableTokens,
+    tokenSearchQuery,
+    activeWallet?.walletClientType,
+    tokenBalances,
+    activeChain,
+  ]);
+
+  const sortedTokens = useMemo(() => {
+    return [...displayTokens].sort((a, b) => {
+      const keyA = `${a.address.toLowerCase()}-${activeChain?.id}`;
+      const keyB = `${b.address.toLowerCase()}-${activeChain?.id}`;
+
+      const dataA = tokenBalances.get(keyA);
+      const dataB = tokenBalances.get(keyB);
+
+      if (dataA?.isLoading && !dataB?.isLoading) return -1;
+      if (!dataA?.isLoading && dataB?.isLoading) return 1;
+
+      const balanceA =
+        dataA?.balance && dataA?.price
+          ? parseFloat(dataA.balance.formatted) * dataA.price
+          : 0;
+      const balanceB =
+        dataB?.balance && dataB?.price
+          ? parseFloat(dataB.balance.formatted) * dataB.price
+          : 0;
+
+      if (balanceA !== balanceB) {
+        return balanceB - balanceA;
+      }
+
+      return a.symbol.localeCompare(b.symbol);
+    });
+  }, [displayTokens, tokenBalances, activeChain]);
+
+  // Callback to handle balance updates from TokenBalanceItem
+  const handleBalanceUpdate = useCallback(
+    (token: Token, balance: Balance, price: number, isLoading: boolean) => {
+      const tokenKey = `${token.address.toLowerCase()}-${activeChain?.id}`;
+      setTokenBalances((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(tokenKey, { balance, price, isLoading });
+        return newMap;
+      });
+    },
+    [activeChain],
+  );
+
   const validateAmount = (value: string) => {
     const num = parseFloat(value);
     if (isNaN(num) || num <= 0) {
       return "Amount must be a positive number";
     }
 
-    const userBalance = parseFloat(balance?.formatted || "0");
-    if (num > userBalance) {
-      return "Not enough tokens on your wallet";
+    if (selectedToken && activeChain) {
+      const tokenKey = `${selectedToken.address.toLowerCase()}-${activeChain.id}`;
+      const tokenData = tokenBalances.get(tokenKey);
+
+      if (tokenData?.balance) {
+        const tokenBalance = parseFloat(tokenData.balance.formatted);
+        if (num > tokenBalance) {
+          return `Not enough ${getOnlyTokenSymbol(selectedToken.symbol)} tokens. Available: ${tokenData.balance.formatted}`;
+        }
+      }
+    } else {
+      const userBalance = parseFloat(balance?.formatted || "0");
+      if (num > userBalance) {
+        return "Not enough tokens on your wallet";
+      }
     }
 
     return true;
@@ -72,6 +308,7 @@ export const Send = () => {
     formState: { errors, isValid },
     setValue,
     watch,
+    trigger,
   } = useForm<SendFormData>({
     resolver: zodResolver(sendSchema),
     mode: "onChange",
@@ -89,7 +326,37 @@ export const Send = () => {
     }
   }, []);
 
+  // reset token selection when network changes
+  useEffect(() => {
+    setSelectedToken(null);
+    setValue("token", undefined, { shouldValidate: true });
+    setTokenBalances(new Map());
+  }, [activeChain, setValue]);
+
+  // auto-select first token
+  useEffect(() => {
+    if (sortedTokens.length > 0 && !selectedToken && activeChain) {
+      const firstToken = sortedTokens[0];
+      setSelectedToken(firstToken);
+      setValue("token", firstToken.symbol, { shouldValidate: true });
+    } else if (sortedTokens.length === 0) {
+      setSelectedToken(null);
+      setValue("token", undefined, { shouldValidate: true });
+    }
+  }, [sortedTokens, selectedToken, setValue, activeChain]);
+
   const selectedNetworkValue = watch("network") || "";
+  const selectedTokenValue = watch("token") || "";
+
+  const tokenPlaceholder = useMemo(() => {
+    if (selectedToken) return getOnlyTokenSymbol(selectedToken.symbol);
+
+    if (sortedTokens.length === 0) return "No tokens available";
+    if (sortedTokens.length === 1)
+      return `Select ${getOnlyTokenSymbol(sortedTokens[0].symbol)}`;
+
+    return `Select token (${sortedTokens.length} available)`;
+  }, [selectedToken, sortedTokens]);
 
   const chainList =
     activeWallet?.walletClientType === "privy"
@@ -100,7 +367,6 @@ export const Send = () => {
             (chain) => chain.id !== CHAIN_ID["solana"],
           );
 
-  // Filter networks based on search query
   const filteredNetworks = chainList.filter((chainConfig) =>
     chainConfig.name.toLowerCase().includes(networkSearchQuery.toLowerCase()),
   );
@@ -111,7 +377,6 @@ export const Send = () => {
     );
 
     if (!chainConfig) {
-      console.log(`Chain config not found for: ${chainName}`);
       return;
     }
 
@@ -120,7 +385,7 @@ export const Send = () => {
     setValue("network", chainName, { shouldValidate: true });
 
     setShowNetworkSelection(false);
-    setNetworkSearchQuery(""); // Reset search query
+    setNetworkSearchQuery("");
 
     if (activeChain?.id === chain.id) {
       return;
@@ -128,17 +393,25 @@ export const Send = () => {
 
     try {
       await switchToChain(chain);
-    } catch (error) {
-      console.log("Failed to switch chain:", error);
-    }
+    } catch (error) {}
+  };
+
+  const handleTokenSelect = (token: Token) => {
+    setSelectedToken(token);
+    setValue("token", token.symbol, { shouldValidate: true });
+    setShowTokenSelection(false);
+    setTokenSearchQuery("");
   };
 
   const onSubmit = async (data: SendFormData) => {
+    if (sortedTokens.length > 0 && !selectedToken) {
+      setValue("token", "", { shouldValidate: true });
+      trigger("token");
+      return;
+    }
+
     try {
       setLoading(true);
-      console.log("Sending transaction:", data);
-      console.log("Active chain:", activeChain);
-
       closeAll();
     } catch (err) {
       setError("Failed to send transaction");
@@ -147,6 +420,10 @@ export const Send = () => {
       setLoading(false);
     }
   };
+
+  const shouldShowTokenError = useMemo(() => {
+    return errors.token && sortedTokens.length > 0;
+  }, [errors.token, sortedTokens.length]);
 
   if (!walletAddress) {
     return null;
@@ -163,7 +440,10 @@ export const Send = () => {
       <div className="flex justify-start">
         <button
           onClick={() => {
-            if (showNetworkSelection) {
+            if (showTokenSelection) {
+              setShowTokenSelection(false);
+              setTokenSearchQuery("");
+            } else if (showNetworkSelection) {
               setShowNetworkSelection(false);
               setNetworkSearchQuery("");
             } else {
@@ -171,9 +451,11 @@ export const Send = () => {
             }
           }}
           className="rounded-[8px] flex items-center justify-center w-10 h-10"
-          aria-label={showNetworkSelection ? "Back" : "Close"}
+          aria-label={
+            showNetworkSelection || showTokenSelection ? "Back" : "Close"
+          }
         >
-          {showNetworkSelection ? (
+          {showNetworkSelection || showTokenSelection ? (
             <ChevronLeftIcon width={16} height={16} />
           ) : (
             <CloseModalIcon width={16} height={16} />
@@ -188,10 +470,8 @@ export const Send = () => {
         className="text-sm font-normal text-white mt-5"
       >
         {showNetworkSelection ? (
-          // Network Selection Block
           <div className="space-y-4">
             <div>
-              {/* Search Field */}
               <div className="relative mb-4">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <MagnifyingGlassIcon className="h-5 w-5 text-[#535E73]" />
@@ -205,7 +485,6 @@ export const Send = () => {
                 />
               </div>
 
-              {/* Networks List */}
               <div
                 className="flex flex-col gap-2 max-h-[300px] overflow-y-auto mt-6 pr-1"
                 style={{
@@ -261,8 +540,92 @@ export const Send = () => {
               </div>
             </div>
           </div>
+        ) : showTokenSelection ? (
+          // token Selection Block
+          <div className="space-y-4">
+            <div>
+              <div className="relative mb-4">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <MagnifyingGlassIcon className="h-5 w-5 text-[#535E73]" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search tokens..."
+                  value={tokenSearchQuery}
+                  onChange={(e) => setTokenSearchQuery(e.target.value)}
+                  className="w-full rounded-[8px] pl-10 pr-4 py-3 text-[16px] font-normal text-white placeholder-[#535E73] bg-[#161C27] border border-[#2C2F36] transition-all duration-200 focus:outline-none focus:border-[#3E73C4] hover:border-[#3E73C4]"
+                />
+              </div>
+
+              <div
+                className="flex flex-col gap-2 max-h-[300px] overflow-y-auto mt-6 pr-1"
+                style={{
+                  scrollbarWidth: "thin",
+                  scrollbarColor: "#1B46E0 transparent",
+                }}
+              >
+                <style jsx>{`
+                  div::-webkit-scrollbar {
+                    width: 6px;
+                  }
+                  div::-webkit-scrollbar-track {
+                    background: #161c27;
+                  }
+                  div::-webkit-scrollbar-thumb {
+                    background-color: #1b46e0;
+                    border-radius: 4px;
+                  }
+                `}</style>
+                <p className="text-[#4874DB] text-[16px]">Available Tokens</p>
+
+                <AnimatePresence mode="wait">
+                  {sortedTokens.length === 0 ? (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      className="text-center text-[#535E73] py-8"
+                    >
+                      {tokenSearchQuery
+                        ? "No tokens found"
+                        : activeWallet?.walletClientType === "privy"
+                          ? "No tokens with balance available to send"
+                          : "No tokens available for this network"}
+                    </motion.div>
+                  ) : (
+                    <>
+                      {sortedTokens.map((token, index) => (
+                        <motion.div
+                          key={`${token.address}-${activeChain?.id}`}
+                          layout
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                          transition={{
+                            layout: { duration: 0.3, ease: "easeInOut" },
+                            opacity: { duration: 0.2 },
+                            y: { duration: 0.2 },
+                          }}
+                        >
+                          <TokenBalanceItem
+                            token={token}
+                            selectedChain={activeChain}
+                            isSelected={
+                              selectedToken?.address === token.address
+                            }
+                            onClick={() => handleTokenSelect(token)}
+                            onBalanceUpdate={handleBalanceUpdate}
+                            index={index}
+                          />
+                        </motion.div>
+                      ))}
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+          </div>
         ) : (
-          // Original Send Form
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <p className="text-[12px] md:text-[18px] font-bold mb-4">
@@ -290,7 +653,7 @@ export const Send = () => {
                   <ErrorInputIcon
                     width={16}
                     height={16}
-                    className="fill-[#FFC700]"
+                    className="text-[#FFC700]"
                   />
                   <p className="text-[#FFC700] text-[12px] font-normal">
                     {errors.recipientAddress.message}
@@ -351,10 +714,64 @@ export const Send = () => {
                   <ErrorInputIcon
                     width={16}
                     height={16}
-                    className="fill-[#FFC700]"
+                    className="text-[#FFC700]"
                   />
                   <p className="text-[#FFC700] text-[12px] font-normal">
                     {errors.network.message}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Token Selection */}
+            <div>
+              <p className="text-[18px] font-bold mb-4">Token</p>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowTokenSelection(true)}
+                  disabled={!activeChain}
+                  className={`w-full rounded-[8px] px-4 py-3 text-[16px] font-normal text-white placeholder-[#535E73] bg-[#161C27] border transition-all duration-200 focus:outline-none focus:border-[#3E73C4] hover:border-[#3E73C4] ${
+                    shouldShowTokenError
+                      ? "border-[#FFC700] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]"
+                      : "border-[#2C2F36]"
+                  } flex flex-row justify-between items-center ${
+                    !activeChain ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    {selectedToken && (
+                      <div className="w-[20px] h-[20px]">
+                        <TokenIcon
+                          token={selectedToken}
+                          icon={selectedToken.imgURL}
+                          imageSize="w-[20px] h-[20px]"
+                        />
+                      </div>
+                    )}
+                    <span
+                      className={
+                        selectedToken ? "text-white" : "text-[#535E73]"
+                      }
+                    >
+                      {tokenPlaceholder}
+                    </span>
+                  </div>
+                  <ChevronDownIcon className="w-5 h-5 text-[#9A9CB3]" />
+                </button>
+
+                <input type="hidden" {...register("token")} />
+              </div>
+
+              {shouldShowTokenError && (
+                <div className="flex gap-1 items-center mt-2">
+                  <ErrorInputIcon
+                    width={16}
+                    height={16}
+                    className="text-[#FFC700]"
+                  />
+                  <p className="text-[#FFC700] text-[12px] font-normal">
+                    Please select a token
                   </p>
                 </div>
               )}
@@ -375,13 +792,13 @@ export const Send = () => {
                 }`}
               />
               {errors.amount && (
-                <div className="flex gap-1 items-center mt-2">
+                <div className="flex gap-1 items-center mt-2 text-[#FFC700]">
                   <ErrorInputIcon
                     width={16}
                     height={16}
-                    className="fill-[#FFC700]"
+                    className="text-[#FFC700]"
                   />
-                  <p className="text-[#FFC700] text-[12px] font-normal">
+                  <p className="text-[12px] font-normal">
                     {errors.amount.message}
                   </p>
                 </div>

@@ -39,7 +39,6 @@ export const DepositInput = ({
     walletAddress,
     setChain,
   } = useFundWalletStore();
-  const selectedTokenPrice = useTokenPriceBySymbol(currency?.symbol);
   const [tokenBalance, setTokenBalance] = useState<Balance>(EMPTY_BALANCE);
   const { wallets } = useWallets();
   const activeWallet = wallets[0];
@@ -49,7 +48,7 @@ export const DepositInput = ({
       if (walletAddress && token && chain) {
         let balance = EMPTY_BALANCE;
         if (token.isNative) {
-          const publicClient = await getPublicClient(activeWallet, chain.id);
+          const publicClient = getPublicClient(chain.id);
           if (!publicClient) return;
 
           const balanceInEth = await publicClient.getBalance({
@@ -136,8 +135,6 @@ export const DepositInput = ({
 
     handleChainSelect(chain);
   };
-
-  const usdValue = Number(tokenBalance?.formatted ?? 0) * selectedTokenPrice;
   return (
     <div>
       <div className="relative flex w-full flex-col">

@@ -12,6 +12,7 @@ export type FundStep =
   | "selectChain"
   | "confirm"
   | "reconnectChain"
+  | "finishDeposit"
   | null;
 
 export enum BuyWithEnum {

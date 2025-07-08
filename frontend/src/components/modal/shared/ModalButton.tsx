@@ -32,8 +32,8 @@ const ModalButton = ({
         "group flex items-center justify-between gap-4 border border-[#535E73] bg-[#161C27]",
         "rounded-[8px] text-white text-[16px] font-bold hover:border-[#3E73C4] transition",
         {
-          "py-[10px] px-4 w-[275px] h-[60px]": isOptionsVariant,
-          "pl-4 pr-[25px] py-4 w-[240px] h-[64px] md:h-[80px]":
+          "py-[10px] px-4 w-[275px] min-h-[60px]": isOptionsVariant,
+          "pl-4 pr-[25px] py-4 w-[240px] min-h-[64px] md:h-[80px]":
             isAllWalletsVariant,
         },
         className,
@@ -55,12 +55,12 @@ const ModalButton = ({
         <div
           className={classNames("flex flex-col justify-between w-full", {
             "!justify-center": !text,
-            "h-[40px]": isOptionsVariant,
-            "h-[48px]": isAllWalletsVariant,
+            "min-h-[40px]": isOptionsVariant,
+            "min-h-[48px]": isAllWalletsVariant,
           })}
         >
           <span
-            className="text-[16px] font-normal md:text-[18px] md:font-bold leading-5 text-left flex-wrap"
+            className="text-[16px] font-normal md:text-[18px] md:font-bold leading-5 text-left whitespace-nowrap"
             style={{ letterSpacing: "-0.06em" }}
           >
             {label}

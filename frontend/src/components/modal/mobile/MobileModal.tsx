@@ -2,6 +2,7 @@ import { Dialog, DialogPanel } from "@headlessui/react";
 import { Fragment, ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { MobileModalHeader } from "./MobileModalHeader";
+import { MobileInfoBlock } from "./MobileInfoBlock";
 
 type MobileModalProps = {
   isOpen: boolean;
@@ -25,7 +26,7 @@ export const MobileModal = ({
   paddingClass = "pt-[20px] px-[20px] pb-[20px]",
   roundedClass = "rounded-t-[24px]",
   customCloseButton,
-  height = "full",
+  height = "h-full",
   maxHeight,
   noBlur = false,
   showHeader = false,
@@ -50,30 +51,40 @@ export const MobileModal = ({
             />
             <div className="fixed inset-x-0 bottom-0 flex justify-center">
               <DialogPanel as={Fragment}>
-                <motion.div
-                  key="mobile-modal"
-                  initial={{ y: "100%", opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: "100%", opacity: 0 }}
-                  transition={{
-                    type: "spring" as const,
-                    stiffness: 300,
-                    damping: 30,
-                  }}
-                  className={`relative w-full ${height} ${maxHeight} bg-[#14171F] ${roundedClass} text-white shadow-xl font-gotham before-modal-gradient-border overflow-visible block lg:hidden`}
-                >
-                  {customCloseButton ||
-                    (showHeader && (
-                      <MobileModalHeader
-                        onClose={onClose}
-                        infoText={headerInfoText}
-                        showInfoBlock={showInfoBlock}
-                      />
-                    ))}
-                  <div className={`${paddingClass} h-full overflow-y-auto`}>
-                    {children}
-                  </div>
-                </motion.div>
+                <div className="relative w-full">
+                  {showHeader && showInfoBlock && (
+                    <div className="absolute top-[16px] left-[16px] z-20">
+                      <MobileInfoBlock isLeft>
+                        💡 Connecting your wallet is like “logging in” to Web3.
+                        Select your wallet from the options to get started
+                      </MobileInfoBlock>
+                    </div>
+                  )}
+
+                  <motion.div
+                    key="mobile-modal"
+                    initial={{ y: "100%", opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: "100%", opacity: 0 }}
+                    transition={{
+                      type: "spring" as const,
+                      stiffness: 300,
+                      damping: 30,
+                    }}
+                    className={`relative w-full ${height} ${maxHeight} bg-[#14171F] ${roundedClass} text-white shadow-xl font-gotham before-modal-gradient-border overflow-visible block lg:hidden`}
+                  >
+                    {customCloseButton ||
+                      (showHeader && (
+                        <MobileModalHeader
+                          onClose={onClose}
+                          showInfoBlock={false}
+                        />
+                      ))}
+                    <div className={`${paddingClass} h-full overflow-y-auto`}>
+                      {children}
+                    </div>
+                  </motion.div>
+                </div>
               </DialogPanel>
             </div>
           </div>

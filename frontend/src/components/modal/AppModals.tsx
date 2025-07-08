@@ -1,6 +1,7 @@
 
 import { ChooseBuyWith } from "./TopUpModals/ChooseBuyWith";
 import { Deposit } from "./TopUpModals/DepositModal";
+import { FinishDeposit } from "./TopUpModals/FinishDepositModal";
 import { TopUpChainsModal } from "./TopUpModals/components/ChainsModal";
 import AllWAllets from "./allWallets/AllWallets";
 import ConnectChosenChain from "./connectChosenChainWallet/ConnectChosenChainWalletModal";
@@ -43,6 +44,7 @@ export const AppModals = () => {
       <Send />
       <TopUpChainsModal />
       <ConnectChosenChain />
+      <FinishDeposit />
     </>
   );
 };

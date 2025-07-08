@@ -21,8 +21,7 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import { CHAIN_ID } from "@/constants/chainConfig";
 
 const ConnectChosenChain = () => {
-  const { selectedChain, activeChain, connectSolana } =
-    useMultiChain();
+  const { selectedChain, activeChain, connectSolana } = useMultiChain();
 
   const { step, successAuth, closeAll, chosenChain } = useAuthStore();
   const {
@@ -42,7 +41,7 @@ const ConnectChosenChain = () => {
     select,
     connect: solanaConnect,
     disconnect,
-    publicKey,
+    connected,
   } = useWallet();
 
   const fundWalletConnect = () => {
@@ -56,13 +55,13 @@ const ConnectChosenChain = () => {
   } = useConnect({
     mutation: {
       onSuccess: async (result) => {
+        if (connected) {
+          disconnect();
+        }
         if (fundWalletStep === "reconnectChain") {
           setWalletAddress(result.accounts[0]);
           localStorage.removeItem("connectorId");
           return fundWalletConnect();
-        }
-        if (step === "connectInChosenChain" && publicKey) {
-          disconnect();
         }
         return successAuth(null, activeAccount || undefined, true);
       },
@@ -84,12 +83,14 @@ const ConnectChosenChain = () => {
     }
     setActiveConnector(connector);
     localStorage.setItem("connectorId", connector.id);
-
+    console.log({ chain, activeChain });
     connect(
       {
         connector,
         chainId:
-          fundWalletStep === "reconnectChain" ? chain.id : activeChain?.id,
+          fundWalletStep === "reconnectChain"
+            ? chain.id
+            : chosenChain?.id || activeChain?.id,
       },
       {
         onError: (error) => {
@@ -119,9 +120,10 @@ const ConnectChosenChain = () => {
   const solanaConnectors = solanaAdapters
     .filter((adapter) => {
       if (
-        adapter.adapter.name.toLowerCase() === "metamask" &&
-        !(adapter.adapter as WalletAdapter & { wallet?: { client?: any } })
-          ?.wallet?.client
+        (adapter.adapter.name.toLowerCase() === "metamask" &&
+          !(adapter.adapter as WalletAdapter & { wallet?: { client?: any } })
+            ?.wallet?.client) ||
+        adapter.adapter.name.toLowerCase() === "phantom"
       ) {
         return false;
       }
@@ -154,8 +156,12 @@ const ConnectChosenChain = () => {
   const shouldShowEvnWallets =
     (selectedChain === "evm" &&
       !activeAccount?.address &&
-      activeChain?.id !== CHAIN_ID["solana"]) ||
-    activeChain?.id !== CHAIN_ID["solana"];
+      (chosenChain || activeChain)?.id !== CHAIN_ID["solana"]) ||
+    (chosenChain || activeChain)?.id !== CHAIN_ID["solana"];
+
+  const filteredEvmConnectors = connectors.filter(
+    (con) => con.id !== "app.phantom",
+  );
 
   return (
     <Modal
@@ -186,7 +192,7 @@ const ConnectChosenChain = () => {
         >
           {shouldShowEvnWallets ? (
             <div className="flex flex-col gap-4 min-h-fit ">
-              {connectors.map((connector) => (
+              {filteredEvmConnectors.map((connector) => (
                 <ModalButton
                   variant="allWallets"
                   key={connector.id}

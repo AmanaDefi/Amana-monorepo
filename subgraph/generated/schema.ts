@@ -368,6 +368,32 @@ export class Vault extends Entity {
     this.set("cooldownPeriod", Value.fromI32(value));
   }
 
+  get minDeposit(): i32 {
+    let value = this.get("minDeposit");
+    if (!value || value.kind == ValueKind.NULL) {
+      return 0;
+    } else {
+      return value.toI32();
+    }
+  }
+
+  set minDeposit(value: i32) {
+    this.set("minDeposit", Value.fromI32(value));
+  }
+
+  get maxWithdraw(): i32 {
+    let value = this.get("maxWithdraw");
+    if (!value || value.kind == ValueKind.NULL) {
+      return 0;
+    } else {
+      return value.toI32();
+    }
+  }
+
+  set maxWithdraw(value: i32) {
+    this.set("maxWithdraw", Value.fromI32(value));
+  }
+
   get networkDescription(): string | null {
     let value = this.get("networkDescription");
     if (!value || value.kind == ValueKind.NULL) {

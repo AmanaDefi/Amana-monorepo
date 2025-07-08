@@ -111,18 +111,18 @@ const OnboardingContainer = () => {
 
   return (
     <>
-      <div className="flex flex-col items-center px-4 font-gotham mt-6 md:mt-0 3xl:mt-4">
+      <div className="flex flex-col items-center px-4 font-gotham mt-3 md:mt-0 3xl:mt-4">
         <AmanaLogo
           width={86}
           height={61}
-          className="w-[86px] h-[61px] 2xl:w-[122px] md:h-[85px] mb-6 md:mb-0 3xl:mb-10"
+          className="w-[86px] h-[61px] 2xl:w-[122px] md:h-[85px] mb-2 md:mb-0 3xl:mb-10"
         />
 
         <h1 className="text-[20px] lg:text-[36px] 2xl:text-[64px] font-bold gradient-text text-center mb-2 xl:mb-4 3xl:mb-6 max-h-[61px] xl:max-h-[71px]">
           What are <span className="">smart accounts?</span>
         </h1>
 
-        <p className="text-[14px] md:text-[16px] 2xl:text-[24px] text-[#535E73] font-normal md:font-medium text-center max-w-[273px] md:max-w-2xl 2xl:max-w-3xl max-h-[58px] mb-6 xl:mb-10 3xl:mb-[76px] font-gotham">
+        <p className="text-[14px] md:text-[16px] 2xl:text-[24px] text-[#535E73] font-normal md:font-medium text-center max-w-[273px] md:max-w-2xl 2xl:max-w-3xl max-h-[48px] mb-6 xl:mb-10 3xl:mb-[76px] font-gotham">
           A new, secure way to use DeFi — no seed phrases, no gas fees, just
           simple login and powerful features.
         </p>
@@ -231,7 +231,7 @@ const OnboardingContainer = () => {
           </div>
         </div>
 
-        <div className="flex justify-center mt-6 space-x-2">
+        <div className="flex justify-center mt-3 space-x-2">
           {smartAccountInfo.map((_, index) => (
             <button
               key={index}
@@ -247,7 +247,7 @@ const OnboardingContainer = () => {
         </div>
       </div>
 
-      <div className="max-w-[352px] mt-8 md:mt-6 3xl:mt-12 mb-6 mx-auto w-full">
+      <div className="max-w-[352px] mt-4 md:mt-6 3xl:mt-12  mx-auto w-full">
         <div
           className={`transition-opacity duration-300 ${
             (isMobile && !isLastSlide) || (isTablet && !isLastSlideTablet)

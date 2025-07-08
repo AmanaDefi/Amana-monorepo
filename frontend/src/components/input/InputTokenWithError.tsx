@@ -11,7 +11,6 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import { Chain } from "viem";
 import clsx from "clsx";
 import { BreathingValue, MiniSpinner } from "../PendingDots";
-import { shouldShowInputLoader, shouldShowUSDLoader } from "@/utils/tokenFormat";
 
 export type InputTokenWithErrorProps = {
   errorMessage?: string;
@@ -39,7 +38,7 @@ export type InputTokenWithErrorProps = {
   performanceFee?: number;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onSelectChain:((chain: Chain) => void) | undefined;
+  onSelectChain: ((chain: Chain) => void) | undefined;
   onSelectChainAndToken: ((chain: Chain, token: Token) => void) | undefined;
 } & Omit<HTMLProps<HTMLInputElement>, "value" | "onChange">;
 
@@ -85,17 +84,6 @@ export default function InputTokenWithError({
       selectedChain
     );
   }, [isDeposit, isOutput, tokenList, selectedChain]);
-
-  const inputLoaderVisible = shouldShowInputLoader(
-    loadingOutputToken,
-    isDeposit,
-    isOutput,
-  );
-  const usdLoaderVisible = shouldShowUSDLoader(
-    loadingOutputToken,
-    isDeposit,
-    isOutput,
-  );
 
   const renderTopSection = () => {
     if (!isOutput && isDeposit) {
@@ -155,19 +143,19 @@ export default function InputTokenWithError({
         : conversionOutput.finalConvertedAmountInUSDFormatted;
     }
 
-if (usdLoaderVisible) {
-  return (
-    <div className="flex items-center space-x-1">
-      <span>$</span>
-      <MiniSpinner size={12} />
-    </div>
-  );
-}
+    if (isOutput && loadingOutputToken) {
+      return (
+        <div className="flex items-center space-x-1">
+          <span>$</span>
+          <MiniSpinner size={12} />
+        </div>
+      );
+    }
 
     return (
       <BreathingValue
         value={`$ ${usdValue}`}
-        isBreathing={loadingOutputToken && !isOutput && isDeposit}
+        isBreathing={!isOutput && !!loadingOutputToken}
         className="text-[#535E73]"
       />
     );
@@ -179,21 +167,13 @@ if (usdLoaderVisible) {
 
       if (loadingOutputToken) {
         return (
-          <div className="flex items-center justify-center min-w-[60px] min-h-[32px]">
+          <div className="flex items-center justify-start min-w-[60px] min-h-[32px]">
             <MiniSpinner size={18} color="#3E73C4" />
           </div>
         );
       }
       return <span className="text-white text-2xl">{outputAmount}</span>;
     }
-
-if (inputLoaderVisible) {
-  return (
-    <div className="flex items-center justify-center min-w-[60px] min-h-[32px]">
-      <MiniSpinner size={18} color="#3E73C4" />
-    </div>
-  );
-}
 
     return (
       <BreathingValue
@@ -207,10 +187,12 @@ if (inputLoaderVisible) {
             onBlur={() => setIsInputFocused(false)}
           />
         }
-        isBreathing={loadingOutputToken && isDeposit && !isOutput}
+        isBreathing={!!loadingOutputToken}
       />
     );
   };
+
+  const shouldSwapValues = isOutput && isDeposit;
 
   const topSectionData = renderTopSection();
 
@@ -235,7 +217,7 @@ if (inputLoaderVisible) {
             gap: "4px 8px",
           }}
           className={clsx(
-            "w-full max-h-[77px] md:max-h-[75px] bg-[#161C27] pl-5 py-[11px] pr-[10px] rounded-lg border transition-all duration-200",
+            "w-full max-h-[77px] md:max-h-[75px] bg-[#161C27] pl-5 py-2 pr-[10px] rounded-lg border transition-all duration-200",
             errorMessage ? "border-red-500" : "border-[#535E73]",
             "hover:border-[#3E73C4]",
             isInputFocused && "border-[#3E73C4]",
@@ -265,13 +247,30 @@ if (inputLoaderVisible) {
 
           <div
             style={{ gridArea: "top-right" }}
-            className="flex items-center justify-end text-sm"
+            className={
+              shouldSwapValues
+                ? "flex justify-end items-start"
+                : "flex justify-end items-start text-sm"
+            }
           >
-            <p className="group-hover/max:text-white">{renderUSDValue()}</p>
+            {shouldSwapValues ? (
+              <span className="text-white text-2xl">{renderMainValue()}</span>
+            ) : (
+              <p className="group-hover/max:text-white">{renderUSDValue()}</p>
+            )}
           </div>
 
-          <div style={{ gridArea: "main-left" }} className="flex items-center">
-            <span className="text-white text-2xl">{renderMainValue()}</span>
+          <div
+            style={{ gridArea: "main-left" }}
+            className={shouldSwapValues ? "flex text-sm" : "flex "}
+          >
+            {shouldSwapValues ? (
+              <p className="group-hover/max:text-white text-[#535E73]">
+                {renderUSDValue()}
+              </p>
+            ) : (
+              <span className="text-white text-2xl">{renderMainValue()}</span>
+            )}
           </div>
 
           <div
@@ -295,7 +294,7 @@ if (inputLoaderVisible) {
               />
             ) : (
               <div className="flex items-center">
-                <div className="md:mr-2 relative flex-none w-5 h-5 border border-white rounded-full">
+                <div className="md:mr-2 relative flex-none w-5 h-5 border border-white rounded-full bg-[#10B981]">
                   <TokenIcon
                     token={selectedToken as Token}
                     icon={selectedToken?.imgURL}

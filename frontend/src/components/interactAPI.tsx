@@ -132,7 +132,7 @@ const handleDepositTransaction = async (
     } else {
       console.log("EVM transaction, waiting for receipt confirmation");
 
-      const publicClient = await getPublicClient(activeAccount);
+      const publicClient = getPublicClient(activeChain.id);
       if (
         publicClient &&
         receipt.transactionHash &&
@@ -253,7 +253,7 @@ const handleWithdrawTransaction = async (
 
     if (activeChain.id === CHAIN_ID.solana) {
     } else {
-      const publicClient = await getPublicClient(activeAccount);
+      const publicClient = getPublicClient(activeChain.id);
       if (
         publicClient &&
         receipt?.transactionHash &&
@@ -322,6 +322,7 @@ export default function InteractionContainer({
   hideStepsDisplay = false,
   setLabel,
   label,
+  outputAmountFormatted
 }: {
   step: number;
   setStep: Function;
@@ -341,6 +342,7 @@ export default function InteractionContainer({
   hideStepsDisplay?: boolean;
   setLabel: Dispatch<SetStateAction<string>>;
   label: string;
+  outputAmountFormatted: string
 }): JSX.Element {
   const { walletAddress } = useMultiChain();
   // Core transaction state
@@ -350,6 +352,7 @@ export default function InteractionContainer({
   const [lastEventTxHash, setLastEventTxHash] = useState("");
   const {
     setFinishedTransaction,
+    setLastDepositInfo,
     setLastTransactionStepFeedback,
     setTransactionStepFeedback,
     transactionStepFeedback,
@@ -868,6 +871,7 @@ export default function InteractionContainer({
         isTrackingActiveRef={isTrackingActiveRef}
         isDeposit={isDeposit}
         hideStepsDisplay={hideStepsDisplay}
+        outputAmountFormatted={outputAmountFormatted}
       />
     </div>
   );
@@ -908,6 +912,7 @@ function Interaction({
   isDeposit,
   hideStepsDisplay = false,
   lastEventTxHash,
+  outputAmountFormatted,
 }: {
   setStep: Function;
   setAction: Function;
@@ -945,6 +950,7 @@ function Interaction({
   isTrackingActiveRef: React.MutableRefObject<boolean>;
   isDeposit: boolean;
   hideStepsDisplay?: boolean;
+  outputAmountFormatted: string
 }): JSX.Element {
   const { wallets } = useWallets();
   const activeAccount = wallets[0];
@@ -968,7 +974,7 @@ function Interaction({
     };
   }, []);
 
-  const { isButtonDisabled } = useTransactionStore();
+const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
   
   // Get Bitcoin wallet from MultiChainProvider for Bitcoin deposits
   const { bitcoinWallet } = useMultiChain();
@@ -1288,14 +1294,6 @@ function Interaction({
     refreshBalance();
   }, [refreshBalance, vaultData?.id]);
 
-  useEffect(() => {
-    if (prevLebel.current !== "" && prevLebel.current !== label) {
-      console.log("handleDone, ", prevLebel.current, label);
-      handleDone();
-    }
-    prevLebel.current = label;
-  }, [label, handleDone]);
-
   const handleWalletConnect = () => {
     if (activeChain.id === zetachain.id) {
       openStep(isMobile ? "mobileOptionsA" : "optionsA");
@@ -1330,7 +1328,9 @@ function Interaction({
         </>
       )}
 
-      {finishedTransaction ? (
+      {finishedTransaction &&
+      (Object.keys(lastTransactionStepFeedback).length > 0 ||
+        Object.keys(transactionStepFeedback).length > 0) ? (
         <Button
           variant="special"
           className="w-full mt-10 md:mt-[47px] !max-h-[48px] md:!max-h-[54px]"
@@ -1482,73 +1482,80 @@ function Interaction({
       });
   }
 
-function handleInteraction(
-  vaultData: VaultData,
-  inputBalance: Balance,
-  inputToken: Token,
-  activeAccount: ConnectedWallet,
-  walletContext: WalletContextState | any,
-  setTransactionCompleted: (value: boolean) => void,
-  activeChain: Chain,
-  action: Action,
-  setCrosschainInvestHash: Function,
-  setcrossChainTxId: Function,
-  setInputBalance: Function,
-  setLastEventTxHash: Function,
-  bitcoinWallet?: any, // Add Bitcoin wallet parameter
-) {
-  switch (action) {
-    case Action.depositApprove:
-      return async () => {
-        const depositAmount = inputBalance.value;
-        const result = await Approvedeposit(
-          vaultData.id as Address,
-          inputToken.address as Address,
-          activeAccount,
-          activeChain,
-          depositAmount,
-        );
-        return result;
-      };
-    case Action.deposit:
-      return async () => {
-        const result = await handleDepositTransaction(
-          vaultData,
-          inputBalance,
-          inputToken,
-          walletContext,
-          activeAccount,
-          setTransactionCompleted,
-          activeChain,
-          setCrosschainInvestHash,
-          setcrossChainTxId,
-          setInputBalance,
-          setLastEventTxHash,
-          bitcoinWallet, // Pass Bitcoin wallet to handleDepositTransaction
-        );
-        return result;
-      };
-    case Action.withdraw:
-      return async () => {
-        const result = await handleWithdrawTransaction(
-          vaultData,
-          inputBalance,
-          inputToken,
-          walletContext,
-          activeAccount,
-          setTransactionCompleted,
-          activeChain,
-          setCrosschainInvestHash,
-          setcrossChainTxId,
-          setInputBalance,
-          setLastEventTxHash,
-        );
-        return result;
-      };
-    default:
-      return () => {
-        return false;
-      };
+  function handleInteraction(
+    vaultData: VaultData,
+    inputBalance: Balance,
+    inputToken: Token,
+    activeAccount: ConnectedWallet,
+    walletContext: WalletContextState | any,
+    setTransactionCompleted: (value: boolean) => void,
+    activeChain: Chain,
+    action: Action,
+    setCrosschainInvestHash: Function,
+    setcrossChainTxId: Function,
+    setInputBalance: Function,
+    setLastEventTxHash: Function,
+    bitcoinWallet?: any, // Add Bitcoin wallet parameter
+  ) {
+    switch (action) {
+      case Action.depositApprove:
+        return async () => {
+          const depositAmount = inputBalance.value;
+          const result = await Approvedeposit(
+            vaultData.id as Address,
+            inputToken.address as Address,
+            activeAccount,
+            activeChain,
+            depositAmount,
+          );
+          return result;
+        };
+      case Action.deposit:
+        return async () => {
+          setLastDepositInfo({
+            inputAmount: inputBalance.formatted,
+            outputAmount: outputAmountFormatted,
+            inputSymbol: inputToken?.symbol || "",
+            outputSymbol: vaultData.symbol,
+          });
+          const result = await handleDepositTransaction(
+            vaultData,
+            inputBalance,
+            inputToken,
+            walletContext,
+            activeAccount,
+            setTransactionCompleted,
+            activeChain,
+            setCrosschainInvestHash,
+            setcrossChainTxId,
+            setInputBalance,
+            setLastEventTxHash,
+            bitcoinWallet, // Pass Bitcoin wallet to handleDepositTransaction
+          );
+          return result;
+        };
+      case Action.withdraw:
+        return async () => {
+          const result = await handleWithdrawTransaction(
+            vaultData,
+            inputBalance,
+            inputToken,
+            walletContext,
+            activeAccount,
+            setTransactionCompleted,
+            activeChain,
+            setCrosschainInvestHash,
+            setcrossChainTxId,
+            setInputBalance,
+            setLastEventTxHash,
+          );
+          return result;
+        };
+      default:
+        return () => {
+          return false;
+        };
+    }
   }
 }
-}
+

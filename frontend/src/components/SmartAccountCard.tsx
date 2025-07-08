@@ -88,8 +88,8 @@ const SmartAccountCard = ({
 
   return (
     <div
-      className={`w-full max-w-[318px] mx-auto min-h-[376px] 
-             pl-10 pr-6 py-10 rounded-[16px] shadow-md bg-dark-card 
+      className={`w-full max-w-[318px] mx-auto min-h-[358px] md:min-h-[376px] 
+             pl-8 md:pl-10 pr-8 md:pr-6 py-8 md:py-10 rounded-[16px] shadow-md bg-dark-card 
              transition-all backdrop-blur-[20px] cursor-pointer before-gradient-border font-gotham ${className}`}
     >
       <div className="rounded-lg w-[56px] h-[56px] ">
@@ -102,7 +102,7 @@ const SmartAccountCard = ({
         />
       </div>
 
-      <div className="flex-1 flex flex-col mt-6">
+      <div className="flex-1 flex flex-col mt-4 md:mt-6">
         <h3 className="font-medium text-base mb-3 text-white flex-shrink-0">
           {title}
         </h3>

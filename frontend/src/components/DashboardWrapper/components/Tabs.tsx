@@ -19,10 +19,7 @@ import Button from "@/components/common/Button";
 import { WalletIcon } from "@/components/svg/sidebar/WalletIcon";
 import { useMyVaults } from "@/hooks/useMyVaults";
 import { VaultCard } from "@/components/VaultsWrapper/components/VaultCard";
-import {
-  MOCK_TRANSACTIONS,
-  type Transaction,
-} from "@/constants/mockTransactions";
+import { type Transaction } from "@/constants/mockTransactions";
 import { useUserTransactionsHistory } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { formatTimestamp, convertStringToBalance } from "@/utils/graphUtils";
@@ -32,7 +29,7 @@ import { MagnifyingGlassIcon } from "@heroicons/react/24/solid";
 import { useRouter } from "next/navigation";
 
 const ZetaChainIcon = "/ZetaChain.webp";
-const ProfileCircle = "/ProfileCircle.png"
+const ProfileCircle = "/ProfileCircle.png";
 
 const Tabs: React.FC<TabsProps> = ({
   children,
@@ -156,7 +153,7 @@ const TransactionItem: React.FC<{ transaction: Transaction }> = ({
 
       {/* Transaction Info */}
       <div className="flex flex-col gap-1 min-w-0">
-        <span className="font-bold text-sm md:text-lg capitalize truncate">
+        <span className="font-medium text-sm md:text-lg capitalize truncate">
           {transaction.type}
         </span>
         <span className="text-[12px] md:text-sm truncate">
@@ -177,7 +174,7 @@ const TransactionItem: React.FC<{ transaction: Transaction }> = ({
 
       {/* From Address */}
       <div className="flex flex-col gap-1 min-w-0">
-        <span className="font-bold text-sm md:text-lg">From</span>
+        <span className="font-medium text-sm md:text-lg">From</span>
         <span className="text-[12px] md:text-sm truncate">
           {transaction.from}
         </span>
@@ -205,7 +202,7 @@ interface PortfolioTabsProps {
   vaultAPYs?: VaultAPY[];
   vaultTotalAssets?: VaultTotalAssets[];
   loading?: boolean;
-  transactions?: Transaction[]; // New prop for when backend is ready
+  transactions?: Transaction[];
 }
 
 const PortfolioTabs: React.FC<PortfolioTabsProps> = ({
@@ -222,43 +219,47 @@ const PortfolioTabs: React.FC<PortfolioTabsProps> = ({
 
   const [networkSearchQuery, setNetworkSearchQuery] = useState("");
 
-  const { 
-    deposits, 
-    withdrawals, 
-    isLoading: txLoading, 
-    hasData 
+  const {
+    deposits,
+    withdrawals,
+    isLoading: txLoading,
+    hasData,
   } = useUserTransactionsHistory(walletAddress || undefined);
 
   // Combine transactions and convert format
   const subgraphTransactions = useMemo((): Transaction[] => {
     const allTxs: Transaction[] = [
-      ...deposits.map(dep => ({
+      ...deposits.map((dep) => ({
         id: dep.id,
-        type: 'received' as const,
+        type: "received" as const,
         timestamp: formatTimestamp(dep.timestamp),
         from: dep.user,
-        amount: convertStringToBalance(dep.amount, dep.vault.assetDecimals).formatted,
+        amount: convertStringToBalance(dep.amount, dep.vault.assetDecimals)
+          .formatted,
         token: dep.vault.assetSymbol,
-        status: 'completed' as const
+        status: "completed" as const,
       })),
-      ...withdrawals.map(wit => ({
+      ...withdrawals.map((wit) => ({
         id: wit.id,
-        type: 'sent' as const,
+        type: "sent" as const,
         timestamp: formatTimestamp(wit.timestamp),
         from: wit.user,
-        amount: convertStringToBalance(wit.amount, wit.vault.assetDecimals).formatted,
+        amount: convertStringToBalance(wit.amount, wit.vault.assetDecimals)
+          .formatted,
         token: wit.vault.assetSymbol,
-        status: 'completed' as const
-      }))
-    ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-    
+        status: "completed" as const,
+      })),
+    ].sort(
+      (a, b) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+    );
+
     return allTxs;
   }, [deposits, withdrawals]);
 
-  // Choose transaction source: subgraph, passed through props or mock data
-  const displayTransactions = hasData 
-    ? subgraphTransactions 
-    : (transactions || MOCK_TRANSACTIONS);
+  const displayTransactions = hasData
+    ? subgraphTransactions
+    : transactions || [];
 
   const handleEarningClick = () => {
     router.push("/");

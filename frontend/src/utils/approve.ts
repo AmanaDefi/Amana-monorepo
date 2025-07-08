@@ -20,7 +20,7 @@ export async function isApproved({
   amount,
   activeWallet
 }: HandleAllowanceProps): Promise<boolean> {
-  const publicClient = await getPublicClient(activeWallet);
+  const publicClient = getPublicClient(activeChain.id);
   if (!publicClient) return false;
 
   const contract = getContract({

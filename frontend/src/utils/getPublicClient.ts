@@ -9,49 +9,20 @@ import {
   http,
 } from "viem";
 
-const clientCache = new Map<string, PublicClient>();
 const walletClientCache = new Map<string, WalletClient>();
 
-export const getPublicClient = async (
-  wallet?: ConnectedWallet,
+export const getPublicClient = (
   activeChainId?: number,
-): Promise<PublicClient | null> => {
-  const chainId = activeChainId
-    ? activeChainId.toString()
-    : (wallet?.chainId?.split(":")[1] ?? "7000");
-    
-  if (clientCache.has(chainId)) {
-    return clientCache.get(chainId)!;
-  }
-
+) => {
   const chain =
-    chainsWithCustomRpcs().find((chain) => chain.id === Number(chainId)) ?? customZetachain;
-    console.log('chain.rpcUrls.default.http[0]',chain.rpcUrls.default.http[0])
+    chainsWithCustomRpcs().find(
+      (chain) => chain.id === Number(activeChainId),
+    ) ?? customZetachain;
 
-  if (!wallet || !!activeChainId) {
-    return createPublicClient({
-      chain: chain,
-      transport: http(chain.rpcUrls.default.http[0]),
-    }) as PublicClient;
-  }
-
-  const provider = await wallet?.getEthereumProvider();
-
-  if (!chain || !provider) {
-    console.log(
-      `Chain with id:${wallet?.chainId?.split(":")[1]} doesn't supported`,
-    );
-    return null;
-  }
-
-  const client = createPublicClient({
+  return createPublicClient({
     chain: chain,
-    transport: custom(provider),
+    transport: http(chain.rpcUrls.default.http[0]),
   }) as PublicClient;
-
-  clientCache.set(wallet?.chainId?.split(":")[1], client);
-
-  return client;
 };
 
 export const getWalletClient = async (

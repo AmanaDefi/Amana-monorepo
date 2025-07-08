@@ -1,9 +1,3 @@
-import { StaticImageData } from "next/image";
-import BrainImage from "@/brainImage.png";
-import SecureImage from "@/secureImage.png";
-import PowerImage from "@/powerImage.png";
-import FundImage from "@/fundImage.png";
-
 export enum IconTypes {
   PASSKEY = "PASSKEY",
   EMAIL = "EMAIL",
@@ -82,7 +76,7 @@ export const smartAccountInfo: SmartAccountInfo[] = [
       {
         text: "You can do this by either:",
         subItems: [
-          { text: "Send crypto from another wallet" },
+          { text: "Sending crypto from another wallet" },
           { text: "Paying by credit card" },
         ],
       },

@@ -1,7 +1,8 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import ResponsiveTooltip from "@/components/common/Tooltip";
+import classNames from "classnames";
 import { CardStatProps } from "@/components/common/CardStat";
+import { WithTooltip } from "./Tooltip";
 
 export default function LargeCardStat({
   id,
@@ -13,16 +14,24 @@ export default function LargeCardStat({
   tooltipChild,
 }: CardStatProps): JSX.Element {
   const valueVariants = {
-    initial: { opacity: 0, y: 10 },
+    initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: -10 },
+    exit: { opacity: 0, y: -20 },
   };
 
-  return (
-    <div className="w-full cursor-pointer" id={id}>
-      <p className="text-[#535E73] font-normal text-sm md:text-[16px] whitespace-nowrap w-1/2 md:w-full mb-1">
-        {label}
-      </p>
+  const uniformTransition = {
+    duration: 0.4,
+    ease: [0.25, 0.1, 0.25, 1] as const,
+  };
+
+  const cardContent = (
+    <div className={classNames("w-full", {"flex flex-col items-center justify-center": label === 'Your Wallet'}, {"flex flex-col items-end justify-center": label === 'Your rewards'})}>
+      <div className="flex items-center gap-2 mb-1">
+        <div className="text-[#535E73] font-normal text-sm md:text-[16px] whitespace-nowrap">
+          {label}
+        </div>
+      </div>
+
       {value ? (
         <>
           <AnimatePresence mode="wait">
@@ -32,7 +41,7 @@ export default function LargeCardStat({
               initial="initial"
               animate="animate"
               exit="exit"
-              transition={{ duration: 0.3 }}
+              transition={uniformTransition}
               className="text-lg md:text-[20px] max-h-[22px] font-normal md:font-semibold whitespace-nowrap text-white leading-0 overflow-hidden text-ellipsis min-w-0"
             >
               {value}
@@ -48,7 +57,7 @@ export default function LargeCardStat({
                 initial="initial"
                 animate="animate"
                 exit="exit"
-                transition={{ duration: 0.3 }}
+                transition={uniformTransition}
               >
                 {secondaryValue}
               </motion.p>
@@ -56,18 +65,32 @@ export default function LargeCardStat({
           )} */}
         </>
       ) : (
-        <>{children}</>
+        <div className="text-lg md:text-[20px] max-h-[22px] font-normal md:font-semibold whitespace-nowrap text-white leading-0 overflow-hidden text-ellipsis min-w-0">
+          {children}
+        </div>
       )}
+    </div>
+  );
 
-      {tooltip && tooltip !== "" && (
-        <ResponsiveTooltip
-          id={id}
-          content={<p className="w-52">{tooltip}</p>}
-        />
-      )}
-      {!tooltip && tooltipChild && (
-        <ResponsiveTooltip id={id} content={tooltipChild} />
-      )}
+  if (tooltip || tooltipChild) {
+    return (
+      <div className="w-full cursor-pointer">
+        <WithTooltip
+          content={typeof tooltip === "string" ? tooltip : ""}
+          tooltipChild={
+            tooltipChild || (typeof tooltip !== "string" ? tooltip : undefined)
+          }
+          subId={id}
+        >
+          <div className="inline-block w-full">{cardContent}</div>
+        </WithTooltip>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full cursor-pointer" id={id}>
+      {cardContent}
     </div>
   );
 }

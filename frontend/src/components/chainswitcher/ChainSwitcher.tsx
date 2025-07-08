@@ -5,15 +5,16 @@ import { useState, useRef, useEffect } from "react";
 import { Chain } from "viem";
 import { CHAIN_ICONS, chainsWithCustomRpcs } from "@/constants/chainConfig";
 import "react-toastify/dist/ReactToastify.css";
-import { Tooltip } from "react-tooltip";
 import { showErrorToast, showSuccessToast } from "@/toasts";
 import Image from "next/image";
 import { DropdownList } from "../VaultsWrapper/components/DropdownList";
 import Button from "../common/Button";
 import { useWallets } from "@privy-io/react-auth";
 import { useMultiChain } from "@/providers/MultiChainProvider";
+import { WithTooltip } from "../common/Tooltip";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
+
 
 // Destructure chainsWithCustomRpcs() to get zetaChain for default
 const [zetachain] = chainsWithCustomRpcs();
@@ -151,7 +152,8 @@ const ChainSwitcher: React.FC = () => {
 
   return (
     <div className="z-50 relative rounded-full " ref={dropdownRef}>
-      <Button
+      <WithTooltip content="Switch network" subId="chain-switcher">
+       <Button
         variant="secondary"
         disabled={!wallet && !publicKey}
         onClick={() => setIsOpen(!isOpen)}
@@ -167,8 +169,7 @@ const ChainSwitcher: React.FC = () => {
           />
         </div>
       </Button>
-
-      <Tooltip id="chain-switcher-tooltip" />
+      </WithTooltip>
 
       <DropdownList
         width={250}

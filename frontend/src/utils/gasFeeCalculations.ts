@@ -55,7 +55,7 @@ export const calculateGasFeeInVaultAsset = async (
 
   // Get public client for the appropriate chain
   const chainToUse = isZetachain(activeChain.id) ? activeChain : SUPPORTED_CHAINS[0];
-  const publicClient = await getPublicClient(undefined, chainToUse.id);
+  const publicClient = getPublicClient(chainToUse.id);
   
   if (!publicClient) {
     throw new Error(`Failed to get public client for chain ${chainToUse.id}`);
@@ -138,7 +138,7 @@ export const convertGasFeeToInputToken = async (
   }
 
   // If input token differs from vault token, convert gas fee back to input token terms
-  if (inputTokenZeta.address !== vaultData.inputToken.address) {
+  if (inputTokenZeta.address.toLowerCase() !== vaultData.inputToken.address.toLowerCase()) {
     const { amountOut } = await getPathDataAndAmountOut(
       gasFeeInVaultAsset,
       vaultData.inputToken,
