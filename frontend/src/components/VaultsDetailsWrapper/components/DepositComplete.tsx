@@ -3,6 +3,7 @@ import { EarnIcon } from "@/components/svg/sidebar/EarnIcon";
 import Button from "@/components/common/Button";
 import DiscordLogo from "@public/logo/discord.svg";
 import { VaultData, Token, Balance } from "@/types/types";
+import { useRouter } from "next/navigation";
 
 interface DepositCompleteProps {
   vaultData: VaultData;
@@ -26,8 +27,14 @@ const DepositComplete = ({
   depositedOutputSymbol,
   isDeposit,
 }: DepositCompleteProps) => {
+  const router = useRouter();
   const inputTokenSymbol = depositedInputSymbol;
   const outputTokenSymbol = depositedOutputSymbol;
+
+  const handleExploreClick = () => {
+    onClose(); 
+    router.push("/"); 
+  };
 
   const getTitle = () =>
     isDeposit ? "Deposit complete" : "Withdrawal complete";
@@ -131,7 +138,7 @@ const DepositComplete = ({
           </div>
 
           <Button
-            onClick={onClose}
+            onClick={handleExploreClick}
             variant="custom"
             className="!w-full !h-8 md:!h-10"
           >
