@@ -11,5 +11,7 @@ export const VAULT_TO_DEFILLAMA_POOL: Record<string, string> = {
   '0xe5fa0e4ba13d516908c5313b3375b7ede24bfe7a': '29be6a85-414f-4a66-b075-98863278912a',
   // Convex Eth mSETH/WETH  
   '0xf4fa4d8115e78acf52308fdbad10a5f9042991de': 'c130b363-10fa-46d9-8221-3b23ed8027b4',
+  // Aegis YUSD
+  '0x4cb4dfc521a5c44817a1fda79fb7eafaf6f1952e': '85307805-6873-4ed7-bfff-e0e871ca1d50',
  
 }; 

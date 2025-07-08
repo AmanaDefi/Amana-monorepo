@@ -119,8 +119,13 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
       });
     }, [vault.id, setHistoricalAPY]);
 
-    // Calculate latest APY value
-    const latestAPY = filteredChartPoints.length > 0 ? filteredChartPoints[filteredChartPoints.length - 1] : null;
+    const renderPredictionDisplay = () => {
+      return (
+        <div className="flex flex-row justify-between">
+          <p className="font-semibold text-xl leading-5 text-white">N/A</p>
+        </div>
+      );
+    };
 
 
     return (
@@ -214,6 +219,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                 <p className="font-normal text-sm leading-4 text-white">
                   30d prediction
                 </p>
+                {renderPredictionDisplay()}
                 <div className="hover:cursor-pointer absolute right-[-10px] top-[-10px]">
                   <InfoIcon />
                 </div>
