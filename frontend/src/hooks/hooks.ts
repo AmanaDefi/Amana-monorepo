@@ -48,7 +48,7 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import { zetaProvider } from "@/utils/providers";
 import { ethers, Interface } from "ethers";
 import { apiService } from "@/service";
-import { getVault30dAvgAPY } from '@/utils/defillama';
+import { getVault30dAvgAPY, getVaultHistoricalAPY } from '@/utils/defillama';
 import { VAULT_TO_DEFILLAMA_POOL } from "@/constants/defillamaPoolMapping";
 
 type CashedVaultData = {
@@ -823,3 +823,8 @@ export const useUserPortfolioFromGraph = (userAddress?: string) => {
     error
   };
 };
+
+// TEST: Log historical APY for Fluid USDC vault (replace with any mapped vaultId as needed)
+getVaultHistoricalAPY('0x5cd6e196ca1d85b8edfdf162d3a0c77268f42c69').then(data => {
+  console.log('[Historical APY TEST] Fluid USDC:', data);
+});

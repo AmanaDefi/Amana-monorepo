@@ -1,4 +1,4 @@
-import React, { forwardRef } from "react";
+import React, { forwardRef, useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useMultiChain } from "@/providers/MultiChainProvider";
@@ -18,6 +18,8 @@ import { AppButton } from "@/components/button/AppButton";
 import { VaultOverviewBlock } from "@/components/VaultOverviewBlock";
 import TableChart from "@/components/TableChart";
 import { useChartStore } from "@/store/chartStore";
+import { getVaultHistoricalAPY } from '@/utils/defillama';
+import { getFilteredChartData } from '@/utils/chart';
 
 const MOCK_DIGITS = 6.43;
 
@@ -33,8 +35,11 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
     const router = useRouter();
     const { walletAddress } = useMultiChain();
 
-    const { getHistoricalAPY, getPercentageChange, hasHistoricalData } =
+    const { getHistoricalAPY, getPercentageChange, hasHistoricalData, setHistoricalAPY } =
       useChartStore();
+
+    // Add state for chart range
+    const [chartRange, setChartRange] = useState<'30d' | '90d'>('30d');
 
     const vaultAPY = vaultAPYs.find((apy) => apy.vaultId === vault.id);
     const totalAssets = vaultTotalAssets.find(
@@ -48,6 +53,14 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
     const historicalData = getHistoricalAPY(vault.id);
     const percentageChange = getPercentageChange(vault.id);
     const hasChartData = hasHistoricalData(vault.id);
+
+    // Type guard to check if historicalData is array of objects with timestamp
+    function isHistoricalObjArray(arr: any[]): arr is { apy: number; timestamp: string | number }[] {
+      return arr.length > 0 && typeof arr[0] === 'object' && 'timestamp' in arr[0];
+    }
+
+    // Use utility to get filtered chart data
+    const { filteredTimestamps, filteredChartPoints } = getFilteredChartData(historicalData, chartRange);
 
     const handleVaultClick = (vaultId: string) => {
       router.push(`/vaults/${vaultId}`);
@@ -93,6 +106,18 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
         </div>
       );
     };
+
+    useEffect(() => {
+      getVaultHistoricalAPY(vault.id).then(data => {
+        if (data && Array.isArray(data)) {
+          const apyArray = data.map(d => d.apy);
+          setHistoricalAPY(vault.id, apyArray);
+        }
+      });
+    }, [vault.id, setHistoricalAPY]);
+
+    // Calculate latest APY value
+    const latestAPY = filteredChartPoints.length > 0 ? filteredChartPoints[filteredChartPoints.length - 1] : null;
 
     return (
       <div
@@ -196,15 +221,30 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
 
         {hasChartData && (
           <div className="flex flex-col w-full rounded-lg pt-2 bg-[#3E73C40D] border border-[#3E3C59]">
-            <div className="flex flex-row gap-1">
-              <p className="font-normal text-sm leading-4 text-white pl-[11px]">
+            <div className="flex flex-row gap-1 items-center justify-between px-2">
+              <p className="font-normal text-sm leading-4 text-white pl-[9px]">
                 Historical APY
               </p>
             </div>
-
+            {/* Chart range toggle */}
+            <div className="flex flex-row gap-2 px-2 pb-1 pt-1">
+              <button
+                className={`px-2 py-1 rounded text-xs font-semibold border ${chartRange === '30d' ? 'bg-blue-700 text-white border-blue-700' : 'bg-transparent text-blue-700 border-blue-700'}`}
+                onClick={e => { e.stopPropagation(); setChartRange('30d'); }}
+              >
+                30d
+              </button>
+              <button
+                className={`px-2 py-1 rounded text-xs font-semibold border ${chartRange === '90d' ? 'bg-blue-700 text-white border-blue-700' : 'bg-transparent text-blue-700 border-blue-700'}`}
+                onClick={e => { e.stopPropagation(); setChartRange('90d'); }}
+              >
+                90d
+              </button>
+            </div>
             <TableChart
-              points={historicalData}
+              points={filteredChartPoints}
               percentageChange={percentageChange}
+              timestamps={filteredTimestamps}
             />
           </div>
         )}

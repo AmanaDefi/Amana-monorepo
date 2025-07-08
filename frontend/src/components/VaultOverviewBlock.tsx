@@ -212,7 +212,7 @@ export const VaultOverviewBlock: React.FC<Props> = ({
                         vault.protocolPointsDescription
                           ? vault.protocolPointsDescription
                           : vault.protocol.name
-                      } Points`}
+                      } `}
                     </span>
                     <span className="text-white font-medium text-base">
                       {vault.protocolPoints} pts/$/day
