@@ -53,7 +53,6 @@ import {
   getLocalStorageObject,
   updateLocalStorageObject,
 } from "@/utils/localStorageUtils";
-import DepositModalArrowsIcon from "./svg/DepositModalArrowsIcon";
 import { getPublicClient } from "@/utils/getPublicClient";
 import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
 import ChainSelector from "./VaultsDetailsWrapper/components/ChainSelector";
@@ -144,7 +143,8 @@ export default function VaultInputs({
     }
   };
 
-  const { setIsButtonDisabled, setLastDepositInfo } = useTransactionStore();
+  const { setIsButtonDisabled, setLastDepositInfo, setLastWithdrawInfo } =
+    useTransactionStore();
 
   // Update label when isDeposit prop changes
   useEffect(() => {
@@ -990,12 +990,21 @@ export default function VaultInputs({
   // Reset input state after transaction completes or fails
   useEffect(() => {
     if (transactionCompleted) {
-      setLastDepositInfo({
-        inputAmount: displayValue,
-        outputAmount: conversionOutput.outputAmountFormatted,
-        inputSymbol: inputToken?.symbol || "",
-        outputSymbol: vaultData.symbol,
-      });
+      if (isDeposit) {
+        setLastDepositInfo({
+          inputAmount: displayValue,
+          outputAmount: conversionOutput.outputAmountFormatted,
+          inputSymbol: inputToken?.symbol || "",
+          outputSymbol: vaultData.symbol,
+        });
+      } else {
+        setLastWithdrawInfo({
+          inputAmount: displayValue,
+          outputAmount: conversionOutput.outputAmountFormatted, 
+          inputSymbol: vaultData.symbol, 
+          outputSymbol: inputToken?.symbol || vaultData.inputToken.symbol, 
+        });
+      }
 
       setInputBalance(EMPTY_BALANCE);
       setDisplayValue("0.00");
@@ -1007,7 +1016,11 @@ export default function VaultInputs({
       // Reset transactionCompleted to false after processing
       setTimeout(() => {
         setTransactionCompleted(false);
-        setLastDepositInfo(null);
+        if (isDeposit) {
+          setLastDepositInfo(null);
+        } else {
+          setLastWithdrawInfo(null);
+        }
       }, 1000);
     }
   }, [
@@ -1021,8 +1034,10 @@ export default function VaultInputs({
     vaultData.symbol,
     setTransactionCompleted,
     setLastDepositInfo,
+    setLastWithdrawInfo,
+    isDeposit, 
+    vaultData.inputToken.symbol, 
   ]);
-
   // Debounce the input balance in order to calculate the output amount
   useEffect(() => {
     setIsSlippageExceedingLimit(false);

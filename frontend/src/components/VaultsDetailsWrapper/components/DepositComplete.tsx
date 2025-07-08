@@ -13,6 +13,7 @@ interface DepositCompleteProps {
   depositedOutputAmount: string;
   depositedInputSymbol: string;
   depositedOutputSymbol: string;
+  isDeposit: boolean; 
 }
 
 const DepositComplete = ({
@@ -23,20 +24,48 @@ const DepositComplete = ({
   depositedOutputAmount,
   depositedInputSymbol,
   depositedOutputSymbol,
+  isDeposit,
 }: DepositCompleteProps) => {
   const inputTokenSymbol = depositedInputSymbol;
   const outputTokenSymbol = depositedOutputSymbol;
+
+  const getTitle = () =>
+    isDeposit ? "Deposit complete" : "Withdrawal complete";
+
+  const getDescription = () =>
+    isDeposit
+      ? "Your deposit has been completed successfully. You can see your position in Your Earnings now."
+      : "Your withdrawal has been completed successfully. The funds have been transferred to your wallet.";
+
+  const getTransactionLabel = () => (isDeposit ? "Deposited:" : "Withdrawn:");
+
+  const getFirstCardContent = () => {
+    if (isDeposit) {
+      return {
+        title: "Deposit More",
+        description: "Reinvest in this vault or explore others.",
+        buttonText: "Explore",
+      };
+    } else {
+      return {
+        title: "Deposit Again",
+        description: "Invest in this vault or explore others.",
+        buttonText: "Explore",
+      };
+    }
+  };
+
+  const firstCardContent = getFirstCardContent();
 
   return (
     <div className="flex flex-col gap-6 font-gotham">
       <div className="rounded-[16px] before-gradient-border px-4 py-8 bg-[#14171F]">
         <div className="flex flex-col mb-10">
           <p className="text-lg md:text-[24px] font-medium mb-1">
-            Deposit complete
+            {getTitle()}
           </p>
           <p className="text-[#4874db] text-sm md:text-[16px] font-normal leading-[1.75] max-w-[500px] md:max-w-[440px]">
-            Your deposit has been completed successfully. You can see your
-            position in Your Earnings now.
+            {getDescription()}
           </p>
         </div>
 
@@ -67,7 +96,7 @@ const DepositComplete = ({
               )}
             </div>
             <div className="flex flex-col font-bold text-sm justify-between">
-              Deposited:
+              {getTransactionLabel()}
               <div className="font-normal flex flex-row gap-1 items-center text-xs md:text-sm flex-wrap">
                 <p>{inputTokenSymbol}</p>
                 <ArrowRightIcon width={12} height={10} />
@@ -94,10 +123,10 @@ const DepositComplete = ({
                 height={32}
                 className="w-5 h-5 md:w-[34px] md:h-[32px]"
               />
-              <p>Deposit More</p>
+              <p>{firstCardContent.title}</p>
             </div>
             <p className="text-xs md:text-[16px] font-normal mt-[15px] max-w-[131px] md:max-w-[200px]">
-              Reinvest in this vault or explore others.
+              {firstCardContent.description}
             </p>
           </div>
 
@@ -106,7 +135,7 @@ const DepositComplete = ({
             variant="custom"
             className="!w-full !h-8 md:!h-10"
           >
-            Explore
+            {firstCardContent.buttonText}
           </Button>
         </div>
         <div className="py-4 md:py-[23px] px-4 md:px-[15px] shadow-xl font-gotham before-gradient-border bg-[#14171F] min-h-[171px] md:min-h-[222px] w-full md:max-w-[240px] rounded-[16px] flex flex-col justify-between">
