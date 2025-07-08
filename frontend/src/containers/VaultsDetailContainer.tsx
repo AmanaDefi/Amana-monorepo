@@ -127,6 +127,8 @@ const VaultsDetailContainer: React.FC<{
     isTransactionProcessing,
     setLastDepositInfo,
     lastDepositInfo,
+    setLastWithdrawInfo, 
+    lastWithdrawInfo,
   } = useTransactionStore();
 
   const { switchToChain, walletAddress, activeChain, selectedChain } =
@@ -388,11 +390,12 @@ const VaultsDetailContainer: React.FC<{
 
   const isWithdraw = !isDeposit;
 
-  const shouldShowDepositComplete =
+  const shouldShowTransactionComplete =
     finishedTransaction &&
-    isDeposit &&
     (Object.keys(lastTransactionStepFeedback).length > 0 ||
       Object.keys(transactionStepFeedback).length > 0);
+  
+  const currentTransactionInfo = isDeposit ? lastDepositInfo : lastWithdrawInfo;
 
   return vaultData ? (
     <div className=" font-gotham">
@@ -524,7 +527,7 @@ const VaultsDetailContainer: React.FC<{
 
       <section className="w-full flex flex-col justify-between xl:flex-row gap-4 mb-4 mt-8 md:mt-10 font-gotham">
         <AnimatePresence mode="wait" initial={false}>
-          {shouldShowDepositComplete ? (
+          {shouldShowTransactionComplete ? (
             <motion.div
               key="deposit-complete-block"
               initial={{ opacity: 0, y: 20 }}
@@ -536,27 +539,37 @@ const VaultsDetailContainer: React.FC<{
                 vaultData={vaultData}
                 selectedToken={selectedToken}
                 userVaultBalance={userVaultBalance}
+                isDeposit={isDeposit}
                 onClose={() => {
                   setFinishedTransaction(false);
                   setLastTransactionStepFeedback({});
                   setTransactionStepFeedback({});
                   setIsTransactionProcessing(false);
                   setLastDepositInfo(null);
+                  setLastWithdrawInfo(null);
 
                   if (vaultID) {
                     localStorage.removeItem(vaultID.toString());
                   }
                   // setTransactionCompleted(true);
                 }}
-                depositedInputAmount={lastDepositInfo?.inputAmount || "0"}
-                depositedOutputAmount={lastDepositInfo?.outputAmount || "0"}
+                depositedInputAmount={
+                  currentTransactionInfo?.inputAmount || "0"
+                }
+                depositedOutputAmount={
+                  currentTransactionInfo?.outputAmount || "0"
+                }
                 depositedInputSymbol={
-                  lastDepositInfo?.inputSymbol ||
-                  selectedToken?.symbol ||
-                  vaultData.inputToken.symbol
+                  currentTransactionInfo?.inputSymbol ||
+                  (isDeposit
+                    ? selectedToken?.symbol || vaultData.inputToken.symbol
+                    : vaultData.symbol)
                 }
                 depositedOutputSymbol={
-                  lastDepositInfo?.outputSymbol || vaultData.symbol
+                  currentTransactionInfo?.outputSymbol ||
+                  (isDeposit
+                    ? vaultData.symbol
+                    : selectedToken?.symbol || vaultData.inputToken.symbol)
                 }
               />
             </motion.div>

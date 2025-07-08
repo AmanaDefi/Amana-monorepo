@@ -65,6 +65,7 @@ import { useTransactionStore } from "@/store/transactionStore";
 import { formatTokenBalance, formatUSDValue } from "@/utils/tokenFormat";
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 import { zetachain } from "viem/chains";
+import { useAPYStore } from "@/store/APYStore";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -140,8 +141,6 @@ export default function VaultInputs({
     }
   };
 
-  const { setIsButtonDisabled, setLastDepositInfo } = useTransactionStore();
-
   // Update label when isDeposit prop changes
   useEffect(() => {
     setLabel(isDeposit ? "Invest" : "Withdraw");
@@ -151,8 +150,19 @@ export default function VaultInputs({
   const [step, setStep] = useState<number>(0);
   const [action, setAction] = useState<Action>(steps[0]);
   const [performanceFee, setPerformanceFee] = useState<number>(0);
+
+  const {
+    setIsButtonDisabled,
+    setLastDepositInfo,
+    setLastWithdrawInfo,
+    finishedTransaction,
+  } = useTransactionStore();
+
   const { selectedChainFromModal, setSelectedTokenFromModal } =
     useChainTokenModalStore();
+
+  const { setPreviousAPY, setCurrentAPY, setActiveTransactionVault } =
+    useAPYStore();
 
   useEffect(() => {
     async function handlePerformanceFee() {
@@ -991,15 +1001,46 @@ export default function VaultInputs({
     vaultData.depositFeePaidFromGasTank,
   ]);
 
+  useEffect(() => {
+    if (vaultData?.id && APY7DValue && Number(inputBalance.formatted) > 0) {
+      const hasExistingData = useAPYStore
+        .getState()
+        .hasAPYChangeData(vaultData.id);
+      if (!hasExistingData) {
+        setPreviousAPY(vaultData.id, Number(APY7DValue));
+        setActiveTransactionVault(vaultData.id);
+      }
+    }
+  }, [
+    vaultData?.id,
+    APY7DValue,
+    inputBalance.formatted,
+    setPreviousAPY,
+    setActiveTransactionVault,
+  ]);
+
   // Reset input state after transaction completes or fails
   useEffect(() => {
     if (transactionCompleted) {
-      setLastDepositInfo({
-        inputAmount: displayValue,
-        outputAmount: conversionOutput.outputAmountFormatted,
-        inputSymbol: inputToken?.symbol || "",
-        outputSymbol: vaultData.symbol,
-      });
+      if (vaultData?.id && APY7DValue) {
+        setCurrentAPY(vaultData.id, Number(APY7DValue));
+      }
+
+      if (isDeposit) {
+        setLastDepositInfo({
+          inputAmount: displayValue,
+          outputAmount: conversionOutput.outputAmountFormatted,
+          inputSymbol: inputToken?.symbol || "",
+          outputSymbol: vaultData.symbol,
+        });
+      } else {
+        setLastWithdrawInfo({
+          inputAmount: displayValue,
+          outputAmount: conversionOutput.outputAmountFormatted,
+          inputSymbol: vaultData.symbol,
+          outputSymbol: inputToken?.symbol || vaultData.inputToken.symbol,
+        });
+      }
 
       setInputBalance(EMPTY_BALANCE);
       setDisplayValue("0.00");
@@ -1011,7 +1052,11 @@ export default function VaultInputs({
       // Reset transactionCompleted to false after processing
       setTimeout(() => {
         setTransactionCompleted(false);
-        setLastDepositInfo(null);
+        if (isDeposit) {
+          setLastDepositInfo(null);
+        } else {
+          setLastWithdrawInfo(null);
+        }
       }, 1000);
     }
   }, [
@@ -1025,7 +1070,18 @@ export default function VaultInputs({
     vaultData.symbol,
     setTransactionCompleted,
     setLastDepositInfo,
+    setLastWithdrawInfo,
+    isDeposit,
+    vaultData.inputToken.symbol,
+    APY7DValue,
+    setCurrentAPY,
   ]);
+
+  useEffect(() => {
+    if (!finishedTransaction) {
+      setActiveTransactionVault(null);
+    }
+  }, [finishedTransaction, setActiveTransactionVault]);
 
   // Debounce the input balance in order to calculate the output amount
   useEffect(() => {
@@ -1480,6 +1536,7 @@ export default function VaultInputs({
         isDeposit={isDeposit}
         minReceived={minReceived}
         APYValue={APY7DValue}
+        vaultId={vaultId}
       />
 
       {!(
