@@ -301,7 +301,7 @@ export default function InputTokenWithError({
                     imageSize="w-5 h-5"
                   />
                 </div>
-                <p className="font-normal text-lg leading-none text-white">
+                <p className="font-normal text-base leading-none text-white ">
                   {selectedToken?.symbol
                     ? getOnlyTokenSymbol(selectedToken.symbol)
                     : ""}
