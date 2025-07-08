@@ -53,7 +53,10 @@ const userRowVariants = {
 
 export default function TopUsers({ users, searchTerm }: TopUsersProps) {
   const { wallets } = useWallets();
-  const currentUserAccount = wallets[0] || ZERO_ACCOUNT;
+  const filteredWallets = wallets.filter(
+    (wallet) => wallet.meta.id !== "app.phantom",
+  );
+  const currentUserAccount = filteredWallets[0] || ZERO_ACCOUNT;
 
   const getRankBadge = (rank: number) => {
     switch (rank) {

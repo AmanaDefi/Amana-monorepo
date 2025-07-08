@@ -82,7 +82,10 @@ const VaultsDetailContainer: React.FC<{
   const tabParam = searchParams.get("tab");
   const initialIsDeposit = tabParam !== "withdraw";
   const { wallets } = useWallets();
-  const user = wallets[0];
+  const filteredWallets = wallets.filter(
+    (wallet) => wallet.meta.id !== "app.phantom",
+  );
+  const user = filteredWallets[0];
   const wallet = useWallet();
 
   const [loading, setLoading] = useState<boolean>(true);
@@ -204,7 +207,7 @@ const VaultsDetailContainer: React.FC<{
       if (vaultInfo?.selectedChain) {
         try {
           const savedChain = JSON.parse(vaultInfo.selectedChain, bigIntReviver);
-          if (savedChain.id !== activeChain.id) {
+          if (savedChain.id !== activeChain?.id) {
           }
         } catch (error) {
           console.error("Error parsing selectedChain from localStorage", error);

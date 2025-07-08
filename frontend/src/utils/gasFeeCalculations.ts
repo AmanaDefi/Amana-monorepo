@@ -54,7 +54,7 @@ export const calculateGasFeeInVaultAsset = async (
   }
 
   // Get public client for the appropriate chain
-  const chainToUse = isZetachain(activeChain.id) ? activeChain : SUPPORTED_CHAINS[0];
+  const chainToUse = isZetachain(activeChain?.id) ? activeChain : SUPPORTED_CHAINS[0];
   const publicClient = getPublicClient(chainToUse.id);
   
   if (!publicClient) {
@@ -131,7 +131,7 @@ export const convertGasFeeToInputToken = async (
   activeChain: Chain
 ): Promise<bigint> => {
   // Get the ZRC20 equivalent for cross-chain
-  const inputTokenZeta = isZetachain(activeChain.id) ? inputToken : inputToken?.ZRC20equivalent;
+  const inputTokenZeta = isZetachain(activeChain?.id) ? inputToken : inputToken?.ZRC20equivalent;
 
   if (!inputTokenZeta) {
     return gasFeeInVaultAsset;

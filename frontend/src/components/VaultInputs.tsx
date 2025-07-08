@@ -133,7 +133,10 @@ export default function VaultInputs({
   const [allowInput, setAllowInput] = useState<boolean>(false);
   const [label, setLabel] = useState(isDeposit ? "Invest" : "Withdraw");
   const { wallets } = useWallets();
-  const activeWallet = wallets[0];
+  const filteredWallets = wallets.filter(
+    (wallet) => wallet.meta.id !== "app.phantom",
+  );
+  const activeWallet = filteredWallets[0];
   const selectChain = useMemo(() => selectedChain, [selectedChain]);
 
   const handleSelectChainAngToken = (chain: Chain, token: Token) => {
