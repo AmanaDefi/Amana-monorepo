@@ -25,9 +25,9 @@ export const SUPPORTED_TOKENS: TokenInfo[] = [
     bgColor: "bg-blue-500",
   },
   {
-    symbol: "TRX",
-    name: "Tron",
-    icon: "/tron.webp",
+    symbol: "AVAX",
+    name: "Avalanche",
+    icon: "/avalanche-avax-logo.png",
     bgColor: "bg-red-500",
   },
   {

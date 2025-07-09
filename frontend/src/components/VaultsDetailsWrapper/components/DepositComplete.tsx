@@ -3,8 +3,7 @@ import { EarnIcon } from "@/components/svg/sidebar/EarnIcon";
 import Button from "@/components/common/Button";
 import DiscordLogo from "@public/logo/discord.svg";
 import { VaultData, Token, Balance } from "@/types/types";
-import Image from "next/image";
-import USDCImage from "@/USDC.png";
+import { useRouter } from "next/navigation";
 
 interface DepositCompleteProps {
   vaultData: VaultData;
@@ -15,6 +14,7 @@ interface DepositCompleteProps {
   depositedOutputAmount: string;
   depositedInputSymbol: string;
   depositedOutputSymbol: string;
+  isDeposit: boolean; 
 }
 
 const DepositComplete = ({
@@ -25,38 +25,74 @@ const DepositComplete = ({
   depositedOutputAmount,
   depositedInputSymbol,
   depositedOutputSymbol,
+  isDeposit,
 }: DepositCompleteProps) => {
+  const router = useRouter();
   const inputTokenSymbol = depositedInputSymbol;
   const outputTokenSymbol = depositedOutputSymbol;
+
+  const handleExploreClick = () => {
+    onClose(); 
+    router.push("/"); 
+  };
+
+  const getTitle = () =>
+    isDeposit ? "Deposit complete" : "Withdrawal complete";
+
+  const getDescription = () =>
+    isDeposit
+      ? "Your deposit has been completed successfully. You can see your position in Your Earnings now."
+      : "Your withdrawal has been completed successfully. The funds have been transferred to your wallet.";
+
+  const getTransactionLabel = () => (isDeposit ? "Deposited:" : "Withdrawn:");
+
+  const getFirstCardContent = () => {
+    if (isDeposit) {
+      return {
+        title: "Deposit More",
+        description: "Reinvest in this vault or explore others.",
+        buttonText: "Explore",
+      };
+    } else {
+      return {
+        title: "Deposit Again",
+        description: "Invest in this vault or explore others.",
+        buttonText: "Explore",
+      };
+    }
+  };
+
+  const firstCardContent = getFirstCardContent();
 
   return (
     <div className="flex flex-col gap-6 font-gotham">
       <div className="rounded-[16px] before-gradient-border px-4 py-8 bg-[#14171F]">
         <div className="flex flex-col mb-10">
-          <p className="text-[24px] font-medium mb-1">Deposit complete</p>
-          <p className="text-[#4874db] text-[16px] font-normal leading-[1.75] max-w-[440px]">
-            Your deposit has been completed successfully. You can see your
-            position in Your Earnings now.
+          <p className="text-lg md:text-[24px] font-medium mb-1">
+            {getTitle()}
+          </p>
+          <p className="text-[#4874db] text-sm md:text-[16px] font-normal leading-[1.75] max-w-[500px] md:max-w-[440px]">
+            {getDescription()}
           </p>
         </div>
 
-        <div className="bg-[#161C27] border border-[#3E73C4] py-8 px-4 rounded-lg flex justify-between w-full">
+        <div className="bg-[#161C27] border border-[#3E73C4] py-6 md:py-8 px-4 md:px-4 rounded-lg flex justify-between w-full">
           <div className="flex flex-row gap-2">
-            <div className="relative w-[62px] h-[62px] flex items-center justify-center overflow-hidden">
-              {selectedToken?.imgURL || vaultData.inputToken.imgURL ? ( // Check if either input or vault has an image
+            <div className="relative w-[46px] md:w-[62px] h-[46px] md:h-[62px] flex items-center justify-center overflow-hidden">
+              {selectedToken?.imgURL || vaultData.inputToken.imgURL ? (
                 <>
                   <div className="absolute top-0 left-0">
                     <img
-                      src={selectedToken?.imgURL || "/USDC.png"} // Fallback for selectedToken if not passed/has no image
+                      src={selectedToken?.imgURL || "/USDC.png"}
                       alt={inputTokenSymbol}
-                      className="w-10 h-10 object-cover"
+                      className="w-[30px] h-[30px] md:w-10 md:h-10 object-cover"
                     />
                   </div>
                   <div className="absolute bottom-0 right-0">
                     <img
-                      src={vaultData.inputToken.imgURL || "/USDC.png"} // Use vault's inputToken image as it's the underlying asset of shares
+                      src={vaultData.inputToken.imgURL || "/USDC.png"}
                       alt={outputTokenSymbol}
-                      className="w-10 h-10 object-cover"
+                      className="w-[30px] h-[30px] md:w-10 md:h-10 object-cover"
                     />
                   </div>
                 </>
@@ -67,51 +103,63 @@ const DepositComplete = ({
               )}
             </div>
             <div className="flex flex-col font-bold text-sm justify-between">
-              Deposited:
-              <div className="font-normal flex flex-row gap-1 items-center">
+              {getTransactionLabel()}
+              <div className="font-normal flex flex-row gap-1 items-center text-xs md:text-sm flex-wrap">
                 <p>{inputTokenSymbol}</p>
                 <ArrowRightIcon width={12} height={10} />
                 <p>{outputTokenSymbol}</p>
               </div>
             </div>
           </div>
-          <div className="flex flex-col items-end justify-between">
-            {/* Use the new props for display */}
-            <p className="text-white-400 font-medium">
+          <div className="flex flex-col items-end justify-between text-xs md:text-base font-regular md:font-medium">
+            <p className="text-white-400">
               -{depositedInputAmount} {inputTokenSymbol}
             </p>
-            <p className="text-white-400 font-medium">
+            <p className="text-white-400">
               +{depositedOutputAmount} {outputTokenSymbol}
             </p>
           </div>
         </div>
       </div>
-      <div className="flex flex-row gap-[47px] ">
-        <div className="py-[21px] px-[20px] shadow-xl font-gotham before-gradient-border bg-[#14171F] max-h-[222px] min-w-[240px]">
-          <div className="flex flex-row gap-4 text-lg font-bold items-center">
-            <EarnIcon width={34} height={32} />
-            <p>Deposit More</p>
+      <div className="flex flex-row gap-2 md:gap-[47px]">
+        <div className="py-4 md:py-[21px] px-4 md:px-[20px] shadow-xl font-gotham before-gradient-border bg-[#14171F] min-h-[171px] md:min-h-[222px] w-full md:max-w-[240px] rounded-[16px] flex flex-col justify-between">
+          <div>
+            <div className="flex flex-row gap-4 text-sm md:text-lg font-bold items-center">
+              <EarnIcon
+                width={34}
+                height={32}
+                className="w-5 h-5 md:w-[34px] md:h-[32px]"
+              />
+              <p>{firstCardContent.title}</p>
+            </div>
+            <p className="text-xs md:text-[16px] font-normal mt-[15px] max-w-[131px] md:max-w-[200px]">
+              {firstCardContent.description}
+            </p>
           </div>
-          <p className="text-[16px] font-normal mt-[15px] max-w-[200px]">
-            Reinvest in this vault or explore others.
-          </p>
+
           <Button
-            onClick={onClose}
+            onClick={handleExploreClick}
             variant="custom"
-            className="!w-full !max-h-10 !mt-10"
+            className="!w-full !h-8 md:!h-10"
           >
-            Explore
+            {firstCardContent.buttonText}
           </Button>
         </div>
-        <div className="py-[23px] px-[15px] shadow-xl font-gotham before-gradient-border bg-[#14171F] max-h-[222px] min-w-[240px]">
-          <div className="flex flex-row gap-4 text-lg font-bold items-center">
-            <DiscordLogo height={34} className="w-[34px] h-[34px]" />
-            <p>Socials</p>
+        <div className="py-4 md:py-[23px] px-4 md:px-[15px] shadow-xl font-gotham before-gradient-border bg-[#14171F] min-h-[171px] md:min-h-[222px] w-full md:max-w-[240px] rounded-[16px] flex flex-col justify-between">
+          <div>
+            <div className="flex flex-row gap-4 text-sm md:text-lg font-bold items-center">
+              <DiscordLogo
+                height={34}
+                className="w-5 h-5 md:w-[34px] md:h-[34px]"
+              />
+              <p>Socials</p>
+            </div>
+            <p className="text-xs md:text-[16px] font-normal mt-[15px] md:mt-[13px] max-w-[131px] md:max-w-[210px]">
+              Subscribe to our socials.
+            </p>
           </div>
-          <p className="text-[16px] font-normal mt-[13px] max-w-[210px]">
-            Subscribe to our socials.
-          </p>
-          <Button variant="custom" className="!w-full !max-h-10 !mt-10">
+
+          <Button variant="custom" className="!w-full !h-8 md:!h-10">
             Check
           </Button>
         </div>

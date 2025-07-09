@@ -128,9 +128,6 @@ export default function LeaderboardContainer() {
     handleTabChange,
   } = useLeaderboardStore();
 
-  const { wallets } = useWallets();
-  const currentUserAccount = wallets[0] || ZERO_ACCOUNT;
-
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {

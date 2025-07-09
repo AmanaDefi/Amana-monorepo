@@ -6,8 +6,11 @@ import { useWallets, usePrivy } from "@privy-io/react-auth";
 
 export default function FAQ() {
   const { wallets } = useWallets();
+  const filteredWallets = wallets.filter(
+    (wallet) => wallet.meta.id !== "app.phantom",
+  );
   const { ready } = usePrivy();
-  const user = wallets[0];
+  const user = filteredWallets[0];
   const router = useRouter();
   useEffect(() => {
     if (!user && !ready) {

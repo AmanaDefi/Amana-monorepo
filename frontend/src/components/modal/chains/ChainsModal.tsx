@@ -283,7 +283,12 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
   const { publicKey } = useWallet();
   const { walletAddress, activeChain, selectedChain } = useMultiChain();
   const { wallets } = useWallets();
-  const activeAccount = wallets[0];
+  const filteredWallets = wallets.filter(
+    (wallet) => wallet.meta.id !== "app.phantom",
+  );
+  const activeAccount = filteredWallets[0];
+  console.log(filteredWallets);
+  
   const { openStep } = useAuthStore();
   const { setChain } = useAuthStore();
 
