@@ -7,6 +7,7 @@ import {
 } from "@/types/types";
 import { isZetachain } from "@/utils/utils";
 import { useTransactionStore } from "@/store/transactionStore";
+import { CHAIN_ID } from "@/constants/chainConfig";
 
 export enum DepositStep {
   SELECT_TOKEN = 0,
@@ -19,7 +20,21 @@ const mapActionToUserStep = (
   action: Action,
   isType2Transaction: boolean,
   isDeposit: boolean,
+  activeChainId?: number,
 ): DepositStep | null => {
+  // PATCH: For Bitcoin, map commit/reveal instead of approve/deposit
+  if (activeChainId === CHAIN_ID.bitcoin) {
+    switch (action) {
+      case Action.depositApprove:
+        return DepositStep.CONFIRM_DEPOSIT; // Commit step
+      case Action.deposit:
+        return DepositStep.CROSS_CHAIN_TRANSFER; // Reveal step
+      case Action.deposited:
+        return DepositStep.FINAL_CONFIRMATION;
+      default:
+        return null;
+    }
+  }
   if (isDeposit) {
     if (isType2Transaction) {
       switch (action) {
@@ -79,7 +94,21 @@ const mapActionToUserStep = (
 const getStepDescription = (
   step: DepositStep,
   isDeposit: boolean = true,
+  activeChainId?: number,
 ): string => {
+  // PATCH: Bitcoin-specific step descriptions
+  if (activeChainId === CHAIN_ID.bitcoin) {
+    switch (step) {
+      case DepositStep.CONFIRM_DEPOSIT:
+        return 'Commit (sign and broadcast the commit transaction)';
+      case DepositStep.CROSS_CHAIN_TRANSFER:
+        return 'Reveal (sign and broadcast the reveal transaction)';
+      case DepositStep.FINAL_CONFIRMATION:
+        return 'Deposit Complete (BTC sent to vault)';
+      default:
+        return 'Bitcoin deposit step';
+    }
+  }
   const operationType = isDeposit ? "deposit" : "withdrawal";
 
   switch (step) {
@@ -102,23 +131,28 @@ const getUserStepStatus = (
   isType2Transaction: boolean,
   isDeposit: boolean = true,
   shouldShowFinalStep: boolean,
+  activeChainId?: number,
 ): {
   status: TransactionStepStatus;
   description: string;
   txHash?: string;
   isWaitingTooLong?: boolean;
 } => {
+  // PATCH: Add logging for Bitcoin after skipping approveDeposit
+  if (activeChainId === CHAIN_ID.bitcoin) {
+    console.log('[useInstructionStepLogic][PATCH] Bitcoin stepper at step', step);
+  }
   const relevantActions: Action[] = [];
 
   for (const actionKey in Action) {
     const action = Action[actionKey as keyof typeof Action];
-    if (mapActionToUserStep(action, isType2Transaction, isDeposit) === step) {
+    if (mapActionToUserStep(action, isType2Transaction, isDeposit, activeChainId) === step) {
       relevantActions.push(action);
     }
   }
 
   let latestStatus = TransactionStepStatus.pending;
-  let description = getStepDescription(step, isDeposit);
+  let description = getStepDescription(step, isDeposit, activeChainId);
   let txHash: string | undefined;
   let isWaitingTooLong = false;
 
@@ -237,13 +271,22 @@ export const useInstructionStepLogic = ({
   }, [isTransactionProcessing, activeFeedback, isFirstStepActive]);
 
   const steps = useMemo(() => {
+    // PATCH: For Bitcoin, use commit/reveal steps
+    if (activeChainId === CHAIN_ID.bitcoin) {
+      return [
+        DepositStep.SELECT_TOKEN,
+        DepositStep.CONFIRM_DEPOSIT, // Commit
+        DepositStep.CROSS_CHAIN_TRANSFER, // Reveal
+        DepositStep.FINAL_CONFIRMATION,
+      ];
+    }
     return [
       DepositStep.SELECT_TOKEN,
       DepositStep.CONFIRM_DEPOSIT,
       DepositStep.CROSS_CHAIN_TRANSFER,
       DepositStep.FINAL_CONFIRMATION,
     ];
-  }, []);
+  }, [activeChainId]);
 
   const {
     progressPercent,
@@ -331,6 +374,7 @@ export const useInstructionStepLogic = ({
       isType2Transaction,
       isDeposit,
       shouldShowFinalStep,
+      activeChainId,
     );
     currentDesc = currentStepStatusObj.description;
 
@@ -359,7 +403,8 @@ export const useInstructionStepLogic = ({
     isType2Transaction,
     isDeposit,
     steps,
-    shouldShowFinalStep
+    shouldShowFinalStep,
+    activeChainId
   ]);
 
   return {

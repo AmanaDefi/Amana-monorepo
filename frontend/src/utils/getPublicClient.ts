@@ -19,6 +19,12 @@ export const getPublicClient = (
       (chain) => chain.id === Number(activeChainId),
     ) ?? customZetachain;
 
+  if (typeof window !== 'undefined' && (window as any).DEBUG_BITCOIN) {
+    console.log('[getPublicClient] Called with activeChainId:', activeChainId);
+    console.log('[getPublicClient] Resolved chain:', chain);
+    console.log('[getPublicClient] All available chains:', chainsWithCustomRpcs().map(c => c.id));
+  }
+
   return createPublicClient({
     chain: chain,
     transport: http(chain.rpcUrls.default.http[0]),
@@ -32,12 +38,14 @@ export const getWalletClient = async (
     return walletClientCache.get(wallet?.chainId?.split(":")[1])!;
   }
 
+  const chainIdStr = wallet?.chainId?.split(":")[1];
   const chain = chainsWithCustomRpcs().find(
-    (c) => c.id.toString() === wallet?.chainId?.split(":")[1],
+    (c) => c.id.toString() === chainIdStr,
   );
   if (!chain) {
-    console.log(
-      `Chain with id:${wallet?.chainId?.split(":")[1]} doesn't supported`,
+    console.error(
+      `[getWalletClient] Chain with id:${chainIdStr} doesn't supported.`,
+      { wallet, chainIdStr, availableChains: chainsWithCustomRpcs().map(c => c.id) }
     );
     return null;
   }
@@ -50,7 +58,7 @@ export const getWalletClient = async (
     transport: custom(provider),
   });
 
-  walletClientCache.set(wallet?.chainId?.split(":")[1], walletClient);
+  walletClientCache.set(chainIdStr, walletClient);
 
   return walletClient;
 };

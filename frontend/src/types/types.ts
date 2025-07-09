@@ -245,4 +245,8 @@ export interface ITxLocalStorage {
 
   transactionStepFeedback: TransactionStepMessages;
   lastTransactionStepFeedback: TransactionStepMessages;
+  
+  // Bitcoin-specific properties
+  bitcoinInscriptionData?: any;
+  bitcoinVaultPayload?: string;
 }

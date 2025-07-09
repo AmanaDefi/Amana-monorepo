@@ -292,6 +292,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
   const { openStep } = useAuthStore();
   const { setChain } = useAuthStore();
 
+ 
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
@@ -312,6 +313,31 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
   const [selectedTokenLocal, setSelectedTokenLocal] = useState<Token | null>(
     selectedTokenFromModal || null,
   );
+
+  useEffect(() => {
+    console.log('[ChainsModal][DEBUG] Rendered with:', {
+      selectedChainLocal,
+      selectedChainFromModal,
+      selectedTokenLocal,
+      selectedTokenFromModal,
+      bitcoinWallet,
+      publicKey,
+      walletAddress,
+      activeAccount,
+    });
+  }, [selectedChainLocal, selectedChainFromModal, selectedTokenLocal, selectedTokenFromModal, bitcoinWallet, publicKey, walletAddress, activeAccount]);
+
+
+  useEffect(() => {
+    if (selectedChainLocal?.id === CHAIN_ID.bitcoin) {
+      console.log('[ChainsModal][DEBUG] Bitcoin chain selected:', {
+        bitcoinWallet,
+        publicKey,
+        walletAddress,
+        activeAccount,
+      });
+    }
+  }, [selectedChainLocal, bitcoinWallet, publicKey, walletAddress, activeAccount]);
 
   const getTokensForChain = useCallback(
     (chain: Chain): Token[] => {
@@ -344,6 +370,18 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
       setTokenBalances(new Map());
     }
   }, [isOpen, selectedChainFromModal, selectedTokenFromModal]);
+
+  useEffect(() => {
+    if (selectedChainLocal) {
+      console.log('[ChainsModal][DEBUG] About to render tokens for chain:', selectedChainLocal.id, {
+        availableTokens,
+        bitcoinWallet,
+        publicKey,
+        walletAddress,
+        activeAccount,
+      });
+    }
+  }, [selectedChainLocal, availableTokens, bitcoinWallet, publicKey, walletAddress, activeAccount]);
 
   const handleBalanceUpdate = useCallback(
     (token: Token, balance: Balance, price: number, isLoading: boolean) => {
@@ -457,7 +495,24 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
     }
   };
 
-  const effectivePublicKey = selectedChainLocal?.id === CHAIN_ID.bitcoin && bitcoinWallet?.publicKey ? bitcoinWallet.publicKey : publicKey;
+  // PATCH: Always use bitcoinWallet.publicKey for Bitcoin, fallback to provider publicKey
+  const getEffectivePublicKey = () => {
+    if (selectedChainLocal?.id === CHAIN_ID.bitcoin) {
+      if (bitcoinWallet?.publicKey) return bitcoinWallet.publicKey;
+      // Fallback: try to get from provider (window.unisat)
+      if (typeof window !== 'undefined' && window.unisat && window.unisat.getPublicKey) {
+        try {
+          window.unisat.getPublicKey().then((pubKey) => {
+            console.warn('[ChainsModal][PATCH] Bitcoin wallet publicKey was missing/null, fetched from provider:', pubKey);
+          });
+        } catch (e) {
+          console.error('[ChainsModal][PATCH] Failed to fetch publicKey from provider:', e);
+        }
+      }
+    }
+    return publicKey;
+  };
+  const effectivePublicKey = getEffectivePublicKey();
   console.log({ walletAddress, publicKey });
 
   return (

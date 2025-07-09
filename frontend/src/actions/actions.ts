@@ -806,6 +806,41 @@ export const executeDeposit = async (
   setcrossChainTxId: Function,
   bitcoinWallet?: any, // Optional Bitcoin wallet for Bitcoin deposits
 ) => {
+  // --- PATCH: Handle Bitcoin logic and publicKey enforcement ---
+  if (activeChain?.id === CHAIN_ID.bitcoin) {
+    // Bitcoin deposit flow
+    console.log("🟠 Executing Bitcoin deposit flow");
+    // Defensive: Always use the bitcoinWallet.publicKey, fallback to provider publicKey if missing
+    let enforcedBitcoinWallet = bitcoinWallet;
+    if (bitcoinWallet && (!bitcoinWallet.publicKey || bitcoinWallet.publicKey === null)) {
+      // Try to get from provider (window.unisat, etc.)
+      try {
+        if (typeof window !== 'undefined' && window.unisat && window.unisat.getPublicKey) {
+          const pubKey = await window.unisat.getPublicKey();
+          enforcedBitcoinWallet = { ...bitcoinWallet, publicKey: pubKey };
+          console.warn('[executeDeposit][PATCH] Bitcoin wallet publicKey was missing/null, fetched from provider:', pubKey);
+        }
+      } catch (e) {
+        console.error('[executeDeposit][PATCH] Failed to fetch publicKey from provider:', e);
+      }
+    }
+    if (!enforcedBitcoinWallet || !enforcedBitcoinWallet.publicKey) {
+      throw new Error('Bitcoin wallet publicKey is required for Bitcoin deposits.');
+    }
+    const validation = validateBitcoinDeposit(enforcedBitcoinWallet, transactionAmount, vaultData);
+    if (!validation.isValid) {
+      throw new Error(validation.error || "Invalid Bitcoin deposit parameters");
+    }
+    return executeBitcoinDeposit({
+      vaultData,
+      bitcoinWallet: enforcedBitcoinWallet,
+      transactionAmount,
+      inputToken,
+      setcrossChainTxId,
+    });
+  }
+  // --- END PATCH ---
+
   if (activeChain?.id === CHAIN_ID.zetachain) {
     return executeDirectDeposit(
       vaultData,
@@ -824,28 +859,8 @@ export const executeDeposit = async (
       setcrossChainTxId,
       activeAccount,
     );
-  } else if (activeChain.id === CHAIN_ID.bitcoin) {
-    // Bitcoin deposit flow
-    console.log("🟠 Executing Bitcoin deposit flow");
-    
-    // Validate Bitcoin wallet is provided
-    if (!bitcoinWallet) {
-      throw new Error("Bitcoin wallet not connected. Please connect a Bitcoin wallet first.");
-    }
-    
-  
-    const validation = validateBitcoinDeposit(bitcoinWallet, transactionAmount, vaultData);
-    if (!validation.isValid) {
-      throw new Error(validation.error || "Invalid Bitcoin deposit parameters");
-    }
-    return executeBitcoinDeposit({
-      vaultData,
-      bitcoinWallet,
-      transactionAmount,
-      inputToken,
-      setcrossChainTxId,
-    });
   } else {
+    // Only run EVM logic for non-Bitcoin chains
     return executeCrossChainDeposit(
       vaultData,
       inputToken,
@@ -898,9 +913,22 @@ export const Approvedeposit = async (
   activeChain: Chain,
   transactionAmount: bigint,
 ) => {
+  // --- PATCH: Never run for Bitcoin chain ---
+  if (activeChain?.id === CHAIN_ID.bitcoin) {
+    console.warn('[Approvedeposit][PATCH] Skipping EVM approve logic for Bitcoin chain.');
+    return false;
+  }
+  // --- END PATCH ---
   const walletClient = await getWalletClient(activeAccount);
   if (!walletClient || !activeAccount?.address) {
-    console.log("No wallet client or active account found");
+    console.error('[Approvedeposit][DEBUG] No wallet client or active account found', {
+      vaultId,
+      inputToken,
+      activeAccount,
+      activeChain,
+      transactionAmount,
+      walletClient,
+    });
     return false;
   }
 
@@ -1419,7 +1447,14 @@ const executeDirectWalletTopup = async (
 ) => {
   const walletClient = await getWalletClient(activeAccount);
   if (!walletClient || !activeAccount?.address) {
-    console.log("No wallet client or active account found");
+    console.error('[executeDirectWalletTopup][DEBUG] No wallet client or active account found', {
+      inputToken,
+      activeAccount,
+      activeChain,
+      smartAccountAddress,
+      transactionAmount,
+      walletClient,
+    });
     return { transactionHash: null };
   }
 
@@ -1578,7 +1613,14 @@ const executeCrossChainWalletTopup = async (
 ) => {
   const walletClient = await getWalletClient(activeAccount);
   if (!activeAccount || !walletClient) {
-    console.log("No wallet client or active account found");
+    console.error('[executeCrossChainWalletTopup][DEBUG] No wallet client or active account found', {
+      inputToken,
+      activeAccount,
+      activeChain,
+      smartAccountAddress,
+      transactionAmount,
+      walletClient,
+    });
     return { transactionHash: null };
   }
 

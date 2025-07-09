@@ -46,6 +46,7 @@ import { ConnectedWallet, useWallets } from "@privy-io/react-auth";
 import { useAuthStore } from "@/store/authStore";
 import { zetachain } from "viem/chains";
 import { useMultiChain } from "@/providers/MultiChainProvider";
+import { executeBitcoinDeposit } from '@/actions/bitcoinActions';
 
 function isHex(value: string): value is `0x${string}` {
   return typeof value === "string" && value.startsWith("0x");
@@ -1161,6 +1162,7 @@ const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
     }
   }
 
+  // --- PATCH: Sync stepper with Bitcoin commit/reveal transactions ---
   async function handleMainAction(directAction?: Action) {
     const currenAction = directAction ?? action;
 
@@ -1181,6 +1183,69 @@ const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
         "📌 Please stay on this page to monitor progress across all networks!",
       );
     }
+
+    // --- BITCOIN PATCH: Handle commit/reveal steps ---
+    const isBitcoin = activeChain.id === CHAIN_ID.bitcoin;
+    if (isBitcoin && isDeposit) {
+      if (currenAction === Action.depositApprove) {
+        // Step 1: Commit transaction (creates inscription)
+        console.log("🟠 Executing Bitcoin commit step");
+        updateLocalTransactionFeedback(
+          currenAction,
+          TransactionStepStatus.processing,
+          "Creating Bitcoin inscription and preparing commit transaction...",
+        );
+        
+        try {
+          // Use the main executeBitcoinDeposit function which handles the full commit/reveal flow
+          const result = await executeBitcoinDeposit({
+            vaultData,
+            bitcoinWallet,
+            transactionAmount: inputBalance.value,
+            inputToken,
+            setcrossChainTxId
+          });
+          
+          updateLocalTransactionFeedback(
+            currenAction,
+            TransactionStepStatus.completed,
+            "Bitcoin deposit initiated successfully.",
+            result.transactionHash
+          );
+          
+          // Move to next step
+          setStep((prev: number) => prev + 1);
+          setIsTransactionProcessing(false);
+          return;
+          
+        } catch (error: any) {
+          updateLocalTransactionFeedback(
+            currenAction,
+            TransactionStepStatus.error,
+            `Bitcoin deposit failed: ${error?.message || 'Unknown error'}`,
+          );
+          setIsTransactionProcessing(false);
+          return;
+        }
+      }
+      
+      if (currenAction === Action.deposit) {
+        // Step 2: This step is handled by the executeBitcoinDeposit function
+        // Just move to final confirmation
+        console.log("🟠 Bitcoin deposit completed, moving to final confirmation");
+        updateLocalTransactionFeedback(
+          currenAction,
+          TransactionStepStatus.completed,
+          "Bitcoin deposit completed successfully.",
+        );
+        
+        // Move to final confirmation
+        setStep((prev: number) => prev + 1);
+        setIsTransactionProcessing(false);
+        return;
+      }
+    }
+    // --- END BITCOIN PATCH ---
 
     if (currenAction == Action.depositApprove) {
       trackEvent("Approve Clicked", {

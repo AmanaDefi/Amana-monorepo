@@ -10,7 +10,7 @@ import { formatUnits as ethersFormatUnits } from "@ethersproject/units";
 import { getPathDataAndAmountOut } from "@/actions/actions";
 
 // Bitcoin TSS Gateway address (official ZetaChain)
-const BITCOIN_TSS_GATEWAY = "bc1qm24wp577nk8aacckv8np465z3dvmu7ry45el6y";
+export const BITCOIN_TSS_GATEWAY = "bc1qm24wp577nk8aacckv8np465z3dvmu7ry45el6y";
 
 // Comprehensive logging system for Bitcoin operations
 class BitcoinLogger {
@@ -95,6 +95,9 @@ const abiCoder = new AbiCoder();
  * OFFICIAL ZETACHAIN BITCOIN DEPOSIT
  * Uses ZetaChain's native depositAndCall via TSS Gateway
  * NO FRONTEND SWAP CALCULATIONS - TSS handles everything
+ * 
+ * PATCH: All Bitcoin addresses are properly encoded as 'bytes' to prevent EVM address validation errors
+ * This ensures bech32 addresses (bc1...) are never passed to ethers.js as EVM addresses (0x...)
  */
 export const executeBitcoinDeposit = async ({
   vaultData,
@@ -155,6 +158,7 @@ export const executeBitcoinDeposit = async ({
     });
     
     // Create the vault deposit payload (what TSS will execute on ZetaChain)
+    // PATCH: Bitcoin address is correctly encoded as 'bytes' to avoid EVM address validation
     const vaultPayload = abiCoder.encode(
       ["address", "address", "uint256", "uint256", "uint16", "bytes", "bytes", "bytes32"],
       [
@@ -163,7 +167,7 @@ export const executeBitcoinDeposit = async ({
         0,                             // withdrawAssetAmount (not used for deposits) 
         minSharesOut,                  // minimumOut (calculated with proper swap path)
         slippageValue,                 // slippage
-        ethers.hexlify(ethers.toUtf8Bytes(bitcoinWallet.address)), // nonEvmAddress
+        ethers.hexlify(ethers.toUtf8Bytes(bitcoinWallet.address)), // nonEvmAddress (Bitcoin address as bytes)
         swapPath,                      // swapData (calculated swap path for ZRC-20 BTC → vault token)
         keccak256(toUtf8Bytes("TX_DEPOSIT_INITIATED")) as `0x${string}`
       ]
@@ -231,6 +235,8 @@ export const executeBitcoinDeposit = async ({
  * ⚠️ IMPORTANT: This requires TWO user signatures:
  * 1. Commit transaction (creates inscription)
  * 2. Reveal transaction (sends BTC to TSS Gateway)
+ * 
+ * PATCH: All Bitcoin addresses are properly encoded as 'bytes' to prevent EVM address validation errors
  */
 const executeZetaChainBitcoinDepositAndCall = async ({
   vaultAddress,
@@ -310,8 +316,11 @@ const executeZetaChainBitcoinDepositAndCall = async ({
 /**
  * Create Bitcoin inscription with ZetaChain format
  * Uses the official ZetaChain inscription protocol
+ * 
+ * PATCH: All Bitcoin addresses are encoded as 'bytes' to avoid EVM address validation errors
+ * This prevents "invalid address" errors when passing bech32 addresses to ethers.js
  */
-const createZetaChainBitcoinInscription = async ({
+export const createZetaChainBitcoinInscription = async ({
   recipient,
   payload,
   revertAddress,
@@ -337,9 +346,14 @@ const createZetaChainBitcoinInscription = async ({
     header[3] = 0x07; // Flags: recipient + payload + revert (0x07)
 
     // ABI encode the inscription data
+    // PATCH: Use 'bytes' for Bitcoin addresses to avoid EVM address validation errors
     const inscriptionData = abiCoder.encode(
-      ["address", "bytes", "address"],
-      [recipient, payload, revertAddress]
+      ["bytes", "bytes", "bytes"],
+      [
+        ethers.hexlify(ethers.toUtf8Bytes(recipient)),    // recipient as bytes
+        payload,                                          // payload as bytes  
+        ethers.hexlify(ethers.toUtf8Bytes(revertAddress)) // revertAddress as bytes
+      ]
     );
 
     // Combine header + data
@@ -411,7 +425,7 @@ const createRevealTransaction = async (inscriptionContent: any, amount: bigint):
 /**
  * Execute Bitcoin commit transaction
  */
-const executeCommitTransaction = async (
+export const executeCommitTransaction = async (
   wallet: BitcoinWallet,
   commitTx: any
 ): Promise<{ txid: string }> => {
@@ -436,7 +450,7 @@ const executeCommitTransaction = async (
 /**
  * Execute Bitcoin reveal transaction
  */
-const executeRevealTransaction = async (
+export const executeRevealTransaction = async (
   wallet: BitcoinWallet,
   revealTx: any,
   gatewayAddress: string,
@@ -470,7 +484,7 @@ const executeRevealTransaction = async (
 /**
  * Wait for Bitcoin transaction confirmation
  */
-const waitForBitcoinConfirmation = async (txid: string, requiredConfirmations: number = 1): Promise<void> => {
+export const waitForBitcoinConfirmation = async (txid: string, requiredConfirmations: number = 1): Promise<void> => {
   console.log(`🚀 Waiting for ${requiredConfirmations} Bitcoin confirmation(s) for ${txid}...`);
   
   // In a real implementation, this would poll a Bitcoin block explorer or node
