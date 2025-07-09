@@ -32,6 +32,7 @@ declare global {
       getPublicKey: () => Promise<string>;
       signMessage: (message: string) => Promise<string>;
       signTx: (tx: any) => Promise<string>;
+      signPsbt: (psbt: any) => Promise<string>;
     };
     xverse?: {
       BitcoinProvider?: {
@@ -166,10 +167,10 @@ export const useTemporaryBitcoinWallet = () => {
     
     return {
       address: accounts[0],
-      publicKey: publicKey,
+      publicKey: publicKey || '',
       network: network === 'livenet' ? 'mainnet' : 'testnet',
       walletType: 'unisat',
-      signTransaction: window.unisat.signTx,
+      signTransaction: window.unisat.signPsbt || window.unisat.signTx,
       signMessage: window.unisat.signMessage,
       getBalance: async () => {
         const balance = await window.unisat?.getBalance();
@@ -275,6 +276,45 @@ export const useTemporaryBitcoinWallet = () => {
       }
     }
   }, [connectWallet, getAvailableWallets]);
+
+  // NEW: Enhanced state persistence and synchronization
+  useEffect(() => {
+    if (typeof window !== 'undefined' && wallet) {
+      // Store wallet state for persistence
+      localStorage.setItem('temp_bitcoin_wallet_state', JSON.stringify({
+        address: wallet.address,
+        walletType: wallet.walletType,
+        network: wallet.network,
+        timestamp: Date.now()
+      }));
+    } else if (typeof window !== 'undefined' && !wallet) {
+      // Clear wallet state when disconnected
+      localStorage.removeItem('temp_bitcoin_wallet_state');
+    }
+  }, [wallet]);
+
+  // NEW: Handle wallet disconnection events (e.g., user disconnects in wallet extension)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && wallet) {
+      const handleWalletDisconnect = () => {
+        console.log('🟠 Bitcoin wallet disconnected by user');
+        disconnect();
+      };
+
+      // Listen for wallet disconnection events
+      window.addEventListener('beforeunload', handleWalletDisconnect);
+      
+      return () => {
+        window.removeEventListener('beforeunload', handleWalletDisconnect);
+      };
+    }
+  }, [wallet, disconnect]);
+
+  // Defensive: Never allow wallet to be a boolean
+  if (typeof wallet === "boolean") {
+    console.warn("[useTemporaryBitcoinWallet] Invalid wallet state detected:", wallet);
+    setWallet(null);
+  }
 
   return {
     // State

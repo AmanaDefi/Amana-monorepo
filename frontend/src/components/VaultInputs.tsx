@@ -1782,6 +1782,7 @@ export default function VaultInputs({
           setLabel={setLabel}
           label={label}
           outputAmountFormatted={conversionOutput.outputAmountFormatted}
+          bitcoinWallet={bitcoinWallet}
         />
       )}
     </>

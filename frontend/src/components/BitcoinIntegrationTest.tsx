@@ -1,277 +1,322 @@
-import React, { useState } from 'react';
-import { 
-  executeBitcoinDeposit, 
-  getBitcoinPathDataAndMinSharesOut, 
-  estimateBitcoinDepositOutput,
-  validateBitcoinDeposit,
-  debugBitcoinIntegration
-} from '@/actions/bitcoinActions';
-import { VaultData, Token } from '@/types/types';
-import { CHAIN_ID, APPROVED_TOKENS } from '@/constants/chainConfig';
-import { ZC_BTC_BTC_ADDRESS } from '@/constants';
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import { useMultiChain } from '@/providers/MultiChainProvider';
+import { useTemporaryBitcoinWallet } from '@/hooks/useBitcoinWallet';
+import { CHAIN_ID, chainConfigs } from '@/constants/chainConfig';
 
 const BitcoinIntegrationTest: React.FC = () => {
-  const [testResults, setTestResults] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [testResults, setTestResults] = useState<any>({});
+  const [isRunning, setIsRunning] = useState(false);
+  
+  // MultiChain Provider state
+  const { 
+    selectedChain, 
+    activeChain, 
+    walletAddress, 
+    bitcoinWallet: providerBitcoinWallet, 
+    bitcoinBalance,
+    connectBitcoin,
+    switchToChain,
+    disconnectWallet
+  } = useMultiChain();
+  
+  // Direct Bitcoin wallet hook
+  const { 
+    wallet: directBitcoinWallet, 
+    isConnected: directIsConnected, 
+    connectWallet: directConnectWallet,
+    disconnect: directDisconnect,
+    getAvailableWallets
+  } = useTemporaryBitcoinWallet();
 
-  const mockVaultData: VaultData = {
-    id: '0x1234567890abcdef',
-    inputToken: {
-      address: '0x9615152e180085f057c7708e8f05e5a7770a4561', // Example USDC address
-      symbol: 'USDC',
-      decimals: 6,
-      imgURL: '/usdc-logo.png',
-      price: 1,
-      balance: { value: BigInt(0), formatted: '0' },
-      isNative: false
-    },
-    // Add other required VaultData fields
-    name: 'Test Vault',
-    symbol: 'TEST',
-    decimals: 18,
-    totalSupply: BigInt(0),
-    pricePerShare: BigInt(0),
-    totalAssets: BigInt(0),
-    apy: 0,
-    chain: 'bitcoin',
-    strategy: 'test',
-    riskLevel: 'medium',
-    tvl: BigInt(0),
-    fees: { deposit: 0, withdrawal: 0, performance: 0 },
-    isActive: true,
-    description: 'Test vault for Bitcoin integration'
-  } as unknown as VaultData;
+  const runIntegrationTest = async () => {
+    setIsRunning(true);
+    const results: any = {};
 
-  const mockBitcoinWallet = {
-    address: 'bc1qtest123456789abcdef',
-    publicKey: 'test-public-key',
-    network: 'mainnet' as const,
-    signTransaction: async (tx: any) => 'mock-signature',
-    signMessage: async (msg: string) => 'mock-signature',
-    getBalance: async () => 100000000, // 1 BTC in satoshis
-    provider: null
-  };
-
-  // Get existing ZRC-20 BTC token from chainConfig
-  const bitcoinTokens = APPROVED_TOKENS[CHAIN_ID.bitcoin];
-  const bitcoinToken = bitcoinTokens?.[0]; // Native Bitcoin token
-  const mockBtcToken: Token = bitcoinToken?.ZRC20equivalent!;
-
-  const runTest = async (testName: string, testFn: () => Promise<any>) => {
-    setIsLoading(true);
-    console.log(`🧪 Running test: ${testName}`);
-    
     try {
-      const result = await testFn();
-      const testResult = {
-        name: testName,
-        status: 'PASS',
-        result,
-        timestamp: new Date().toISOString()
+      console.log("🧪 Starting Bitcoin Integration Test...");
+
+      // Test 1: Check wallet availability
+      const availableWallets = getAvailableWallets();
+      results.walletAvailability = {
+        available: availableWallets,
+        hasUnisat: availableWallets.includes('unisat'),
+        hasXverse: availableWallets.includes('xverse'),
+        hasLeather: availableWallets.includes('leather')
       };
-      
-      setTestResults(prev => [...prev, testResult]);
-      console.log(`✅ Test passed: ${testName}`, result);
-      return result;
-    } catch (error: any) {
-      const testResult = {
-        name: testName,
-        status: 'FAIL',
-        error: error.message,
-        timestamp: new Date().toISOString()
+
+      // Test 2: Check provider state before connection
+      results.providerStateBefore = {
+        selectedChain,
+        activeChainId: activeChain?.id,
+        walletAddress,
+        hasBitcoinWallet: !!providerBitcoinWallet,
+        bitcoinWalletAddress: providerBitcoinWallet?.address,
+        bitcoinBalance: bitcoinBalance?.formatted
       };
-      
-      setTestResults(prev => [...prev, testResult]);
-      console.error(`❌ Test failed: ${testName}`, error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  const runAllTests = async () => {
-    setTestResults([]);
-    
-    try {
-      // Test 1: Bitcoin configuration validation
-      await runTest('Bitcoin Configuration Check', async () => {
-        const debugResult = await debugBitcoinIntegration();
-        return {
-          canProceed: debugResult.canProceed,
-          btcAddress: ZC_BTC_BTC_ADDRESS,
-          hasValidAddress: ZC_BTC_BTC_ADDRESS.startsWith('0x')
-        };
-      });
+      // Test 3: Check direct hook state before connection
+      results.directStateBefore = {
+        hasWallet: !!directBitcoinWallet,
+        walletAddress: directBitcoinWallet?.address,
+        isConnected: directIsConnected
+      };
 
-      // Test 2: Bitcoin deposit validation
-      await runTest('Bitcoin Deposit Validation', async () => {
-        const validation = validateBitcoinDeposit(
-          mockBitcoinWallet,
-          BigInt(1000000), // 0.01 BTC
-          mockVaultData
-        );
-        return validation;
-      });
-
-      // Test 3: Bitcoin path calculation (NEW SIMPLIFIED APPROACH)
-      await runTest('Bitcoin Path Calculation (EVM-like)', async () => {
-        const pathResult = await getBitcoinPathDataAndMinSharesOut(
-          mockVaultData,
-          mockBtcToken,
-          BigInt(1000000), // 0.01 BTC
-          mockBitcoinWallet
-        );
+      // Test 4: Try connecting Bitcoin wallet if available
+      if (availableWallets.length > 0) {
+        console.log("🔗 Testing Bitcoin wallet connection...");
         
-        return {
-          swapPath: pathResult.swapPath,
-          minSharesOut: pathResult.minSharesOut.toString(),
-          estimatedOutput: pathResult.estimatedOutput.toString(),
-          approach: 'Uses ZRC-20 BTC.BTC address with existing swap function'
-        };
-      });
-
-      // Test 4: Bitcoin output estimation
-      await runTest('Bitcoin Output Estimation', async () => {
-        const estimation = await estimateBitcoinDepositOutput(
-          mockVaultData,
-          mockBtcToken,
-          BigInt(1000000), // 0.01 BTC
-          mockBitcoinWallet
-        );
-        
-        return {
-          estimatedVaultTokens: estimation.estimatedVaultTokens.toString(),
-          estimatedShares: estimation.estimatedShares.toString(),
-          conversionSteps: estimation.conversionSteps,
-          fees: estimation.fees
-        };
-      });
-
-      // Test 5: Swap function compatibility test
-      await runTest('Swap Function Compatibility', async () => {
-        try {
-          const { getPathDataAndAmountOut } = await import('@/actions/actions');
+                 try {
+           await directConnectWallet(availableWallets[0] as 'unisat' | 'xverse' | 'leather');
           
-          // Test with ZRC-20 BTC address (should work now)
-          const result = await getPathDataAndAmountOut(
-            BigInt(1000000), // 0.01 BTC
-            mockBtcToken,    // ZRC-20 BTC token
-            mockVaultData.inputToken, // USDC
-            mockVaultData.id,
-            500 // 5% slippage
-          );
+          // Wait a bit for state to sync
+          await new Promise(resolve => setTimeout(resolve, 2000));
           
-          return {
+          results.connectionTest = {
             success: true,
-            hasPath: !!result.encodedPath,
-            amountOut: result.amountOut.toString(),
-            approach: 'ZRC-20 BTC.BTC address works with existing swap function'
+            walletType: availableWallets[0],
+            connectedAddress: directBitcoinWallet?.address
           };
         } catch (error: any) {
-          return {
+          results.connectionTest = {
             success: false,
-            error: error.message,
-            note: 'This is the issue we are trying to fix'
+            error: error.message
           };
         }
-      });
+      } else {
+        results.connectionTest = {
+          skipped: true,
+          reason: "No Bitcoin wallets available"
+        };
+      }
 
-      console.log('🎉 All Bitcoin integration tests completed!');
-      
-    } catch (error) {
-      console.error('❌ Test suite failed:', error);
+      // Test 5: Check provider state after connection
+      results.providerStateAfter = {
+        selectedChain,
+        activeChainId: activeChain?.id,
+        walletAddress,
+        hasBitcoinWallet: !!providerBitcoinWallet,
+        bitcoinWalletAddress: providerBitcoinWallet?.address,
+        bitcoinBalance: bitcoinBalance?.formatted
+      };
+
+      // Test 6: Check direct hook state after connection
+      results.directStateAfter = {
+        hasWallet: !!directBitcoinWallet,
+        walletAddress: directBitcoinWallet?.address,
+        isConnected: directIsConnected
+      };
+
+      // Test 7: Test chain switching
+      if (directIsConnected) {
+        console.log("🔄 Testing chain switching...");
+        try {
+          await switchToChain(chainConfigs[CHAIN_ID.bitcoin]);
+          
+          // Wait for state update
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          results.chainSwitchTest = {
+            success: true,
+            finalSelectedChain: selectedChain,
+            finalActiveChainId: activeChain?.id
+          };
+        } catch (error: any) {
+          results.chainSwitchTest = {
+            success: false,
+            error: error.message
+          };
+        }
+      }
+
+      // Test 8: Test disconnect
+      if (directIsConnected) {
+        console.log("🔌 Testing wallet disconnect...");
+        try {
+          directDisconnect();
+          
+          // Wait for state update
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          results.disconnectTest = {
+            success: true,
+            finalSelectedChain: selectedChain,
+            finalWalletAddress: walletAddress
+          };
+        } catch (error: any) {
+          results.disconnectTest = {
+            success: false,
+            error: error.message
+          };
+        }
+      }
+
+      console.log("✅ Bitcoin Integration Test Complete");
+      results.testCompleted = true;
+
+    } catch (error: any) {
+      console.error("❌ Bitcoin Integration Test Failed:", error);
+      results.testError = error.message;
+    } finally {
+      setIsRunning(false);
     }
+
+    setTestResults(results);
   };
 
+  useEffect(() => {
+    setTestResults({
+      // Real-time state monitoring
+      providerState: {
+        selectedChain,
+        activeChainId: activeChain?.id,
+        walletAddress,
+        hasBitcoinWallet: !!providerBitcoinWallet,
+        bitcoinWalletAddress: providerBitcoinWallet?.address,
+        bitcoinBalance: bitcoinBalance?.formatted
+      },
+      directState: {
+        hasWallet: !!directBitcoinWallet,
+        walletAddress: directBitcoinWallet?.address,
+        isConnected: directIsConnected
+      },
+      availableWallets: getAvailableWallets(),
+      bitcoinChainId: CHAIN_ID.bitcoin
+    });
+  }, [
+    selectedChain, 
+    activeChain, 
+    walletAddress, 
+    providerBitcoinWallet, 
+    bitcoinBalance,
+    directBitcoinWallet,
+    directIsConnected,
+    getAvailableWallets
+  ]);
+
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6 text-center">
-          🧪 Bitcoin Integration Test Suite
-        </h1>
-        
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Test Overview</h2>
-          <div className="bg-blue-50 p-4 rounded-lg mb-4">
-            <p className="text-sm text-blue-800">
-              <strong>New Approach:</strong> Use ZRC-20 BTC.BTC address ({ZC_BTC_BTC_ADDRESS}) 
-              with existing swap functions, treating it as 1:1 with native BTC.
-            </p>
-          </div>
-          
+    <div className="p-6 bg-gray-900 text-white rounded-lg max-w-4xl mx-auto">
+      <h2 className="text-2xl font-bold mb-4">🧪 Bitcoin Integration Test</h2>
+      
+      <div className="mb-6">
           <button
-            onClick={runAllTests}
-            disabled={isLoading}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50"
-          >
-            {isLoading ? '🔄 Running Tests...' : '🚀 Run All Tests'}
+          onClick={runIntegrationTest}
+          disabled={isRunning}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 rounded"
+        >
+          {isRunning ? "Running Test..." : "Run Integration Test"}
           </button>
         </div>
 
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-xl font-semibold mb-4">Test Results</h2>
-          
-                     {testResults.length === 0 ? (
-             <p className="text-gray-500">No tests run yet. Click &quot;Run All Tests&quot; to start.</p>
-           ) : (
-            <div className="space-y-4">
-              {testResults.map((test, index) => (
-                <div
-                  key={index}
-                  className={`p-4 rounded-lg border-l-4 ${
-                    test.status === 'PASS' 
-                      ? 'bg-green-50 border-green-500' 
-                      : 'bg-red-50 border-red-500'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold">
-                      {test.status === 'PASS' ? '✅' : '❌'} {test.name}
-                    </h3>
-                    <span className="text-sm text-gray-500">
-                      {new Date(test.timestamp).toLocaleTimeString()}
-                    </span>
-                  </div>
-                  
-                  {test.status === 'PASS' ? (
-                    <pre className="text-sm bg-gray-100 p-2 rounded overflow-x-auto">
-                      {JSON.stringify(test.result, null, 2)}
-                    </pre>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Real-time State */}
+        <div className="bg-gray-800 p-4 rounded">
+          <h3 className="text-lg font-semibold mb-3">🔄 Real-time State</h3>
+          <pre className="text-sm overflow-auto">
+            {JSON.stringify(testResults, null, 2)}
+          </pre>
+        </div>
+
+        {/* Test Results */}
+        <div className="bg-gray-800 p-4 rounded">
+          <h3 className="text-lg font-semibold mb-3">📊 Test Results</h3>
+          <div className="space-y-2 text-sm">
+            {testResults.walletAvailability && (
+              <div>
+                <strong>Wallet Availability:</strong>
+                <div className="ml-4">
+                  {testResults.walletAvailability.available.length > 0 ? (
+                    testResults.walletAvailability.available.map((wallet: string) => (
+                      <div key={wallet} className="text-green-400">✅ {wallet}</div>
+                    ))
                   ) : (
-                    <div className="text-red-700 text-sm">
-                      <strong>Error:</strong> {test.error}
+                    <div className="text-red-400">❌ No wallets available</div>
+                  )}
+                </div>
+                  </div>
+            )}
+
+            {testResults.connectionTest && (
+              <div>
+                <strong>Connection Test:</strong>
+                <div className="ml-4">
+                  {testResults.connectionTest.success ? (
+                    <div className="text-green-400">
+                      ✅ Connected to {testResults.connectionTest.walletType}
+                    </div>
+                  ) : testResults.connectionTest.skipped ? (
+                    <div className="text-yellow-400">
+                      ⏭️ Skipped: {testResults.connectionTest.reason}
+                    </div>
+                  ) : (
+                    <div className="text-red-400">
+                      ❌ Failed: {testResults.connectionTest.error}
                     </div>
                   )}
                 </div>
-              ))}
+              </div>
+            )}
+
+            {testResults.chainSwitchTest && (
+              <div>
+                <strong>Chain Switch Test:</strong>
+                <div className="ml-4">
+                  {testResults.chainSwitchTest.success ? (
+                    <div className="text-green-400">
+                      ✅ Switched to Bitcoin chain
+                    </div>
+                  ) : (
+                    <div className="text-red-400">
+                      ❌ Failed: {testResults.chainSwitchTest.error}
             </div>
           )}
         </div>
+            </div>
+            )}
 
-        <div className="bg-white rounded-lg shadow-lg p-6 mt-6">
-          <h2 className="text-xl font-semibold mb-4">Expected Flow</h2>
-          <div className="space-y-2 text-sm">
-            <div className="flex items-center space-x-2">
-              <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs">1</span>
-              <span>User enters Bitcoin amount in UI</span>
+            {testResults.disconnectTest && (
+              <div>
+                <strong>Disconnect Test:</strong>
+                <div className="ml-4">
+                  {testResults.disconnectTest.success ? (
+                    <div className="text-green-400">
+                      ✅ Disconnected successfully
             </div>
-            <div className="flex items-center space-x-2">
-              <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs">2</span>
-              <span>Frontend uses ZRC-20 BTC.BTC address with existing swap function</span>
+                  ) : (
+                    <div className="text-red-400">
+                      ❌ Failed: {testResults.disconnectTest.error}
             </div>
-            <div className="flex items-center space-x-2">
-              <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs">3</span>
-              <span>Beam API calculates route: ZRC-20 BTC → Vault Token</span>
+                  )}
             </div>
-            <div className="flex items-center space-x-2">
-              <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs">4</span>
-                             <span>UI shows expected output amount (no more &quot;swap route not found&quot;)</span>
             </div>
-            <div className="flex items-center space-x-2">
-              <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs">5</span>
-              <span>User confirms deposit → TSS Gateway handles native BTC → ZRC-20 BTC conversion</span>
-            </div>
+            )}
           </div>
+        </div>
+      </div>
+
+      {/* Manual Controls */}
+      <div className="mt-6 bg-gray-800 p-4 rounded">
+        <h3 className="text-lg font-semibold mb-3">🎮 Manual Controls</h3>
+        <div className="flex flex-wrap gap-2">
+          <button 
+            onClick={() => connectBitcoin('unisat')}
+            className="px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-sm"
+          >
+            Connect Bitcoin (Unisat)
+          </button>
+          <button 
+            onClick={() => switchToChain(chainConfigs[CHAIN_ID.bitcoin])}
+            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm"
+          >
+            Switch to Bitcoin Chain
+          </button>
+          <button 
+            onClick={disconnectWallet}
+            className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm"
+          >
+            Disconnect All
+          </button>
         </div>
       </div>
     </div>

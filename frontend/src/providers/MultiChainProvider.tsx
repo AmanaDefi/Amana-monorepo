@@ -221,9 +221,11 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       
       // Connect Bitcoin wallet
       await connectBitcoinWallet(walletType);
-      setSelectedChain("bitcoin");
       
-      debugLog("Bitcoin wallet connected successfully");
+      // The useEffect above will handle setting the wallet address and chain
+      // No need to manually set selectedChain here as it will be set by the useEffect
+      
+      debugLog("Bitcoin wallet connection initiated");
     } catch (error) {
       console.error("Bitcoin connection error:", error);
       throw error;
@@ -444,6 +446,45 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     setFundWalletAddress,
   ]);
 
+  // NEW: Bitcoin wallet state synchronization
+  useEffect(() => {
+    if (isBitcoinConnected && bitcoinWallet?.address) {
+      debugLog("Bitcoin wallet connected, updating provider state:", bitcoinWallet.address);
+      
+      // Set wallet address and chain
+      setWalletAddress(bitcoinWallet.address);
+      setSelectedChain("bitcoin");
+      setActiveChain(chainConfigs[CHAIN_ID.bitcoin]);
+      latestChainRef.current = CHAIN_ID.bitcoin.toString();
+      
+      // Fetch Bitcoin balance
+      getBitcoinBalanceFormatted(bitcoinWallet.address);
+      
+      debugLog("Bitcoin wallet state synchronized successfully");
+    } else if (!isBitcoinConnected && selectedChain === "bitcoin") {
+      debugLog("Bitcoin wallet disconnected, clearing state");
+      
+      // Clear Bitcoin-specific state
+      setWalletAddress(null);
+      setBitcoinBalance({ value: 0n, formatted: "0" });
+      
+      // Don't change selectedChain here to avoid conflicts with other wallets
+    }
+  }, [isBitcoinConnected, bitcoinWallet?.address, selectedChain, getBitcoinBalanceFormatted]);
+
+  // Ensure bitcoinWallet is a valid object, not a boolean or null
+  let safeBitcoinWallet = bitcoinWallet;
+  if (typeof bitcoinWallet === 'boolean') {
+    console.warn('[MultiChainProvider] bitcoinWallet should never be boolean! Forcing to null.');
+    safeBitcoinWallet = null;
+  } else if (typeof bitcoinWallet !== 'object' || bitcoinWallet === null) {
+    if (bitcoinWallet) {
+      console.warn('[MultiChainProvider] Invalid bitcoinWallet value detected:', bitcoinWallet);
+    }
+    safeBitcoinWallet = null;
+  }
+
+  // Add switchToChain implementation (move above providerValue)
   const switchToChain = useCallback(
     async (chain: Chain) => {
       try {
@@ -451,14 +492,12 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
           setSelectedChain("solana");
           setActiveChain(chainConfigs[CHAIN_ID.solana]);
           latestChainRef.current = CHAIN_ID.solana.toString();
-          return Promise.resolve(); // Resolve immediately for Solana
+          return Promise.resolve();
         } else if (chain.id === CHAIN_ID.bitcoin) {
-          // For Bitcoin, we need to connect the wallet if not already connected
           if (!isBitcoinConnected || !bitcoinWallet?.address) {
             debugLog("Bitcoin chain selected but wallet not connected, triggering connection...");
             try {
-              await connectBitcoinWallet('unisat'); // Default to Unisat
-              // The wallet connection will handle setting the chain state
+              await connectBitcoinWallet('unisat');
               return Promise.resolve();
             } catch (error) {
               debugLog("Failed to connect Bitcoin wallet:", error);
@@ -524,7 +563,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         throw error;
       }
     },
-    [privyWallet],
+    [privyWallet, isBitcoinConnected, bitcoinWallet?.address, connectBitcoinWallet],
   );
 
   useEffect(() => {
@@ -591,6 +630,21 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     privyWallet?.meta?.id,
   ]);
 
+  // NEW: Periodic Bitcoin balance refresh
+  useEffect(() => {
+    if (selectedChain === "bitcoin" && bitcoinWallet?.address) {
+      // Initial balance fetch
+      getBitcoinBalanceFormatted(bitcoinWallet.address);
+      
+      // Set up periodic refresh every 30 seconds
+      const interval = setInterval(() => {
+        getBitcoinBalanceFormatted(bitcoinWallet.address);
+      }, 30000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [selectedChain, bitcoinWallet?.address, getBitcoinBalanceFormatted]);
+
   // Debug log the provider value
   const providerValue = {
     selectedChain,
@@ -607,7 +661,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     isHydrated,
     evmDisconnect: evmDisconnect,
     // Bitcoin-specific properties
-    bitcoinWallet,
+    bitcoinWallet: safeBitcoinWallet,
     bitcoinBalance,
   };
   

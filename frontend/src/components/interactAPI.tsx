@@ -322,7 +322,8 @@ export default function InteractionContainer({
   hideStepsDisplay = false,
   setLabel,
   label,
-  outputAmountFormatted
+  outputAmountFormatted,
+  bitcoinWallet // <-- Add this line
 }: {
   step: number;
   setStep: Function;
@@ -342,7 +343,8 @@ export default function InteractionContainer({
   hideStepsDisplay?: boolean;
   setLabel: Dispatch<SetStateAction<string>>;
   label: string;
-  outputAmountFormatted: string
+  outputAmountFormatted: string;
+  bitcoinWallet?: any; // <-- Add this line
 }): JSX.Element {
   const { walletAddress } = useMultiChain();
   // Core transaction state
@@ -872,6 +874,7 @@ export default function InteractionContainer({
         isDeposit={isDeposit}
         hideStepsDisplay={hideStepsDisplay}
         outputAmountFormatted={outputAmountFormatted}
+        bitcoinWallet={bitcoinWallet}
       />
     </div>
   );
@@ -904,15 +907,18 @@ function Interaction({
   setIsTransactionProcessing,
   finishedTransaction,
   setFinishedTransaction,
+  completeTransactionProcess,
+  lastEventTxHash,
   setLastEventTxHash,
   refreshBalance,
   crosschainInvestHash,
+  crossChainTxId,
   isComponentActiveRef,
   isTrackingActiveRef,
   isDeposit,
   hideStepsDisplay = false,
-  lastEventTxHash,
   outputAmountFormatted,
+  bitcoinWallet
 }: {
   setStep: Function;
   setAction: Function;
@@ -950,7 +956,8 @@ function Interaction({
   isTrackingActiveRef: React.MutableRefObject<boolean>;
   isDeposit: boolean;
   hideStepsDisplay?: boolean;
-  outputAmountFormatted: string
+  outputAmountFormatted: string;
+  bitcoinWallet?: any;
 }): JSX.Element {
   const { wallets } = useWallets();
   const filteredWallets = wallets.filter(
@@ -979,9 +986,6 @@ function Interaction({
 
 const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
   
-  // Get Bitcoin wallet from MultiChainProvider for Bitcoin deposits
-  const { bitcoinWallet } = useMultiChain();
-
   // Simplified feedback update for local transactions only
   function updateLocalTransactionFeedback(
     actionKey: Action,
@@ -1354,17 +1358,20 @@ const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
             !!errorMessage;
 
           const isBitcoin = activeChain.id === CHAIN_ID.bitcoin;
-          const isBitcoinWalletConnected = isBitcoin && !!bitcoinWallet;
+          const isBitcoinWalletConnected = isBitcoin && !!bitcoinWallet && !!bitcoinWallet.address;
 
-          const isConnectWalletSHown =
-            (!activeAccount && !walletContext.publicKey) ||
-            (activeAccount?.walletClientType === "privy" &&
-              activeChain?.id !== zetachain.id) ||
-            (walletContext.publicKey &&
-              activeChain?.id !== CHAIN_ID["solana"]) ||
-            (activeAccount?.address && activeChain?.id === CHAIN_ID["solana"]);
+          // Show connect for Bitcoin if not connected
+          const isConnectWalletShown = (
+            (isBitcoin && !isBitcoinWalletConnected) ||
+            (!isBitcoin && (
+              (!activeAccount && !walletContext.publicKey) ||
+              (activeAccount?.walletClientType === "privy" && activeChain?.id !== zetachain.id) ||
+              (walletContext.publicKey && activeChain?.id !== CHAIN_ID["solana"]) ||
+              (activeAccount?.address && activeChain?.id === CHAIN_ID["solana"]) 
+            ))
+          );
 
-          const isDisabled = !isConnectWalletSHown
+          const isDisabled = !isConnectWalletShown
             ? isButtonDisabled ||
               isDisabledByProcessing ||
               isDisabledByHash ||
@@ -1377,12 +1384,18 @@ const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
               disabled={isDisabled}
               className="w-full mt-10 md:mt-[47px] !text-[16px] !font-bold !font-gotham !max-h-[48px] md:!max-h-[54px]"
               onClick={() => {
-                !isConnectWalletSHown
-                  ? handleMainAction()
-                  : handleWalletConnect();
+                if (isConnectWalletShown) {
+                  if (isBitcoin && typeof window !== 'undefined' && window.unisat) {
+                    window.unisat.requestAccounts(); // Trigger Unisat connect
+                  } else {
+                    handleWalletConnect();
+                  }
+                } else {
+                  handleMainAction();
+                }
               }}
             >
-              {!isConnectWalletSHown
+              {!isConnectWalletShown
                 ? (label ?? (isDeposit ? "Invest" : "Withdraw"))
                 : "Connect wallet"}
             </Button>
