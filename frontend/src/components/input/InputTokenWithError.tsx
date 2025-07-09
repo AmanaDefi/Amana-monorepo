@@ -144,9 +144,13 @@ export default function InputTokenWithError({
     }
 
     if (isOutput && loadingOutputToken) {
+      const justifyClass = isDeposit ? "justify-end" : "justify-start";
+      const spinnerSize = isDeposit ? 18 : 12;
+      const height = isDeposit ? "h-9" : "h-5";
+
       return (
-        <div className="flex items-center justify-start h-9">
-          <MiniSpinner size={18} />
+        <div className={clsx("flex items-center", height, justifyClass)}>
+          <MiniSpinner size={spinnerSize} color="#3E73C4" />
         </div>
       );
     }
@@ -165,9 +169,13 @@ export default function InputTokenWithError({
       const outputAmount = conversionOutput.outputAmountFormatted || "0.00";
 
       if (loadingOutputToken) {
+        const justifyClass = isDeposit ? "justify-end" : "justify-start";
+        const spinnerSize = isDeposit ? 12 : 18;
+        const height = isDeposit ? "h-5" : "h-9";
+
         return (
-          <div className="flex items-center justify-end min-w-[60px] min-h-[20px]">
-            <MiniSpinner size={12} color="#3E73C4" />
+          <div className={clsx("flex items-center", height, justifyClass)}>
+            <MiniSpinner size={spinnerSize} color="#3E73C4" />
           </div>
         );
       }

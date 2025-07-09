@@ -333,7 +333,7 @@ export default function VaultInputs({
   // Trigger error message handling
   useEffect(() => {
     const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
-    if (inputToken && vaultTotalAssetinToken && !isTxInProgress) {
+    if (inputToken && userVaultBalance && !isTxInProgress) {
       if (isDeposit) {
         // For Ethereum vaults, use net deposit amount for validation
         // For other vaults, use input amount
@@ -357,10 +357,12 @@ export default function VaultInputs({
           ),
         );
       } else {
+        const availableBalanceForWithdrawal = userVaultBalance.formatted || "0";
+
         setErrorMessage(
           getVaultErrorMessage(
             inputBalance.formatted,
-            vaultTotalAssetinToken.toString(),
+            availableBalanceForWithdrawal,
             steps,
             vaultData,
             vaultTokenPrice,
@@ -378,12 +380,12 @@ export default function VaultInputs({
     isDeposit,
     vaultData.id,
     action,
-    vaultTotalAssetinToken,
     steps,
     inputTokenPrice,
     vaultTokenPrice,
     conversionOutput.netDepositToVaultUSD,
     loadingOutputToken,
+    userVaultBalance,
   ]);
 
   // Watch input balance and trigger steps config selection
@@ -1218,8 +1220,7 @@ export default function VaultInputs({
         return true;
       }
     } else {
-      const maxWithdrawAmount =
-        vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0";
+      const maxWithdrawAmount = userVaultBalance?.formatted || "0";
       if (Number(inputBalance.formatted) > Number(maxWithdrawAmount)) {
         setIsButtonDisabled(true);
         return true;
@@ -1269,7 +1270,6 @@ export default function VaultInputs({
     outputBoxErrorMessage,
     isDeposit,
     tokenBalance.value,
-    vaultTotalAssetinToken,
     vaultData.depositFeePaidFromGasTank,
     debouncedInputBalance.value,
     conversionOutput.inputAmountInUSDFormatted,
@@ -1277,6 +1277,7 @@ export default function VaultInputs({
     conversionOutput.outputAmountFormatted,
     isSlippageExceedingLimit,
     setIsButtonDisabled,
+    userVaultBalance,
   ]);
   // 🧪 TESTING: Log final values being displayed
   useEffect(() => {
