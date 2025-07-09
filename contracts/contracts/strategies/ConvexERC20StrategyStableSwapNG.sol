@@ -88,6 +88,7 @@ contract ConvexERC20StrategyStableSwapNG is ERC20StrategyParent {
             claimedCVX = amountCVXAfter > amountCVXBefore
                 ? amountCVXAfter - amountCVXBefore
                 : 0;
+            console.log("Claimed CRV: %s, CVX: %s", claimedCRV, claimedCVX);
             emit RewardsClaimed(address(this), crvToken, claimedCRV);
             emit RewardsClaimed(address(this), cvxToken, claimedCVX);
         } catch Error(string memory reason) {
@@ -105,12 +106,12 @@ contract ConvexERC20StrategyStableSwapNG is ERC20StrategyParent {
 
     function _reinvestRewards() internal override {
         address mainRewardToken = rewardPool.rewardToken();
-        console.log("harvestSwapSlippage", harvestSwapSlippage);
-        uint256 inputAmount = swapCRVToInputToken(
+        uint256 inputAmount = _swapCRVToInputToken(
             mainRewardToken,
             IERC20(mainRewardToken).balanceOf(address(this)),
             harvestSwapSlippage
         );
+        console.log("Reinvesting rewards: inputAmount = %s", inputAmount);
         uint256 amountCVX = IERC20(cvxToken).balanceOf(address(this));
         if (amountCVX > 0) {
             inputAmount += swapCVXToInputToken(
@@ -119,11 +120,11 @@ contract ConvexERC20StrategyStableSwapNG is ERC20StrategyParent {
                 harvestSwapSlippage
             );
         }
-
+        console.log("Total inputAmount after CVX swap: %s", inputAmount);
         if (
             inputAmount >
             minClaimableReward *
-                10 ** (IERC20Metadata(address(inputToken)).decimals() - 3)
+                10 ** (IERC20Metadata(address(inputToken)).decimals() - 6)
         ) {
             uint256[] memory amounts = new uint256[](3);
             amounts[inputTokenIndex] = inputAmount;
@@ -164,7 +165,7 @@ contract ConvexERC20StrategyStableSwapNG is ERC20StrategyParent {
             if (
                 extraInput >
                 minClaimableReward *
-                    10 ** (IERC20Metadata(address(inputToken)).decimals() - 3)
+                    10 ** (IERC20Metadata(address(inputToken)).decimals() - 6)
             ) {
                 uint256[] memory extraAmounts = new uint256[](3);
                 extraAmounts[inputTokenIndex] = extraInput;
@@ -188,7 +189,26 @@ contract ConvexERC20StrategyStableSwapNG is ERC20StrategyParent {
         }
     }
 
-    function swapCRVToInputToken(
+    function _swapCRVToInputToken(
+        address token,
+        uint256 amountIn,
+        uint16 initialSlippageBps
+    ) internal returns (uint256 amountOut) {
+        if (inputToken == CBBTC_ADDRESS) {
+            return _swapCRVToCBBTC(token, amountIn, initialSlippageBps);
+        } else if (inputToken == WBTC_ADDRESS) {
+            return _swapCRVToUSDC(token, amountIn, initialSlippageBps);
+        } else {
+            return
+                _swapCRVToInputTokenGeneric(
+                    token,
+                    amountIn,
+                    initialSlippageBps
+                );
+        }
+    }
+
+    function _swapCRVToCBBTC(
         address token,
         uint256 amountIn,
         uint16 initialSlippageBps
@@ -230,12 +250,6 @@ contract ConvexERC20StrategyStableSwapNG is ERC20StrategyParent {
         uint16 slippage = initialSlippageBps;
 
         while (slippage <= 1000) {
-            console.log(
-                "About to swap CRV to input token, amountIn: %s, slippage: %s",
-                amountIn,
-                slippage
-            );
-            console.log("Route: %s", route[0]);
             try
                 ISwapHelper(swapHelper).swapTokensViaCurveNG(
                     route,
@@ -245,7 +259,7 @@ contract ConvexERC20StrategyStableSwapNG is ERC20StrategyParent {
                     slippage
                 )
             returns (uint256 result) {
-                emit RewardsHarvested(token, amountIn, amountOut);
+                emit RewardsHarvested(token, amountIn, result);
                 return result;
             } catch {
                 emit SwapFailed(token, amountIn, "Swap attempt failed");
@@ -258,7 +272,26 @@ contract ConvexERC20StrategyStableSwapNG is ERC20StrategyParent {
         return 0;
     }
 
-    function swapCVXToInputToken(
+    function _swapCVXToInputToken(
+        address token,
+        uint256 amountIn,
+        uint16 initialSlippageBps
+    ) internal returns (uint256 amountOut) {
+        if (inputToken == CBBTC_ADDRESS) {
+            return _swapCVXToCBBTC(token, amountIn, initialSlippageBps);
+        } else if (inputToken == WBTC_ADDRESS) {
+            return _swapCVXToUSDC(token, amountIn, initialSlippageBps);
+        } else {
+            return
+                _swapCRVToInputTokenGeneric(
+                    token,
+                    amountIn,
+                    initialSlippageBps
+                );
+        }
+    }
+
+    function _swapCVXToCBBTC(
         address token,
         uint256 amountIn,
         uint16 initialSlippageBps

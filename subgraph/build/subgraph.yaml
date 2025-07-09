@@ -334,3 +334,63 @@ dataSources:
         - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
           handler: handleWithdrawnLegacy
       file: ZeroLendUSDC_Vault/ZeroLendUSDC_Vault.wasm
+  - kind: ethereum
+    name: NoonCapitalsUSN_Vault
+    network: zetachain
+    source:
+      address: "0x98fEc66c0892B67760F60DB42757BA462086B67a"
+      abi: AmanaVault
+      startBlock: 8994606
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Vault
+      abis:
+        - name: AmanaVault
+          file: NoonCapitalsUSN_Vault/AmanaVault.json
+      eventHandlers:
+        - event: VaultInitialized(uint8,uint256)
+          handler: handleVaultInitialized
+        - event: StrategyUpdated(indexed address)
+          handler: handleStrategyUpdated
+        - event: Deposited(indexed address,uint256,uint256,indexed uint256)
+          handler: handleDeposited
+        - event: Withdrawn(indexed address,uint256,uint256,indexed uint256)
+          handler: handleWithdrawn
+        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleDepositedLegacy
+        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleWithdrawnLegacy
+      file: ZeroLendUSDC_Vault/ZeroLendUSDC_Vault.wasm
+  - kind: ethereum
+    name: ConvexcbBTC_Vault
+    network: zetachain
+    source:
+      address: "0x5e3AdC840b55Fe0B99c0418aC69113E1F0296992"
+      abi: AmanaVault
+      startBlock: 9270117
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Vault
+      abis:
+        - name: AmanaVault
+          file: ConvexcbBTC_Vault/AmanaVault.json
+      eventHandlers:
+        - event: VaultInitialized(uint8,uint256)
+          handler: handleVaultInitialized
+        - event: StrategyUpdated(indexed address)
+          handler: handleStrategyUpdated
+        - event: Deposited(indexed address,uint256,uint256,indexed uint256)
+          handler: handleDeposited
+        - event: Withdrawn(indexed address,uint256,uint256,indexed uint256)
+          handler: handleWithdrawn
+        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleDepositedLegacy
+        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleWithdrawnLegacy
+      file: ZeroLendUSDC_Vault/ZeroLendUSDC_Vault.wasm

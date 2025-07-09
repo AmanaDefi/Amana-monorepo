@@ -301,6 +301,61 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
     };
   }
 
+  // Curve Convex ETH Vault -> Ethereum
+  if (addr == "0x5e3adc840b55fe0b99c0418ac69113e1f0296992") {
+    return {
+      type: "Liquidity Pool",
+      name: "tacBTC/cbBTC/FBTC Pool",
+      description: "This strategy deposits cbBTC into the Curve tacBTC/cbBTC/FBTC pool on Ethereum, then deposits the resulting Curve LP tokens into Convex to maximize CRV and CVX rewards. It earns trading fees from Curve and enhances yield through Convex staking rewards. Since tacBTC, cbBTC, and FBTC are all pegged to the same underlying asset (BTC), impermanent loss is minimal to negligible. Fees vary with trading volume, and reward rates are subject to change at the discretion of the underlying protocols. APY decreases as total TVL in the pool increases.",
+      imgURL: "/ETH.png",
+      depositFeePaidFromGasTank: false,
+      assetSymbol: "CBBTC.ETH",
+      assetDecimals: 8,
+      assetImgURL: "/cbbtc.png",
+      assetPrice: BigDecimal.fromString("1.0"),
+      strategyNetwork: "Ethereum",
+      strategyChainId: 1,
+      protocolName: "Curve-Convex",
+      protocolImgURL: "/convex.png",
+      protocolDescription: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy.",
+      networkDescription: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
+      riskLevel: 3,
+      rewardsContractAddress: "0xca55D40f6703a5FcC46d8277D1D78751acCe9305",
+      protocolPoints: 0,
+      protocolPointsDescription: null,
+      cooldownPeriod: 0,
+      minDeposit: 1,
+      maxWithdraw: 1000000,
+    };
+  }
+
+  if (addr == "0x98fec66c0892b67760f60db42757ba462086b67a") {
+    return {
+      type: "Yield-Bearing Stablecoin",
+      name: "Noon Capital sUSN",
+      description: "This strategy swaps USDC for sUSN, the staked version of USN — a crypto-native stablecoin issued by Noon Capital. sUSN is yield-bearing by design, with returns generated through delta-neutral strategies like funding rate arbitrage and collateralized lending. As sUSN appreciates in value over time, users earn passive, compounding yield without needing to claim or stake manually.",
+      imgURL: "/ETH.png",
+      depositFeePaidFromGasTank: false,
+      assetSymbol: "USDC.ETH",
+      assetDecimals: 6,
+      assetImgURL: "/USDC.png",
+      assetPrice: BigDecimal.fromString("1.0"),
+      strategyNetwork: "Ethereum",
+      strategyChainId: 1,
+      protocolName: "Noon Capital",
+      protocolImgURL: "/sUSN.png",
+      protocolDescription: "Noon Capital is the protocol behind USN and sUSN — stablecoins designed to generate consistent, crypto-native returns. While USN offers a liquid, dollar-pegged asset, sUSN is its yield-bearing counterpart, earning passive income through delta-neutral strategies like funding rate arbitrage and overcollateralized lending. Users can mint or swap into sUSN to earn without staking or lockups. The protocol emphasizes transparency, capital efficiency, and seamless DeFi integration. Risks include funding rate shifts, collateral volatility, and smart contract exposure.",
+      networkDescription: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
+      riskLevel: 3,
+      rewardsContractAddress: null,
+      protocolPoints: 10,
+      protocolPointsDescription: "Noon Points",
+      cooldownPeriod: 0,
+      minDeposit: 1,
+      maxWithdraw: 1000000,
+    };
+  }
+
   // Default fallback
   return {
     type: "Unknown",

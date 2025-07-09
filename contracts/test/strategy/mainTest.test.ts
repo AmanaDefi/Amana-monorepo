@@ -761,6 +761,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       } else {
         preHarvestReward = await strategy.checkRewards();
       }
+      console.log("Pre-harvest reward:", preHarvestReward.toString());
       expect(preHarvestReward).to.be.gt(0);
 
       // Step 4: Call harvest externally
@@ -776,10 +777,11 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         throw new Error("Event not found");
       }
 
-      const [, claimedAmount, usdcReceived] = event.args!;
-
+      const [, claimedAmount, inputTokenAmountReceived] = event.args!;
+      console.log("Claimed Amount:", claimedAmount.toString());
+      console.log("USDC Received:", inputTokenAmountReceived.toString());
       expect(claimedAmount).to.be.gt(0);
-      expect(usdcReceived).to.be.gt(0);
+      expect(inputTokenAmountReceived).to.be.gt(0);
     });
 
     it("should claim rewards when claimRewards is called externally", async function () {

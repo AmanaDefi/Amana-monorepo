@@ -9,7 +9,6 @@ import "./interfaces/ICurveRouterNG.sol";
 import "./interfaces/IV4SwapRouter.sol";
 import "./interfaces/IUniversalRouter.sol";
 import "./interfaces/IPermit2.sol";
-import "hardhat/console.sol";
 
 contract SwapHelperEthereum is SwapHelperParent {
     address public constant ROUTER_NG =
@@ -28,6 +27,8 @@ contract SwapHelperEthereum is SwapHelperParent {
         0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // USDC token
     address public constant USDT_ADDRESS =
         0xdAC17F958D2ee523a2206206994597C13D831ec7; // USDT token
+    address public constant CBBTC_ADDRESS =
+        0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf; // cbBTC token
 
     bytes32 constant crvUsdPriceFeedId =
         0xa19d04ac696c7a6616d291c7e5d1377cc8be437c327b75adb5dc1bad745fcae8;
@@ -35,6 +36,8 @@ contract SwapHelperEthereum is SwapHelperParent {
         0x6aac625e125ada0d2a6b98316493256ca733a5808cd34ccef79b0e28c64d1e76;
     bytes32 constant ethUsdPriceFeedId =
         0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace;
+    bytes32 constant cbbtcUsdPriceFeedId =
+        0x2817d7bfe5c64b8ea956e9a26f573ef64e72e4d7891f2d6af9bcc93f7aff9a97;
 
     address constant UNIVERSAL_ROUTER =
         0x66a9893cC07D91D95644AEDD05D03f95e1dBA8Af; // Uniswap Universal Router address on Ethereum
@@ -74,6 +77,8 @@ contract SwapHelperEthereum is SwapHelperParent {
             return cvxUsdPriceFeedId;
         } else if (token == sUSN_ADDRESS) {
             return susnUsdPriceFeedId;
+        } else if (token == CBBTC_ADDRESS) {
+            return cbbtcUsdPriceFeedId;
         } else {
             return bytes32(0); // Return zero bytes if no price feed exists
         }
@@ -150,36 +155,23 @@ contract SwapHelperEthereum is SwapHelperParent {
         uint16 slippageBps
     ) external returns (uint256 amountOut) {
         address finalToken = getLastNonZeroAddress(route);
-        console.log("Swapping via CurveNG, finalToken: %s", finalToken);
         uint256 minAmountOut = calculateMinAmountOut(
             route[0],
             finalToken,
             amount,
             slippageBps
         );
-        console.log(
-            "Swapping via CurveNG, amount: %s, minOut: %s",
-            amount,
-            minAmountOut
-        );
+
         IERC20(route[0]).approve(ROUTER_NG, amount);
 
-        try
-            ICurveRouterNG(ROUTER_NG).exchange(
-                route,
-                swapParams,
-                amount,
-                minAmountOut,
-                pools,
-                msg.sender
-            )
-        returns (uint256 out) {
-            amountOut = out;
-        } catch {
-            amountOut = 0;
-        }
-
-        return amountOut;
+        amountOut = ICurveRouterNG(ROUTER_NG).exchange(
+            route,
+            swapParams,
+            amount,
+            minAmountOut,
+            pools,
+            msg.sender
+        );
     }
 
     function getPathV3SpecificIntermediateToken(

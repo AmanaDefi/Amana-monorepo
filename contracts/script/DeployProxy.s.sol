@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {NoonERC20Strategy} from "../contracts/strategies/NoonERC20Strategy.sol";
+import {ConvexERC20StrategyStableSwapNG} from "../contracts/strategies/ConvexERC20StrategyStableSwapNG.sol";
 
 contract DeployProxy is Script {
     function run() external {
@@ -20,21 +20,24 @@ contract DeployProxy is Script {
 
         uint256 deployerPrivateKey = vm.parseUint(prefixedPrivateKey);
 
-        address implementation = 0x74D8De227791a6678720d7f6d77435da9cAB48d6;
+        address implementation = 0x57238234C6A0fD5E800e7AA9C0269253f03aCA12;
 
         // ✅ Encode initialize function call with arguments
         bytes memory initCalldata = abi.encodeWithSelector(
-            NoonERC20Strategy.initialize.selector,
+            ConvexERC20StrategyStableSwapNG.initialize.selector,
             "NoonUSDC",
             0x48B9AACC350b20147001f88821d31731Ba4C30ed, // gateway
-            0x98fEc66c0892B67760F60DB42757BA462086B67a, // vault
+            0x5e3AdC840b55Fe0B99c0418aC69113E1F0296992, // vault
             0xd435B3d2b7497c359beF43F99c42eF6D91f40831, // withdraw helper
-            0x74fCAd57C966cAB6fa02a0A5425b1c76DcaFe9A0, // swap helper
-            0xE24a3DC889621612422A64E6388927901608B91D, // receipt token (sUSN)
-            0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48, // input token (USDC)
-            address(0), // _liquidityGaugeAddress not needed
-            address(0), // _rewardsTokenAddress not needed
-            0 // _inputTokenIndex not needed
+            0x7bF6F5964998d4541A078Aa328F62D5C23E371E7, // swap helper
+            0xFfF8634dE89271b6075C55FA89B4E9A087Fdb9FE, // receipt token
+            0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf, // input token
+            0xca55D40f6703a5FcC46d8277D1D78751acCe9305, // _liquidityGaugeAddress not needed
+            0xD533a949740bb3306d119CC777fa900bA034cd52, // _rewardsTokenAddress not needed
+            1, // _inputTokenIndex not needed
+            454, // _convexPoolId
+            0xF403C135812408BFbE8713b5A23a04b3D48AAE31, // _convexBooster
+            0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B // _cvxTokenAddress
         );
 
         vm.startBroadcast(deployerPrivateKey);
