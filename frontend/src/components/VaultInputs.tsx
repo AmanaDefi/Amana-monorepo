@@ -846,6 +846,8 @@ export default function VaultInputs({
         vaultData.symbol,
       );
 
+      const outputSharesAmountInUSD = Number(sharesAmountRaw) * vaultTokenPrice;
+
       console.log("Double Box - Shares calculation:", {
         sharesAmountFormatted,
         finalConvertedAmount: finalConvertedAmount.toString(),
@@ -890,7 +892,7 @@ export default function VaultInputs({
             finalConvertedAmountInUSD,
           ),
           outputAmountFormatted: sharesAmountFormatted,
-          outputAmountInUSDFormatted: formatUSDValue(finalConvertedAmountInUSD),
+          outputAmountInUSDFormatted: formatUSDValue(outputSharesAmountInUSD),
           gasFeeInVaultAsset: gasFeeInVaultAsset.toString(),
           gasFeeInUSD,
           gasFeeInETH,
