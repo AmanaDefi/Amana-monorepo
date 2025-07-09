@@ -281,7 +281,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
     setSelectedTokenFromModal,
   } = useChainTokenModalStore();
   const { publicKey } = useWallet();
-  const { walletAddress, activeChain, selectedChain, bitcoinWallet } = useMultiChain();
+  const { walletAddress, activeChain, selectedChain } = useMultiChain();
   const { wallets } = useWallets();
   const filteredWallets = wallets.filter(
     (wallet) => wallet.meta.id !== "app.phantom",
@@ -456,9 +456,6 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
       openStep("connectInChosenChain");
     }
   };
-
-  const effectivePublicKey = selectedChainLocal?.id === CHAIN_ID.bitcoin && bitcoinWallet?.publicKey ? bitcoinWallet.publicKey : publicKey;
-  console.log({ walletAddress, publicKey });
 
   return (
     <Modal
@@ -640,7 +637,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
                         ? "No tokens found"
                         : "No tokens available for this network"}
                     </motion.div>
-                  ) : selectedChainLocal.name === "Solana" && !effectivePublicKey ? (
+                  ) : selectedChainLocal.name === "Solana" && !publicKey ? (
                     <motion.div
                       key="no-tokens"
                       initial={{ opacity: 0, y: 20 }}
@@ -657,7 +654,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
                     </motion.div>
                   ) : (selectedChainLocal.name !== "Solana" &&
                       !activeAccount) ||
-                    (!activeAccount && !effectivePublicKey) ? (
+                    (!activeAccount && !publicKey) ? (
                     <motion.div
                       key="no-tokens"
                       initial={{ opacity: 0, y: 20 }}

@@ -63,7 +63,6 @@ const handleDepositTransaction = async (
   setcrossChainTxId: Function,
   setInputBalance: Function,
   setLastEventTxHash: Function,
-  bitcoinWallet?: any, // Add Bitcoin wallet parameter
 ) => {
   console.log("deposit", activeAccount);
   if (!activeAccount) return;
@@ -85,7 +84,7 @@ const handleDepositTransaction = async (
       activeChain,
       depositAmount,
       setcrossChainTxId,
-      bitcoinWallet, // Pass Bitcoin wallet to executeDeposit
+      // bitcoinWallet, // Pass Bitcoin wallet to executeDeposit
     );
     if (!receipt || !receipt.transactionHash) {
       throw new Error("Failed Tx");
@@ -323,7 +322,7 @@ export default function InteractionContainer({
   setLabel,
   label,
   outputAmountFormatted,
-  bitcoinWallet // <-- Add this line
+
 }: {
   step: number;
   setStep: Function;
@@ -344,7 +343,6 @@ export default function InteractionContainer({
   setLabel: Dispatch<SetStateAction<string>>;
   label: string;
   outputAmountFormatted: string;
-  bitcoinWallet?: any; // <-- Add this line
 }): JSX.Element {
   const { walletAddress } = useMultiChain();
   // Core transaction state
@@ -874,7 +872,7 @@ export default function InteractionContainer({
         isDeposit={isDeposit}
         hideStepsDisplay={hideStepsDisplay}
         outputAmountFormatted={outputAmountFormatted}
-        bitcoinWallet={bitcoinWallet}
+        // bitcoinWallet={bitcoinWallet} // Removed Bitcoin wallet prop
       />
     </div>
   );
@@ -917,8 +915,7 @@ function Interaction({
   isTrackingActiveRef,
   isDeposit,
   hideStepsDisplay = false,
-  outputAmountFormatted,
-  bitcoinWallet
+  outputAmountFormatted
 }: {
   setStep: Function;
   setAction: Function;
@@ -957,7 +954,6 @@ function Interaction({
   isDeposit: boolean;
   hideStepsDisplay?: boolean;
   outputAmountFormatted: string;
-  bitcoinWallet?: any;
 }): JSX.Element {
   const { wallets } = useWallets();
   const filteredWallets = wallets.filter(
@@ -1259,7 +1255,7 @@ const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
       setcrossChainTxId,
       setInputBalance,
       setLastEventTxHash,
-      bitcoinWallet, // Pass Bitcoin wallet
+      // bitcoinWallet, // Removed Bitcoin wallet
     )();
 
     await interactionPostHook(!!success, !currenAction);
@@ -1357,19 +1353,12 @@ const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
             Number(inputBalance.formatted) <= 0 ||
             !!errorMessage;
 
-          const isBitcoin = activeChain.id === CHAIN_ID.bitcoin;
-          const isBitcoinWalletConnected = isBitcoin && !!bitcoinWallet && !!bitcoinWallet.address;
-
-          // Show connect for Bitcoin if not connected
-          const isConnectWalletShown = (
-            (isBitcoin && !isBitcoinWalletConnected) ||
-            (!isBitcoin && (
-              (!activeAccount && !walletContext.publicKey) ||
-              (activeAccount?.walletClientType === "privy" && activeChain?.id !== zetachain.id) ||
-              (walletContext.publicKey && activeChain?.id !== CHAIN_ID["solana"]) ||
-              (activeAccount?.address && activeChain?.id === CHAIN_ID["solana"]) 
-            ))
-          );
+          // Only EVM/Solana logic remains
+          const isConnectWalletShown =
+            (!activeAccount && !walletContext.publicKey) ||
+            (activeAccount?.walletClientType === "privy" && activeChain?.id !== zetachain.id) ||
+            (walletContext.publicKey && activeChain?.id !== CHAIN_ID["solana"]) ||
+            (activeAccount?.address && activeChain?.id === CHAIN_ID["solana"]);
 
           const isDisabled = !isConnectWalletShown
             ? isButtonDisabled ||
@@ -1385,11 +1374,7 @@ const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
               className="w-full mt-10 md:mt-[47px] !text-[16px] !font-bold !font-gotham !max-h-[48px] md:!max-h-[54px]"
               onClick={() => {
                 if (isConnectWalletShown) {
-                  if (isBitcoin && typeof window !== 'undefined' && window.unisat) {
-                    window.unisat.requestAccounts(); // Trigger Unisat connect
-                  } else {
-                    handleWalletConnect();
-                  }
+                  handleWalletConnect();
                 } else {
                   handleMainAction();
                 }
@@ -1513,7 +1498,7 @@ const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
     setcrossChainTxId: Function,
     setInputBalance: Function,
     setLastEventTxHash: Function,
-    bitcoinWallet?: any, // Add Bitcoin wallet parameter
+    // bitcoinWallet?: any, // Removed Bitcoin wallet parameter
   ) {
     switch (action) {
       case Action.depositApprove:
@@ -1548,7 +1533,7 @@ const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
             setcrossChainTxId,
             setInputBalance,
             setLastEventTxHash,
-            bitcoinWallet, // Pass Bitcoin wallet to handleDepositTransaction
+            // bitcoinWallet, // Removed Bitcoin wallet
           );
           return result;
         };
