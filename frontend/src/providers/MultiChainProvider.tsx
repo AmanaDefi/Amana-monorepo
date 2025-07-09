@@ -23,8 +23,7 @@ import { useConnect } from "wagmi";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { zetachain } from "viem/chains";
 import { useFundWalletStore } from "@/store/fundWalletStore";
-import { getBitcoinBalance } from "@/actions/bitcoinActions";
-import { convertStringToBalance } from "@/utils/graphUtils";
+
 import { useAuthStore } from "@/store/authStore";
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 
@@ -61,8 +60,7 @@ interface MultiChainContextType {
   refetchBalance: (address: string) => Promise<Balance | undefined>;
   isHydrated: boolean;
   evmDisconnect: () => Promise<void>;
-  // Bitcoin-specific properties
-  bitcoinBalance: Balance;
+
 }
 
 const MultiChainContext = createContext<MultiChainContextType | undefined>(
@@ -121,15 +119,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
 
   const latestChainRef = useRef<string | null>(null);
   
-    // Remove import
-    // import { useTemporaryBitcoinWallet } from "@/hooks/useBitcoinWallet";
-    // Remove usage and destructuring
-    // const { wallet: bitcoinWallet, isConnected: isBitcoinConnected, connectWallet: connectBitcoinWallet, disconnect: disconnectBitcoinWallet } = useTemporaryBitcoinWallet();
-    // Remove all bitcoinWallet, isBitcoinConnected, connectBitcoinWallet, disconnectBitcoinWallet related logic and state
-  const [bitcoinBalance, setBitcoinBalance] = useState<Balance>({ 
-    value: 0n, 
-    formatted: "0" 
-  });
+  
 
   const disconnectConnectors = useCallback(async () => {
     if (!!filteredWallets?.length) {
@@ -171,11 +161,8 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       setActiveChain(chainConfigs[CHAIN_ID.solana]);
       latestChainRef.current = CHAIN_ID.solana.toString();
       return;
-    } else if (selectedChain === "bitcoin") {
-      setActiveChain(chainConfigs[CHAIN_ID.bitcoin]);
-      latestChainRef.current = CHAIN_ID.bitcoin.toString();
-      return;
-    } else if (privyWallet?.chainId) {
+    } 
+    else if (privyWallet?.chainId) {
       setActiveChain(
         chainConfigs[Number(privyWallet?.chainId?.split(":")[1] ?? 7000)],
       );
@@ -199,36 +186,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Connect Bitcoin Wallet
-  const connectBitcoin = async (walletType: 'unisat' | 'xverse' | 'leather' = 'unisat') => {
-    setIsModalOpen(false);
-    try {
-      // Disconnect other wallets first
-      if (selectedChain === "evm") {
-        debugLog("Disconnecting EVM wallet before Bitcoin connection");
-        await evmDisconnect();
-      }
-      if (selectedChain === "solana" && connected) {
-        debugLog("Disconnecting Solana wallet before Bitcoin connection");
-        await disconnect();
-      }
-      
-    
-      debugLog("Bitcoin wallet connection initiated");
-    } catch (error) {
-      console.error("Bitcoin connection error:", error);
-      throw error;
-    }
-  };
-
-  // Get Bitcoin balance
-  const getBitcoinBalanceFormatted = useCallback(async (address: string) => {
-    // The useTemporaryBitcoinWallet hook is removed, so this function is no longer needed.
-    // Keeping it for now as it might be used elsewhere or removed later.
-    // If bitcoinWallet is no longer available, return default values.
-    // For now, we'll return default values as the wallet is removed.
-    return { value: 0n, formatted: "0" };
-  }, []);
 
   useEffect(() => {
     if (connected && publicKey && !isConnectedRef.current) {
@@ -347,7 +304,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     setSelectedChain("evm");
     disconnect();
     await evmDisconnect();
-    setBitcoinBalance({ value: 0n, formatted: "0" }); // Reset Bitcoin balance
+   
     setIsModalOpen(false);
     debugLog("All wallets disconnected");
     setWalletAddress(null);
@@ -421,20 +378,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     step,
     setFundWalletAddress,
   ]);
-
-
-
-  // Ensure bitcoinBalance is a valid object, not a boolean or null
-  let safeBitcoinBalance = bitcoinBalance;
-  if (typeof bitcoinBalance === 'boolean') {
-    console.warn('[MultiChainProvider] bitcoinBalance should never be boolean! Forcing to null.');
-    safeBitcoinBalance = { value: 0n, formatted: "0" };
-  } else if (typeof bitcoinBalance !== 'object' || bitcoinBalance === null) {
-    if (bitcoinBalance) {
-      console.warn('[MultiChainProvider] Invalid bitcoinBalance value detected:', bitcoinBalance);
-    }
-    safeBitcoinBalance = { value: 0n, formatted: "0" };
-  }
 
   // Add switchToChain implementation (move above providerValue)
   const switchToChain = useCallback(
@@ -578,11 +521,9 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     isModalOpen,
     setIsModalOpen,
     switchToChain,
-    refetchBalance: selectedChain === "bitcoin" ? getBitcoinBalanceFormatted : getEvmBalance,
+    refetchBalance:   getEvmBalance,
     isHydrated,
     evmDisconnect: evmDisconnect,
-    // Bitcoin-specific properties
-    bitcoinBalance: safeBitcoinBalance,
   };
   
   // Log provider state changes
