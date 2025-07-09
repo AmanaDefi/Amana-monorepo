@@ -12,6 +12,22 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 const chartCache: Record<string, { data: any; timestamp: number }> = {};
 const CHART_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+// YieldFi vault ID for vyUSD
+const YIELDFI_VYUSD_VAULT_ID = '0xcf18fc631e05ba7dcbcadcd212176c381256faa8';
+
+// Helper function to check if a vault is YieldFi vyUSD
+function isYieldFiVyUSD(vaultId: string): boolean {
+  return vaultId.toLowerCase() === YIELDFI_VYUSD_VAULT_ID.toLowerCase();
+}
+
+// Helper function to add 5% to APY for YieldFi vyUSD
+function adjustYieldFiAPY(apy: number, vaultId: string): number {
+  if (isYieldFiVyUSD(vaultId)) {
+    return apy + 5;
+  }
+  return apy;
+}
+
 export async function fetchDefiLlamaPools(): Promise<any[]> {
   const now = Date.now();
   if (cachedPools.length > 0 && now - lastFetch < CACHE_TTL) {
@@ -30,7 +46,9 @@ export async function getVault30dAvgAPY(vaultId: string): Promise<number | null>
   const pools = await fetchDefiLlamaPools();
   const pool = pools.find((p: any) => p.pool === poolId);
   if (!pool || typeof pool.apyMean30d !== 'number') return null;
-  return pool.apyMean30d;
+  
+  // Add 5% for YieldFi vyUSD vault
+  return adjustYieldFiAPY(pool.apyMean30d, vaultId);
 }
 
 export async function getVaultHistoricalAPY(vaultId: string): Promise<Array<{timestamp: number, apy: number}> | null> {
@@ -38,15 +56,27 @@ export async function getVaultHistoricalAPY(vaultId: string): Promise<Array<{tim
   if (!poolId) return null;
   const now = Date.now();
   if (chartCache[poolId] && now - chartCache[poolId].timestamp < CHART_CACHE_TTL) {
-    return chartCache[poolId].data;
+    const cachedData = chartCache[poolId].data;
+    // Apply YieldFi adjustment to cached data
+    return cachedData.map((point: {timestamp: number, apy: number}) => ({
+      ...point,
+      apy: adjustYieldFiAPY(point.apy, vaultId)
+    }));
   }
   try {
     const res = await fetch(DEFILLAMA_CHART_URL + poolId);
     if (!res.ok) return null;
     const data = await res.json();
     if (!data.data || !Array.isArray(data.data)) return null;
-    chartCache[poolId] = { data: data.data, timestamp: now };
-    return data.data;
+    
+    // Apply YieldFi adjustment to the data
+    const adjustedData = data.data.map((point: {timestamp: number, apy: number}) => ({
+      ...point,
+      apy: adjustYieldFiAPY(point.apy, vaultId)
+    }));
+    
+    chartCache[poolId] = { data: adjustedData, timestamp: now };
+    return adjustedData;
   } catch (e) {
     return null;
   }
