@@ -16,5 +16,5 @@ export const VAULT_TO_DEFILLAMA_POOL: Record<string, string> = {
   // Convex tacBTC/cbBTC/FBTC
   '0x5e3adc840b55fe0b99c0418ac69113e1f0296992': '14769af2-5b5c-40cd-8452-2f4ddde854b8',
   // Convex USDC/USDf
-  '': '977bc628-7476-43cf-abb8-68934bf56171',
+  '0xe501cbd03fa739273f49a8b54dd49de1248101f6': '977bc628-7476-43cf-abb8-68934bf56171',
 }; 
