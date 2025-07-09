@@ -21,7 +21,10 @@ export const TopUpChainsModal = () => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { wallets } = useWallets();
-  const activeWallet = wallets[0];
+  const filteredWallets = wallets.filter(
+    (wallet) => wallet.meta.id !== "app.phantom",
+  );
+  const activeWallet = filteredWallets[0];
 
   const handleClose = () => {
     if (!!walletAddress && activeWallet.walletClientType !== "privy") {

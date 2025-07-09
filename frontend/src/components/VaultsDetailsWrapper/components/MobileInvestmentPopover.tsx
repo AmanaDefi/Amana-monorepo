@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import YourInvestment from "@/components/VaultsDetailsWrapper/components/YourInvestment";
+import { VaultData } from "@/types/types";
 
 interface MobileInvestmentPopoverProps {
   isVisible: boolean;
@@ -11,6 +12,7 @@ interface MobileInvestmentPopoverProps {
   depositAmount: string;
   vaultTokenSymbol: string;
   depositUSDValue: number;
+  vaultData: VaultData;
 }
 
 const MobileInvestmentPopover = ({
@@ -20,6 +22,7 @@ const MobileInvestmentPopover = ({
   depositAmount,
   vaultTokenSymbol,
   depositUSDValue,
+  vaultData,
 }: MobileInvestmentPopoverProps) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -65,6 +68,7 @@ const MobileInvestmentPopover = ({
             depositAmount={depositAmount}
             vaultTokenSymbol={vaultTokenSymbol}
             depositUSDValue={depositUSDValue}
+            vaultData={vaultData}
           />
         </motion.div>
       )}

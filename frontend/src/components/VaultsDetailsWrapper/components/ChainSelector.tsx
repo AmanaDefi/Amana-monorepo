@@ -41,7 +41,10 @@ export default function ChainSelector({
 }: ChainSelectorProps) {
   const { activeChain, walletAddress } = useMultiChain();
   const { wallets } = useWallets();
-  const activeAccount = wallets[0];
+  const filteredWallets = wallets.filter(
+    (wallet) => wallet.meta.id !== "app.phantom",
+  );
+  const activeAccount = filteredWallets[0];
   const { openModal, setSelectedChainFromModal } = useChainTokenModalStore();
   const { setStep } = useFundWalletStore();
 

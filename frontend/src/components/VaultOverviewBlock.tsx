@@ -184,14 +184,7 @@ export const VaultOverviewBlock: React.FC<Props> = ({
               isLoading={isAPYLoading}
               skeletonClassName="h-6 w-16"
             />
-            {!isDeposit && isReward && (
-              <Image
-                src="/rewards.png"
-                alt="reward star"
-                width={23}
-                height={18}
-              />
-            )}
+          
             {vault.protocolPoints && vault.protocolPoints > 0 ? (
               <InfoBlock
                 isRight
@@ -212,7 +205,7 @@ export const VaultOverviewBlock: React.FC<Props> = ({
                         vault.protocolPointsDescription
                           ? vault.protocolPointsDescription
                           : vault.protocol.name
-                      } Points`}
+                      } `}
                     </span>
                     <span className="text-white font-medium text-base">
                       {vault.protocolPoints} pts/$/day

@@ -145,8 +145,8 @@ contract WithdrawHelper is
                 amount,
                 address(0),
                 withdrawZRC20,
+                withdrawZRC20,
                 address(0),
-                registry,
                 msg.sender,
                 vaultNonce,
                 recipient
@@ -224,7 +224,6 @@ contract WithdrawHelper is
                 withdrawZRC20,
                 withdrawERC20,
                 vaultAsset,
-                registry,
                 msg.sender,
                 vaultNonce,
                 nonEvmAddress
@@ -318,7 +317,6 @@ contract WithdrawHelper is
                 withdrawZRC20,
                 withdrawERC20,
                 vaultAsset,
-                registry,
                 msg.sender,
                 vaultNonce,
                 nonEvmAddress
@@ -369,8 +367,8 @@ contract WithdrawHelper is
                 assets,
                 user,
                 withdrawZRC20,
+                withdrawZRC20,
                 vaultAsset,
-                registry,
                 msg.sender,
                 vaultNonce,
                 bytes("0x")
@@ -423,8 +421,8 @@ contract WithdrawHelper is
                 0,
                 address(0),
                 address(0),
+                address(0),
                 vaultAsset,
-                registry,
                 msg.sender,
                 vaultNonce,
                 bytes("0x")

@@ -26,7 +26,10 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   const path = usePathname();
   const router = useRouter();
   const { wallets } = useWallets();
-  const activeAccount = wallets[0];
+  const filteredWallets = wallets.filter(
+    (wallet) => wallet.meta.id !== "app.phantom",
+  );
+  const activeAccount = filteredWallets[0];
   const { walletAddress, activeChain } = useMultiChain();
   const isConnected = !!walletAddress;
   const [isMenuOpened, setIsMenuOpened] = useState(false);

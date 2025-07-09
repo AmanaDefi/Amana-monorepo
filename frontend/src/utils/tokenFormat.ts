@@ -10,13 +10,22 @@ export const formatTokenBalance = (
 ): string => {
   const num = Math.max(0, Number(balance));
 
-  // Check if token is a stablecoin
+  if (num > 0 && num < 0.0001) {
+    return "< 0.0001";
+  }
+
   const isStablecoin = STABLECOIN_SYMBOLS.some((stableSymbol) =>
     symbol?.includes(stableSymbol),
   );
 
   const decimals = isStablecoin ? 2 : 4;
-  return parseFloat(num.toFixed(decimals)).toString();
+  const formatted = num.toFixed(decimals);
+
+  if (parseFloat(formatted) === 0 && num > 0) {
+    return isStablecoin ? "< 0.01" : "< 0.0001";
+  }
+
+  return parseFloat(formatted).toString();
 };
 
 // Format USD value ensuring it's never negative

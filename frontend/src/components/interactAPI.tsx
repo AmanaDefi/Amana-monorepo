@@ -68,9 +68,9 @@ const handleDepositTransaction = async (
   console.log("deposit", activeAccount);
   if (!activeAccount) return;
   console.log("=== DEPOSIT TRANSACTION START ===");
-  console.log("Active Chain ID:", activeChain.id);
+  console.log("Active Chain ID:", activeChain?.id);
   console.log("Vault Strategy Chain ID:", vaultData.protocol.chainId);
-  console.log("Active Chain Name:", activeChain.name);
+  console.log("Active Chain Name:", activeChain?.name);
   setTransactionCompleted(false);
   updateLocalStorageObject(vaultData.id, { transactionCompleted: false });
 
@@ -101,10 +101,10 @@ const handleDepositTransaction = async (
           inputBalance.formattedUSD ||
           (Number(inputBalance.formatted) * (inputToken.price || 0)).toFixed(2),
         user:
-          activeChain.id === CHAIN_ID.solana
+          activeChain?.id === CHAIN_ID.solana
             ? walletContext.publicKey?.toBase58()
             : activeAccount.address,
-        chain: activeChain.id,
+        chain: activeChain?.id,
       });
     } catch (analyticsError) {
       // 📊 Analytics failures should not affect core transaction logic
@@ -119,12 +119,12 @@ const handleDepositTransaction = async (
     console.log("Receipt.transactionHash:", receipt.transactionHash);
 
     const activeChainExplorerBaseUrl =
-      CHAINS_EXPLORER_BASE_URL_MAINNET[activeChain.id] ?? "";
+      CHAINS_EXPLORER_BASE_URL_MAINNET[activeChain?.id] ?? "";
     updateLocalStorageObject(vaultData.id, {
       lastEventTxHash: `${activeChainExplorerBaseUrl}/tx/${receipt.transactionHash}`,
       crosschainInvestHash: receipt.transactionHash ?? "",
     });
-    if (activeChain.id === CHAIN_ID.solana) {
+    if (activeChain?.id === CHAIN_ID.solana) {
       // Solana handling - no waitForReceipt needed
       console.log(
         "🌊 [SOLANA] Solana transaction handling - receipt confirmed on-chain",
@@ -132,7 +132,7 @@ const handleDepositTransaction = async (
     } else {
       console.log("EVM transaction, waiting for receipt confirmation");
 
-      const publicClient = getPublicClient(activeChain.id);
+      const publicClient = getPublicClient(activeChain?.id);
       if (
         publicClient &&
         receipt.transactionHash &&
@@ -223,7 +223,7 @@ const handleWithdrawTransaction = async (
   updateLocalStorageObject(vaultData.id, { transactionCompleted: false });
 
   let withdrawZRC20;
-  if (activeChain.id === 7001 || activeChain.id === 7000) {
+  if (activeChain?.id === 7001 || activeChain?.id === 7000) {
     withdrawZRC20 = vaultData.inputToken;
   } else {
     withdrawZRC20 = withdrawToken.ZRC20equivalent;
@@ -251,9 +251,9 @@ const handleWithdrawTransaction = async (
       setcrossChainTxId,
     );
 
-    if (activeChain.id === CHAIN_ID.solana) {
+    if (activeChain?.id === CHAIN_ID.solana) {
     } else {
-      const publicClient = getPublicClient(activeChain.id);
+      const publicClient = getPublicClient(activeChain?.id);
       if (
         publicClient &&
         receipt?.transactionHash &&
@@ -267,12 +267,12 @@ const handleWithdrawTransaction = async (
     }
 
     const activeChainExplorerBaseUrl =
-      CHAINS_EXPLORER_BASE_URL_MAINNET[activeChain.id] ?? "";
+      CHAINS_EXPLORER_BASE_URL_MAINNET[activeChain?.id] ?? "";
     setLastEventTxHash(
       `${activeChainExplorerBaseUrl}/tx/${receipt.transactionHash}`,
     );
 
-    const isUserOnZetachain = isZetachain(activeChain.id);
+    const isUserOnZetachain = isZetachain(activeChain?.id);
     const isVaultOnZetachain = isZetachain(vaultData.protocol.chainId);
 
     if (isUserOnZetachain && !isVaultOnZetachain) {
@@ -413,7 +413,7 @@ export default function InteractionContainer({
     const txType = isDeposit ? "deposit" : "withdrawal";
 
     // Determine if this is a Type 2 transaction
-    const isUserOnZetachain = isZetachain(activeChain.id);
+    const isUserOnZetachain = isZetachain(activeChain?.id);
     const isVaultOnZetachain = isZetachain(vaultData.protocol.chainId);
     const isType2Transaction = isUserOnZetachain && !isVaultOnZetachain;
 
@@ -607,7 +607,7 @@ export default function InteractionContainer({
     const transactionType: "deposit" | "withdrawal" = isDepositConfirmed
       ? "deposit"
       : "withdrawal";
-    const isUserOnZetachain = isZetachain(activeChain.id);
+    const isUserOnZetachain = isZetachain(activeChain?.id);
     const isVaultOnZetachain = isZetachain(vaultData.protocol.chainId);
     const isType2 = isUserOnZetachain && !isVaultOnZetachain;
 
@@ -721,7 +721,7 @@ export default function InteractionContainer({
             isType2,
             totalSteps: isType2 ? 3 : transactionType === "deposit" ? 6 : 6,
           },
-          activeChain.id,
+          activeChain?.id,
           vaultData.protocol.chainId,
         );
 
@@ -807,7 +807,7 @@ export default function InteractionContainer({
     action,
     finishedTransaction,
     actions,
-    activeChain.id,
+    activeChain?.id,
     blockpi,
     setAction,
     setStep,
@@ -953,7 +953,10 @@ function Interaction({
   outputAmountFormatted: string
 }): JSX.Element {
   const { wallets } = useWallets();
-  const activeAccount = wallets[0];
+  const filteredWallets = wallets.filter(
+    (wallet) => wallet.meta.id !== "app.phantom",
+  );
+  const activeAccount = filteredWallets[0];
   const walletContext = useWallet();
   const prevLebel = useRef(label);
   const { openStep } = useAuthStore();
@@ -1045,7 +1048,7 @@ const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
       const hasDepositConfirmed = actions[step + 1] == Action.depositConfirmed;
       const isType2Flow = isDepositFlow && !hasDepositConfirmed;
 
-      const isUserOnZetachain = isZetachain(activeChain.id);
+      const isUserOnZetachain = isZetachain(activeChain?.id);
       const isVaultOnZetachain = isZetachain(vaultData.protocol.chainId);
 
       let successMessage;
@@ -1054,7 +1057,7 @@ const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
       } else if (isUserOnZetachain && isVaultOnZetachain) {
         successMessage = "Deposit transaction completed";
       } else {
-        const chainName = activeChain.name || "local chain";
+        const chainName = activeChain?.name || "local chain";
         successMessage = `Initial deposit transaction on ${chainName} completed`;
       }
 
@@ -1089,7 +1092,7 @@ const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
       action == Action.withdraw &&
       actions[step + 1] == Action.withdrawconfirmed
     ) {
-      const isUserOnZetachain = isZetachain(activeChain.id);
+      const isUserOnZetachain = isZetachain(activeChain?.id);
       const isVaultOnZetachain = isZetachain(vaultData.protocol.chainId);
 
       let successMessage;
@@ -1098,7 +1101,7 @@ const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
       } else if (isUserOnZetachain && isVaultOnZetachain) {
         successMessage = "Withdraw transaction completed";
       } else {
-        const chainName = activeChain.name || "local chain";
+        const chainName = activeChain?.name || "local chain";
         successMessage = `Initial withdraw transaction on ${chainName} completed`;
       }
 
@@ -1199,7 +1202,7 @@ const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
       });
 
       // Determine transaction type for better UI feedback
-      const isUserOnZetachain = isZetachain(activeChain.id);
+      const isUserOnZetachain = isZetachain(activeChain?.id);
       const isVaultOnZetachain = isZetachain(vaultData.protocol.chainId);
 
       let description;
@@ -1208,7 +1211,7 @@ const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
       } else if (isUserOnZetachain && isVaultOnZetachain) {
         description = "Deposit in progress";
       } else {
-        description = `Initial deposit transaction on ${activeChain.name} in progress`;
+        description = `Initial deposit transaction on ${activeChain?.name} in progress`;
       }
 
       updateLocalTransactionFeedback(
@@ -1220,7 +1223,7 @@ const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
 
     if (currenAction == Action.withdraw) {
       // Determine withdrawal transaction type for better UI feedback
-      const isUserOnZetachain = isZetachain(activeChain.id);
+      const isUserOnZetachain = isZetachain(activeChain?.id);
       const isVaultOnZetachain = isZetachain(vaultData.protocol.chainId);
 
       let description;
@@ -1229,7 +1232,7 @@ const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
       } else if (isUserOnZetachain && isVaultOnZetachain) {
         description = `Withdrawing ${inputBalance.formatted} ${vaultData.inputToken.symbol}`;
       } else {
-        description = `Initial withdraw transaction on ${activeChain.name} in progress`;
+        description = `Initial withdraw transaction on ${activeChain?.name} in progress`;
       }
 
       updateLocalTransactionFeedback(
@@ -1295,12 +1298,12 @@ const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
   }, [refreshBalance, vaultData?.id]);
 
   const handleWalletConnect = () => {
-    if (activeChain.id === zetachain.id) {
+    if (activeChain?.id === zetachain.id) {
       openStep(isMobile ? "mobileOptionsA" : "optionsA");
     } else {
       if (
-        (selectedChain === "solana" && activeChain.id !== CHAIN_ID["solana"]) ||
-        (selectedChain === "evm" && activeChain.id === CHAIN_ID["solana"])
+        (selectedChain === "solana" && activeChain?.id !== CHAIN_ID["solana"]) ||
+        (selectedChain === "evm" && activeChain?.id === CHAIN_ID["solana"])
       ) {
         if (selectedChain === "evm" && activeAccount?.address) {
           const confirmResult = confirm("Your EVM wallet will be disconnected");
@@ -1354,10 +1357,12 @@ const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
           const isBitcoinWalletConnected = isBitcoin && !!bitcoinWallet;
 
           const isConnectWalletSHown =
-            (!activeAccount && !walletContext.publicKey && !isBitcoinWalletConnected) ||
-            (activeAccount?.walletClientType === "privy" && activeChain.id !== zetachain.id) ||
-            (walletContext.publicKey && activeChain.id !== CHAIN_ID["solana"]) ||
-            (activeAccount?.address && activeChain.id === CHAIN_ID["solana"]);
+            (!activeAccount && !walletContext.publicKey) ||
+            (activeAccount?.walletClientType === "privy" &&
+              activeChain?.id !== zetachain.id) ||
+            (walletContext.publicKey &&
+              activeChain?.id !== CHAIN_ID["solana"]) ||
+            (activeAccount?.address && activeChain?.id === CHAIN_ID["solana"]);
 
           const isDisabled = !isConnectWalletSHown
             ? isButtonDisabled ||

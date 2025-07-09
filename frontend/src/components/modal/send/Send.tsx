@@ -176,7 +176,10 @@ export const Send = () => {
   const { walletAddress, activeChain, switchToChain, balance } =
     useMultiChain();
   const { wallets } = useWallets();
-  const activeWallet = wallets[0];
+  const filteredWallets = wallets.filter(
+    (wallet) => wallet.meta.id !== "app.phantom",
+  );
+  const activeWallet = filteredWallets[0];
   const { connected } = useWallet();
 
   const [tokenBalances, setTokenBalances] = useState<
@@ -283,7 +286,7 @@ export const Send = () => {
     }
 
     if (selectedToken && activeChain) {
-      const tokenKey = `${selectedToken.address.toLowerCase()}-${activeChain.id}`;
+      const tokenKey = `${selectedToken.address.toLowerCase()}-${activeChain?.id}`;
       const tokenData = tokenBalances.get(tokenKey);
 
       if (tokenData?.balance) {
@@ -316,13 +319,13 @@ export const Send = () => {
 
   useEffect(() => {
     if (activeChain?.name) {
-      setValue("network", activeChain.name, { shouldValidate: true });
+      setValue("network", activeChain?.name, { shouldValidate: true });
     }
   }, [activeChain, setValue]);
 
   useEffect(() => {
     if (activeChain?.name && !watch("network")) {
-      setValue("network", activeChain.name, { shouldValidate: true });
+      setValue("network", activeChain?.name, { shouldValidate: true });
     }
   }, []);
 

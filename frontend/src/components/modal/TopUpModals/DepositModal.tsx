@@ -40,7 +40,10 @@ export const Deposit = () => {
   const { walletAddress: smartWalletAddress } = useMultiChain();
 
   const { wallets } = useWallets();
-  const activeWallet = wallets[0];
+  const filteredWallets = wallets.filter(
+    (wallet) => wallet.meta.id !== "app.phantom",
+  );
+  const activeWallet = filteredWallets[0];
   const walletContext = useWallet();
   const [loading, setLoading] = useState(false);
   const [txError, setTxError] = useState(false);

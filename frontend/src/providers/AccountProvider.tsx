@@ -8,7 +8,10 @@ import { usePrivy, useWallets } from "@privy-io/react-auth";
 
 export default function AccountProvider({ children }: PropsWithChildren) {
   const { wallets } = useWallets();
-  const activePrivyWallet = wallets[0];
+  const filteredWallets = wallets.filter(
+    (wallet) => wallet.meta.id !== "app.phantom",
+  );
+  const activePrivyWallet = filteredWallets[0];
   const { ready, authenticated} = usePrivy();
 
   const [hasTrackedPage, setHasTrackedPage] = useState(false);

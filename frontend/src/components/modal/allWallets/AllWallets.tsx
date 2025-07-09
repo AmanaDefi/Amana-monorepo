@@ -45,11 +45,16 @@ const AllWAllets = () => {
     setWalletAddress,
     chain,
   } = useFundWalletStore();
-  const { selectedChain, activeChain, connectSolana } = useMultiChain();
+  const { connectSolana } = useMultiChain();
 
   const { wallets } = useWallets();
+  const filteredWallets = wallets.filter(
+    (wallet) => wallet.meta.id !== "app.phantom",
+  );
   const { logout } = usePrivy();
-  const activeAccount = wallets[0];
+  const activeAccount = filteredWallets[0];
+
+  console.log(activeAccount);
 
   const {
     wallets: solanaAdapters,
@@ -136,8 +141,7 @@ const AllWAllets = () => {
       if (
         (adapter.adapter.name.toLowerCase() === "metamask" &&
           !(adapter.adapter as WalletAdapter & { wallet?: { client?: any } })
-            ?.wallet?.client) ||
-        adapter.adapter.name.toLowerCase() === "phantom"
+            ?.wallet?.client)
       ) {
         return false;
       }
@@ -158,7 +162,7 @@ const AllWAllets = () => {
         console.log("connect solana error");
       }
       select(connector.name);
-      solanaConnect();
+      // solanaConnect();
     } catch (error) {
       console.log(error);
 
@@ -180,7 +184,7 @@ const AllWAllets = () => {
     : true;
 
   const filteredEvmConnectors = connectors.filter(
-    (con) => con.id !== "app.phantom",
+    (con) => con.id !== "app.phantom" && con.name.toLowerCase() !== 'injected',
   );
 
   return (

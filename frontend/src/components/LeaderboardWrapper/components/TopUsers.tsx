@@ -3,7 +3,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { LeaderboardUserData } from "@/types/types";
-import { formatCurrency, shortAddressForm } from "@/utils/utils";
+import { formatCurrency } from "@/utils/utils";
 import CopyTextButton from "@/components/common/CopyTextButton";
 import { useWallets } from "@privy-io/react-auth";
 import { ZERO_ACCOUNT } from "@/constants";
@@ -53,7 +53,10 @@ const userRowVariants = {
 
 export default function TopUsers({ users, searchTerm }: TopUsersProps) {
   const { wallets } = useWallets();
-  const currentUserAccount = wallets[0] || ZERO_ACCOUNT;
+  const filteredWallets = wallets.filter(
+    (wallet) => wallet.meta.id !== "app.phantom",
+  );
+  const currentUserAccount = filteredWallets[0] || ZERO_ACCOUNT;
 
   const getRankBadge = (rank: number) => {
     switch (rank) {
@@ -91,7 +94,7 @@ export default function TopUsers({ users, searchTerm }: TopUsersProps) {
 
   return (
     <motion.div
-      className="border-b border-[#181d29] pb-2 md:pb-6 mb-5 md:mb-6"
+      className="border-b border-[#535E73] pb-2 md:pb-6 mb-5 md:mb-6"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
@@ -114,14 +117,14 @@ export default function TopUsers({ users, searchTerm }: TopUsersProps) {
             variants={userRowVariants}
             whileHover={{
               y: -2,
-              scale: 0.98,
+              scale: 1,
               boxShadow: "0 8px 25px rgba(27, 70, 224, 0.3)",
               backgroundColor: isCurrentUser
                 ? "rgba(59, 130, 246, 0.4)"
                 : "rgba(55, 65, 81, 0.8)",
             }}
             whileTap={{
-              scale: 0.96,
+              scale: 1,
             }}
             transition={{
               type: "spring" as const,
@@ -162,12 +165,32 @@ export default function TopUsers({ users, searchTerm }: TopUsersProps) {
               </span>
             </div>
 
-            <div className="flex items-center justify-between min-w-0 gap-1">
-              <span className="line-clamp-1 font-normal text-xs md:text-base text-white truncate min-w-0">
-                {shortAddressForm(item.user_address)}
+            <div className="flex items-center justify-between min-w-0">
+              <span
+                className="font-normal text-xs md:text-base text-white cursor-pointer flex-1 min-w-0 mr-2"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  const copyButton =
+                    e.currentTarget.parentElement?.querySelector("button");
+                  copyButton?.click();
+                }}
+              >
+                <span className="hidden md:block truncate min-w-0">
+                  {item.user_address.length > 20
+                    ? `${item.user_address.slice(0, 8)}...${item.user_address.slice(-8)}`
+                    : item.user_address}
+                </span>
+                <span className="block md:hidden truncate">
+                  {item.user_address.slice(0, 8)}...
+                </span>
               </span>
-              <div className="flex-shrink-0">
-                <CopyTextButton text={item.user_address} size={16} />
+              <div className="flex-shrink-0 flex justify-end">
+                <CopyTextButton
+                  text={item.user_address}
+                  size={18}
+                  showTextFeedback={true}
+                  className="p-2 md:p-3 -m-1"
+                />
               </div>
             </div>
           </motion.div>

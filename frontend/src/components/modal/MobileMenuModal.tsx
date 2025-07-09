@@ -10,6 +10,7 @@ import classNames from "classnames";
 import AmanaLogo from "@public/logo/amanadefi/logo.svg";
 import CloseModalIcon from "../svg/CloseModalIcon";
 import DiscordLogo from "@public/logo/discord.svg";
+import Medium from "@public/logo/medium.svg";
 import XLogo from "@public/logo/x.svg";
 import LinkedInLogo from "@public/logo/linkedIn.svg";
 import GlowIcon from "../svg/GlowIcon";
@@ -159,6 +160,13 @@ const MobileMenuModal: React.FC<MobileMenuProps> = ({ toggleMenu, isOpen }) => {
               className="w-10 h-10 bg-[#1B46E0] rounded-full flex items-center justify-center z-[105]"
             >
               <DiscordLogo height={18} className="w-[22px] h-[26px]" />
+            </Link>
+            <Link
+              href="https://medium.com/@amana_defi"
+              target="_blank"
+              className="w-10 h-10 bg-[#1B46E0] rounded-full flex items-center justify-center"
+            >
+              <Medium height={18} className="w-[22px] h-[26px]" />
             </Link>
           </div>
         </div>
