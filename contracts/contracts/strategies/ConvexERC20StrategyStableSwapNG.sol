@@ -10,7 +10,6 @@ import "../interfaces/ICurveStableSwapNG.sol";
 import "../interfaces/ISwapHelper.sol";
 import "../interfaces/IConvexBooster.sol";
 import "../interfaces/IConvexRewardPool.sol";
-import "hardhat/console.sol";
 
 contract ConvexERC20StrategyStableSwapNG is ERC20StrategyParent {
     using SafeERC20 for IERC20;
@@ -92,7 +91,6 @@ contract ConvexERC20StrategyStableSwapNG is ERC20StrategyParent {
             claimedCVX = amountCVXAfter > amountCVXBefore
                 ? amountCVXAfter - amountCVXBefore
                 : 0;
-            console.log("Claimed CRV: %s, CVX: %s", claimedCRV, claimedCVX);
             emit RewardsClaimed(address(this), crvToken, claimedCRV);
             emit RewardsClaimed(address(this), cvxToken, claimedCVX);
         } catch Error(string memory reason) {
@@ -115,7 +113,6 @@ contract ConvexERC20StrategyStableSwapNG is ERC20StrategyParent {
             IERC20(mainRewardToken).balanceOf(address(this)),
             harvestSwapSlippage
         );
-        console.log("Reinvesting rewards: inputAmount = %s", inputAmount);
         uint256 amountCVX = IERC20(cvxToken).balanceOf(address(this));
         if (amountCVX > 0) {
             inputAmount += _swapCVXToInputToken(
@@ -124,7 +121,6 @@ contract ConvexERC20StrategyStableSwapNG is ERC20StrategyParent {
                 harvestSwapSlippage
             );
         }
-        console.log("Total inputAmount after CVX swap: %s", inputAmount);
         if (
             inputAmount >
             minClaimableReward *
@@ -201,7 +197,6 @@ contract ConvexERC20StrategyStableSwapNG is ERC20StrategyParent {
         if (address(inputToken) == CBBTC_ADDRESS) {
             return _swapCRVToCBBTC(token, amountIn, initialSlippageBps);
         } else {
-            console.log("Using swapToInputToken for token: %s", token);
             return swapToInputToken(token, amountIn, initialSlippageBps);
         }
     }
@@ -219,7 +214,7 @@ contract ConvexERC20StrategyStableSwapNG is ERC20StrategyParent {
             token, // CRV token
             0x4eBdF703948ddCEA3B11f675B4D1Fba9d2414A14, // TriCRV
             WETH_TOKEN,
-            0x7F86Bf177Dd4F3494b841a37e810A34dD56c829B, // tricrypto
+            0x7F86Bf177Dd4F3494b841a37e810A34dD56c829B, // tricryptoUSDC
             WBTC_ADDRESS,
             0x839d6bDeDFF886404A6d7a788ef241e4e28F4802, // cbBTC/wBTC pool
             address(inputToken), // cbbtc
@@ -231,7 +226,7 @@ contract ConvexERC20StrategyStableSwapNG is ERC20StrategyParent {
 
         address[5] memory pools = [
             0x4eBdF703948ddCEA3B11f675B4D1Fba9d2414A14, // TriCRV
-            0x7F86Bf177Dd4F3494b841a37e810A34dD56c829B, // tricrypto
+            0x7F86Bf177Dd4F3494b841a37e810A34dD56c829B, // tricryptoYSDC
             0x839d6bDeDFF886404A6d7a788ef241e4e28F4802, // cbBTC/wBTC
             address(0),
             address(0)
@@ -342,7 +337,6 @@ contract ConvexERC20StrategyStableSwapNG is ERC20StrategyParent {
         if (address(inputToken) == CBBTC_ADDRESS) {
             return _swapCVXToCBBTC(token, amountIn, initialSlippageBps);
         } else {
-            console.log("Using swapToInputToken for token: %s", token);
             return swapToInputToken(token, amountIn, initialSlippageBps);
         }
     }

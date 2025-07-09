@@ -419,7 +419,7 @@ export const strategyConfigs: StrategyTestConfig[] = [
     receiptTokenContractName: "I4626Vault",
     swapHelperContractName: "SwapHelperEthereum",
     rewardsContractName: "I4626Vault",
-    forkBlock: 22766277,
+    forkBlock: 22881757,
     inputTokenAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
     inputTokenStorageSlot: 9,
     inputTokenIndexOrPlaceholder: 0,
@@ -435,7 +435,7 @@ export const strategyConfigs: StrategyTestConfig[] = [
     minSharesOut: ethers.utils.parseUnits("90", 6),
     withdrawAmount: ethers.utils.parseUnits("100", 6),
     minAmountOut: ethers.utils.parseUnits("90", 6),
-    slippage: 10000,
+    slippage: 100,
   },
   {
     name: "Convex tacBTC-cbBTC-FBTC Strategy - Ethereum",
@@ -445,7 +445,7 @@ export const strategyConfigs: StrategyTestConfig[] = [
     receiptTokenContractName: "ICurveStableSwapNG",
     swapHelperContractName: "SwapHelperEthereum",
     rewardsContractName: "IConvexRewardPool",
-    forkBlock: 22873159,
+    forkBlock: 22881757,
     inputTokenAddress: "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf", // cbBTC on Ethereum
     inputTokenStorageSlot: 9,
     inputTokenIndexOrPlaceholder: 1,
@@ -474,7 +474,7 @@ export const strategyConfigs: StrategyTestConfig[] = [
     receiptTokenContractName: "ICurveStableSwapNG",
     swapHelperContractName: "SwapHelperEthereum",
     rewardsContractName: "IConvexRewardPool",
-    forkBlock: 22873159,
+    forkBlock: 22881757,
     inputTokenAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC on Ethereum
     inputTokenStorageSlot: 9,
     inputTokenIndexOrPlaceholder: 0,

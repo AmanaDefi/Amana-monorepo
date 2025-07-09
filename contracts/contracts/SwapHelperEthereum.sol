@@ -9,7 +9,6 @@ import "./interfaces/ICurveRouterNG.sol";
 import "./interfaces/IV4SwapRouter.sol";
 import "./interfaces/IUniversalRouter.sol";
 import "./interfaces/IPermit2.sol";
-import "hardhat/console.sol";
 
 contract SwapHelperEthereum is SwapHelperParent {
     address public constant ROUTER_NG =
@@ -102,7 +101,7 @@ contract SwapHelperEthereum is SwapHelperParent {
             CVX_ADDRESS, // CVX
             0xB576491F1E6e5E62f1d8F26062Ee822B40B0E0d4, // CVX/WETH pool
             WETH_TOKEN, // WETH
-            0x7F86Bf177Dd4F3494b841a37e810A34dD56c829B, // Tricrypto pool
+            0x7F86Bf177Dd4F3494b841a37e810A34dD56c829B, // TricryptoUSDC pool
             USDC_ADDRESS, // USDC
             address(0),
             address(0),
@@ -129,7 +128,6 @@ contract SwapHelperEthereum is SwapHelperParent {
         ];
 
         IERC20(CVX_ADDRESS).approve(ROUTER_NG, amount);
-
         amountOut = ICurveRouterNG(ROUTER_NG).exchange(
             route,
             swapParams,
@@ -347,8 +345,8 @@ contract SwapHelperEthereum is SwapHelperParent {
                 IERC20(outputToken).transfer(strategy, amountOutCurve);
                 return amountOutCurve;
             } else if (outputToken == USDC_ADDRESS) {
-                console.log("Swapping CVX to USDC via Curve NG");
                 amountOutCurve = _swapCVXtoUSDC(amount, minimumOut);
+                return amountOutCurve;
             }
         }
 
@@ -360,11 +358,6 @@ contract SwapHelperEthereum is SwapHelperParent {
 
         if (encodedPath.length > 0) {
             // Uniswap V3 Swap
-            console.log(
-                "Swapping via Uniswap V3: %s to %s",
-                inputToken,
-                outputToken
-            );
             IERC20(inputToken).approve(UNISWAP_V3_ROUTER, amount);
             ISwapRouter.ExactInputParams memory params = ISwapRouter
                 .ExactInputParams({
@@ -378,11 +371,6 @@ contract SwapHelperEthereum is SwapHelperParent {
             amountOut = ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params);
         } else {
             // Uniswap V2 Swap
-            console.log(
-                "Swapping via Uniswap V2: %s to %s",
-                inputToken,
-                outputToken
-            );
             path = getPathV2(inputToken, outputToken, UNISWAP_V2_FACTORY);
             if (path.length < 2) return 0;
 

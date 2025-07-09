@@ -276,17 +276,17 @@ export const SUPPORTED_CHAINS =
 const zetaChain = deployEnv === "testnet" ? zetachainAthensTestnet : zetachain;
 export const customZetachain = zetaRpcUrl
   ? {
-      ...zetaChain,
-      rpcUrls: {
-        ...zetaChain.rpcUrls,
-        public: {
-          http: [zetaRpcUrl],
-        },
-        default: {
-          http: [zetaRpcUrl],
-        },
+    ...zetaChain,
+    rpcUrls: {
+      ...zetaChain.rpcUrls,
+      public: {
+        http: [zetaRpcUrl],
       },
-    }
+      default: {
+        http: [zetaRpcUrl],
+      },
+    },
+  }
   : zetaChain;
 
 export const chainsWithCustomRpcs = () => {
@@ -1037,6 +1037,7 @@ export const PRICE_IDS: { [key: string]: string } = {
   CRV: "0xa19d04ac696c7a6616d291c7e5d1377cc8be437c327b75adb5dc1bad745fcae8",
   CVX: "0x6aac625e125ada0d2a6b98316493256ca733a5808cd34ccef79b0e28c64d1e76",
   OP: "0x385f64d993f7b77d8182ed5003d97c60aa3361f3cecfe711544d2d59165e9bdf",
+  CBBTC: "0x2817d7bfe5c64b8ea956e9a26f573ef64e72e4d7891f2d6af9bcc93f7aff9a97",
 
   // Chain-specific tokens - using the "(CHAIN)" format
   "ETH (BASE)":
