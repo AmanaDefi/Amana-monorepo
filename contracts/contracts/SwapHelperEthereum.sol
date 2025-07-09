@@ -9,6 +9,7 @@ import "./interfaces/ICurveRouterNG.sol";
 import "./interfaces/IV4SwapRouter.sol";
 import "./interfaces/IUniversalRouter.sol";
 import "./interfaces/IPermit2.sol";
+import "hardhat/console.sol";
 
 contract SwapHelperEthereum is SwapHelperParent {
     address public constant ROUTER_NG =
@@ -129,22 +130,14 @@ contract SwapHelperEthereum is SwapHelperParent {
 
         IERC20(CVX_ADDRESS).approve(ROUTER_NG, amount);
 
-        try
-            ICurveRouterNG(ROUTER_NG).exchange(
-                route,
-                swapParams,
-                amount,
-                minOut,
-                pools,
-                msg.sender
-            )
-        returns (uint256 out) {
-            amountOut = out;
-        } catch {
-            amountOut = 0;
-        }
-
-        return amountOut;
+        amountOut = ICurveRouterNG(ROUTER_NG).exchange(
+            route,
+            swapParams,
+            amount,
+            minOut,
+            pools,
+            msg.sender
+        );
     }
 
     function swapTokensViaCurveNG(
@@ -344,21 +337,17 @@ contract SwapHelperEthereum is SwapHelperParent {
                 uint256 j = getTokenIndex(outputToken, curvePool);
                 IERC20(inputToken).approve(curvePool, amount);
 
-                try
-                    ICurvePoolDynamic(curvePool).exchange(
-                        i,
-                        j,
-                        amount,
-                        minimumOut
-                    )
-                returns (uint256 out) {
-                    amountOutCurve = out;
-                    IERC20(outputToken).transfer(strategy, amountOutCurve);
-                    return amountOutCurve;
-                } catch {
-                    return 0;
-                }
+                amountOutCurve = ICurvePoolDynamic(curvePool).exchange(
+                    i,
+                    j,
+                    amount,
+                    minimumOut
+                );
+
+                IERC20(outputToken).transfer(strategy, amountOutCurve);
+                return amountOutCurve;
             } else if (outputToken == USDC_ADDRESS) {
+                console.log("Swapping CVX to USDC via Curve NG");
                 amountOutCurve = _swapCVXtoUSDC(amount, minimumOut);
             }
         }
@@ -371,6 +360,11 @@ contract SwapHelperEthereum is SwapHelperParent {
 
         if (encodedPath.length > 0) {
             // Uniswap V3 Swap
+            console.log(
+                "Swapping via Uniswap V3: %s to %s",
+                inputToken,
+                outputToken
+            );
             IERC20(inputToken).approve(UNISWAP_V3_ROUTER, amount);
             ISwapRouter.ExactInputParams memory params = ISwapRouter
                 .ExactInputParams({
@@ -381,33 +375,29 @@ contract SwapHelperEthereum is SwapHelperParent {
                     amountOutMinimum: minimumOut
                 });
 
-            try ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params) returns (
-                uint256 out
-            ) {
-                return out;
-            } catch {
-                return 0;
-            }
+            amountOut = ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params);
         } else {
             // Uniswap V2 Swap
+            console.log(
+                "Swapping via Uniswap V2: %s to %s",
+                inputToken,
+                outputToken
+            );
             path = getPathV2(inputToken, outputToken, UNISWAP_V2_FACTORY);
             if (path.length < 2) return 0;
 
             IERC20(inputToken).approve(UNISWAP_V2_ROUTER, amount);
 
-            try
-                IUniswapV2Router02(UNISWAP_V2_ROUTER).swapExactTokensForTokens(
+            uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)
+                .swapExactTokensForTokens(
                     amount,
                     minimumOut,
                     path,
                     strategy,
                     block.timestamp + maxDeadline
-                )
-            returns (uint256[] memory amounts) {
-                return amounts[amounts.length - 1];
-            } catch {
-                return 0;
-            }
+                );
+
+            return amounts[amounts.length - 1];
         }
     }
 
@@ -458,13 +448,7 @@ contract SwapHelperEthereum is SwapHelperParent {
                 amountIn: amount,
                 amountOutMinimum: minimumOut
             });
-        try ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params) returns (
-            uint256 out
-        ) {
-            return out;
-        } catch {
-            return 0;
-        }
+        amountOut = ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params);
     }
 
     function swapViaUniV3SpecificIntermediateTokens(
@@ -512,13 +496,7 @@ contract SwapHelperEthereum is SwapHelperParent {
                 amountIn: amount,
                 amountOutMinimum: minimumOut
             });
-        try ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params) returns (
-            uint256 out
-        ) {
-            return out;
-        } catch {
-            return 0;
-        }
+        amountOut = ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params);
     }
 
     function swapViaUniV4(
@@ -589,17 +567,13 @@ contract SwapHelperEthereum is SwapHelperParent {
         inputs[0] = abi.encode(actions, params);
 
         // === STEP 6: Call Universal Router ===
-        try
-            IUniversalRouter(UNIVERSAL_ROUTER).execute(
-                commands,
-                inputs,
-                block.timestamp + maxDeadline
-            )
-        {
-            amountOut = IERC20(outputToken).balanceOf(receiver);
-        } catch {
-            amountOut = 0;
-        }
+        IUniversalRouter(UNIVERSAL_ROUTER).execute(
+            commands,
+            inputs,
+            block.timestamp + maxDeadline
+        );
+
+        amountOut = IERC20(outputToken).balanceOf(receiver);
     }
 
     function swapViaUniV4MultiHop(

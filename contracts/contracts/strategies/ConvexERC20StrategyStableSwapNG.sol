@@ -29,6 +29,10 @@ contract ConvexERC20StrategyStableSwapNG is ERC20StrategyParent {
         0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // WETH address on Ethereum mainnet
     address public constant WBTC_ADDRESS =
         0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599; // WBTC address on Ethereum mainnet
+    address public constant CBBTC_ADDRESS =
+        0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf; // cbbtc address on Ethereum mainnet
+    address public constant USDC_ADDRESS =
+        0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // USDC address on Ethereum mainnet
 
     function initialize(
         string memory _name,
@@ -114,7 +118,7 @@ contract ConvexERC20StrategyStableSwapNG is ERC20StrategyParent {
         console.log("Reinvesting rewards: inputAmount = %s", inputAmount);
         uint256 amountCVX = IERC20(cvxToken).balanceOf(address(this));
         if (amountCVX > 0) {
-            inputAmount += swapCVXToInputToken(
+            inputAmount += _swapCVXToInputToken(
                 cvxToken,
                 amountCVX,
                 harvestSwapSlippage
@@ -156,7 +160,7 @@ contract ConvexERC20StrategyStableSwapNG is ERC20StrategyParent {
 
             if (balance == 0) continue;
 
-            uint256 extraInput = swapCVXToInputToken(
+            uint256 extraInput = _swapCVXToInputToken(
                 extraRewardToken,
                 balance,
                 harvestSwapSlippage
@@ -194,18 +198,76 @@ contract ConvexERC20StrategyStableSwapNG is ERC20StrategyParent {
         uint256 amountIn,
         uint16 initialSlippageBps
     ) internal returns (uint256 amountOut) {
-        if (inputToken == CBBTC_ADDRESS) {
+        if (address(inputToken) == CBBTC_ADDRESS) {
             return _swapCRVToCBBTC(token, amountIn, initialSlippageBps);
-        } else if (inputToken == WBTC_ADDRESS) {
-            return _swapCRVToUSDC(token, amountIn, initialSlippageBps);
         } else {
-            return
-                _swapCRVToInputTokenGeneric(
-                    token,
-                    amountIn,
-                    initialSlippageBps
-                );
+            console.log("Using swapToInputToken for token: %s", token);
+            return swapToInputToken(token, amountIn, initialSlippageBps);
         }
+    }
+
+    function _swapCRVToUSDC(
+        address token,
+        uint256 amountIn,
+        uint16 initialSlippageBps
+    ) internal returns (uint256 amountOut) {
+        if (amountIn == 0) return 0;
+
+        IERC20(token).safeTransfer(swapHelper, amountIn);
+
+        address[11] memory route = [
+            token, // CRV token
+            0x4eBdF703948ddCEA3B11f675B4D1Fba9d2414A14, // TriCRV
+            WETH_TOKEN,
+            0x7F86Bf177Dd4F3494b841a37e810A34dD56c829B, // tricrypto
+            WBTC_ADDRESS,
+            0x839d6bDeDFF886404A6d7a788ef241e4e28F4802, // cbBTC/wBTC pool
+            address(inputToken), // cbbtc
+            address(0),
+            address(0),
+            address(0),
+            address(0)
+        ];
+
+        address[5] memory pools = [
+            0x4eBdF703948ddCEA3B11f675B4D1Fba9d2414A14, // TriCRV
+            0x7F86Bf177Dd4F3494b841a37e810A34dD56c829B, // tricrypto
+            0x839d6bDeDFF886404A6d7a788ef241e4e28F4802, // cbBTC/wBTC
+            address(0),
+            address(0)
+        ];
+
+        uint256[5][5] memory swapParams = [
+            [uint256(2), 1, 1, 3, 3], // crv -> eth
+            [uint256(2), 1, 1, 3, 3], // eth -> wbtc
+            [uint256(1), 0, 1, 1, 2], // wbtc -> cbbtc
+            [uint256(0), 0, 0, 0, 0],
+            [uint256(0), 0, 0, 0, 0]
+        ];
+
+        uint16 slippage = initialSlippageBps;
+
+        while (slippage <= 1000) {
+            try
+                ISwapHelper(swapHelper).swapTokensViaCurveNG(
+                    route,
+                    swapParams,
+                    pools,
+                    amountIn,
+                    slippage
+                )
+            returns (uint256 result) {
+                emit RewardsHarvested(token, amountIn, result);
+                return result;
+            } catch {
+                emit SwapFailed(token, amountIn, "Swap attempt failed");
+            }
+
+            slippage += 100; // increase slippage by 1% (100 bps)
+        }
+
+        // Swap failed even after max attempts
+        return 0;
     }
 
     function _swapCRVToCBBTC(
@@ -277,17 +339,11 @@ contract ConvexERC20StrategyStableSwapNG is ERC20StrategyParent {
         uint256 amountIn,
         uint16 initialSlippageBps
     ) internal returns (uint256 amountOut) {
-        if (inputToken == CBBTC_ADDRESS) {
+        if (address(inputToken) == CBBTC_ADDRESS) {
             return _swapCVXToCBBTC(token, amountIn, initialSlippageBps);
-        } else if (inputToken == WBTC_ADDRESS) {
-            return _swapCVXToUSDC(token, amountIn, initialSlippageBps);
         } else {
-            return
-                _swapCRVToInputTokenGeneric(
-                    token,
-                    amountIn,
-                    initialSlippageBps
-                );
+            console.log("Using swapToInputToken for token: %s", token);
+            return swapToInputToken(token, amountIn, initialSlippageBps);
         }
     }
 
