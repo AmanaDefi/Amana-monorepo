@@ -330,6 +330,7 @@ const VaultsDetailContainer: React.FC<{
   const ethTokenPrice = useTokenPriceBySymbol("ETH");
   const compTokenPrice = useTokenPriceBySymbol("COMP");
   const opTokenPrice = useTokenPriceBySymbol("OP");
+  const btcTokenPrice = useTokenPriceBySymbol("CBBTC");
 
   const memoizedPrices = useMemo(
     () => ({
@@ -338,6 +339,7 @@ const VaultsDetailContainer: React.FC<{
       eth: ethTokenPrice,
       comp: compTokenPrice,
       op: opTokenPrice,
+      btc: btcTokenPrice,
     }),
     [
       Math.floor((crvTokenPrice || 0) * 100),
@@ -345,6 +347,7 @@ const VaultsDetailContainer: React.FC<{
       Math.floor((ethTokenPrice || 0) * 100),
       Math.floor((compTokenPrice || 0) * 100),
       Math.floor((opTokenPrice || 0) * 100),
+      Math.floor((btcTokenPrice || 0) * 100),
     ],
   );
 
@@ -357,6 +360,7 @@ const VaultsDetailContainer: React.FC<{
     memoizedPrices.eth,
     memoizedPrices.comp,
     memoizedPrices.op,
+    memoizedPrices.btc,
     user,
   );
 

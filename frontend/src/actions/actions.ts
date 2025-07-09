@@ -294,6 +294,7 @@ export async function calculateAaveAPY(
     return 0;
   }
 }
+
 export async function calculateConvexEthereumRewardsAPY(
   poolAddress: Address,
   inputToken: Token,
@@ -302,6 +303,7 @@ export async function calculateConvexEthereumRewardsAPY(
   crvTokenPrice: number,
   cvxTokenPrice: number,
   ethTokenPrice: number,
+  btcTokenPrice: number,
   wallet: ConnectedWallet,
 ): Promise<number> {
   const rpcUrl = chainConfigs[strategyChain.id].rpcUrls.default.http[0];
@@ -412,16 +414,23 @@ export async function calculateConvexEthereumRewardsAPY(
       (Number(cvxRewardRate) * secondsPerYear) / Number(totalSupply);
 
     const lpPriceInInput = Number(virtualPrice) / 1e18;
-    const lpPriceInUSD =
-      inputToken.symbol === "ETH.ETH"
-        ? lpPriceInInput * ethTokenPrice
-        : lpPriceInInput;
-
+    console.log("inputToken", inputToken);
+    console.log("inputToken", inputToken.symbol);
+    console.log("btcTokenPrice", btcTokenPrice);
+    const lpPriceInUSD = (() => {
+      if (inputToken.symbol === "ETH.ETH") return lpPriceInInput * ethTokenPrice;
+      if (inputToken.symbol === "CBBTC.ETH") return lpPriceInInput * btcTokenPrice;
+      return lpPriceInInput; // fallback (e.g. stablecoins)
+    })();
+    console.log("virtualPrice", virtualPrice.toString());
+    console.log("lpPriceInInput", lpPriceInInput);
+    console.log("lpPriceInUSD", lpPriceInUSD);
     // Step 4: APY Calculation
     const crvApy = (crvPerLpPerYear * crvTokenPrice) / lpPriceInUSD;
     const cvxApy = (cvxPerTokenPerYear * cvxTokenPrice) / lpPriceInUSD;
 
     const annualApy = crvApy + cvxApy;
+    console.log("Annual APY:", annualApy);
     return annualApy;
   } catch (error) {
     console.log("calculateConvexEthereumRewardsAPY failed:", error);

@@ -45,6 +45,7 @@ import {
   convertGraphVaultToTotalAssets,
 } from "@/utils/graphUtils";
 import { EXCLUDED_VAULTS } from "@/constants";
+import { getRawBlockTransactions } from "viem/zksync";
 
 export const useVaultData = () => {
   const [loading, setLoading] = useState<boolean>(true);
@@ -140,6 +141,7 @@ export const useVaultData = () => {
   const rawEthTokenPrice = useTokenPriceBySymbol("ETH");
   const rawCompTokenPrice = useTokenPriceBySymbol("COMP");
   const rawOpTokenPrice = useTokenPriceBySymbol("OP");
+  const rawBtcTokenPrice = useTokenPriceBySymbol("CBBTC");
 
   // Memoize token prices to avoid constant changes
   const tokenPrices = useMemo(
@@ -149,6 +151,7 @@ export const useVaultData = () => {
       ethTokenPrice: rawEthTokenPrice,
       compTokenPrice: rawCompTokenPrice,
       opTokenPrice: rawOpTokenPrice,
+      btcTokenPrice: rawBtcTokenPrice
     }),
     [
       rawCrvTokenPrice,
@@ -156,6 +159,7 @@ export const useVaultData = () => {
       rawEthTokenPrice,
       rawCompTokenPrice,
       rawOpTokenPrice,
+      rawBtcTokenPrice,
     ],
   );
 
@@ -189,6 +193,7 @@ export const useVaultData = () => {
     tokenPrices.ethTokenPrice,
     tokenPrices.compTokenPrice,
     tokenPrices.opTokenPrice,
+    tokenPrices.btcTokenPrice,
     wallet,
     false,
   );
@@ -394,6 +399,7 @@ export const useVaultDataPaginated = (
   const rawEthTokenPrice = useTokenPriceBySymbol("ETH");
   const rawCompTokenPrice = useTokenPriceBySymbol("COMP");
   const rawOpTokenPrice = useTokenPriceBySymbol("OP");
+  const rawBtcTokenPrice = useTokenPriceBySymbol("CBBTC");
 
   const tokenPrices = useMemo(
     () => ({
@@ -402,6 +408,7 @@ export const useVaultDataPaginated = (
       ethTokenPrice: rawEthTokenPrice,
       compTokenPrice: rawCompTokenPrice,
       opTokenPrice: rawOpTokenPrice,
+      btcTokenPrice: rawBtcTokenPrice
     }),
     [
       rawCrvTokenPrice,
@@ -409,6 +416,7 @@ export const useVaultDataPaginated = (
       rawEthTokenPrice,
       rawCompTokenPrice,
       rawOpTokenPrice,
+      rawBtcTokenPrice,
     ],
   );
 
@@ -443,6 +451,7 @@ export const useVaultDataPaginated = (
     tokenPrices.ethTokenPrice,
     tokenPrices.compTokenPrice,
     tokenPrices.opTokenPrice,
+    tokenPrices.btcTokenPrice,
     wallet,
     false,
   );
@@ -908,6 +917,7 @@ export const useVaultDataWithSearch = (
   const rawEthTokenPrice = useTokenPriceBySymbol("ETH");
   const rawCompTokenPrice = useTokenPriceBySymbol("COMP");
   const rawOpTokenPrice = useTokenPriceBySymbol("OP");
+  const rawBtcTokenPrice = useTokenPriceBySymbol("CBBTC");
 
   // Memoize token prices to avoid constant changes
   const tokenPrices = useMemo(
@@ -917,6 +927,7 @@ export const useVaultDataWithSearch = (
       ethTokenPrice: rawEthTokenPrice,
       compTokenPrice: rawCompTokenPrice,
       opTokenPrice: rawOpTokenPrice,
+      btcTokenPrice: rawBtcTokenPrice,
     }),
     [
       rawCrvTokenPrice,
@@ -924,6 +935,7 @@ export const useVaultDataWithSearch = (
       rawEthTokenPrice,
       rawCompTokenPrice,
       rawOpTokenPrice,
+      rawBtcTokenPrice,
     ],
   );
 
@@ -962,6 +974,7 @@ export const useVaultDataWithSearch = (
     tokenPrices.ethTokenPrice,
     tokenPrices.compTokenPrice,
     tokenPrices.opTokenPrice,
+    tokenPrices.btcTokenPrice,
     wallet,
     false,
   );

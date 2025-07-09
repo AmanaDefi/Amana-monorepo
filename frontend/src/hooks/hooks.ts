@@ -521,6 +521,7 @@ export const useUpdateAPYs = (
   ethTokenPrice: number,
   compTokenPrice: number,
   opTokenPrice: number,
+  btcTokenPrice: number,
   activeAccount: ConnectedWallet,
   isFromVaultGrid?: boolean,
 ) => {
@@ -623,6 +624,7 @@ export const useUpdateAPYs = (
                       crvTokenPrice,
                       cvxTokenPrice,
                       ethTokenPrice,
+                      btcTokenPrice,
                       activeAccount
                     );
                   } else if (strategyChain.id === 42161) {
