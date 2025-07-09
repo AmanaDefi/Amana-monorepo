@@ -107,7 +107,7 @@ export default function VaultStats({
                 56: "BSC", // BNB Chain
               };
 
-              connectedChainSuffix = chainIdToSuffix[activeChain.id] || "";
+              connectedChainSuffix = chainIdToSuffix[activeChain?.id] || "";
             }
 
             // Extract the vault token's chain suffix if it has one
@@ -163,7 +163,7 @@ export default function VaultStats({
       } else if (activeChain) {
         // For other chains, determine the appropriate token using existing helper
         // const determinedToken = determineVaultTokenFromApprovedTokens(
-        //   activeChain.id as number,
+        //   activeChain?.id as number,
         //   vaultData.inputToken
         // );
         // setInputToken(determinedToken);
@@ -174,7 +174,7 @@ export default function VaultStats({
     lastVaultIdRef.current = vaultId;
     // Update the last active chain reference
     if (activeChain) {
-      lastActiveChainRef.current = activeChain.id;
+      lastActiveChainRef.current = activeChain?.id;
     }
   }, [activeChain, vaultData.id, vaultData.inputToken, selectedToken]);
 

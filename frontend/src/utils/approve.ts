@@ -20,7 +20,7 @@ export async function isApproved({
   amount,
   activeWallet
 }: HandleAllowanceProps): Promise<boolean> {
-  const publicClient = getPublicClient(activeChain.id);
+  const publicClient = getPublicClient(activeChain?.id);
   if (!publicClient) return false;
 
   const contract = getContract({
@@ -30,10 +30,10 @@ export async function isApproved({
   });
   let allow: bigint;
 
-  const EVMGatewayAddress = EVM_GATEWAY_ADDRESSES[activeChain.id];
+  const EVMGatewayAddress = EVM_GATEWAY_ADDRESSES[activeChain?.id];
 
   try {
-    if (activeChain.id === 7000 || activeChain.id === 7001) {
+    if (activeChain?.id === 7000 || activeChain?.id === 7001) {
       allow = await contract.read.allowance([activeAccount, spender]);
     } else {
       allow = await contract.read.allowance([activeAccount, EVMGatewayAddress]);

@@ -13,7 +13,10 @@ const InvestBlock = () => {
   const { openStep } = useAuthStore();
   const { setStep } = useFundWalletStore();
   const {wallets} = useWallets()
-  const user = wallets[0];
+  const filteredWallets = wallets.filter(
+    (wallet) => wallet.meta.id !== "app.phantom",
+  );
+  const user = filteredWallets[0];
 
   const handleFundWallet = () => {
     if (user?.walletClientType !== "privy") {
