@@ -4,7 +4,7 @@ import { VaultData } from "@/types/types";
 import { ConversionOutput } from "@/components/VaultInputs";
 import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
 import { InfoBlock } from "@/components/VaultsWrapper/components/InfoBlock.tsx";
-import { formatUSDAmount } from "@/utils/tokenFormat";
+import { formatUSDAmount } from "@/utils/tokenFormat"; 
 
 interface FeeDisplayProps {
   isDeposit: boolean;
@@ -70,6 +70,9 @@ export default function FeeDisplay({
       conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, ""),
     ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, ""));
 
+  const shouldShowDepositFee = isDeposit && isEthereumVault && hasValidGasFee;
+  const shouldShowWithdrawalFee = !isDeposit && performanceFee > 0;
+
   return (
     <div>
       {isDepositTooLow && (
@@ -80,10 +83,7 @@ export default function FeeDisplay({
         </div>
       )}
 
-      {/* Only show fee block if there's an actual fee */}
-      {(isDeposit && isEthereumVault && hasValidGasFee) ||
-      !isDeposit ||
-      !isEthereumVault ? (
+      {shouldShowDepositFee || shouldShowWithdrawalFee ? (
         <div className="w-full">
           <span className="flex flex-row items-center justify-between text-white py-1">
             <div className="flex items-center gap-2">
@@ -110,9 +110,11 @@ export default function FeeDisplay({
               )}
             </div>
             <span className="font-bold">
-              {isDeposit && isEthereumVault && hasValidGasFee
+              {shouldShowDepositFee
                 ? `${conversionOutput.gasFeeInUSD}`
-                : "$0"}
+                : shouldShowWithdrawalFee
+                  ? `$${performanceFee}`
+                  : "$0"}
             </span>
           </span>
         </div>

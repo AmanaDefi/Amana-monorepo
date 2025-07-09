@@ -33,7 +33,7 @@ import {
   formatSlippageUSD,
 } from "@/utils/utils";
 import InteractionContainer from "./interactAPI";
-import { useTokenPriceBySymbol } from "@/hooks/hooks";
+import { useSlippage, useTokenPriceBySymbol } from "@/hooks/hooks";
 import {
   getPathDataAndAmountOut,
   getPerformanceFee,
@@ -135,6 +135,8 @@ export default function VaultInputs({
   );
   const activeWallet = filteredWallets[0];
   const selectChain = useMemo(() => selectedChain, [selectedChain]);
+
+  const { slippageValue: userSlippage } = useSlippage(vaultId); 
 
   const handleSelectChainAngToken = (chain: Chain, token: Token) => {
     setInputToken(token);
@@ -681,7 +683,7 @@ export default function VaultInputs({
           vaultData.inputToken,
           actualInputToken,
           vaultData.id as Address,
-          getCurrentSlippage() * 100,
+          userSlippage * 100,
         );
         tokenConversionAmount = result.amountOut;
       }
@@ -733,6 +735,7 @@ export default function VaultInputs({
       vaultData,
       vaultTokenPrice,
       inputToken,
+      userSlippage,
     ],
   );
 
@@ -758,7 +761,7 @@ export default function VaultInputs({
           actualInputToken,
           vaultData.inputToken,
           vaultData.id as Address,
-          getCurrentSlippage() * 100,
+          userSlippage * 100,
         );
         assetsConversionAmount = result.amountOut;
       }
@@ -810,7 +813,7 @@ export default function VaultInputs({
             ZRC20_TOKENS_BY_ADDRESS[gasZRC20],
             vaultData.inputToken,
             vaultData.id as Address,
-            getCurrentSlippage() * 100,
+            userSlippage * 100,
           );
           gasFeeInVaultAsset = result.amountOut;
         }
@@ -912,14 +915,14 @@ export default function VaultInputs({
       ethPriceUsd,
       activeWallet,
       selectedChain?.id,
+      userSlippage,
     ],
   );
 
   const timeoutRef = useRef<NodeJS.Timeout>();
 
   const checkSlippageExceedingLimit = () => {
-    const userSlippage = getCurrentSlippage();
-
+    
     // If slippage is over 100%, hide the display completely
     if (
       conversionOutput.slippageActualValue !== null &&
@@ -1303,7 +1306,6 @@ export default function VaultInputs({
     vaultTotalAssetinToken,
   ]);
 
-  const userSlippage = getCurrentSlippage();
   const minReceived = useMemo(() => {
     if (!conversionOutput.outputAmountInUSDFormatted) return "0.0";
 

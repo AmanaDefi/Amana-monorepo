@@ -1,48 +1,65 @@
+"use client";
+
 import { create } from "zustand";
 import {
-  updateLocalStorageObject,
-  getLocalStorageObject,
-} from "@/utils/localStorageUtils";
-
-interface SlippageSettings {
-  isAuto: boolean;
-  value: number;
-}
+  getGlobalSlippageSettings,
+  updateGlobalSlippageSettings,
+  GlobalSlippageStorage,
+} from "@/utils/slippageStorage";
+import { DEFAULT_SETTINGS, SlippageSettings } from "@/types/types";
 
 interface UserSettingsState {
-  slippage: SlippageSettings;
+  slippage: Record<string, SlippageSettings>;
   setSlippage: (vaultId: string, value: number) => void;
   toggleAuto: (vaultId: string) => void;
-  loadSlippageFromStorage: (vaultId: string) => void;
+  loadSlippageForVault: (vaultId: string) => void;
+  getSlippageForVault: (vaultId: string) => SlippageSettings;
 }
 
-export const useUserSettingsStore = create<UserSettingsState>((set) => ({
-  slippage: { isAuto: true, value: 0.1 },
+export const useUserSettingsStore = create<UserSettingsState>((set, get) => ({
+  slippage: {},
 
   setSlippage: (vaultId, value) => {
-    updateLocalStorageObject(vaultId, {
-      slippage: { isAuto: false, value },
-    });
-
-    set({ slippage: { isAuto: false, value } });
+    const newSlippageSettings: SlippageSettings = { isAuto: false, value };
+    const updatedSlippageState = {
+      ...get().slippage,
+      [vaultId]: newSlippageSettings,
+    };
+    updateGlobalSlippageSettings({ slippage: updatedSlippageState });
+    set({ slippage: updatedSlippageState });
   },
 
   toggleAuto: (vaultId) => {
-    const current = getLocalStorageObject(vaultId);
-    const prevValue = current?.slippage?.value ?? 0.1;
-    const isAuto = !(current?.slippage?.isAuto ?? true);
+    const currentSlippageForVault =
+      get().slippage[vaultId] || DEFAULT_SETTINGS.slippage;
+    const isAuto = !currentSlippageForVault.isAuto;
+    const prevValue = currentSlippageForVault.value;
 
-    updateLocalStorageObject(vaultId, {
-      slippage: { isAuto, value: prevValue },
-    });
-
-    set({ slippage: { isAuto, value: prevValue } });
+    const newSlippageSettings: SlippageSettings = { isAuto, value: prevValue };
+    const updatedSlippageState = {
+      ...get().slippage,
+      [vaultId]: newSlippageSettings,
+    };
+    updateGlobalSlippageSettings({ slippage: updatedSlippageState });
+    set({ slippage: updatedSlippageState });
   },
 
-  loadSlippageFromStorage: (vaultId) => {
-    const fromStorage = getLocalStorageObject(vaultId);
-    if (fromStorage?.slippage) {
-      set({ slippage: fromStorage.slippage });
+  loadSlippageForVault: (vaultId) => {
+    const allStoredSettings = getGlobalSlippageSettings();
+
+    let currentSlippage: Record<string, SlippageSettings> =
+      allStoredSettings?.slippage || {};
+
+    if (!currentSlippage[vaultId]) {
+      currentSlippage = {
+        ...currentSlippage,
+        [vaultId]: DEFAULT_SETTINGS.slippage,
+      };
     }
+    set({ slippage: currentSlippage });
+  },
+
+  getSlippageForVault: (vaultId) => {
+    return get().slippage[vaultId] || DEFAULT_SETTINGS.slippage;
   },
 }));
