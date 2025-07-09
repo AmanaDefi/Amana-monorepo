@@ -18,6 +18,13 @@ interface TransactionState {
     outputSymbol: string;
   } | null;
 
+  lastWithdrawInfo: {
+    inputAmount: string;
+    outputAmount: string;
+    inputSymbol: string;
+    outputSymbol: string;
+  } | null;
+
   setIsTransactionProcessing: (isTransactionProcessing: boolean) => void;
   setFinishedTransaction: (finishedTransaction: boolean) => void;
   setTransactionStepFeedback: (
@@ -42,6 +49,15 @@ interface TransactionState {
       outputSymbol: string;
     } | null,
   ) => void;
+
+  setLastWithdrawInfo: (
+    info: {
+      inputAmount: string;
+      outputAmount: string;
+      inputSymbol: string;
+      outputSymbol: string;
+    } | null,
+  ) => void;
 }
 
 export const useTransactionStore = create<TransactionState>((set) => ({
@@ -55,6 +71,7 @@ export const useTransactionStore = create<TransactionState>((set) => ({
   crosschainInvestHash: "",
 
   lastDepositInfo: null,
+  lastWithdrawInfo: null,
 
   setIsTransactionProcessing: (isTransactionProcessing) =>
     set({ isTransactionProcessing }),
@@ -73,4 +90,5 @@ export const useTransactionStore = create<TransactionState>((set) => ({
   setIsButtonDisabled: (disabled) => set({ isButtonDisabled: disabled }),
 
   setLastDepositInfo: (info) => set({ lastDepositInfo: info }),
+  setLastWithdrawInfo: (info) => set({ lastWithdrawInfo: info }),
 }));

@@ -22,7 +22,10 @@ const [zetachain] = chainsWithCustomRpcs();
 // ChainSwitcher Component
 const ChainSwitcher: React.FC = () => {
   const { wallets } = useWallets();
-  const wallet = wallets[0];
+  const filteredWallets = wallets.filter(
+    (wallet) => wallet.meta.id !== "app.phantom",
+  );
+  const wallet = filteredWallets[0];
   const { publicKey } = useWallet();
   const [isOpen, setIsOpen] = useState(false);
   const { switchToChain, activeChain: currentChain } = useMultiChain();

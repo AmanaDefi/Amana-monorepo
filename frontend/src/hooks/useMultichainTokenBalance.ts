@@ -17,7 +17,10 @@ const DEFAULT_BALANCE: Balance = { value: 0n, formatted: "0" };
 export const useMultichainTokenBalance = (token: Token | undefined) => {
   const currentToken = useMemo(() => token, [token]);
   const { wallets } = useWallets();
-  const activeWallet = wallets[0];
+  const filteredWallets = wallets.filter(
+    (wallet) => wallet.meta.id !== "app.phantom",
+  );
+  const activeWallet = filteredWallets[0];
   const { balance: solanaBalance, refetch } = useSolanaBalance();
 
   const {
@@ -90,14 +93,14 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
         }
 
         // Check if the token is in the APPROVED_TOKENS list for this chain
-        const isTokenApproved = APPROVED_TOKENS[activeChain.id]?.some(
+        const isTokenApproved = APPROVED_TOKENS[activeChain?.id]?.some(
           (t: Token) =>
             t.address.toLowerCase() === currentToken.address.toLowerCase(),
         );
 
         if (!isTokenApproved) {
           console.warn(
-            `Token ${currentToken.symbol} (${currentToken.address}) is not approved for chain ${activeChain.id}`,
+            `Token ${currentToken.symbol} (${currentToken.address}) is not approved for chain ${activeChain?.id}`,
           );
           newBalance = DEFAULT_BALANCE;
         } else {
@@ -171,12 +174,12 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
     ) {
       const retryDelay = 1000 * Math.pow(2, retryCountRef.current - 1);
       console.log(
-        `Balance is zero. Scheduling retry #${retryCountRef.current} for ${currentToken.symbol} in ${retryDelay}ms on chain ${activeChain.id}`,
+        `Balance is zero. Scheduling retry #${retryCountRef.current} for ${currentToken.symbol} in ${retryDelay}ms on chain ${activeChain?.id}`,
       );
 
       const timeoutId = setTimeout(() => {
         console.log(
-          `Executing retry #${retryCountRef.current} for ${currentToken.symbol} on chain ${activeChain.id}`,
+          `Executing retry #${retryCountRef.current} for ${currentToken.symbol} on chain ${activeChain?.id}`,
         );
         internalFetchBalance();
         retryCountRef.current += 1;

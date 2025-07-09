@@ -52,7 +52,10 @@ const userRowVariants = {
 
 export default function RegularUsers({ users, searchTerm }: RegularUsersProps) {
   const { wallets } = useWallets();
-  const currentUserAccount = wallets[0] || ZERO_ACCOUNT;
+  const filteredWallets = wallets.filter(
+    (wallet) => wallet.meta.id !== "app.phantom",
+  );
+  const currentUserAccount = filteredWallets[0] || ZERO_ACCOUNT;
 
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible">

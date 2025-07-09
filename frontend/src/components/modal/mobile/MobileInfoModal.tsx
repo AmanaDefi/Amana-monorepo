@@ -3,6 +3,7 @@ import { VaultData, Token } from "@/types/types";
 import { Chain } from "viem";
 import Dropdown from "@/components/VaultsDetailsWrapper/components/Dropdown";
 import VaultInformationContent from "@/components/VaultsDetailsWrapper/components/VaultInformationDropdown";
+import ChartDropdown from "@/components/VaultsDetailsWrapper/components/ChartDropdown";
 import Button from "@/components/common/Button";
 import BackToVaultsIcon from "@/components/svg/BackToVaultsIcon";
 import { useAuthStore } from "@/store/authStore";
@@ -91,6 +92,13 @@ const MobileInfoModal: React.FC<MobileInfoModalProps> = ({
         </div>
 
         <div className="flex-1 space-y-4">
+          <Dropdown title="Historical APY" defaultOpen={false}>
+            <ChartDropdown
+              vaultId={vaultData.id}
+              vaultName={vaultData.name.replace("Pool", "").replace("Lend", "")}
+            />
+          </Dropdown>
+
           <Dropdown title="Information" defaultOpen={false}>
             <VaultInformationContent
               vaultData={vaultData}
@@ -102,6 +110,7 @@ const MobileInfoModal: React.FC<MobileInfoModalProps> = ({
               type="information"
             />
           </Dropdown>
+
           {!isWithdraw && (
             <Dropdown title="What happens to my deposit?" defaultOpen={false}>
               <VaultInformationContent
