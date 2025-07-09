@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import VaultsDetailContainer from "@/containers/VaultsDetailContainer";
 import { useParams } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -29,10 +29,12 @@ function Index({}) {
       {(account || wallet) && (
         <div className="flex-1 flex flex-col w-full justify-between pl-0">
           <div className={clsx("flex-1", !wallet && "mt-8", wallet && "mt-0")}>
-            <VaultsDetailContainer
-              vaultID={id}
-              setVaultSymbol={setVaultSymbol}
-            />
+            <Suspense fallback={<div>Loading...</div>}>
+              <VaultsDetailContainer
+                vaultID={id}
+                setVaultSymbol={setVaultSymbol}
+              />
+            </Suspense>
           </div>
         </div>
       )}

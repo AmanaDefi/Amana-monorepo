@@ -80,7 +80,7 @@ export const DropdownList = ({
               {option.value}
             </p>
           </div>
-          <CheckBox isSelected={option.value === selectedOption} />
+          <CheckBox isSelected={option.value.toLowerCase() === selectedOption.toLowerCase()} />
         </div>
       ))}
 

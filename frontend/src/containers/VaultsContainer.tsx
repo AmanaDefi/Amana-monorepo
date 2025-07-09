@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import VaultsGrid from "../components/VaultsWrapper";
 import { useVaultDataWithSearch } from "@/hooks/useVaultData";
 import { useLayoutStore } from "@/store/store";
@@ -8,8 +9,16 @@ import { useLayoutStore } from "@/store/store";
 const VaultsContainer = () => {
   let isSearchError: boolean | undefined = false;
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [sortBy, setSortBy] = useState("tvl");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
+  const initialPageParam = parseInt(searchParams.get("page") || "1", 10);
+
+  const [currentPage, setCurrentPage] = useState(
+    initialPageParam > 0 ? initialPageParam : 1,
+  );
+  const [sortBy, setSortBy] = useState("apy");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
@@ -26,6 +35,30 @@ const VaultsContainer = () => {
 
     return () => clearTimeout(timer);
   }, [searchTerm]);
+
+  // Keep local state in sync when URL changes (e.g., browser back/forward)
+  useEffect(() => {
+    const pageFromUrl = parseInt(searchParams.get("page") || "1", 10);
+    if (!isNaN(pageFromUrl) && pageFromUrl !== currentPage) {
+      setCurrentPage(pageFromUrl);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  const syncPageWithUrl = (page: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (page > 1) {
+      params.set("page", page.toString());
+    } else {
+      params.delete("page");
+    }
+
+    const query = params.toString();
+
+    router.replace(`${pathname}${query ? `?${query}` : ""}`, {
+      scroll: false,
+    });
+  };
 
   const {
     loading,
@@ -63,6 +96,7 @@ const VaultsContainer = () => {
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages && page !== currentPage) {
       setCurrentPage(page);
+      syncPageWithUrl(page);
     }
   };
 
@@ -74,6 +108,7 @@ const VaultsContainer = () => {
       setSortBy(newSortBy);
       setSortOrder(newSortOrder);
       setCurrentPage(1);
+      syncPageWithUrl(1);
     }
   };
 
@@ -81,6 +116,7 @@ const VaultsContainer = () => {
     if (newSearchTerm !== searchTerm) {
       setSearchTerm(newSearchTerm);
       setCurrentPage(1);
+      syncPageWithUrl(1);
     }
   };
 
@@ -135,7 +171,7 @@ const VaultsContainer = () => {
       <VaultsGrid
         loading={shouldShowLoading}
         vaults={
-          timedOut && vaults.length === 0 && debouncedSearchTerm.length > 0
+          timedOut && vaults?.length === 0 && debouncedSearchTerm.length > 0
             ? []
             : vaults
         }

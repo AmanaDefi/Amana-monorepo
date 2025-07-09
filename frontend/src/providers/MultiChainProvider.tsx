@@ -133,225 +133,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [connectors, wallets]);
 
-  useEffect(() => {
-    const isVaultAddressPath = /^\/vaults\/0x[0-9a-fA-F]{40}$/;
-
-    if (!isVaultAddressPath.test(path) && selectedChainFromModal) {
-      setSelectedChainFromModal(null);
-    }
-    if (
-      !isVaultAddressPath.test(path) &&
-      privyWallet?.walletClientType === "privy" &&
-      activeChain?.id !== zetachain.id
-    ) {
-      setActiveChain(zetachain);
-      latestChainRef.current = zetachain.id.toString();
-    }
-
-    if (
-      !isVaultAddressPath.test(path) &&
-      privyWallet?.address &&
-      privyWallet?.walletClientType !== "privy" &&
-      activeChain?.id === CHAIN_ID["solana"]
-    ) {
-      switchToChain(zetachain);
-      latestChainRef.current = zetachain.id.toString();
-    }
-    if (
-      !isVaultAddressPath.test(path) &&
-      publicKey &&
-      activeChain?.id !== CHAIN_ID["solana"]
-    ) {
-      switchToChain(chainConfigs[CHAIN_ID.solana]);
-      latestChainRef.current = CHAIN_ID["solana"].toString();
-    }
-  }, [path, activeChain, privyWallet, publicKey, selectedChainFromModal]);
-
-  const evmDisconnect = useCallback(async () => {
-    try {
-      await disconnectConnectors();
-    } finally {
-      await logout();
-    }
-  }, [logout, disconnectConnectors]);
-
-  useEffect(() => {
-    setIsHydrated(true);
-  }, []);
-
-  // Connect Solana Wallet
-  const connectSolana = async () => {
-    try {
-      if (privyWallet?.address && !step) {
-        debugLog("Disconnecting EVM wallet before Solana connection");
-        await evmDisconnect();
-      }
-      setSelectedChain("solana");
-    } catch (error) {
-      console.error("Solana connection error:", error);
-    }
-  };
-
-  useEffect(() => {
-    if (connected && publicKey && !isConnectedRef.current) {
-      // connectSolana();
-      isConnectedRef.current = true;
-
-      if (step === "connectWallet") {
-        localStorage.removeItem("connectorId");
-        setFundWalletAddress(publicKey.toBase58());
-        return setStep("confirm");
-      }
-
-      setWalletAddress(publicKey.toBase58());
-      setSelectedChain("solana");
-      setActiveChain(chainConfigs[CHAIN_ID.solana]);
-
-      return successAuth(null, undefined, true);
-    } else if (!connected) {
-      isConnectedRef.current = false;
-    }
-  }, [connected, step, publicKey]);
-
-  useEffect(() => {
-    if (privyWallet?.address && connected && !latestChainRef.current && !step) {
-      disconnect();
-    }
-    if (
-      privyWallet?.address
-    ) {
-      if (!step) {
-        setWalletAddress(privyWallet?.address);
-        setSelectedChain("evm");
-
-        if (wallets.length > 1 && user?.wallet) {
-          disconnectConnectors();
-        }
-
-        if (
-          privyWallet?.walletClientType === "privy" &&
-          privyWallet?.chainId?.split(":")[1] !== zetachain.id.toString()
-        ) {
-          privyWallet?.switchChain(zetachain.id);
-        }
-
-        if (
-          privyWallet?.walletClientType === "privy" &&
-          activeChain?.id !== zetachain.id
-        ) {
-          setActiveChain(zetachain);
-        }
-
-        if (
-          privyWallet?.chainId &&
-          activeChain?.id &&
-          privyWallet?.walletClientType !== "privy" &&
-          activeChain?.id.toString() !== privyWallet?.chainId?.split(":")[1] &&
-          activeChain?.id !== CHAIN_ID["solana"]
-        ) {
-          privyWallet?.switchChain(activeChain.id);
-        }
-      }
-
-      if (connected) {
-        disconnect().catch((err) => {
-          console.error("error disconnect Solana:", err);
-        });
-      }
-    } else if (!privyWallet?.address && !connected) {
-      setWalletAddress(null);
-    }
-  }, [
-    privyWallet,
-    connected,
-    disconnect,
-    user,
-    step,
-    disconnectConnectors,
-    wallets,
-  ]);
-
-  //  Disconnect Wallet
-  const disconnectWallet = useCallback(async () => {
-    const hasViewedOnboarding = localStorage.getItem("hasViewedOnboarding");
-    localStorage.clear();
-    if (hasViewedOnboarding) {
-      localStorage.setItem('hasViewedOnboarding', hasViewedOnboarding)
-    }
-    debugLog("Disconnecting all wallets...");
-    setWalletAddress(null);
-    setSelectedChain("evm");
-    disconnect();
-    await evmDisconnect();
-    setIsModalOpen(false);
-    debugLog("All wallets disconnected");
-    const isVaultAddressPath = /^\/vaults\/0x[0-9a-fA-F]{40}$/;
-
-    if (
-      path !== "/" &&
-      path !== "/leaderboard" &&
-      path !== "/about" &&
-      !isVaultAddressPath.test(path)
-    ) {
-      router.push("/");
-    }
-  }, [disconnect, evmDisconnect, router, path]);
-
-  const getEvmBalance = useCallback(
-    async (walletAddress: string) => {
-      if (!privyWallet?.chainId || !walletAddress) return;
-
-      const publicClient = getPublicClient(activeChain.id);
-      if (!publicClient) return;
-
-      try {
-        const balanceInEth = await publicClient.getBalance({
-          address: walletAddress,
-        });
-
-        const formattedBalance = formatEther(balanceInEth);
-
-        if (!step) {
-          setBalance({ formatted: formattedBalance, value: balanceInEth });
-        }
-        return { formatted: formattedBalance, value: balanceInEth };
-      } catch (error) {
-        console.error("Error get balance:", error);
-      }
-    },
-    [privyWallet, setBalance, step],
-  );
-
-  // IMPROVED: Better connection detection logic with initialization delay
-  useEffect(() => {
-    // Wait for hydration before starting initialization
-    if (!isHydrated) return;
-    setIsInitialized(true);
-
-    if (publicKey) {
-      setWalletAddress(publicKey.toBase58());
-      setSelectedChain("solana");
-      if (step) {
-        setFundWalletAddress(publicKey.toBase58());
-      }
-    } else if (privyWallet?.address) {
-      if (!step) {
-        debugLog("EVM wallet connected:", privyWallet?.address);
-        setWalletAddress(privyWallet?.address);
-        setSelectedChain("evm");
-        setIsModalOpen(false);
-      }
-    }
-  }, [
-    privyWallet,
-    publicKey,
-    getEvmBalance,
-    isHydrated,
-    selectedChain,
-    user,
-    step,
-  ]);
-
   const switchToChain = useCallback(
     async (chain: Chain) => {
       try {
@@ -412,6 +193,227 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     },
     [privyWallet],
   );
+
+  useEffect(() => {
+    const isVaultAddressPath = /^\/vaults\/0x[0-9a-fA-F]{40}$/;
+
+    if (!isVaultAddressPath.test(path) && selectedChainFromModal) {
+      setSelectedChainFromModal(null);
+    }
+    if (
+      !isVaultAddressPath.test(path) &&
+      privyWallet?.walletClientType === "privy" &&
+      activeChain?.id !== zetachain.id
+    ) {
+      setActiveChain(zetachain);
+      latestChainRef.current = zetachain.id.toString();
+    }
+
+    if (
+      !isVaultAddressPath.test(path) &&
+      privyWallet?.address &&
+      privyWallet?.walletClientType !== "privy" &&
+      activeChain?.id === CHAIN_ID["solana"]
+    ) {
+      switchToChain(zetachain);
+      latestChainRef.current = zetachain.id.toString();
+    }
+    if (
+      !isVaultAddressPath.test(path) &&
+      publicKey &&
+      activeChain?.id !== CHAIN_ID["solana"]
+    ) {
+      switchToChain(chainConfigs[CHAIN_ID.solana]);
+      latestChainRef.current = CHAIN_ID["solana"].toString();
+    }
+  }, [path, activeChain, privyWallet, publicKey, selectedChainFromModal, switchToChain]);
+
+  const evmDisconnect = useCallback(async () => {
+    try {
+      await disconnectConnectors();
+    } finally {
+      await logout();
+    }
+  }, [logout, disconnectConnectors]);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  // Connect Solana Wallet
+  const connectSolana = async () => {
+    try {
+      if (privyWallet?.address && !step) {
+        debugLog("Disconnecting EVM wallet before Solana connection");
+        await evmDisconnect();
+      }
+      setSelectedChain("solana");
+    } catch (error) {
+      console.error("Solana connection error:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (connected && publicKey && !isConnectedRef.current) {
+      // connectSolana();
+      isConnectedRef.current = true;
+
+      if (step === "connectWallet") {
+        localStorage.removeItem("connectorId");
+        setFundWalletAddress(publicKey.toBase58());
+        return setStep("confirm");
+      }
+
+      setWalletAddress(publicKey.toBase58());
+      setSelectedChain("solana");
+      setActiveChain(chainConfigs[CHAIN_ID.solana]);
+
+      return successAuth(null, undefined, true);
+    } else if (!connected) {
+      isConnectedRef.current = false;
+    }
+  }, [connected, step, publicKey, setFundWalletAddress, setStep, successAuth]);
+
+  useEffect(() => {
+    if (privyWallet?.address && connected && !latestChainRef.current && !step) {
+      disconnect();
+    }
+    if (
+      privyWallet?.address
+    ) {
+      if (!step) {
+        setWalletAddress(privyWallet?.address);
+        setSelectedChain("evm");
+
+        if (wallets.length > 1 && user?.wallet) {
+          disconnectConnectors();
+        }
+
+        if (
+          privyWallet?.walletClientType === "privy" &&
+          privyWallet?.chainId?.split(":")[1] !== zetachain.id.toString()
+        ) {
+          privyWallet?.switchChain(zetachain.id);
+        }
+
+        if (
+          privyWallet?.walletClientType === "privy" &&
+          activeChain?.id !== zetachain.id
+        ) {
+          setActiveChain(zetachain);
+        }
+
+        if (
+          privyWallet?.chainId &&
+          activeChain?.id &&
+          privyWallet?.walletClientType !== "privy" &&
+          activeChain?.id.toString() !== privyWallet?.chainId?.split(":")[1] &&
+          activeChain?.id !== CHAIN_ID["solana"]
+        ) {
+          privyWallet?.switchChain(activeChain.id);
+        }
+      }
+
+      if (connected) {
+        disconnect().catch((err) => {
+          console.error("error disconnect Solana:", err);
+        });
+      }
+    } else if (!privyWallet?.address && !connected) {
+      setWalletAddress(null);
+    }
+  }, [
+    privyWallet,
+    connected,
+    disconnect,
+    user,
+    step,
+    disconnectConnectors,
+    wallets,
+    activeChain.id,
+  ]);
+
+  //  Disconnect Wallet
+  const disconnectWallet = useCallback(async () => {
+    const hasViewedOnboarding = localStorage.getItem("hasViewedOnboarding");
+    localStorage.clear();
+    if (hasViewedOnboarding) {
+      localStorage.setItem('hasViewedOnboarding', hasViewedOnboarding)
+    }
+    debugLog("Disconnecting all wallets...");
+    setWalletAddress(null);
+    setSelectedChain("evm");
+    disconnect();
+    await evmDisconnect();
+    setIsModalOpen(false);
+    debugLog("All wallets disconnected");
+    const isVaultAddressPath = /^\/vaults\/0x[0-9a-fA-F]{40}$/;
+
+    if (
+      path !== "/" &&
+      path !== "/leaderboard" &&
+      path !== "/about" &&
+      !isVaultAddressPath.test(path)
+    ) {
+      router.push("/");
+    }
+  }, [disconnect, evmDisconnect, router, path]);
+
+  const getEvmBalance = useCallback(
+    async (walletAddress: string) => {
+      if (!privyWallet?.chainId || !walletAddress) return;
+
+      const publicClient = getPublicClient(activeChain.id);
+      if (!publicClient) return;
+
+      try {
+        const balanceInEth = await publicClient.getBalance({
+          address: walletAddress,
+        });
+
+        const formattedBalance = formatEther(balanceInEth);
+
+        if (!step) {
+          setBalance({ formatted: formattedBalance, value: balanceInEth });
+        }
+        return { formatted: formattedBalance, value: balanceInEth };
+      } catch (error) {
+        console.error("Error get balance:", error);
+      }
+    },
+    [privyWallet, setBalance, step, activeChain.id],
+  );
+
+  // IMPROVED: Better connection detection logic with initialization delay
+  useEffect(() => {
+    // Wait for hydration before starting initialization
+    if (!isHydrated) return;
+    setIsInitialized(true);
+
+    if (publicKey) {
+      setWalletAddress(publicKey.toBase58());
+      setSelectedChain("solana");
+      if (step) {
+        setFundWalletAddress(publicKey.toBase58());
+      }
+    } else if (privyWallet?.address) {
+      if (!step) {
+        debugLog("EVM wallet connected:", privyWallet?.address);
+        setWalletAddress(privyWallet?.address);
+        setSelectedChain("evm");
+        setIsModalOpen(false);
+      }
+    }
+  }, [
+    privyWallet,
+    publicKey,
+    getEvmBalance,
+    isHydrated,
+    selectedChain,
+    user,
+    step,
+    setFundWalletAddress,
+  ]);
 
   useEffect(() => {
     if (privyWallet?.chainId && privyWallet?.address) {

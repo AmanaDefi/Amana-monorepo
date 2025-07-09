@@ -9,7 +9,7 @@ import {
 } from "@/types/types";
 import { isApproved } from "@/utils/approve";
 import { ZeroAddress } from "ethers";
-import { APPROVED_TOKENS, CHAIN_ID, HERMES_URL } from "@/constants/chainConfig";
+import { APPROVED_TOKENS, CHAIN_ID, HERMES_URL, isStablecoinSymbol } from "@/constants/chainConfig";
 import { HermesClient } from "@pythnetwork/hermes-client";
 import { USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
 import { PublicKey } from "@solana/web3.js";
@@ -795,11 +795,7 @@ export function formatNumberWithSuffix(num: number): string {
  * @param symbol - The token symbol to check
  * @returns boolean - True if the token is a stablecoin
  */
-export const isStablecoin = (symbol: string): boolean => {
-  if (!symbol) return false;
-  const baseSymbol = symbol.split('.')[0].toUpperCase();
-  return ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'FRAX', 'LUSD'].includes(baseSymbol);
-};
+export const isStablecoin = isStablecoinSymbol;
 
 /**
  * Helper function to format TVL in USD terms with proper K/M/B suffix
@@ -832,15 +828,10 @@ export const formatTokenBalance = (
   symbol: string,
 ): string => {
   const num = Number(balance);
-  // Check if token is a stablecoin
-  const isStablecoin =
-    symbol?.includes("USD") ||
-    symbol?.includes("DAI") ||
-    symbol?.includes("USDT") ||
-    symbol?.includes("USDC") ||
-    symbol?.includes("BUSD");
+  // Check if token is a stablecoin using centralized function
+  const isStablecoinToken = isStablecoin(symbol);
   // Format with 2 decimal places for stablecoins, 4 for others
-  const decimals = isStablecoin ? 2 : 4;
+  const decimals = isStablecoinToken ? 2 : 4;
   return parseFloat(num.toFixed(decimals)).toString();
 };
 
