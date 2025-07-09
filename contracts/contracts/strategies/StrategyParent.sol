@@ -154,6 +154,7 @@ abstract contract StrategyParent is
         inputToken = IERC20(_inputTokenAddress);
         receiptTokenAddress = _receiptTokenAddress;
         minClaimableReward = 5; // wherever this is used it is multiplied by 1e15 or 1e3, depending on token decimals
+        harvestSwapSlippage = 1000; // 1% slippage by default
     }
 
     function _authorizeUpgrade(address) internal override onlyOwner {}

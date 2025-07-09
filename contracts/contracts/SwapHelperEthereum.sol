@@ -73,7 +73,6 @@ contract SwapHelperEthereum is SwapHelperParent {
         } else if (token == CVX_ADDRESS) {
             return cvxUsdPriceFeedId;
         } else if (token == sUSN_ADDRESS) {
-            console.log("Getting sUSN price");
             return susnUsdPriceFeedId;
         } else {
             return bytes32(0); // Return zero bytes if no price feed exists
@@ -131,6 +130,46 @@ contract SwapHelperEthereum is SwapHelperParent {
                 swapParams,
                 amount,
                 minOut,
+                pools,
+                msg.sender
+            )
+        returns (uint256 out) {
+            amountOut = out;
+        } catch {
+            amountOut = 0;
+        }
+
+        return amountOut;
+    }
+
+    function swapTokensViaCurveNG(
+        address[11] memory route,
+        uint256[5][5] memory swapParams,
+        address[5] memory pools,
+        uint256 amount,
+        uint16 slippageBps
+    ) external returns (uint256 amountOut) {
+        address finalToken = getLastNonZeroAddress(route);
+        console.log("Swapping via CurveNG, finalToken: %s", finalToken);
+        uint256 minAmountOut = calculateMinAmountOut(
+            route[0],
+            finalToken,
+            amount,
+            slippageBps
+        );
+        console.log(
+            "Swapping via CurveNG, amount: %s, minOut: %s",
+            amount,
+            minAmountOut
+        );
+        IERC20(route[0]).approve(ROUTER_NG, amount);
+
+        try
+            ICurveRouterNG(ROUTER_NG).exchange(
+                route,
+                swapParams,
+                amount,
+                minAmountOut,
                 pools,
                 msg.sender
             )
@@ -658,5 +697,16 @@ contract SwapHelperEthereum is SwapHelperParent {
     ) internal {
         IERC20(token).approve(address(permit2), type(uint256).max);
         permit2.approve(token, address(UNIVERSAL_ROUTER), amount, expiration);
+    }
+
+    function getLastNonZeroAddress(
+        address[11] memory route
+    ) internal pure returns (address) {
+        for (uint256 i = route.length; i > 0; i--) {
+            if (route[i - 1] != address(0)) {
+                return route[i - 1];
+            }
+        }
+        return address(0); // All entries were zero
     }
 }
