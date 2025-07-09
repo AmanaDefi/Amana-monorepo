@@ -204,7 +204,7 @@ const Advice = () => {
 
       {/* Desktop layout */}
       <div className="hidden lg:block px-4">
-        <div className="grid grid-cols-2 2xl:grid-cols-4 gap-6 max-w-[780px] 2xl:max-w-none mx-auto px-6 xl:px-2">
+        <div className="grid grid-cols-2 2xl:grid-cols-4 gap-6 xl:gap-4 2xl:gap-6 max-w-[780px] 2xl:max-w-[1360px] 3xl:max-w-none mx-auto px-6 xl:px-2">
           {ADVICE_DATA.map((advice, index) => (
             <motion.div
               key={index}

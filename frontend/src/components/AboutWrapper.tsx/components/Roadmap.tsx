@@ -105,8 +105,8 @@ const Roadmap = () => {
   };
 
   return (
-    <section className="mt-[167px] md:mt-[275px] relative">
-      <div className="relative z-30 right-0 md:right-[192px] xl:right-4 -bottom-3 lg:-bottom-2 xl:-bottom-0 w-full">
+    <section className="mt-[167px] lg:mt-[275px] relative">
+      <div className="relative z-30 right-0 md:right-[192px] xl:right-0 2xl:right-4 -bottom-3 lg:-bottom-2 xl:-bottom-0 w-full">
         <RoadmapIcon className="w-full" />
       </div>
 
@@ -428,7 +428,7 @@ const Roadmap = () => {
       </div>
 
       {/* Extra large layout (xl) - horizontal */}
-      <div className="hidden xl:flex flex-row justify-between items-start px-5 max-w-[1400px] mx-auto">
+      <div className="hidden xl:flex flex-row justify-between items-start px-0 2xl:px-5 max-w-[1200px] 2xl:max-w-[1400px] mx-auto">
         {ROADMAP_DATA.map((item, index) => (
           <motion.div
             key={index}
@@ -436,7 +436,7 @@ const Roadmap = () => {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: index * 0.15 }}
             viewport={{ once: true }}
-            className="relative max-w-[330px]"
+            className="relative max-w-[300px] 2xl:max-w-[330px]"
           >
             {item.isHighlighted ? (
               <motion.div
@@ -444,7 +444,7 @@ const Roadmap = () => {
                 whileInView={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.8, delay: 0.3 }}
                 viewport={{ once: true }}
-                className="absolute top-[-281px] left-0 min-w-[340px] h-[748px] rounded-[24px] pt-[22px] px-4 z-10"
+                className="absolute top-[-281px] left-0 min-w-[300px] 2xl:min-w-[340px] h-[748px] rounded-[24px] pt-[22px] px-4 z-10"
                 style={{
                   background:
                     "linear-gradient(180deg, #101219 0%, #1b46e0 100%)",

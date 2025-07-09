@@ -52,7 +52,7 @@ const FeatureCard: FC<FeatureCardProps> = ({
     transition={{ duration: 0.6, delay: index * 0.2 }}
     viewport={{ once: true }}
     whileHover={{ y: -5 }}
-    className={`rounded-[24px] px-4 sm:px-6 md:px-7 lg:px-10 py-6 md:py-7 lg:py-8 before-gradient-border flex flex-col mx-auto max-w-xs md:max-w-[728px] lg:max-w-[600px]  xl:flex-1 ${
+    className={`rounded-[24px] px-4 sm:px-6 md:px-7 lg:px-10 py-6 md:py-7 lg:py-8 before-gradient-border flex flex-col mx-auto xl:mx-0 max-w-xs md:max-w-[728px] lg:max-w-[600px] xl:max-w-[576px] 2xl:max-w-[668px] 2xl:flex-1 ${
       !isLast ? "mb-4 md:mb-5 lg:mb-0 xl:mr-4" : ""
     }`}
   >
@@ -66,7 +66,7 @@ const FeatureCard: FC<FeatureCardProps> = ({
         src={image}
         quality={100}
         alt={alt}
-        width={64} 
+        width={64}
         height={64}
         className="w-8 h-8 sm:w-10 sm:h-10 md:w-[52px] md:h-[52px] lg:w-[64px] lg:h-[64px]"
       />
@@ -92,7 +92,7 @@ const Features: FC = () => {
       >
         How Amana Works
       </motion.h2>
-      <div className="flex flex-col md:flex-col xl:flex-row w-full xl:justify-between md:gap-5 xl:gap-0">
+      <div className="flex flex-col md:flex-col xl:flex-row w-full md:gap-5 xl:gap-0 xl:justify-center ">
         {FEATURES_DATA.map((feature, index) => (
           <FeatureCard
             key={feature.id}
