@@ -12,7 +12,13 @@ export const formatTokenBalance = (
   const isStablecoin = isStablecoinSymbol(symbol);
 
   const decimals = isStablecoin ? 2 : 4;
-  return parseFloat(num.toFixed(decimals)).toString();
+  const formatted = num.toFixed(decimals);
+
+  if (parseFloat(formatted) === 0 && num > 0) {
+    return isStablecoin ? "< 0.01" : "< 0.0001";
+  }
+
+  return parseFloat(formatted).toString();
 };
 
 // Format USD value ensuring it's never negative
@@ -34,4 +40,28 @@ export const shouldShowUSDLoader = (
   isOutput: boolean | undefined,
 ): boolean => {
   return !!loadingOutputToken && !!isOutput;
+};
+
+export const formatUSDAmount = (
+  value: number,
+  options: {
+    ensureNonNegative?: boolean;
+    minimumFractionDigits?: number;
+    maximumFractionDigits?: number;
+  } = {},
+): string => {
+  const {
+    ensureNonNegative = true,
+    minimumFractionDigits = 2,
+    maximumFractionDigits = 2,
+  } = options;
+
+  const processedValue = ensureNonNegative ? Math.max(0, value) : value;
+
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits,
+    maximumFractionDigits,
+  }).format(processedValue);
 };

@@ -22,7 +22,7 @@ interface FeatureCardProps {
 const FEATURES_DATA: Feature[] = [
   {
     id: "yield-optimization",
-    image: "/powerImage.png",
+    image: "/power-about.png",
     alt: "power",
     title: "Automated Yield Optimization",
     description:
@@ -30,7 +30,7 @@ const FEATURES_DATA: Feature[] = [
   },
   {
     id: "security",
-    image: "/security.png",
+    image: "/security-about.png",
     alt: "security",
     title: "Security and Audits",
     description:

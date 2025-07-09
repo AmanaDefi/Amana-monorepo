@@ -111,7 +111,7 @@ const OnboardingContainer = () => {
 
   return (
     <>
-      <div className="flex flex-col items-center px-4 font-gotham mt-6 md:mt-0 3xl:mt-4">
+      <div className="flex flex-col items-center px-4 font-gotham mt-3 md:mt-0 3xl:mt-4">
         <AmanaLogo
           width={86}
           height={61}

@@ -184,7 +184,7 @@ export const VaultOverviewBlock: React.FC<Props> = ({
               isLoading={isAPYLoading}
               skeletonClassName="h-6 w-16"
             />
-            {!isDeposit && isReward && (
+            {isReward && (
               <Image
                 src="/rewards.png"
                 alt="reward star"

@@ -22,7 +22,10 @@ export const useMultichainTokenBalanceForModal = (
   const currentToken = useMemo(() => token, [token]);
   const currentChain = useMemo(() => targetChain, [targetChain]);
   const { wallets } = useWallets();
-  const activeWallet = wallets[0];
+  const filteredWallets = wallets.filter(
+    (wallet) => wallet.meta.id !== "app.phantom",
+  );
+  const activeWallet = filteredWallets[0];
 
   const { walletAddress, selectedChain } = useMultiChain();
 

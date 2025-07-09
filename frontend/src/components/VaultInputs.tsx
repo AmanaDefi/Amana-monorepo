@@ -22,16 +22,15 @@ import {
   SUPPORTED_CHAINS,
 } from "@/constants/chainConfig";
 import {
-  determineVaultTokenFromApprovedTokens,
   formatCurrency,
   getCurrentSlippage,
   getVaultErrorMessage,
   isZetachain,
   selectActions,
   convertUsdToEth,
-  getOnlyTokenSymbol,
   bigIntReviver,
   bigIntReplacer,
+  formatSlippageUSD,
 } from "@/utils/utils";
 import InteractionContainer from "./interactAPI";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
@@ -53,7 +52,6 @@ import {
   getLocalStorageObject,
   updateLocalStorageObject,
 } from "@/utils/localStorageUtils";
-import DepositModalArrowsIcon from "./svg/DepositModalArrowsIcon";
 import { getPublicClient } from "@/utils/getPublicClient";
 import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
 import ChainSelector from "./VaultsDetailsWrapper/components/ChainSelector";
@@ -67,6 +65,7 @@ import { useTransactionStore } from "@/store/transactionStore";
 import { formatTokenBalance, formatUSDValue } from "@/utils/tokenFormat";
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 import { zetachain } from "viem/chains";
+import { useAPYStore } from "@/store/APYStore";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -83,7 +82,7 @@ export interface VaultInputsProps {
   vaultId: string;
   isDeposit: boolean;
   onTabChange: (tab: string) => void;
-  APY7DValue: string
+  APY7DValue: string;
 }
 
 export type ConversionOutput = {
@@ -114,10 +113,8 @@ export default function VaultInputs({
   isDeposit,
   onTabChange,
   selectedChain,
-  APY7DValue
+  APY7DValue,
 }: VaultInputsProps): JSX.Element {
-  const router = useRouter();
-  const pathname = usePathname();
   const [inputToken, setInputToken] = useState<Token | undefined>(
     selectedToken,
   );
@@ -133,7 +130,10 @@ export default function VaultInputs({
   const [allowInput, setAllowInput] = useState<boolean>(false);
   const [label, setLabel] = useState(isDeposit ? "Invest" : "Withdraw");
   const { wallets } = useWallets();
-  const activeWallet = wallets[0];
+  const filteredWallets = wallets.filter(
+    (wallet) => wallet.meta.id !== "app.phantom",
+  );
+  const activeWallet = filteredWallets[0];
   const selectChain = useMemo(() => selectedChain, [selectedChain]);
 
   const handleSelectChainAngToken = (chain: Chain, token: Token) => {
@@ -144,8 +144,6 @@ export default function VaultInputs({
     }
   };
 
-  const { setIsButtonDisabled, setLastDepositInfo } = useTransactionStore();
-
   // Update label when isDeposit prop changes
   useEffect(() => {
     setLabel(isDeposit ? "Invest" : "Withdraw");
@@ -155,8 +153,19 @@ export default function VaultInputs({
   const [step, setStep] = useState<number>(0);
   const [action, setAction] = useState<Action>(steps[0]);
   const [performanceFee, setPerformanceFee] = useState<number>(0);
+
+  const {
+    setIsButtonDisabled,
+    setLastDepositInfo,
+    setLastWithdrawInfo,
+    finishedTransaction,
+  } = useTransactionStore();
+
   const { selectedChainFromModal, setSelectedTokenFromModal } =
     useChainTokenModalStore();
+
+  const { setPreviousAPY, setCurrentAPY, setActiveTransactionVault } =
+    useAPYStore();
 
   useEffect(() => {
     async function handlePerformanceFee() {
@@ -693,7 +702,7 @@ export default function VaultInputs({
       const calculatedSlippageUSD =
         assetsConversionInUSD - tokenConversionInUSD;
 
-      const slippageAmountInUSDFormatted = formatUSDValue(
+      const slippageAmountInUSDFormatted = formatSlippageUSD(
         calculatedSlippageUSD,
       );
 
@@ -859,6 +868,13 @@ export default function VaultInputs({
         100 - (finalConvertedAmountInUSD * 100) / inputAmountValueInUSD,
       );
 
+      const calculatedSlippageUSD =
+        inputAmountValueInUSD - finalConvertedAmountInUSD;
+
+      const slippageAmountInUSDFormatted = formatSlippageUSD(
+        calculatedSlippageUSD,
+      );
+
       if (!vaultData.depositFeePaidFromGasTank && gasFeeInVaultAsset > 0n) {
         const totalLossUSD = inputAmountValueInUSD - finalConvertedAmountInUSD;
         const gasFeeUSD = parseFloat(gasFeeInUSD.replace(/[^0-9.]/g, ""));
@@ -869,6 +885,7 @@ export default function VaultInputs({
       if (inputAmountValue === debouncedInputBalance.value) {
         setConversionOutput({
           slippageActualValue: Number(slippageActualValue.toFixed(2)),
+          slippageAmountInUSDFormatted: slippageAmountInUSDFormatted,
           finalConvertedAmountInUSDFormatted: formatUSDValue(
             finalConvertedAmountInUSD,
           ),
@@ -987,15 +1004,46 @@ export default function VaultInputs({
     vaultData.depositFeePaidFromGasTank,
   ]);
 
+  useEffect(() => {
+    if (vaultData?.id && APY7DValue && Number(inputBalance.formatted) > 0) {
+      const hasExistingData = useAPYStore
+        .getState()
+        .hasAPYChangeData(vaultData.id);
+      if (!hasExistingData) {
+        setPreviousAPY(vaultData.id, Number(APY7DValue));
+        setActiveTransactionVault(vaultData.id);
+      }
+    }
+  }, [
+    vaultData?.id,
+    APY7DValue,
+    inputBalance.formatted,
+    setPreviousAPY,
+    setActiveTransactionVault,
+  ]);
+
   // Reset input state after transaction completes or fails
   useEffect(() => {
     if (transactionCompleted) {
-      setLastDepositInfo({
-        inputAmount: displayValue,
-        outputAmount: conversionOutput.outputAmountFormatted,
-        inputSymbol: inputToken?.symbol || "",
-        outputSymbol: vaultData.symbol,
-      });
+      if (vaultData?.id && APY7DValue) {
+        setCurrentAPY(vaultData.id, Number(APY7DValue));
+      }
+
+      if (isDeposit) {
+        setLastDepositInfo({
+          inputAmount: displayValue,
+          outputAmount: conversionOutput.outputAmountFormatted,
+          inputSymbol: inputToken?.symbol || "",
+          outputSymbol: vaultData.symbol,
+        });
+      } else {
+        setLastWithdrawInfo({
+          inputAmount: displayValue,
+          outputAmount: conversionOutput.outputAmountFormatted,
+          inputSymbol: vaultData.symbol,
+          outputSymbol: inputToken?.symbol || vaultData.inputToken.symbol,
+        });
+      }
 
       setInputBalance(EMPTY_BALANCE);
       setDisplayValue("0.00");
@@ -1007,7 +1055,11 @@ export default function VaultInputs({
       // Reset transactionCompleted to false after processing
       setTimeout(() => {
         setTransactionCompleted(false);
-        setLastDepositInfo(null);
+        if (isDeposit) {
+          setLastDepositInfo(null);
+        } else {
+          setLastWithdrawInfo(null);
+        }
       }, 1000);
     }
   }, [
@@ -1021,7 +1073,18 @@ export default function VaultInputs({
     vaultData.symbol,
     setTransactionCompleted,
     setLastDepositInfo,
+    setLastWithdrawInfo,
+    isDeposit,
+    vaultData.inputToken.symbol,
+    APY7DValue,
+    setCurrentAPY,
   ]);
+
+  useEffect(() => {
+    if (!finishedTransaction) {
+      setActiveTransactionVault(null);
+    }
+  }, [finishedTransaction, setActiveTransactionVault]);
 
   // Debounce the input balance in order to calculate the output amount
   useEffect(() => {
@@ -1329,7 +1392,7 @@ export default function VaultInputs({
               isOutput={false}
               captionText={!isDeposit ? "Output Amount" : ""}
             />
-            <div className="mb-6 md:my-8">
+            <div className="md:my-6">
               <FeeDisplay
                 isDeposit={isDeposit}
                 vaultData={vaultData}
@@ -1472,7 +1535,12 @@ export default function VaultInputs({
           </motion.div>
         )}
       </AnimatePresence>
-      <APYChangeCard isDeposit={isDeposit} minReceived={minReceived} APYValue={APY7DValue} />
+      <APYChangeCard
+        isDeposit={isDeposit}
+        minReceived={minReceived}
+        APYValue={APY7DValue}
+        vaultId={vaultId}
+      />
 
       {!(
         isDeposit &&

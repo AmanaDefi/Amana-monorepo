@@ -9,6 +9,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 import React from "react";
 import DiscordLogo from "@public/logo/discord.svg";
+import Medium from "@public/logo/medium.svg";
 import XLogo from "@public/logo/x.svg";
 import LinkedInLogo from "@public/logo/linkedIn.svg";
 import Link from "next/link";
@@ -76,7 +77,7 @@ const AboutContainer = ({}) => {
         </motion.p>
 
         <div className="text-[48px] md:text-[72px] lg:text-[96px] font-bold leading-tight">
-          <div className="flex flex-col lg:flex-row lg:flex-wrap justify-center items-start lg:items-center gap-0 lg:gap-2">
+          <div className="flex flex-col lg:flex-row lg:flex-wrap justify-center items-start lg:items-center gap-0 lg:gap-5">
             {/* Mobile version */}
             <div className="flex items-center justify-center gap-2 md:hidden">
               <motion.span
@@ -114,7 +115,7 @@ const AboutContainer = ({}) => {
                   rotate: [0, -10, 10, -5, 0],
                   transition: { duration: 0.5 },
                 }}
-                className="cursor-pointer w-[67px] h-[39px]"
+                className="cursor-pointer w-[67px] h-[39px] md:ml-10"
               >
                 <Image
                   src="/amanaAbout.png"
@@ -278,7 +279,7 @@ const AboutContainer = ({}) => {
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
         viewport={{ once: true }}
-        className="flex flex-col justify-center items-center mt-[116px] md:mt-[160px] lg:mt-[217px]"
+        className="flex flex-col justify-center items-center mt-[116px] md:mt-[160px] lg:mt-[217px] mb-[356px] lg:mb-[493px]"
       >
         <motion.span
           whileHover={{
@@ -346,8 +347,14 @@ const AboutContainer = ({}) => {
         >
           <DiscordLogo height={18} className="w-[22px] h-[26px]" />
         </Link>
+        <Link
+          href="https://medium.com/@amana_defi"
+          target="_blank"
+          className="w-10 h-10 bg-[#1B46E0] rounded-full flex items-center justify-center"
+        >
+          <Medium height={18} className="w-[22px] h-[26px]" />
+        </Link>
       </div>
-      <AboutLine className="relative -mt-0 md:-mt-[180px] lg:-mt-[220px] w-[881px] h-[336px] md:w-[1200px] md:h-[500px] lg:w-full lg:h-[683px] md:-mb-40 lg:-mb-8  lg:-ml-3 " />
     </div>
   );
 };
