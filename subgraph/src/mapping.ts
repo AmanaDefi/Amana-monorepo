@@ -301,7 +301,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
     };
   }
 
-  // Curve Convex ETH Vault -> Ethereum
+  // Curve Convex cbBTC Vault -> Ethereum
   if (addr == "0x5e3adc840b55fe0b99c0418ac69113e1f0296992") {
     return {
       type: "Liquidity Pool",
@@ -321,6 +321,34 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       networkDescription: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
       riskLevel: 3,
       rewardsContractAddress: "0xca55D40f6703a5FcC46d8277D1D78751acCe9305",
+      protocolPoints: 0,
+      protocolPointsDescription: null,
+      cooldownPeriod: 0,
+      minDeposit: 1,
+      maxWithdraw: 1000000,
+    };
+  }
+
+  // Curve Convex USDf Vault -> Ethereum
+  if (addr == "0xe501cbd03fa739273f49a8b54dd49de1248101f6") {
+    return {
+      type: "Liquidity Pool",
+      name: "USDC/USDf Liquidity Pool",
+      description: "This strategy deposits USDC into the Curve USDC/USDf pool on Ethereum, then deposits the resulting Curve LP tokens into Convex to maximize CRV and CVX rewards. It earns trading fees from Curve and enhances yield through Convex staking rewards. Since USDC and USDf are both pegged to the US dollar, impermanent loss is minimal to negligible. Fees vary with trading volume, and reward rates are subject to change at the discretion of the underlying protocols. APY decreases as total TVL in the pool increases.",
+      imgURL: "/ETH.png",
+      depositFeePaidFromGasTank: false,
+      assetSymbol: "USDC.ETH",
+      assetDecimals: 6,
+      assetImgURL: "/usdc.png",
+      assetPrice: BigDecimal.fromString("1.0"),
+      strategyNetwork: "Ethereum",
+      strategyChainId: 1,
+      protocolName: "Curve-Convex",
+      protocolImgURL: "/convex.png",
+      protocolDescription: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy.",
+      networkDescription: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
+      riskLevel: 3,
+      rewardsContractAddress: "0x4A87e4219f10510b0943DCD0cD0247868Ec59E85",
       protocolPoints: 0,
       protocolPointsDescription: null,
       cooldownPeriod: 0,
