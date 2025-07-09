@@ -62,7 +62,7 @@ import FeeDisplay, {
 import APYChangeCard from "./VaultsDetailsWrapper/components/APYChangeCard";
 import { useWallets } from "@privy-io/react-auth";
 import { useTransactionStore } from "@/store/transactionStore";
-import { formatTokenBalance, formatUSDValue } from "@/utils/tokenFormat";
+import { formatTokenBalance, formatUSDAmount, formatUSDValue } from "@/utils/tokenFormat";
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 import { zetachain } from "viem/chains";
 import { useAPYStore } from "@/store/APYStore";
@@ -821,7 +821,7 @@ export default function VaultInputs({
         const gasFeeInTokenUnits =
           Number(gasFeeInVaultAsset) / 10 ** vaultData.inputToken.decimals;
         const gasFeeInUSDAmount = gasFeeInTokenUnits * vaultTokenPrice;
-        gasFeeInUSD = formatCurrency(gasFeeInUSDAmount);
+        gasFeeInUSD = formatUSDAmount(gasFeeInUSDAmount);
         const ethAmount = convertUsdToEth(gasFeeInUSDAmount, ethPriceUsd);
         gasFeeInETH = ethAmount.toFixed(5);
       }
@@ -1407,7 +1407,7 @@ export default function VaultInputs({
             </div>
             <ExpectedSlippageBlock
               conversionOutput={conversionOutput}
-              isVisible={!!conversionOutput.slippageActualValue}
+              isVisible={!!conversionOutput.slippageActualValue && !outputBoxErrorMessage}
             />
 
             <div className="mb-4">
