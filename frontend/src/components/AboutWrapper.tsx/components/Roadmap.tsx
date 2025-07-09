@@ -65,6 +65,12 @@ const Roadmap = () => {
     },
   ];
 
+  const getStatusLabel = (index: number) => {
+    if (index < 2) return "All goals achieved";
+    if (index === 2) return "We are Here";
+    return "Upcoming goals";
+  };
+
   const goToNextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % ROADMAP_DATA.length);
   };
@@ -100,7 +106,7 @@ const Roadmap = () => {
 
   return (
     <section className="mt-[167px] md:mt-[275px] relative">
-      <div className="relative z-30 right-[192px] xl:right-4 -bottom-3 lg:-bottom-2 xl:-bottom-0 w-full">
+      <div className="relative z-30 right-0 md:right-[192px] xl:right-4 -bottom-3 lg:-bottom-2 xl:-bottom-0 w-full">
         <RoadmapIcon className="w-full" />
       </div>
 
@@ -119,10 +125,10 @@ const Roadmap = () => {
             }}
           >
             {ROADMAP_DATA.map((item, index) => (
-              <div key={index} className="w-full flex-shrink-0 px-8 ">
+              <div key={index} className="w-full flex-shrink-0 px-8">
                 {item.isHighlighted ? (
                   <div
-                    className="max-w-[340px] mx-auto p-6 rounded-[24px] pb-[93px]"
+                    className="max-w-[290px] mx-auto p-6 rounded-[24px] h-[615px]"
                     style={{
                       background:
                         "linear-gradient(180deg, #101219 0%, #1b46e0 100%)",
@@ -134,7 +140,7 @@ const Roadmap = () => {
                     <div className="font-medium text-[24px] text-white mb-2">
                       {item.highlightLabel}
                     </div>
-                    <div className="text-sm text-[#9A9CB3] mb-[146px]">
+                    <div className="text-sm text-[#9A9CB3] mb-[95px]">
                       {item.highlightDescription}
                     </div>
                     <h2
@@ -158,7 +164,7 @@ const Roadmap = () => {
                       {item.tasks.map((task, taskIndex) => (
                         <li
                           key={taskIndex}
-                          className="font-normal text-sm text-[#9A9CB3] flex items-center gap-3"
+                          className="font-normal text-xs text-[#9A9CB3] flex items-center gap-3"
                         >
                           <div
                             className={`w-[10px] h-[10px] rounded-full flex-shrink-0 ${
@@ -171,7 +177,14 @@ const Roadmap = () => {
                     </ul>
                   </div>
                 ) : (
-                  <div className="max-w-[330px] mx-auto h-full flex flex-col justify-end pb-[93px]">
+                  <div className="max-w-[290px] mx-auto p-6 rounded-[24px] h-[615px]">
+                    <div className="font-normal text-[14px] text-[#9A9CB3] mb-[49px]">
+                      Roadmap
+                    </div>
+                    <div className="font-medium text-[24px] text-white mb-2">
+                      {getStatusLabel(index)}
+                    </div>
+                    <div className="text-sm text-[#9A9CB3] mb-[146px]"></div>
                     <h2
                       className="font-bold text-[32px] mb-2"
                       style={{
@@ -189,11 +202,11 @@ const Roadmap = () => {
                       {item.title}
                     </h3>
 
-                    <ul className="flex flex-col gap-6">
+                    <ul className="flex flex-col gap-6 px-2">
                       {item.tasks.map((task, taskIndex) => (
                         <li
                           key={taskIndex}
-                          className="font-normal text-sm text-[#9A9CB3] flex items-center gap-3"
+                          className="font-normal text-xs text-[#9A9CB3] flex items-center gap-3"
                         >
                           <div className="w-[10px] h-[10px] bg-white rounded-full flex-shrink-0"></div>
                           <span className="leading-tight">{task}</span>
@@ -269,11 +282,11 @@ const Roadmap = () => {
             {ROADMAP_DATA.map((item, index) => (
               <div
                 key={index}
-                className="w-full flex-shrink-0 px-8 md:px-12 lg:px-16"
+                className="w-full flex-shrink-0 px-8 md:px-12 lg:px-16 h-[615px]"
               >
                 {item.isHighlighted ? (
                   <div
-                    className="mx-auto max-w-[340px] p-6 rounded-[24px] pb-[93px] "
+                    className="mx-auto max-w-[340px] p-6 rounded-[24px] "
                     style={{
                       background:
                         "linear-gradient(180deg, #101219 0%, #1b46e0 100%)",
@@ -285,7 +298,7 @@ const Roadmap = () => {
                     <div className="font-medium text-[24px] md:text-[28px] text-white mb-2">
                       {item.highlightLabel}
                     </div>
-                    <div className="text-sm md:text-[16px] text-[#9A9CB3] mb-[146px]">
+                    <div className="text-sm md:text-[16px] text-[#9A9CB3] mb-[90px]">
                       {item.highlightDescription}
                     </div>
 
@@ -310,7 +323,7 @@ const Roadmap = () => {
                       {item.tasks.map((task, taskIndex) => (
                         <li
                           key={taskIndex}
-                          className="font-normal text-sm md:text-[16px] text-[#9A9CB3] flex items-center gap-3"
+                          className="font-normal text-sm text-[#9A9CB3] flex items-center gap-3"
                         >
                           <div
                             className={`w-[10px] h-[10px] rounded-full flex-shrink-0 ${
@@ -323,7 +336,16 @@ const Roadmap = () => {
                     </ul>
                   </div>
                 ) : (
-                  <div className="mx-auto max-w-[340px] h-full flex flex-col justify-end pb-[93px]">
+                  <div className="mx-auto max-w-[340px] p-6 rounded-[24px] h-[615px]">
+                    <div className="font-normal text-[14px] md:text-[15px] text-[#9A9CB3] mb-[49px]">
+                      Roadmap
+                    </div>
+                    <div className="font-medium text-[24px] md:text-[28px] text-white mb-2">
+                      {getStatusLabel(index)}
+                    </div>
+                    <div className="text-sm text-[#9A9CB3] mb-[146px]">
+                      {/* Empty space to maintain consistent layout */}
+                    </div>
                     <h2
                       className="font-bold text-[32px] md:text-[40px] mb-2"
                       style={{
@@ -345,7 +367,7 @@ const Roadmap = () => {
                       {item.tasks.map((task, taskIndex) => (
                         <li
                           key={taskIndex}
-                          className="font-normal text-sm md:text-[16px] text-[#9A9CB3] flex items-center gap-3"
+                          className="font-normal text-sm text-[#9A9CB3] flex items-center gap-3"
                         >
                           <div className="w-[10px] h-[10px] bg-white rounded-full flex-shrink-0"></div>
                           <span className="leading-tight">{task}</span>
