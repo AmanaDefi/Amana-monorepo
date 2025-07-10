@@ -35,7 +35,6 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
   const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
 
-  // Перевірка чи це мобільний пристрій
   useEffect(() => {
     const checkIsMobile = () => {
       setIsMobile(window.innerWidth <= 768);
@@ -167,7 +166,6 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
     }
   }, [walletAddress]);
 
-  // Стилі для мобільних пристроїв
   const getMobileStyles = () => {
     if (!isMobile) return {};
 
@@ -180,7 +178,6 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
     };
   };
 
-  // Стилі для десктопу (оригінальні)
   const getDesktopStyles = () => {
     if (isMobile) return {};
 
@@ -196,7 +193,6 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
     <AnimatePresence mode="wait">
       {isOpen && walletAddress && (
         <>
-          {/* Overlay тільки для мобільних */}
           {isMobile && (
             <motion.div
               className="fixed inset-0 bg-black/20 z-[999]"
