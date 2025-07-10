@@ -25,33 +25,47 @@ const TableChart: React.FC<TableChartProps> = ({
   const filteredTimestamps = timestamps;
 
   // Prepare series data with timestamps if provided
-  const mainSeriesData = filteredTimestamps && filteredTimestamps.length === filteredPoints.length
-    ? filteredPoints.map((y, i) => [
-        typeof filteredTimestamps[i] === 'string'
-          ? new Date(filteredTimestamps[i] as string).getTime()
-          : typeof filteredTimestamps[i] === 'number'
-            ? (filteredTimestamps[i].toString().length < 13 ? filteredTimestamps[i] * 1000 : filteredTimestamps[i])
-            : 0,
-        y
-      ])
-    : filteredPoints.map((y, i) => [i, y]);
+  const mainSeriesData: [number, number][] =
+    filteredTimestamps && filteredTimestamps.length === filteredPoints.length
+      ? filteredPoints.map((y, i) => {
+          const timestamp = filteredTimestamps[i];
+          let timeValue: number;
+
+          if (typeof timestamp === "string") {
+            timeValue = new Date(timestamp).getTime();
+          } else if (typeof timestamp === "number") {
+            timeValue =
+              timestamp.toString().length < 13 ? timestamp * 1000 : timestamp;
+          } else {
+            timeValue = 0;
+          }
+
+          return [timeValue, y];
+        })
+      : filteredPoints.map((y, i) => [i, y]);
 
   // Calculate 7-point simple moving average
-  function movingAverage(data: [number, number][], windowSize: number): [number, number | null][] {
+  function movingAverage(
+    data: [number, number][],
+    windowSize: number,
+  ): [number, number | null][] {
     if (data.length < windowSize) return [];
     const result: [number, number | null][] = [];
     for (let i = 0; i < data.length; i++) {
       if (i < windowSize - 1) {
         result.push([data[i][0], null]);
       } else {
-        const avg = data.slice(i - windowSize + 1, i + 1).reduce((sum, d) => sum + d[1], 0) / windowSize;
+        const avg =
+          data
+            .slice(i - windowSize + 1, i + 1)
+            .reduce((sum, d) => sum + d[1], 0) / windowSize;
         result.push([data[i][0], avg]);
       }
     }
     return result;
   }
 
-  const smaSeriesData = movingAverage(mainSeriesData as [number, number][], 7);
+  const smaSeriesData = movingAverage(mainSeriesData, 7);
 
   const series = [
     {
@@ -100,17 +114,21 @@ const TableChart: React.FC<TableChartProps> = ({
     tooltip: {
       enabled: true,
       style: {
-        fontSize: '14px',
-        fontFamily: 'inherit',
+        fontSize: "14px",
+        fontFamily: "inherit",
       },
-      custom: function({ series, seriesIndex, dataPointIndex, w }) {
+      custom: function ({ series, seriesIndex, dataPointIndex, w }) {
         const apy = series[seriesIndex][dataPointIndex];
         const x = w.globals.seriesX[seriesIndex][dataPointIndex];
-        const date = new Date(x).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+        const date = new Date(x).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
         return `
           <div style="background:#14171F;color:#fff;padding:8px 12px;border-radius:8px;border:1px solid #0546DF;min-width:120px;">
             <div style="font-size:12px;opacity:0.8;">${date}</div>
-            <div style="font-size:16px;font-weight:bold;">APY: ${apy == null ? 'N/A' : apy.toFixed(2) + '%'}</div>
+            <div style="font-size:16px;font-weight:bold;">APY: ${apy == null ? "N/A" : apy.toFixed(2) + "%"}</div>
           </div>
         `;
       },

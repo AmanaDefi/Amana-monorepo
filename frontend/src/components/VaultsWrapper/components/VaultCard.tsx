@@ -18,10 +18,14 @@ import { AppButton } from "@/components/button/AppButton";
 import { VaultOverviewBlock } from "@/components/VaultOverviewBlock";
 import TableChart from "@/components/TableChart";
 import { useChartStore } from "@/store/chartStore";
-import { getVaultHistoricalAPY } from '@/utils/defillama';
-import { getFilteredChartData } from '@/utils/chart';
+import { getVaultHistoricalAPY } from "@/utils/defillama";
+import { getFilteredChartData } from "@/utils/chart";
 import { useAPYDisplay } from "@/hooks/useAPYDisplay";
-import { getNoonCapital30dAvgAPY, getNoonCapitalHistoricalAPY, isNoonCapitalVault } from '@/utils/noonCapital';
+import {
+  getNoonCapital30dAvgAPY,
+  getNoonCapitalHistoricalAPY,
+  isNoonCapitalVault,
+} from "@/utils/noonCapital";
 
 const MOCK_DIGITS = 6.43;
 
@@ -37,13 +41,19 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
     const router = useRouter();
     const { walletAddress } = useMultiChain();
 
-    const { getHistoricalAPY, getPercentageChange, hasHistoricalData, setHistoricalAPY } =
-      useChartStore();
+    const {
+      getHistoricalAPY,
+      getPercentageChange,
+      hasHistoricalData,
+      setHistoricalAPY,
+    } = useChartStore();
 
     // Add state for chart range
-    const [chartRange, setChartRange] = useState<'30d' | '90d'>('30d');
+    const [chartRange, setChartRange] = useState<"30d" | "90d">("30d");
     const [noonCapitalAPY, setNoonCapitalAPY] = useState<number | null>(null);
-    const [noonCapitalChart, setNoonCapitalChart] = useState<{ apy: number, timestamp: string }[]>([]);
+    const [noonCapitalChart, setNoonCapitalChart] = useState<
+      { apy: number; timestamp: string }[]
+    >([]);
 
     const vaultAPY = vaultAPYs.find((apy) => apy.vaultId === vault.id);
     const totalAssets = vaultTotalAssets.find(
@@ -58,23 +68,28 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
     const percentageChange = getPercentageChange(vault.id);
     const hasChartData = hasHistoricalData(vault.id);
 
-
     // Use utility to get filtered chart data
     const chartData = getFilteredChartData(historicalData, chartRange);
     let filteredTimestamps = chartData.filteredTimestamps;
     let filteredChartPoints = chartData.filteredChartPoints;
+
     if (isNoonCapitalVault(vault.id) && noonCapitalChart.length > 0) {
       // Use Noon Capital chart data
       const allPoints = noonCapitalChart;
-      const sorted = allPoints.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-      const range = chartRange === '30d' ? 30 : 90;
+      const sorted = allPoints.sort(
+        (a, b) =>
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+      );
+      const range = chartRange === "30d" ? 30 : 90;
       const lastN = sorted.slice(-range);
-      filteredTimestamps = lastN.map(p => p.timestamp);
-      filteredChartPoints = lastN.map(p => p.apy);
+      filteredTimestamps = lastN.map((p) => p.timestamp);
+      filteredChartPoints = lastN.map((p) => p.apy);
     }
 
     const apyDisplay = useAPYDisplay({
-      apyValue: isNoonCapitalVault(vault.id) ? noonCapitalAPY ?? undefined : vaultAPY?.apy30d,
+      apyValue: isNoonCapitalVault(vault.id)
+        ? (noonCapitalAPY ?? undefined)
+        : vaultAPY?.apy30d,
       vaultId: vault.id,
     });
 
@@ -114,9 +129,9 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
         getNoonCapital30dAvgAPY().then(setNoonCapitalAPY);
         getNoonCapitalHistoricalAPY().then(setNoonCapitalChart);
       } else {
-        getVaultHistoricalAPY(vault.id).then(data => {
+        getVaultHistoricalAPY(vault.id).then((data) => {
           if (data && Array.isArray(data)) {
-            const apyArray = data.map(d => d.apy);
+            const apyArray = data.map((d) => d.apy);
             setHistoricalAPY(vault.id, apyArray);
           }
         });
@@ -126,7 +141,9 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
     const renderPredictionDisplay = () => {
       return (
         <div className="flex flex-row justify-between">
-          <p className="font-semibold text-base md:text-xl leading-5 text-white">N/A</p>
+          <p className="font-semibold text-base md:text-xl leading-5 text-white">
+            N/A
+          </p>
         </div>
       );
     };
@@ -231,36 +248,32 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
               </VaultCardInfoBlock>
             </div>
           </div>
-          <div className="flex flex-col w-full rounded-lg pt-2 bg-[#3E73C40D] border border-[#3E3C59] mb-2">
-           {(hasChartData || (isNoonCapitalVault(vault.id) && noonCapitalChart.length > 0)) && (
-              <>
-                <div className="flex flex-row gap-1">
-                  <p className="font-normal text-sm leading-4 text-white pl-[11px]">
-                    Historical APY
-                  </p>
-                </div>
-                <TableChart
-                  points={historicalData}
-                  percentageChange={percentageChange}
-                />
-              </>
-            ) : (
-              <div className="flex items-center justify-center h-full min-h-[96px]">
-                <p className="font-normal text-sm leading-4 text-gray-400">
-                  No historical data available
+
+          {(hasChartData ||
+            (isNoonCapitalVault(vault.id) && noonCapitalChart.length > 0)) && (
+            <div className="flex flex-col w-full rounded-lg pt-2 bg-[#3E73C40D] border border-[#3E3C59] mb-2">
+              <div className="flex flex-row gap-1 items-center justify-between px-2">
+                <p className="font-normal text-sm leading-4 text-white pl-[9px]">
+                  Historical APY
                 </p>
               </div>
               {/* Chart range toggle */}
               <div className="flex flex-row gap-2 px-2 pb-1 pt-1">
                 <button
-                  className={`px-2 py-1 rounded text-xs font-semibold border ${chartRange === '30d' ? 'bg-blue-700 text-white border-blue-700' : 'bg-transparent text-blue-700 border-blue-700'}`}
-                  onClick={e => { e.stopPropagation(); setChartRange('30d'); }}
+                  className={`px-2 py-1 rounded text-xs font-semibold border ${chartRange === "30d" ? "bg-blue-700 text-white border-blue-700" : "bg-transparent text-blue-700 border-blue-700"}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setChartRange("30d");
+                  }}
                 >
                   30d
                 </button>
                 <button
-                  className={`px-2 py-1 rounded text-xs font-semibold border ${chartRange === '90d' ? 'bg-blue-700 text-white border-blue-700' : 'bg-transparent text-blue-700 border-blue-700'}`}
-                  onClick={e => { e.stopPropagation(); setChartRange('90d'); }}
+                  className={`px-2 py-1 rounded text-xs font-semibold border ${chartRange === "90d" ? "bg-blue-700 text-white border-blue-700" : "bg-transparent text-blue-700 border-blue-700"}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setChartRange("90d");
+                  }}
                 >
                   90d
                 </button>
