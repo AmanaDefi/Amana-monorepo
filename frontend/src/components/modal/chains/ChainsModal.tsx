@@ -428,9 +428,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
     );
   };
 
-  const chainList = isFromTopUpForModal
-    ? SUPPORTED_CHAINS.slice(1)
-    : SUPPORTED_CHAINS;
+  const chainList = SUPPORTED_CHAINS;
 
   const handleWalletConnect = () => {
     setChain(selectedChainLocal);

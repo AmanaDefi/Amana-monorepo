@@ -650,12 +650,7 @@ export default function VaultInputs({
   const tokenList = useMemo(() => {
     let tokens: Token[] = [];
 
-    if (!selectedChain?.id) {
-      console.log("VaultInputs - No selectedChain, returning empty array");
-      return [];
-    }
-
-    if (selectedChain.id === 7001 || selectedChain.id === 7000) {
+    if ( !selectedChain?.id || selectedChain.id === 7001 || selectedChain.id === 7000) {
       if (vaultData.inputToken) {
         tokens = [vaultData.inputToken];
       }

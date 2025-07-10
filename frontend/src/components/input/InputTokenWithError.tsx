@@ -11,6 +11,7 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import { Chain } from "viem";
 import clsx from "clsx";
 import { BreathingValue, MiniSpinner } from "../PendingDots";
+import { useWallets } from "@privy-io/react-auth";
 
 export type InputTokenWithErrorProps = {
   errorMessage?: string;
@@ -73,6 +74,11 @@ export default function InputTokenWithError({
   const selectedTokenPrice = useTokenPriceBySymbol(selectedToken?.symbol);
   const { walletAddress } = useMultiChain();
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const { wallets } = useWallets();
+  const filteredWallets = wallets.filter(
+    (wallet) => wallet.meta.id !== "app.phantom",
+  );
+  const activeAccount = filteredWallets[0];
 
   const isConnected = !!walletAddress;
 
@@ -81,9 +87,9 @@ export default function InputTokenWithError({
       ((isDeposit && !isOutput) || (!isDeposit && isOutput)) &&
       tokenList &&
       tokenList.length > 0 &&
-      selectedChain
+      activeAccount?.walletClientType !== "privy"
     );
-  }, [isDeposit, isOutput, tokenList, selectedChain]);
+  }, [isDeposit, isOutput, tokenList, activeAccount]);
 
   const renderTopSection = () => {
     if (!isOutput && isDeposit) {
