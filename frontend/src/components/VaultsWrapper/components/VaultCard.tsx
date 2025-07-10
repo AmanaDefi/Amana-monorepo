@@ -206,7 +206,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                 />
               </>
             ) : (
-              <div className="flex items-center justify-center h-full min-h-[80px]">
+              <div className="flex items-center justify-center h-full min-h-[96px]">
                 <p className="font-normal text-sm leading-4 text-gray-400">
                   No historical data available
                 </p>
