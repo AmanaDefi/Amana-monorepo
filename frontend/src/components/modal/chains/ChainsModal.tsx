@@ -287,7 +287,6 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
     (wallet) => wallet.meta.id !== "app.phantom",
   );
   const activeAccount = filteredWallets[0];
-  console.log(filteredWallets);
   
   const { openStep } = useAuthStore();
   const { setChain } = useAuthStore();

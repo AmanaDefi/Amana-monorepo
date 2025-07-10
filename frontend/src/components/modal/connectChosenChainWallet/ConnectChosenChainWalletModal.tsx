@@ -125,8 +125,7 @@ const ConnectChosenChain = () => {
       if (
         (adapter.adapter.name.toLowerCase() === "metamask" &&
           !(adapter.adapter as WalletAdapter & { wallet?: { client?: any } })
-            ?.wallet?.client) ||
-        adapter.adapter.name.toLowerCase() === "phantom"
+            ?.wallet?.client)
       ) {
         return false;
       }

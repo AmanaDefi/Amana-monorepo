@@ -98,8 +98,7 @@ const VaultsDetailContainer: React.FC<{
   const [isDeposit, setIsDeposit] = useState<boolean>(initialIsDeposit);
   const [showMobileInvestment, setShowMobileInvestment] = useState(false);
   const giftButtonRef = useRef<HTMLButtonElement>(null);
-    const {openStep } = useAuthStore();
-
+  const { openStep } = useAuthStore();
 
   const [openDropdown, setOpenDropdown] = useState<string | null>(
     "transaction-progress",
@@ -130,7 +129,7 @@ const VaultsDetailContainer: React.FC<{
     isTransactionProcessing,
     setLastDepositInfo,
     lastDepositInfo,
-    setLastWithdrawInfo, 
+    setLastWithdrawInfo,
     lastWithdrawInfo,
   } = useTransactionStore();
 
@@ -397,7 +396,7 @@ const VaultsDetailContainer: React.FC<{
     finishedTransaction &&
     (Object.keys(lastTransactionStepFeedback).length > 0 ||
       Object.keys(transactionStepFeedback).length > 0);
-  
+
   const currentTransactionInfo = isDeposit ? lastDepositInfo : lastWithdrawInfo;
 
   return vaultData ? (
@@ -474,28 +473,30 @@ const VaultsDetailContainer: React.FC<{
           </>
         )}
 
-        <div className={`hidden md:flex items-center gap-4`}>
-          <p className="text-white text-[18px] font-bold">
-            Invest from any chain
-          </p>
+        {user?.walletClientType !== "privy" && (
+          <div className={`hidden md:flex items-center gap-4`}>
+            <p className="text-white text-[18px] font-bold">
+              Invest from any chain
+            </p>
 
-          <div className="flex items-center -space-x-2">
-            {SUPPORTED_TOKENS.map((token, index) => (
-              <div
-                key={token.symbol}
-                className="w-8 h-8 rounded-full overflow-hidden hover:scale-110 transition-transform duration-200 relative"
-                title={token.name}
-                style={{ zIndex: index }}
-              >
-                <img
-                  src={token.icon}
-                  alt={token.name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ))}
+            <div className="flex items-center -space-x-2">
+              {SUPPORTED_TOKENS.map((token, index) => (
+                <div
+                  key={token.symbol}
+                  className="w-8 h-8 rounded-full overflow-hidden hover:scale-110 transition-transform duration-200 relative"
+                  title={token.name}
+                  style={{ zIndex: index }}
+                >
+                  <img
+                    src={token.icon}
+                    alt={token.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
       {/* {walletAddress && isWithdraw && <WithdrawPendingBlock />} */}
 
