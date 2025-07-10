@@ -61,7 +61,7 @@ export default function ProfileDropdown({
                   fontSize: "14px",
                   fontWeight: 400,
                 }}
-                onClick={() => openStep("recieve")}
+                onClick={() => openStep("receive")}
               >
                 <div className="flex gap-2 items-center">
                   <QRcodeIcon width={16} height={17} />
