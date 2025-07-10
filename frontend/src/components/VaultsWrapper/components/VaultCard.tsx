@@ -87,7 +87,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
     const renderPredictionDisplay = () => {
       return (
         <div className="flex flex-row justify-between">
-          <p className="font-semibold text-xl leading-5 text-gray-400">N/A</p>
+          <p className="font-semibold text-base md:text-xl leading-5 text-gray-400">N/A</p>
         </div>
       );
     };
@@ -120,13 +120,13 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                     Lend Pool
                   </p>
                 </div>
-                <p className="text-white text-sm leading-4 truncate">
+                <p className="text-white leading-4 truncate text-xs md:text-sm">
                   on {vault.protocol.name}
                 </p>
               </div>
             </div>
 
-            <div className="flex flex-col items-center gap-1 col-span-1 self-start flex-none">
+            <div className="flex flex-col justify-center items-center gap-1 col-span-1 self-start flex-none">
               <Image
                 src={vault.imgURL || ""}
                 alt={vault.protocol.network}
@@ -135,7 +135,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                 className="rounded-full"
                 sizes="24px"
               />
-              <h3 className="text-white text-sm font-bold">
+              <h3 className="text-white text-xs md:text-sm font-bold text-center">
                 {vault.protocol.network}
               </h3>
             </div>
@@ -145,10 +145,10 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
             {walletAddress && (
               <VaultCardInfoBlock>
                 <div className="flex w-full justify-between">
-                  <span className="font-normal text-base leading-4 text-white">
+                  <span className="font-normal text-sm md:text-base leading-4 text-white">
                     Your Deposit:
                   </span>
-                  <span className="text-blue-digits font-bold text-xl leading-5">
+                  <span className="text-blue-digits font-bold text-lg md:text-xl leading-5">
                     $
                     {formatTokenBalance(
                       userBalance?.balance || 0,
@@ -166,14 +166,14 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
               />
             </VaultCardInfoBlock>
 
-            <div className="flex flex-row gap-4">
+            <div className="flex flex-row gap-2 md:gap-4">
               <VaultCardInfoBlock>
                 <div className="flex flex-col gap-2 w-full relative md:pr-6">
-                  <p className="font-normal text-sm leading-4 text-white">
+                  <p className="font-normal text-xs md:text-sm leading-4 text-white">
                     30d avg APY
                   </p>
                   {renderAPYDisplay()}
-                  <div className="hover:cursor-pointer absolute right-[-10px] top-[-10px]">
+                  <div className="hover:cursor-pointer absolute right-[-10px] top-0 md:top-[-10px]">
                     <InfoIcon />
                   </div>
                 </div>
@@ -181,11 +181,11 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
 
               <VaultCardInfoBlock>
                 <div className="flex flex-col gap-2 w-full relative md:pr-6">
-                  <p className="font-normal text-sm leading-4 text-white">
+                  <p className="font-normal text-xs md:text-sm leading-4 text-white">
                     30d prediction
                   </p>
                   {renderPredictionDisplay()}
-                  <div className="hover:cursor-pointer absolute right-[-10px] top-[-10px]">
+                  <div className="hover:cursor-pointer absolute right-[-10px] top-0 md:top-[-10px]">
                     <InfoIcon />
                   </div>
                 </div>
@@ -206,7 +206,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                 />
               </>
             ) : (
-              <div className="flex items-center justify-center h-full min-h-[80px]">
+              <div className="flex items-center justify-center h-full min-h-[96px]">
                 <p className="font-normal text-sm leading-4 text-gray-400">
                   No historical data available
                 </p>
@@ -214,7 +214,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
             )}
           </div>
 
-          <p className="font-normal text-xs leading-4 text-white mb-6 mt-2">
+          <p className="font-normal text-xs leading-4 text-white mb-4 md:mb-6 mt-2">
             This vault auto-compounds Lenders Tokens on{" "}
             <span className="flex flex-row gap-1">
               {vault.protocol.name} <InfoIcon />
