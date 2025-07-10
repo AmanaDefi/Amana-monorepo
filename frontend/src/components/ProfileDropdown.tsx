@@ -9,7 +9,6 @@ import CopyIcon from "./svg/CopyIcon";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { LogOutIcon } from "./svg/sidebar/LogOutIcon";
 
-
 interface MenuItem {
   label: string;
   href?: string;
@@ -33,7 +32,20 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { walletAddress, disconnectWallet } = useMultiChain();
   const [copySuccess, setCopySuccess] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
+
+  // Перевірка чи це мобільний пристрій
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    checkIsMobile();
+    window.addEventListener("resize", checkIsMobile);
+
+    return () => window.removeEventListener("resize", checkIsMobile);
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -155,55 +167,105 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
     }
   }, [walletAddress]);
 
+  // Стилі для мобільних пристроїв
+  const getMobileStyles = () => {
+    if (!isMobile) return {};
+
+    return {
+      position: "fixed" as const,
+      top: "80px",
+      right: "16px",
+      width: "calc(100vw - 32px)",
+      maxWidth: "360px",
+    };
+  };
+
+  // Стилі для десктопу (оригінальні)
+  const getDesktopStyles = () => {
+    if (isMobile) return {};
+
+    return {
+      position: "absolute" as const,
+      top: "115px",
+      right: "44px",
+      minWidth: "360px",
+    };
+  };
+
   return (
     <AnimatePresence mode="wait">
       {isOpen && walletAddress && (
-        <motion.div
-          ref={dropdownRef}
-          className="dropdown-menu"
-          variants={dropdownVariants}
-          initial="hidden"
-          animate="visible"
-          exit="exit"
-          style={{
-            position: "absolute",
-            top: "115px",
-            right: "44px",
-            backgroundColor: "#14171F",
-            borderRadius: "16px",
-            padding: "16px 10px",
-            minWidth: "360px",
-            zIndex: 1000,
-            border: "1px solid #2A2D36",
-            boxShadow: "0 8px 24px rgba(0, 0, 0, 0.4)",
-          }}
-        >
-          <div className="font-gotham px-4">
-            <p className="text-sm font-normal text-[#535E73]">Connected with</p>
-            <div className="flex mt-2 justify-between items-center">
-              <div className=" flex flex-row gap-2 items-center">
-                <div className="rounded-[200px] p-1 flex items-center justify-center bg-[#09090F] h-[44px] w-[44px] transition-all duration-200">
-                  <ProfileDropdownIcon width={26} height={26} />
+        <>
+          {/* Overlay тільки для мобільних */}
+          {isMobile && (
+            <motion.div
+              className="fixed inset-0 bg-black/20 z-[999]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={onClose}
+            />
+          )}
+
+          <motion.div
+            ref={dropdownRef}
+            className="dropdown-menu"
+            variants={dropdownVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            style={{
+              ...getMobileStyles(),
+              ...getDesktopStyles(),
+              backgroundColor: "#14171F",
+              borderRadius: "16px",
+              padding: "16px 10px",
+              zIndex: 1000,
+              border: "1px solid #2A2D36",
+              boxShadow: "0 8px 24px rgba(0, 0, 0, 0.4)",
+            }}
+          >
+            <div className="font-gotham px-4">
+              <p className="text-sm font-normal text-[#535E73]">
+                Connected with
+              </p>
+              <div className="flex mt-2 justify-between items-center">
+                <div className="flex flex-row gap-2 items-center">
+                  <div className="rounded-[200px] p-1 flex items-center justify-center bg-[#09090F] h-[44px] w-[44px] transition-all duration-200">
+                    <ProfileDropdownIcon width={26} height={26} />
+                  </div>
+                  <p className="text-[14px] text-[#535E73] font-normal">
+                    {isMobile
+                      ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
+                      : `${walletAddress.slice(0, 1)}...${walletAddress.slice(-6)}`}
+                  </p>
+                  <div
+                    onClick={handleCopy}
+                    className={`cursor-pointer transition-colors rounded ${
+                      isMobile
+                        ? "p-2 hover:bg-gray-700"
+                        : "p-1 hover:bg-gray-700"
+                    }`}
+                  >
+                    {copySuccess ? <CheckIcon /> : <CopyIcon />}
+                  </div>
                 </div>
-                <p className="text-[14px] text-[#535E73] font-normal">
-                  {walletAddress.slice(0, 1)}...{walletAddress.slice(-6)}
-                </p>
-                <div
-                  onClick={handleCopy}
-                  className="cursor-pointer p-1 hover:bg-gray-700 rounded transition-colors"
+                <button
+                  onClick={handleDisconnect}
+                  className={`text-[#535E73] hover:text-white transition-colors ${
+                    isMobile ? "p-2" : "p-1"
+                  }`}
                 >
-                  {copySuccess ? <CheckIcon /> : <CopyIcon />}
-                </div>
+                  <LogOutIcon
+                    width={19}
+                    height={18}
+                    className="fill-[#535E73]"
+                  />
+                </button>
               </div>
-              <button
-                onClick={handleDisconnect}
-                className="p-1 text-[#535E73] hover:text-white transition-colors"
-              >
-                <LogOutIcon width={19} height={18} className="fill-[#535E73]" />
-              </button>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        </>
       )}
     </AnimatePresence>
   );

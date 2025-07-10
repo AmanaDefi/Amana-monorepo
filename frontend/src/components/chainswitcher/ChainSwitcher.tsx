@@ -170,11 +170,11 @@ const ChainSwitcher: React.FC = () => {
             variant="secondary"
             disabled={!wallet && !publicKey}
             onClick={handleButtonClick}
-            className="cursor-pointer !p-[3px] md:!p-2 md:!w-[56px] md:!h-[56px] !w-10 !h-10"
+            className="cursor-pointer !p-[3px] lg:!p-2 lg:!w-[56px] lg:!h-[56px] !w-9 !h-9"
             data-tooltip-id="chain-switcher-tooltip"
             data-tooltip-content="Switch network"
           >
-            <div className="bg-[#24262f] relative md:!w-10 md:!h-10 !h-8 !w-8 rounded-full flex items-center justify-center">
+            <div className="bg-[#24262f] relative lg:!w-10 lg:!h-10 !h-6 !w-6 rounded-full flex items-center justify-center">
               <Image
                 src={CHAIN_ICONS[currentChain?.id ?? 7000].url}
                 alt={currentChain?.name ?? "Zetachain"}
@@ -188,10 +188,10 @@ const ChainSwitcher: React.FC = () => {
           variant="secondary"
           disabled={!wallet && !publicKey}
           onClick={handleButtonClick}
-          className="cursor-pointer !p-[3px] md:!p-2 md:!w-[56px] md:!h-[56px] !w-10 !h-10"
+          className="cursor-pointer !p-[3px] lg:!p-2 lg:!w-[56px] lg:!h-[56px] !w-9 !h-9"
           style={{ touchAction: "manipulation" }}
         >
-          <div className="bg-[#24262f] relative md:!w-10 md:!h-10 !h-8 !w-8 rounded-full flex items-center justify-center">
+          <div className="bg-[#24262f] relative lg:!w-10 lg:!h-10 !h-6 !w-6 rounded-full flex items-center justify-center">
             <Image
               src={CHAIN_ICONS[currentChain?.id ?? 7000].url}
               alt={currentChain?.name ?? "Zetachain"}
