@@ -98,10 +98,11 @@ export const VaultFilters: FC<Props> = ({
   };
 
   const handleFilterClick = (filter: string) => {
-    if (sortBy === filter) {
+    const normalizedFilter = filter.toLowerCase();
+    if (sortBy.toLowerCase() === normalizedFilter) {
       toggleSortOrder();
     } else {
-      setSortBy(filter);
+      setSortBy(normalizedFilter);
       setSortOrder("desc");
     }
   };

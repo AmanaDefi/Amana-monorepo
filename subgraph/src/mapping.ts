@@ -22,7 +22,7 @@ export function normalizeBytes(bytes: Bytes): string {
 // Vault metadata mapping
 function getVaultMetadata(vaultAddress: string): VaultMetadata {
   let addr = vaultAddress.toLowerCase(); // normalize for comparison
-  
+
   // ZeroLend USDC Vault -> Base
   if (addr == "0x0f6514e3e4760efc8f34fc67a05c4987367af14e") {
     return {
@@ -50,7 +50,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       maxWithdraw: 1000000,
     };
   }
-  
+
   // Fluid USDC Vault -> Base  
   if (addr == "0x5cd6e196ca1d85b8edfdf162d3a0c77268f42c69") {
     return {
@@ -78,7 +78,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       maxWithdraw: 1000000,
     };
   }
-  
+
   // Compound USDT Vault -> Polygon
   if (addr == "0x622e956626cc6aba655e3d92a3629b04cb038e80") {
     return {
@@ -106,7 +106,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       maxWithdraw: 1000000,
     };
   }
-  
+
   // Aave USDT Vault -> BNB
   if (addr == "0xe5fa0e4ba13d516908c5313b3375b7ede24bfe7a") {
     return {
@@ -134,7 +134,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       maxWithdraw: 1000000,
     };
   }
-  
+
   // Curve Convex ETH Vault -> Ethereum
   if (addr == "0xf4fa4d8115e78acf52308fdbad10a5f9042991de") {
     return {
@@ -162,7 +162,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       maxWithdraw: 1000000,
     };
   }
-  
+
   // Curve Convex USDT Vault -> Ethereum
   if (addr == "0x0552d4c51491d9bfed97eb795e101e90a5f16d44") {
     return {
@@ -190,7 +190,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       maxWithdraw: 1000000,
     };
   }
-  
+
   // Curve Convex USDC Vault -> Arbitrum
   if (addr == "0x32fecdef376e2ad74c53663bde933116c09408f3") {
     return {
@@ -218,7 +218,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       maxWithdraw: 1000000,
     };
   }
-  
+
   // Balancer USDC Vault -> Base
   if (addr == "0x8b934de59fde50a91daa7e788389f8fcad35a14f") {
     return {
@@ -246,7 +246,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       maxWithdraw: 1000000,
     };
   }
-  
+
   if (addr == "0xcf18fc631e05ba7dcbcadcd212176c381256faa8") {
     return {
       type: "Yield-Bearing Stablecoin",
@@ -265,10 +265,125 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       protocolDescription: "YieldFi is a yield automation protocol designed to simplify and maximize returns on stablecoin deposits. Users deposit stable assets like USDC or YUSD, which YieldFi routes through optimized on-chain strategies to generate yield. The protocol automatically aggregates and compounds rewards, offering a seamless experience for earning stable, passive income in DeFi.",
       networkDescription: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
       riskLevel: 3,
-      rewardsContractAddress: null
+      rewardsContractAddress: null,
+      protocolPoints: 0,
+      protocolPointsDescription: null,
+      cooldownPeriod: 0,
+      minDeposit: 1,
+      maxWithdraw: 1000000,
     };
   }
-  
+
+  if (addr == "0x4cb4dfc521a5c44817a1fda79fb7eafaf6f1952e") {
+    return {
+      type: "Yield-Bearing Stablecoin",
+      name: "Aegis YUSD",
+      description: "This strategy swaps USDT for YUSD, a Bitcoin-backed stablecoin that passively earns yield through delta-neutral hedging and BTC-collateralized positions. Users benefit from stable, crypto-native returns without the need to stake or lock funds. Holding YUSD also earns Aegis points, offering additional rewards.",
+      imgURL: "/bnb_logo.png",
+      depositFeePaidFromGasTank: true,
+      assetSymbol: "USDT.BSC",
+      assetDecimals: 18,
+      assetImgURL: "/usdt.png",
+      assetPrice: BigDecimal.fromString("1.0"),
+      strategyNetwork: "BSC",
+      strategyChainId: 56,
+      protocolName: "Aegis",
+      protocolImgURL: "/aegis.jpeg",
+      protocolDescription: "Aegis is a yield protocol that issues YUSD, a Bitcoin-backed stablecoin designed to generate stable returns through delta-neutral strategies. Users can mint or swap into YUSD to earn passive yield without staking. The protocol emphasizes transparency and capital efficiency. Risks include market volatility, BTC price movements, and smart contract vulnerabilities.",
+      networkDescription: "BNB Smart Chain (BSC) is a fast, low-cost blockchain supporting smart contracts and EVM-compatible dApps. It offers high throughput but has a more centralized validator structure compared to some networks, impacting governance and security.",
+      riskLevel: 3,
+      rewardsContractAddress: null,
+      protocolPoints: 5,
+      protocolPointsDescription: "Aegis Points",
+      cooldownPeriod: 0,
+      minDeposit: 1,
+      maxWithdraw: 1000000,
+    };
+  }
+
+  // Curve Convex cbBTC Vault -> Ethereum
+  if (addr == "0x5e3adc840b55fe0b99c0418ac69113e1f0296992") {
+    return {
+      type: "Liquidity Pool",
+      name: "tacBTC/cbBTC/FBTC Pool",
+      description: "This strategy deposits cbBTC into the Curve tacBTC/cbBTC/FBTC pool on Ethereum, then deposits the resulting Curve LP tokens into Convex to maximize CRV and CVX rewards. It earns trading fees from Curve and enhances yield through Convex staking rewards. Since tacBTC, cbBTC, and FBTC are all pegged to the same underlying asset (BTC), impermanent loss is minimal to negligible. Fees vary with trading volume, and reward rates are subject to change at the discretion of the underlying protocols. APY decreases as total TVL in the pool increases.",
+      imgURL: "/ETH.png",
+      depositFeePaidFromGasTank: false,
+      assetSymbol: "CBBTC.ETH",
+      assetDecimals: 8,
+      assetImgURL: "/cbbtc.png",
+      assetPrice: BigDecimal.fromString("1.0"),
+      strategyNetwork: "Ethereum",
+      strategyChainId: 1,
+      protocolName: "Curve-Convex",
+      protocolImgURL: "/convex.png",
+      protocolDescription: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy.",
+      networkDescription: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
+      riskLevel: 3,
+      rewardsContractAddress: "0xca55D40f6703a5FcC46d8277D1D78751acCe9305",
+      protocolPoints: 0,
+      protocolPointsDescription: null,
+      cooldownPeriod: 0,
+      minDeposit: 1,
+      maxWithdraw: 1000000,
+    };
+  }
+
+  // Curve Convex USDf Vault -> Ethereum
+  if (addr == "0xe501cbd03fa739273f49a8b54dd49de1248101f6") {
+    return {
+      type: "Liquidity Pool",
+      name: "USDC/USDf Liquidity Pool",
+      description: "This strategy deposits USDC into the Curve USDC/USDf pool on Ethereum, then deposits the resulting Curve LP tokens into Convex to maximize CRV and CVX rewards. It earns trading fees from Curve and enhances yield through Convex staking rewards. Since USDC and USDf are both pegged to the US dollar, impermanent loss is minimal to negligible. Fees vary with trading volume, and reward rates are subject to change at the discretion of the underlying protocols. APY decreases as total TVL in the pool increases.",
+      imgURL: "/ETH.png",
+      depositFeePaidFromGasTank: false,
+      assetSymbol: "USDC.ETH",
+      assetDecimals: 6,
+      assetImgURL: "/usdc.png",
+      assetPrice: BigDecimal.fromString("1.0"),
+      strategyNetwork: "Ethereum",
+      strategyChainId: 1,
+      protocolName: "Curve-Convex",
+      protocolImgURL: "/convex.png",
+      protocolDescription: "Curve is a decentralized exchange optimized for efficient stablecoin and like-asset swaps, offering low slippage and deep liquidity. Users earn trading fees by providing liquidity to its pools. Convex Finance is a yield optimization protocol built on top of Curve that enables liquidity providers to boost their CRV rewards without locking CRV themselves by staking their Curve LP tokens through Convex. In return, users earn additional CVX incentives alongside boosted CRV emissions. When combined, Curve and Convex allow users to earn both trading fees and stacked protocol rewards on their stablecoin liquidity, making it a powerful DeFi yield strategy.",
+      networkDescription: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
+      riskLevel: 3,
+      rewardsContractAddress: "0x4A87e4219f10510b0943DCD0cD0247868Ec59E85",
+      protocolPoints: 0,
+      protocolPointsDescription: null,
+      cooldownPeriod: 0,
+      minDeposit: 1,
+      maxWithdraw: 1000000,
+    };
+  }
+             
+  if (addr == "0x8426929d568b1cbc281f5787556f84c5b101399d") {
+    return {
+      type: "Yield-Bearing Stablecoin",
+      name: "Noon Capital sUSN",
+      description: "This strategy swaps USDC for sUSN, the staked version of USN — a crypto-native stablecoin issued by Noon Capital. sUSN is yield-bearing by design, with returns generated through delta-neutral strategies like funding rate arbitrage and collateralized lending. As sUSN appreciates in value over time, users earn passive, compounding yield without needing to claim or stake manually.",
+      imgURL: "/ETH.png",
+      depositFeePaidFromGasTank: false,
+      assetSymbol: "USDC.ETH",
+      assetDecimals: 6,
+      assetImgURL: "/USDC.png",
+      assetPrice: BigDecimal.fromString("1.0"),
+      strategyNetwork: "Ethereum",
+      strategyChainId: 1,
+      protocolName: "Noon Capital",
+      protocolImgURL: "/sUSN.png",
+      protocolDescription: "Noon Capital is the protocol behind USN and sUSN — stablecoins designed to generate consistent, crypto-native returns. While USN offers a liquid, dollar-pegged asset, sUSN is its yield-bearing counterpart, earning passive income through delta-neutral strategies like funding rate arbitrage and overcollateralized lending. Users can mint or swap into sUSN to earn without staking or lockups. The protocol emphasizes transparency, capital efficiency, and seamless DeFi integration. Risks include funding rate shifts, collateral volatility, and smart contract exposure.",
+      networkDescription: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
+      riskLevel: 3,
+      rewardsContractAddress: null,
+      protocolPoints: 10,
+      protocolPointsDescription: "Noon Points",
+      cooldownPeriod: 0,
+      minDeposit: 1,
+      maxWithdraw: 1000000,
+    };
+  }
+
   // Default fallback
   return {
     type: "Unknown",
@@ -329,12 +444,12 @@ function getStrategyNetwork(vaultAddress: string): string {
 // Function to update user balance from contract
 function updateUserBalance(vaultAddress: Address, userAddress: Bytes, userPosition: UserPosition): void {
   let contract = AmanaVault.bind(vaultAddress);
-  
+
   // Get current shares balance from contract
   let sharesCall = contract.try_balanceOf(Address.fromBytes(userAddress));
   if (!sharesCall.reverted) {
     userPosition.sharesBalance = sharesCall.value;
-    
+
     // Convert shares to assets
     let assetsCall = contract.try_convertToAssets(sharesCall.value);
     if (!assetsCall.reverted) {
@@ -355,29 +470,29 @@ function calculateNormalizedTVL(tvl: BigInt, decimals: i32): BigDecimal {
   if (tvl.equals(BigInt.zero())) {
     return BigDecimal.zero();
   }
-  
+
   // Convert tvl to BigDecimal and divide by 10^decimals
   let tvlDecimal = tvl.toBigDecimal();
   let divisor = BigDecimal.fromString("1");
-  
+
   // Calculate 10^decimals
   for (let i = 0; i < decimals; i++) {
     divisor = divisor.times(BigDecimal.fromString("10"));
   }
-  
+
   return tvlDecimal.div(divisor);
 }
 
 // Function to update vault totals from contract
 function updateVaultTotals(vaultAddress: Address, vault: Vault): void {
   let contract = AmanaVault.bind(vaultAddress);
-  
+
   // Update total supply
   let totalSupplyCall = contract.try_totalSupply();
   if (!totalSupplyCall.reverted) {
     vault.sharesSupply = totalSupplyCall.value;
   }
-  
+
   // Update total assets (TVL)
   let totalAssetsCall = contract.try_totalAssets();
   if (!totalAssetsCall.reverted) {
@@ -385,7 +500,7 @@ function updateVaultTotals(vaultAddress: Address, vault: Vault): void {
     // Calculate normalized TVL using asset decimals
     vault.normalizedTVL = calculateNormalizedTVL(vault.tvl, vault.assetDecimals);
   }
-  
+
   // Update price per share
   vault.pricePerShare = calculatePricePerShare(vaultAddress.toHex());
 }
@@ -428,7 +543,7 @@ export function handleVaultInitialized(event: VaultInitialized): void {
   entity.cooldownPeriod = metadata.cooldownPeriod;
   entity.minDeposit = metadata.minDeposit;
   entity.maxWithdraw = metadata.maxWithdraw;
-  
+
   // Set rewards contract address if provided
   if (metadata.rewardsContractAddress != null) {
     let rewardsAddress = metadata.rewardsContractAddress as string;
@@ -472,18 +587,18 @@ export function handleVaultInitialized(event: VaultInitialized): void {
 export function handleStrategyUpdated(event: StrategyUpdated): void {
   let vaultId = normalizeAddress(event.address);
   let entity = Vault.load(vaultId);
-  
+
   // If vault entity doesn't exist, create it (since VaultInitialized might not be emitted)
   if (entity == null) {
     entity = new Vault(vaultId);
-    
+
     // Get vault metadata
     let metadata = getVaultMetadata(vaultId);
-    
+
     // Set creation info
     entity.createdAtBlock = event.block.number;
     entity.createdAtTimestamp = event.block.timestamp;
-    
+
     // Set metadata fields
     entity.type = metadata.type;
     entity.name = metadata.name;
@@ -506,7 +621,7 @@ export function handleStrategyUpdated(event: StrategyUpdated): void {
     entity.cooldownPeriod = metadata.cooldownPeriod;
     entity.minDeposit = metadata.minDeposit;
     entity.maxWithdraw = metadata.maxWithdraw;
-    
+
     // Set rewards contract address if provided
     if (metadata.rewardsContractAddress != null) {
       let rewardsAddress = metadata.rewardsContractAddress as string;
@@ -514,7 +629,7 @@ export function handleStrategyUpdated(event: StrategyUpdated): void {
     } else {
       entity.rewardsContractAddress = null;
     }
-    
+
     // Bind contract to access view functions
     let vaultContract = AmanaVault.bind(event.address);
     let symbolCall = vaultContract.try_symbol();
@@ -523,19 +638,19 @@ export function handleStrategyUpdated(event: StrategyUpdated): void {
     } else {
       entity.symbol = "UNKNOWN";
     }
-    
+
     let assetCall = vaultContract.try_asset();
     if (!assetCall.reverted) {
       entity.asset = assetCall.value;
     } else {
       entity.asset = event.address; // Fallback to vault address
     }
-    
+
     let treasuryCall = vaultContract.try_treasury();
     if (!treasuryCall.reverted) {
       entity.treasury = treasuryCall.value;
     }
-    
+
     // Try to get decimals from contract (fallback to metadata if not available)
     let decimalsCall = vaultContract.try_decimals();
     if (!decimalsCall.reverted) {
@@ -543,10 +658,10 @@ export function handleStrategyUpdated(event: StrategyUpdated): void {
     } else {
       entity.decimals = metadata.assetDecimals; // Use metadata decimals
     }
-    
+
     // Set default perfFee (we can't get this from StrategyUpdated event)
     entity.perfFee = BigInt.zero();
-    
+
     // Initialize values from contract if possible
     let totalSupplyCall = vaultContract.try_totalSupply();
     if (!totalSupplyCall.reverted) {
@@ -554,7 +669,7 @@ export function handleStrategyUpdated(event: StrategyUpdated): void {
     } else {
       entity.sharesSupply = BigInt.zero();
     }
-    
+
     let totalAssetsCall = vaultContract.try_totalAssets();
     if (!totalAssetsCall.reverted) {
       entity.tvl = totalAssetsCall.value;
@@ -563,7 +678,7 @@ export function handleStrategyUpdated(event: StrategyUpdated): void {
       entity.tvl = BigInt.zero();
       entity.normalizedTVL = BigDecimal.zero();
     }
-    
+
     // Initialize other default values
     entity.totalDeposited = BigInt.zero();
     entity.totalWithdrawn = BigInt.zero();
@@ -571,7 +686,7 @@ export function handleStrategyUpdated(event: StrategyUpdated): void {
     entity.apy7d = BigDecimal.zero();
     entity.apy30d = BigDecimal.zero();
   }
-  
+
   // Update strategy address
   entity.strategy = event.params.newStrategyAddress;
   entity.save();
@@ -580,7 +695,7 @@ export function handleStrategyUpdated(event: StrategyUpdated): void {
 function getOrCreateUserPosition(vaultId: string, userAddress: Bytes): UserPosition {
   let id = vaultId + "-" + normalizeBytes(userAddress);
   let userPosition = UserPosition.load(id);
-  
+
   if (userPosition == null) {
     userPosition = new UserPosition(id);
     userPosition.vault = vaultId;
@@ -596,7 +711,7 @@ function getOrCreateUserPosition(vaultId: string, userAddress: Bytes): UserPosit
     userPosition.depositCount = 0;
     userPosition.withdrawalCount = 0;
   }
-  
+
   return userPosition;
 }
 
@@ -644,12 +759,12 @@ function calculatePricePerShare(vaultAddress: string): BigDecimal {
   let contract = AmanaVault.bind(Address.fromString(vaultAddress));
   let tvlCall = contract.try_totalAssets();
   let totalSupplyCall = contract.try_totalSupply();
-  
-  if (!tvlCall.reverted && !totalSupplyCall.reverted && 
-      !totalSupplyCall.value.isZero() && !tvlCall.value.isZero()) {
+
+  if (!tvlCall.reverted && !totalSupplyCall.reverted &&
+    !totalSupplyCall.value.isZero() && !tvlCall.value.isZero()) {
     return tvlCall.value.toBigDecimal().div(totalSupplyCall.value.toBigDecimal());
   }
-  
+
   // Return 1.0 as default price per share if calculation fails
   return BigDecimal.fromString("1.0");
 }
@@ -661,10 +776,10 @@ export function handleDeposited(event: Deposited): void {
     // Not initialized yet – should not happen
     return;
   }
-  
+
   // Update vault totals
   vault.totalDeposited = (vault.totalDeposited || BigInt.zero()).plus(event.params.amount);
-  
+
   // Update vault totals from contract (more reliable)
   updateVaultTotals(event.address, vault);
   vault.save();
@@ -675,15 +790,15 @@ export function handleDeposited(event: Deposited): void {
   userPosition.totalSharesReceived = userPosition.totalSharesReceived.plus(event.params.shares);
   userPosition.lastInteractionAt = event.block.timestamp;
   userPosition.depositCount = userPosition.depositCount + 1;
-  
+
   // Set first deposit timestamp if this is the first deposit
   if (userPosition.firstDepositAt.isZero()) {
     userPosition.firstDepositAt = event.block.timestamp;
   }
-  
+
   // Update user balance from contract (more reliable than manual calculation)
   updateUserBalance(event.address, event.params.user, userPosition);
-  
+
   userPosition.save();
 
   // Create deposit record
@@ -709,7 +824,7 @@ export function handleDeposited(event: Deposited): void {
   dayData.pricePerShare = vault.pricePerShare;
   dayData.depositCount = dayData.depositCount + 1;
   dayData.save();
-  
+
   // Update user position day data
   let userPositionDayData = getOrCreateUserPositionDayData(userPosition.id, event.block.timestamp);
   userPositionDayData.dailyDeposited = userPositionDayData.dailyDeposited.plus(event.params.amount);
@@ -725,10 +840,10 @@ export function handleWithdrawn(event: Withdrawn): void {
   if (vault == null) {
     return;
   }
-  
+
   // Update vault totals
   vault.totalWithdrawn = (vault.totalWithdrawn || BigInt.zero()).plus(event.params.amount);
-  
+
   // Update vault totals from contract (more reliable)
   updateVaultTotals(event.address, vault);
   vault.save();
@@ -739,10 +854,10 @@ export function handleWithdrawn(event: Withdrawn): void {
   userPosition.totalSharesRedeemed = userPosition.totalSharesRedeemed.plus(event.params.shares);
   userPosition.lastInteractionAt = event.block.timestamp;
   userPosition.withdrawalCount = userPosition.withdrawalCount + 1;
-  
+
   // Update user balance from contract (more reliable than manual calculation)
   updateUserBalance(event.address, event.params.user, userPosition);
-  
+
   userPosition.save();
 
   // Create withdrawal record
@@ -768,7 +883,7 @@ export function handleWithdrawn(event: Withdrawn): void {
   dayData.pricePerShare = vault.pricePerShare;
   dayData.withdrawalCount = dayData.withdrawalCount + 1;
   dayData.save();
-  
+
   // Update user position day data
   let userPositionDayData = getOrCreateUserPositionDayData(userPosition.id, event.block.timestamp);
   userPositionDayData.dailyWithdrawn = userPositionDayData.dailyWithdrawn.plus(event.params.amount);
@@ -785,10 +900,10 @@ export function handleDepositedLegacy(event: Deposited): void {
     // Not initialized yet – should not happen
     return;
   }
-  
+
   // Update vault totals
   vault.totalDeposited = (vault.totalDeposited || BigInt.zero()).plus(event.params.amount);
-  
+
   // Update vault totals from contract (more reliable)
   updateVaultTotals(event.address, vault);
   vault.save();
@@ -799,15 +914,15 @@ export function handleDepositedLegacy(event: Deposited): void {
   userPosition.totalSharesReceived = userPosition.totalSharesReceived.plus(event.params.shares);
   userPosition.lastInteractionAt = event.block.timestamp;
   userPosition.depositCount = userPosition.depositCount + 1;
-  
+
   // Set first deposit timestamp if this is the first deposit
   if (userPosition.firstDepositAt.isZero()) {
     userPosition.firstDepositAt = event.block.timestamp;
   }
-  
+
   // Update user balance from contract (more reliable than manual calculation)
   updateUserBalance(event.address, event.params.user, userPosition);
-  
+
   userPosition.save();
 
   // Create deposit record - for legacy events, vaultNonce = 0
@@ -833,7 +948,7 @@ export function handleDepositedLegacy(event: Deposited): void {
   dayData.pricePerShare = vault.pricePerShare;
   dayData.depositCount = dayData.depositCount + 1;
   dayData.save();
-  
+
   // Update user position day data
   let userPositionDayData = getOrCreateUserPositionDayData(userPosition.id, event.block.timestamp);
   userPositionDayData.dailyDeposited = userPositionDayData.dailyDeposited.plus(event.params.amount);
@@ -849,10 +964,10 @@ export function handleWithdrawnLegacy(event: Withdrawn): void {
   if (vault == null) {
     return;
   }
-  
+
   // Update vault totals
   vault.totalWithdrawn = (vault.totalWithdrawn || BigInt.zero()).plus(event.params.amount);
-  
+
   // Update vault totals from contract (more reliable)
   updateVaultTotals(event.address, vault);
   vault.save();
@@ -863,10 +978,10 @@ export function handleWithdrawnLegacy(event: Withdrawn): void {
   userPosition.totalSharesRedeemed = userPosition.totalSharesRedeemed.plus(event.params.shares);
   userPosition.lastInteractionAt = event.block.timestamp;
   userPosition.withdrawalCount = userPosition.withdrawalCount + 1;
-  
+
   // Update user balance from contract (more reliable than manual calculation)
   updateUserBalance(event.address, event.params.user, userPosition);
-  
+
   userPosition.save();
 
   // Create withdrawal record - for legacy events, vaultNonce = 0
@@ -892,7 +1007,7 @@ export function handleWithdrawnLegacy(event: Withdrawn): void {
   dayData.pricePerShare = vault.pricePerShare;
   dayData.withdrawalCount = dayData.withdrawalCount + 1;
   dayData.save();
-  
+
   // Update user position day data
   let userPositionDayData = getOrCreateUserPositionDayData(userPosition.id, event.block.timestamp);
   userPositionDayData.dailyWithdrawn = userPositionDayData.dailyWithdrawn.plus(event.params.amount);

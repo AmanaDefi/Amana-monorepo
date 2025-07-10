@@ -428,9 +428,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
     );
   };
 
-  const chainList = isFromTopUpForModal
-    ? SUPPORTED_CHAINS.slice(1)
-    : SUPPORTED_CHAINS;
+  const chainList = SUPPORTED_CHAINS;
 
   const handleWalletConnect = () => {
     setChain(selectedChainLocal);
@@ -490,7 +488,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
           variants={itemVariants}
         >
           <h2 className="text-white text-[16px] md:text-[24px] font-normal leading-none -tracking-[0.04em]">
-            From
+            Invest Any Token From Any Chain
           </h2>
         </motion.div>
 

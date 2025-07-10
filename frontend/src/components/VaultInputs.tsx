@@ -42,7 +42,7 @@ import {
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { calculateGasFeeInVaultAsset } from "@/utils/gasFeeCalculations";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { trackEvent } from "@/utils/trackEvent";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -650,12 +650,7 @@ export default function VaultInputs({
   const tokenList = useMemo(() => {
     let tokens: Token[] = [];
 
-    if (!selectedChain?.id) {
-      console.log("VaultInputs - No selectedChain, returning empty array");
-      return [];
-    }
-
-    if (selectedChain.id === 7001 || selectedChain.id === 7000) {
+    if ( !selectedChain?.id || selectedChain.id === 7001 || selectedChain.id === 7000) {
       if (vaultData.inputToken) {
         tokens = [vaultData.inputToken];
       }

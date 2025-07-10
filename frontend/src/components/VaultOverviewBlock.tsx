@@ -185,6 +185,7 @@ export const VaultOverviewBlock: React.FC<Props> = ({
               skeletonClassName="h-6 w-16"
             />
             {isReward && vault.protocolPoints && vault.protocolPoints > 0 ? (
+
               <InfoBlock
                 isRight
                 customIcon={<PointsIcon className="w-5 h-5" color="#ffffff" />}
@@ -204,7 +205,7 @@ export const VaultOverviewBlock: React.FC<Props> = ({
                         vault.protocolPointsDescription
                           ? vault.protocolPointsDescription
                           : vault.protocol.name
-                      } Points`}
+                      } `}
                     </span>
                     <span className="text-white font-medium text-base">
                       {vault.protocolPoints} pts/$/day

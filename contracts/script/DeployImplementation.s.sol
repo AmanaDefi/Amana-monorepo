@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 import "forge-std/Script.sol";
-import {TopUpHandler} from "../contracts/TopUpHandler.sol";
+import {NoonERC20Strategy} from "../contracts/strategies/NoonERC20Strategy.sol";
 import {console} from "forge-std/console.sol";
 
 contract DeployImplementation is Script {
@@ -23,7 +23,7 @@ contract DeployImplementation is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // ✅ Deploy the new implementation
-        TopUpHandler newImpl = new TopUpHandler();
+        NoonERC20Strategy newImpl = new NoonERC20Strategy();
         console.log(" New implementation deployed at:", address(newImpl));
         vm.stopBroadcast();
     }

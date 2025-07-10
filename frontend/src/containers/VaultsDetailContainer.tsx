@@ -331,6 +331,7 @@ const loadSlippageForVault = useUserSettingsStore(
   const ethTokenPrice = useTokenPriceBySymbol("ETH");
   const compTokenPrice = useTokenPriceBySymbol("COMP");
   const opTokenPrice = useTokenPriceBySymbol("OP");
+  const btcTokenPrice = useTokenPriceBySymbol("CBBTC");
 
   const memoizedPrices = useMemo(
     () => ({
@@ -339,6 +340,7 @@ const loadSlippageForVault = useUserSettingsStore(
       eth: ethTokenPrice,
       comp: compTokenPrice,
       op: opTokenPrice,
+      btc: btcTokenPrice,
     }),
     [
       Math.floor((crvTokenPrice || 0) * 100),
@@ -346,6 +348,7 @@ const loadSlippageForVault = useUserSettingsStore(
       Math.floor((ethTokenPrice || 0) * 100),
       Math.floor((compTokenPrice || 0) * 100),
       Math.floor((opTokenPrice || 0) * 100),
+      Math.floor((btcTokenPrice || 0) * 100),
     ],
   );
 
@@ -358,6 +361,7 @@ const loadSlippageForVault = useUserSettingsStore(
     memoizedPrices.eth,
     memoizedPrices.comp,
     memoizedPrices.op,
+    memoizedPrices.btc,
     user,
   );
 
@@ -431,8 +435,10 @@ const loadSlippageForVault = useUserSettingsStore(
               onClick={() => {
                 if (!walletAddress || isDeposit) {
                   openStep("mobileInfo");
-                } else {
+                } else if (vaultData?.protocolPoints && vaultData.protocolPoints > 0) {
                   setShowMobileInvestment((prev) => !prev);
+                } else {
+                  openStep("mobileInfo");
                 }
               }}
               className="text-white rounded-full p-1 flex md:hidden hover:bg-gray-800/50 transition-colors cursor-pointer"
@@ -442,7 +448,7 @@ const loadSlippageForVault = useUserSettingsStore(
                 <ErrorInputIcon className="w-5 h-5 text-white" />
               ) : isDeposit ? (
                 <ErrorInputIcon className="w-5 h-5 text-white" />
-              ) : (
+              ) : vaultData?.protocolPoints && vaultData.protocolPoints > 0 ? (
                 <div className="rounded-[4px] w-6 h-6 flex items-center justify-center bg-[#0C1015]">
                   <Image
                     src="/rewards.png"
@@ -451,6 +457,8 @@ const loadSlippageForVault = useUserSettingsStore(
                     height={18}
                   />
                 </div>
+              ) : (
+                <ErrorInputIcon className="w-5 h-5 text-white" />
               )}
             </button>
             <MobileInfoModal
@@ -465,12 +473,13 @@ const loadSlippageForVault = useUserSettingsStore(
             />
 
             <MobileInvestmentPopover
-              isVisible={showMobileInvestment && isWithdraw && !!walletAddress}
+              isVisible={showMobileInvestment && isWithdraw && !!walletAddress && !!(vaultData?.protocolPoints && vaultData.protocolPoints > 0)}
               onClose={() => setShowMobileInvestment(false)}
               triggerRef={giftButtonRef}
               depositAmount={depositData.amount}
               vaultTokenSymbol={depositData.symbol}
               depositUSDValue={depositData.usdValue}
+              vaultData={vaultData}
             />
           </>
         )}
@@ -646,11 +655,12 @@ const loadSlippageForVault = useUserSettingsStore(
         </AnimatePresence>
 
         <div className="hidden md:flex flex-col w-full 2xl:max-w-[576px] mt-8 md:mt-0 space-y-4 font-gotham">
-          {isWithdraw && walletAddress && (
+          {isWithdraw && walletAddress && (vaultData?.protocolPoints ?? 0) > 0 && (
             <YourInvestment
               depositAmount={userVaultBalance?.formatted || "0"}
               vaultTokenSymbol={vaultData?.inputToken.symbol || ""}
               depositUSDValue={0}
+              vaultData={vaultData}
             />
           )}
           {walletAddress && isDeposit && (

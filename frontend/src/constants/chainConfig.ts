@@ -276,17 +276,17 @@ export const SUPPORTED_CHAINS =
 const zetaChain = deployEnv === "testnet" ? zetachainAthensTestnet : zetachain;
 export const customZetachain = zetaRpcUrl
   ? {
-      ...zetaChain,
-      rpcUrls: {
-        ...zetaChain.rpcUrls,
-        public: {
-          http: [zetaRpcUrl],
-        },
-        default: {
-          http: [zetaRpcUrl],
-        },
+    ...zetaChain,
+    rpcUrls: {
+      ...zetaChain.rpcUrls,
+      public: {
+        http: [zetaRpcUrl],
       },
-    }
+      default: {
+        http: [zetaRpcUrl],
+      },
+    },
+  }
   : zetaChain;
 
 export const chainsWithCustomRpcs = () => {
@@ -1027,6 +1027,7 @@ export const HERMES_URL = "https://hermes.pyth.network/";
 export const PRICE_IDS: { [key: string]: string } = {
   // Base tokens
   ETH: "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
+  BTC: "0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43",
   BNB: "0x2f95862b045670cd22bee3114c39763a4a08beeb663b145d283c31d7d1101c4f",
   POL: "0xffd11c5a1cfd42f80afb2df4d9f264c15f956d68153335374ec10722edd70472",
   USDC: "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
@@ -1037,6 +1038,7 @@ export const PRICE_IDS: { [key: string]: string } = {
   CRV: "0xa19d04ac696c7a6616d291c7e5d1377cc8be437c327b75adb5dc1bad745fcae8",
   CVX: "0x6aac625e125ada0d2a6b98316493256ca733a5808cd34ccef79b0e28c64d1e76",
   OP: "0x385f64d993f7b77d8182ed5003d97c60aa3361f3cecfe711544d2d59165e9bdf",
+  CBBTC: "0x2817d7bfe5c64b8ea956e9a26f573ef64e72e4d7891f2d6af9bcc93f7aff9a97",
 
   // Chain-specific tokens - using the "(CHAIN)" format
   "ETH (BASE)":
@@ -1132,6 +1134,32 @@ export const NETWORK_FILTER_OPTIONS = [
     icon: TOKEN_LOGO_URLS.POL,
   },
 ];
+
+// Centralized stablecoin configuration
+export const STABLECOIN_SYMBOLS = [
+  "USD",
+  "USDC",
+  "USDC.e", // Ethereum bridged USDC on other chains
+  "USDT",
+  "USDT.e", // Ethereum bridged USDT on other chains
+  "DAI",
+  "BUSD",
+  "TUSD",
+  "USDP",
+  "FRAX",
+  "LUSD",
+  "FDUSD",
+  "YUSD",
+  "eUSD",
+  "sUSN",
+] as const;
+
+// Helper function to check if a token is a stablecoin
+export const isStablecoinSymbol = (symbol: string): boolean => {
+  if (!symbol) return false;
+  const baseSymbol = symbol.split('.')[0].toUpperCase();
+  return STABLECOIN_SYMBOLS.includes(baseSymbol as any);
+};
 
 export const PROTOCOL_FILTER_OPTIONS = [
   {

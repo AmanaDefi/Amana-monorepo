@@ -1,7 +1,5 @@
 import { formatCurrency } from "@/utils/utils";
-
-// Stablecoin symbols for formatting logic
-const STABLECOIN_SYMBOLS = ["USD", "DAI", "USDT", "USDC", "BUSD"];
+import { isStablecoinSymbol } from "@/constants/chainConfig";
 
 // Format token balance based on token type (2 decimals for stablecoins, 4 for others)
 export const formatTokenBalance = (
@@ -10,13 +8,8 @@ export const formatTokenBalance = (
 ): string => {
   const num = Math.max(0, Number(balance));
 
-  if (num > 0 && num < 0.0001) {
-    return "< 0.0001";
-  }
-
-  const isStablecoin = STABLECOIN_SYMBOLS.some((stableSymbol) =>
-    symbol?.includes(stableSymbol),
-  );
+  // Check if token is a stablecoin using centralized function
+  const isStablecoin = isStablecoinSymbol(symbol);
 
   const decimals = isStablecoin ? 2 : 4;
   const formatted = num.toFixed(decimals);

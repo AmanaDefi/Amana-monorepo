@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, Suspense } from "react";
 import VaultsDetailContainer from "@/containers/VaultsDetailContainer";
 import { useParams } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -20,7 +20,9 @@ function Index({ }) {
             {(privyUser || wallet) && (
                 <div className="flex-1 flex flex-col w-full justify-between py-20 pl-6">
                     <div className="flex-1">
-                        <VaultsDetailContainer vaultID={id} />
+                        <Suspense fallback={<div>Loading...</div>}>
+                            <VaultsDetailContainer vaultID={id} />
+                        </Suspense>
                     </div>
                 </div>
             )}

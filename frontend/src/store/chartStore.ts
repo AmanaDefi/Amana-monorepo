@@ -9,6 +9,7 @@ interface ChartState {
   getHistoricalAPY: (vaultId: string) => number[];
   getPercentageChange: (vaultId: string) => number;
   hasHistoricalData: (vaultId: string) => boolean;
+  setHistoricalAPY: (vaultId: string, apyArray: number[]) => void;
 }
 
 export const useChartStore = create<ChartState>((set, get) => ({
@@ -35,5 +36,14 @@ export const useChartStore = create<ChartState>((set, get) => ({
     const { historicalAPY } = get();
     const points = historicalAPY[vaultId];
     return points && points.length > 0;
+  },
+
+  setHistoricalAPY: (vaultId: string, apyArray: number[]) => {
+    set((state) => ({
+      historicalAPY: {
+        ...state.historicalAPY,
+        [vaultId]: apyArray,
+      },
+    }));
   },
 }));

@@ -20,21 +20,24 @@ contract DeployProxy is Script {
 
         uint256 deployerPrivateKey = vm.parseUint(prefixedPrivateKey);
 
-        address implementation = 0x74D8De227791a6678720d7f6d77435da9cAB48d6;
+        address implementation = 0x2a621260005a462A4458d1492B49212a5c3E4071;
 
         // ✅ Encode initialize function call with arguments
         bytes memory initCalldata = abi.encodeWithSelector(
             NoonERC20Strategy.initialize.selector,
             "NoonUSDC",
             0x48B9AACC350b20147001f88821d31731Ba4C30ed, // gateway
-            0x98fEc66c0892B67760F60DB42757BA462086B67a, // vault
+            0x8426929D568b1CBC281f5787556f84c5b101399D, // vault
             0xd435B3d2b7497c359beF43F99c42eF6D91f40831, // withdraw helper
-            0x74fCAd57C966cAB6fa02a0A5425b1c76DcaFe9A0, // swap helper
-            0xE24a3DC889621612422A64E6388927901608B91D, // receipt token (sUSN)
-            0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48, // input token (USDC)
+            0x7bF6F5964998d4541A078Aa328F62D5C23E371E7, // swap helper
+            0xE24a3DC889621612422A64E6388927901608B91D, // receipt token
+            0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48, // input token
             address(0), // _liquidityGaugeAddress not needed
             address(0), // _rewardsTokenAddress not needed
             0 // _inputTokenIndex not needed
+            // 449, // _convexPoolId
+            // 0xF403C135812408BFbE8713b5A23a04b3D48AAE31, // _convexBooster
+            // 0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B // _cvxTokenAddress
         );
 
         vm.startBroadcast(deployerPrivateKey);

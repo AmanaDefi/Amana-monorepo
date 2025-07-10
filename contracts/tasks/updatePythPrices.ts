@@ -31,10 +31,11 @@ const priceIdsPolygon = [
 ];
 
 const priceIdsEthereum = [
-  "0xa19d04ac696c7a6616d291c7e5d1377cc8be437c327b75adb5dc1bad745fcae8", // CRV/USD
-  "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace", // ETH/USD
-  "0x4a8e42861cabc5ecb50996f92e7cfa2bce3fd0a2423b0c44c9b423fb2bd25478", // COMP/USD
-  "0x6aac625e125ada0d2a6b98316493256ca733a5808cd34ccef79b0e28c64d1e76" // CVX/USD
+  // "0xa19d04ac696c7a6616d291c7e5d1377cc8be437c327b75adb5dc1bad745fcae8", // CRV/USD
+  // "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace", // ETH/USD
+  // "0x4a8e42861cabc5ecb50996f92e7cfa2bce3fd0a2423b0c44c9b423fb2bd25478", // COMP/USD
+  // "0x6aac625e125ada0d2a6b98316493256ca733a5808cd34ccef79b0e28c64d1e76", // CVX/USD
+  "0x2817d7bfe5c64b8ea956e9a26f573ef64e72e4d7891f2d6af9bcc93f7aff9a97", // cBBTC/USD
 ];
 
 const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
