@@ -24,7 +24,7 @@ class BitcoinLogger {
     return BitcoinLogger.instance;
   }
 
-  log(level: 'INFO' | 'WARN' | 'ERROR' | 'DEBUG', message: string, data?: any) {
+  log(level: 'INFO' | 'WARN' | 'ERROR' | 'DEBUG' | 'TRACE', message: string, data?: any) {
     const timestamp = new Date().toISOString();
     const logEntry = { timestamp, level, message, data };
     
@@ -34,8 +34,9 @@ class BitcoinLogger {
     const emoji = {
       INFO: '🔵',
       WARN: '🟡', 
-      ERROR: '🔴',
-      DEBUG: '🟣'
+      ERROR: '��',
+      DEBUG: '🟣',
+      TRACE: '⚪'
     }[level];
     
     console.log(`${emoji} [BITCOIN-${level}] ${message}`, data || '');
@@ -389,30 +390,35 @@ export const createZetaChainBitcoinInscription = async ({
  * Create Bitcoin commit transaction for inscription
  */
 const createCommitTransaction = async (inscriptionContent: any): Promise<any> => {
+  const logger = BitcoinLogger.getInstance();
+  logger.log('TRACE', '[createCommitTransaction] Entered', { inscriptionContent });
   // This creates a Taproot transaction that commits to the inscription
   // In a real implementation, this would use bitcoinjs-lib or similar
-  
-  console.log("🚀 Creating commit transaction for inscription...");
-  
-  return {
+  logger.log('INFO', "🚀 [TxBuild] Creating commit transaction for inscription...");
+  logger.log('DEBUG', "[TxBuild] Inscription content:", inscriptionContent);
+  const commitTx = {
     type: 'commit',
     inscriptionContent: ethers.hexlify(inscriptionContent),
     // This would contain the actual Bitcoin transaction structure
     // with Taproot script committing to the inscription
   };
+  logger.log('DEBUG', '[TxBuild] CommitTx object created:', commitTx);
+  logger.log('TRACE', '[createCommitTransaction] Exiting', { commitTx });
+  return commitTx;
 };
 
 /**
  * Create Bitcoin reveal transaction for inscription
  */
 const createRevealTransaction = async (inscriptionContent: any, amount: bigint): Promise<any> => {
+  const logger = BitcoinLogger.getInstance();
+  logger.log('TRACE', '[createRevealTransaction] Entered', { inscriptionContent, amount });
   // This creates the reveal transaction that:
   // 1. Reveals the inscription content
   // 2. Sends BTC to the TSS Gateway
-  
-  console.log("🚀 Creating reveal transaction for inscription...");
-  
-  return {
+  logger.log('INFO', "🚀 [TxBuild] Creating reveal transaction for inscription...");
+  logger.log('DEBUG', "[TxBuild] Inscription content:", inscriptionContent);
+  const revealTx = {
     type: 'reveal',
     inscriptionContent: ethers.hexlify(inscriptionContent),
     amount: Number(amount),
@@ -420,6 +426,9 @@ const createRevealTransaction = async (inscriptionContent: any, amount: bigint):
     // This would contain the actual Bitcoin transaction structure
     // that reveals the inscription and sends funds to TSS Gateway
   };
+  logger.log('DEBUG', '[TxBuild] RevealTx object created:', revealTx);
+  logger.log('TRACE', '[createRevealTransaction] Exiting', { revealTx });
+  return revealTx;
 };
 
 /**
@@ -429,21 +438,46 @@ export const executeCommitTransaction = async (
   wallet: BitcoinWallet,
   commitTx: any
 ): Promise<{ txid: string }> => {
+  const logger = BitcoinLogger.getInstance();
+  logger.log('TRACE', '[executeCommitTransaction] Entered', { wallet, commitTx });
   try {
-    console.log("🚀 Executing commit transaction...");
-    
-    // Sign the commit transaction
+    logger.log('INFO', "🚀 [CommitTx] Starting commit transaction signing process...");
+    logger.log('DEBUG', "[CommitTx] Wallet object:", wallet);
+    logger.log('DEBUG', "[CommitTx] Wallet details:", {
+      address: wallet?.address,
+      publicKey: wallet?.publicKey,
+      network: wallet?.network,
+      hasSignTransaction: typeof wallet?.signTransaction === "function"
+    });
+    logger.log('DEBUG', "[CommitTx] CommitTx object:", commitTx);
+
+    if (!wallet?.publicKey) {
+      logger.log('WARN', "[CommitTx] Wallet publicKey is missing or null!", wallet);
+    }
+    if (!wallet?.signTransaction) {
+      logger.log('ERROR', "[CommitTx] Wallet does not have a signTransaction method!", wallet);
+      throw new Error("Wallet missing signTransaction method");
+    }
+
+    logger.log('INFO', "[CommitTx] Attempting to sign commit transaction...");
     const signedCommitTx = await wallet.signTransaction(commitTx);
-    
-    // Broadcast commit transaction
+    logger.log('INFO', "[CommitTx] Commit transaction signed successfully.");
+    logger.log('DEBUG', "[CommitTx] Signed commitTx:", signedCommitTx);
+
+    logger.log('INFO', "[CommitTx] Broadcasting commit transaction...");
     const result = await broadcastBitcoinTransaction(signedCommitTx);
-    
-    console.log("🚀 Commit transaction broadcasted:", result.txid);
+    logger.log('INFO', "[CommitTx] Commit transaction broadcasted.", result);
+    logger.log('TRACE', '[executeCommitTransaction] Exiting', { result });
     return result;
-    
+
   } catch (error: any) {
-    console.error("❌ Commit transaction failed:", error);
-    throw new Error(`Commit transaction failed: ${error.message}`);
+    logger.log('ERROR', "[CommitTx] Commit transaction failed!", {
+      error: error,
+      errorMessage: error?.message,
+      errorStack: error?.stack
+    });
+    logger.log('TRACE', '[executeCommitTransaction] Exiting with error', { error });
+    throw new Error(`Commit transaction failed: ${error?.message}`);
   }
 };
 

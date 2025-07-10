@@ -61,6 +61,8 @@ import { showErrorToast } from "@/toasts";
 import { trackEvent } from "@/utils/trackEvent";
 import { RevertOptions } from "@/lib/solanaGateway/cli/lib/scripts";
 import { executeBitcoinDeposit, validateBitcoinDeposit } from "./bitcoinActions";
+// import { executeOfficialBitcoinDeposit } from "./bitcoinActionsOfficial";
+// import { validateBitcoinDeposit } from "./bitcoinActions";
 
 const abiCoder = new AbiCoder();
 dotenv.config();

@@ -47,6 +47,7 @@ import { useAuthStore } from "@/store/authStore";
 import { zetachain } from "viem/chains";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { executeBitcoinDeposit } from '@/actions/bitcoinActions';
+// import { executeOfficialBitcoinDeposit } from '@/actions/bitcoinActionsOfficial';
 
 function isHex(value: string): value is `0x${string}` {
   return typeof value === "string" && value.startsWith("0x");
@@ -1197,7 +1198,6 @@ const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
         );
         
         try {
-          // Use the main executeBitcoinDeposit function which handles the full commit/reveal flow
           const result = await executeBitcoinDeposit({
             vaultData,
             bitcoinWallet,
@@ -1230,7 +1230,7 @@ const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
       }
       
       if (currenAction === Action.deposit) {
-        // Step 2: This step is handled by the executeBitcoinDeposit function
+        // Step 2: This step is handled by the executeOfficialBitcoinDeposit function
         // Just move to final confirmation
         console.log("🟠 Bitcoin deposit completed, moving to final confirmation");
         updateLocalTransactionFeedback(
