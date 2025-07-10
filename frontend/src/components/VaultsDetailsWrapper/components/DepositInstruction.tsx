@@ -457,7 +457,7 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
             <motion.div
               className="absolute top-[-16px] z-10"
               style={{
-                left: `${elephantPosition}%`,
+                left: `${Math.max(0, elephantPosition - 4)}%`,
                 transform: "translateX(-50%)",
               }}
               initial={{ opacity: 0, scale: 0, y: -10 }}
