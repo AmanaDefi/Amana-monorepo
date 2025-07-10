@@ -1353,7 +1353,7 @@ export default function VaultInputs({
             transition={{ duration: 0.3 }}
           >
             <div className="mb-4">
-              {selectedChain && onSelectChain && vaultId && isDeposit && (
+              {onSelectChain && vaultId && isDeposit && (
                 <ChainSelector
                   selectedChain={selectedChain}
                   onSelectChain={onSelectChain}
@@ -1407,7 +1407,7 @@ export default function VaultInputs({
             />
 
             <div className="mb-4">
-              {selectedChain && onSelectChain && vaultId && !isDeposit && (
+              {onSelectChain && vaultId && !isDeposit && (
                 <ChainSelector
                   selectedChain={selectedChain}
                   onSelectChain={onSelectChain}
@@ -1455,7 +1455,7 @@ export default function VaultInputs({
             transition={{ duration: 0.3 }}
           >
             <div className="mb-4">
-              {selectedChain && onSelectChain && vaultId && isDeposit && (
+              {onSelectChain && vaultId && isDeposit && (
                 <ChainSelector
                   selectedChain={selectedChain}
                   onSelectChain={onSelectChain}
@@ -1495,7 +1495,7 @@ export default function VaultInputs({
             />
             <div className="mb-6 md:mb-10"></div>
             <div className="mb-4">
-              {selectedChain && onSelectChain && vaultId && !isDeposit && (
+              {onSelectChain && vaultId && !isDeposit && (
                 <ChainSelector
                   selectedChain={selectedChain}
                   onSelectChain={onSelectChain}

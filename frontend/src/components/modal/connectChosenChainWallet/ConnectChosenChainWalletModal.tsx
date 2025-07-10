@@ -58,9 +58,6 @@ const ConnectChosenChain = () => {
   } = useConnect({
     mutation: {
       onSuccess: async (result) => {
-        if (connected) {
-          disconnect();
-        }
         if (fundWalletStep === "reconnectChain") {
           setWalletAddress(result.accounts[0]);
           localStorage.removeItem("connectorId");
@@ -84,9 +81,11 @@ const ConnectChosenChain = () => {
 
       await logout();
     }
+    if (connected) {
+      disconnect();
+    }
     setActiveConnector(connector);
     localStorage.setItem("connectorId", connector.id);
-    console.log({ chain, activeChain });
     connect(
       {
         connector,

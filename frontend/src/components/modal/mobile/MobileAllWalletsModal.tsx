@@ -64,9 +64,6 @@ const MobileAllWallets = () => {
   } = useConnect({
     mutation: {
       onSuccess: (result) => {
-        if (connected) {
-          disconnect();
-        }
         if (fundWalletStep === "connectWallet") {
           setWalletAddress(result.accounts[0]);
           localStorage.removeItem("connectorId");
@@ -91,6 +88,11 @@ const MobileAllWallets = () => {
 
       await logout();
     }
+
+    if (connected) {
+      disconnect();
+    }
+    
     setActiveConnector(connector);
     localStorage.setItem("connectorId", connector.id);
     connect(

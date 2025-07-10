@@ -20,7 +20,7 @@ import { Token, VaultData } from "@/types/types";
 import { useFundWalletStore } from "@/store/fundWalletStore";
 
 interface ChainSelectorProps {
-  selectedChain?: Chain;
+  selectedChain?: Chain | null;
   onSelectChain: (chain: Chain) => void;
   selectedToken?: Token;
   onSelectChainAndToken?: (chain: Chain, token: Token) => void;
@@ -120,13 +120,12 @@ export default function ChainSelector({
       className="font-gotham w-full max-h-[56px] bg-[#161C27] pl-4 pr-[19px] py-3 rounded-lg shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] flex flex-row justify-between items-center hover:cursor-pointer"
     >
       <div className="flex items-center gap-4">
-        {displayedChain?.id && (
-          <img
-            src={CHAIN_ICONS[displayedChain.id]?.url}
-            alt={displayedChain.name}
-            className="w-[32px] h-[32px] rounded-full"
-          />
-        )}
+        <img
+          src={CHAIN_ICONS[displayedChain?.id ?? CHAIN_ID["zetachain"]]?.url}
+          alt={displayedChain?.name ?? "Zetachain"}
+          className="w-[32px] h-[32px] rounded-full"
+        />
+
         <p className="text-[16px] font-normal">
           {displayedChain?.name || "ZetaChain"}
         </p>

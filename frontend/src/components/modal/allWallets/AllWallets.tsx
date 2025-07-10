@@ -76,9 +76,6 @@ const AllWAllets = () => {
   } = useConnect({
     mutation: {
       onSuccess: (result) => {
-        if (connected) {
-          disconnect();
-        }
         if (fundWalletStep === "connectWallet") {
           setWalletAddress(result.accounts[0]);
           localStorage.removeItem("connectorId");
@@ -103,6 +100,11 @@ const AllWAllets = () => {
 
       await logout();
     }
+
+    if (connected) {
+      disconnect();
+    }
+    
     setActiveConnector(connector);
     localStorage.setItem("connectorId", connector.id);
     connect(
@@ -162,7 +164,7 @@ const AllWAllets = () => {
         console.log("connect solana error");
       }
       select(connector.name);
-      // solanaConnect();
+      solanaConnect();
     } catch (error) {
       console.log(error);
 
