@@ -30,8 +30,11 @@ export const useAPYDisplay = ({
   const hasChangeData = hasAPYChangeData(vaultId);
 
   const displayText = isDefined
-    ? `${isNegative ? "-" : ""}${(Math.abs(apyValue!) * 100).toFixed(2)}%`
-    : "--";
+    // ? `${isNegative ? "-" : ""}${(Math.abs(apyValue!) * 100).toFixed(2)}%`
+    // : "--";
+    
+    ? `${isNegative ? "-" : ""}${Math.abs(apyValue!).toFixed(2)}%`
+    : "N/A";
 
   const textClass = [
     "font-bold text-base md:text-xl leading-5",

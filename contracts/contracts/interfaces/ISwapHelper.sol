@@ -127,4 +127,12 @@ interface ISwapHelper {
         address gasToken,
         uint256 gasFee
     ) external view returns (uint256 inputAmount);
+
+    function swapTokensViaCurveNG(
+        address[11] memory route,
+        uint256[5][5] memory swapParams,
+        address[5] memory pools,
+        uint256 amount,
+        uint16 slippageBps
+    ) external returns (uint256 amountOut);
 }
