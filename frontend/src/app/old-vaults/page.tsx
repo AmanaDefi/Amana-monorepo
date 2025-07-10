@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { Suspense } from "react";
 import VaultsContainer from "../../containers/VaultsContainer";
 import Link from "next/link";
 import { BannersCarousel } from "@/components/banners/BannersCarousel";
@@ -22,7 +22,9 @@ export default function Page() {
             <Note />
             <div className="flex-1 flex flex-col w-full justify-between pb-10">
                 <div className="flex-1 p-4 container mx-auto gap-5">
-                    <VaultsContainer />
+                    <Suspense fallback={<div>Loading...</div>}>
+                        <VaultsContainer />
+                    </Suspense>
                 </div>
             </div>
         </div>

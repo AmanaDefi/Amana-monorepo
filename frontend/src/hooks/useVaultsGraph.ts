@@ -512,4 +512,30 @@ export function useSearchVaultsWithNetworkAndProtocolCountFromGraph(searchTerm: 
     refetchOnReconnect: false,
     refetchOnMount: true,
   });
+}
+
+export function useStableVaultsSortedFromGraph() {
+  return useQuery<GetVaultsResponse, Error>({
+    queryKey: ["stable-vaults-graph"],
+    queryFn: () => graphClient.getStableVaults(undefined, EXCLUDED_VAULTS),
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+    retry: 2,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: true,
+  });
+}
+
+export function useNonStableVaultsSortedFromGraph() {
+  return useQuery<GetVaultsResponse, Error>({
+    queryKey: ["nonstable-vaults-graph"],
+    queryFn: () => graphClient.getNonStableVaults(undefined, EXCLUDED_VAULTS),
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+    retry: 2,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: true,
+  });
 } 

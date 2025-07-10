@@ -7,7 +7,7 @@ import { useLayoutStore } from "@/store/store";
 
 const VaultsGridContainer = () => {
   const [currentPage, setCurrentPage] = useState(1);
-  const [sortBy, setSortBy] = useState('tvl');
+  const [sortBy, setSortBy] = useState('apy');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   const itemsPerPage = useLayoutStore((state) => state.itemsPerPage);

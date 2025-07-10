@@ -773,15 +773,26 @@ export function useUserSettings() {
   return { userSettings, updateSettings };
 }
 
-export const useSlippage = () => {
-  const { slippage, setSlippage, toggleAuto } = useUserSettingsStore();
+export function useSlippage(vaultId: string) {
+  const store = useUserSettingsStore();
+
+  useEffect(() => {
+    if (vaultId) {
+      store.loadSlippageForVault(vaultId);
+    }
+  }, [vaultId, store.loadSlippageForVault]);
+
+  const slippageSettings = useMemo(() => {
+    return store.getSlippageForVault(vaultId);
+  }, [vaultId, store.slippage, store.getSlippageForVault]);
+
   return {
-    slippageValue: slippage.value,
-    isAuto: slippage.isAuto,
-    setSlippage,
-    toggleAuto,
+    slippageValue: slippageSettings.value,
+    isAuto: slippageSettings.isAuto,
+    setSlippage: store.setSlippage,
+    toggleAuto: store.toggleAuto,
   };
-};
+}
 
 // Hooks for working with subgraph
 export const useUserTransactionsHistory = (userAddress?: string) => {

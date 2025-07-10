@@ -33,7 +33,7 @@ import {
   formatSlippageUSD,
 } from "@/utils/utils";
 import InteractionContainer from "./interactAPI";
-import { useTokenPriceBySymbol } from "@/hooks/hooks";
+import { useSlippage, useTokenPriceBySymbol } from "@/hooks/hooks";
 import {
   getPathDataAndAmountOut,
   getPerformanceFee,
@@ -42,7 +42,7 @@ import {
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { calculateGasFeeInVaultAsset } from "@/utils/gasFeeCalculations";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { trackEvent } from "@/utils/trackEvent";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -62,7 +62,7 @@ import FeeDisplay, {
 import APYChangeCard from "./VaultsDetailsWrapper/components/APYChangeCard";
 import { useWallets } from "@privy-io/react-auth";
 import { useTransactionStore } from "@/store/transactionStore";
-import { formatTokenBalance, formatUSDValue } from "@/utils/tokenFormat";
+import { formatTokenBalance, formatUSDAmount, formatUSDValue } from "@/utils/tokenFormat";
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 import { zetachain } from "viem/chains";
 import { useAPYStore } from "@/store/APYStore";
@@ -135,6 +135,8 @@ export default function VaultInputs({
   );
   const activeWallet = filteredWallets[0];
   const selectChain = useMemo(() => selectedChain, [selectedChain]);
+
+  const { slippageValue: userSlippage } = useSlippage(vaultId); 
 
   const handleSelectChainAngToken = (chain: Chain, token: Token) => {
     setInputToken(token);
@@ -331,7 +333,7 @@ export default function VaultInputs({
   // Trigger error message handling
   useEffect(() => {
     const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
-    if (inputToken && vaultTotalAssetinToken && !isTxInProgress) {
+    if (inputToken && userVaultBalance && !isTxInProgress) {
       if (isDeposit) {
         // For Ethereum vaults, use net deposit amount for validation
         // For other vaults, use input amount
@@ -355,10 +357,12 @@ export default function VaultInputs({
           ),
         );
       } else {
+        const availableBalanceForWithdrawal = userVaultBalance.formatted || "0";
+
         setErrorMessage(
           getVaultErrorMessage(
             inputBalance.formatted,
-            vaultTotalAssetinToken.toString(),
+            availableBalanceForWithdrawal,
             steps,
             vaultData,
             vaultTokenPrice,
@@ -376,12 +380,12 @@ export default function VaultInputs({
     isDeposit,
     vaultData.id,
     action,
-    vaultTotalAssetinToken,
     steps,
     inputTokenPrice,
     vaultTokenPrice,
     conversionOutput.netDepositToVaultUSD,
     loadingOutputToken,
+    userVaultBalance,
   ]);
 
   // Watch input balance and trigger steps config selection
@@ -646,12 +650,7 @@ export default function VaultInputs({
   const tokenList = useMemo(() => {
     let tokens: Token[] = [];
 
-    if (!selectedChain?.id) {
-      console.log("VaultInputs - No selectedChain, returning empty array");
-      return [];
-    }
-
-    if (selectedChain.id === 7001 || selectedChain.id === 7000) {
+    if ( !selectedChain?.id || selectedChain.id === 7001 || selectedChain.id === 7000) {
       if (vaultData.inputToken) {
         tokens = [vaultData.inputToken];
       }
@@ -681,7 +680,7 @@ export default function VaultInputs({
           vaultData.inputToken,
           actualInputToken,
           vaultData.id as Address,
-          getCurrentSlippage() * 100,
+          userSlippage * 100,
         );
         tokenConversionAmount = result.amountOut;
       }
@@ -733,6 +732,7 @@ export default function VaultInputs({
       vaultData,
       vaultTokenPrice,
       inputToken,
+      userSlippage,
     ],
   );
 
@@ -758,7 +758,7 @@ export default function VaultInputs({
           actualInputToken,
           vaultData.inputToken,
           vaultData.id as Address,
-          getCurrentSlippage() * 100,
+          userSlippage * 100,
         );
         assetsConversionAmount = result.amountOut;
       }
@@ -810,7 +810,7 @@ export default function VaultInputs({
             ZRC20_TOKENS_BY_ADDRESS[gasZRC20],
             vaultData.inputToken,
             vaultData.id as Address,
-            getCurrentSlippage() * 100,
+            userSlippage * 100,
           );
           gasFeeInVaultAsset = result.amountOut;
         }
@@ -818,7 +818,7 @@ export default function VaultInputs({
         const gasFeeInTokenUnits =
           Number(gasFeeInVaultAsset) / 10 ** vaultData.inputToken.decimals;
         const gasFeeInUSDAmount = gasFeeInTokenUnits * vaultTokenPrice;
-        gasFeeInUSD = formatCurrency(gasFeeInUSDAmount);
+        gasFeeInUSD = formatUSDAmount(gasFeeInUSDAmount);
         const ethAmount = convertUsdToEth(gasFeeInUSDAmount, ethPriceUsd);
         gasFeeInETH = ethAmount.toFixed(5);
       }
@@ -845,6 +845,8 @@ export default function VaultInputs({
         sharesAmountRaw,
         vaultData.symbol,
       );
+
+      const outputSharesAmountInUSD = Number(sharesAmountRaw) * vaultTokenPrice;
 
       console.log("Double Box - Shares calculation:", {
         sharesAmountFormatted,
@@ -890,7 +892,7 @@ export default function VaultInputs({
             finalConvertedAmountInUSD,
           ),
           outputAmountFormatted: sharesAmountFormatted,
-          outputAmountInUSDFormatted: formatUSDValue(finalConvertedAmountInUSD),
+          outputAmountInUSDFormatted: formatUSDValue(outputSharesAmountInUSD),
           gasFeeInVaultAsset: gasFeeInVaultAsset.toString(),
           gasFeeInUSD,
           gasFeeInETH,
@@ -910,14 +912,14 @@ export default function VaultInputs({
       ethPriceUsd,
       activeWallet,
       selectedChain?.id,
+      userSlippage,
     ],
   );
 
   const timeoutRef = useRef<NodeJS.Timeout>();
 
   const checkSlippageExceedingLimit = () => {
-    const userSlippage = getCurrentSlippage();
-
+    
     // If slippage is over 100%, hide the display completely
     if (
       conversionOutput.slippageActualValue !== null &&
@@ -1213,8 +1215,7 @@ export default function VaultInputs({
         return true;
       }
     } else {
-      const maxWithdrawAmount =
-        vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0";
+      const maxWithdrawAmount = userVaultBalance?.formatted || "0";
       if (Number(inputBalance.formatted) > Number(maxWithdrawAmount)) {
         setIsButtonDisabled(true);
         return true;
@@ -1264,7 +1265,6 @@ export default function VaultInputs({
     outputBoxErrorMessage,
     isDeposit,
     tokenBalance.value,
-    vaultTotalAssetinToken,
     vaultData.depositFeePaidFromGasTank,
     debouncedInputBalance.value,
     conversionOutput.inputAmountInUSDFormatted,
@@ -1272,6 +1272,7 @@ export default function VaultInputs({
     conversionOutput.outputAmountFormatted,
     isSlippageExceedingLimit,
     setIsButtonDisabled,
+    userVaultBalance,
   ]);
   // 🧪 TESTING: Log final values being displayed
   useEffect(() => {
@@ -1301,7 +1302,6 @@ export default function VaultInputs({
     vaultTotalAssetinToken,
   ]);
 
-  const userSlippage = getCurrentSlippage();
   const minReceived = useMemo(() => {
     if (!conversionOutput.outputAmountInUSDFormatted) return "0.0";
 
@@ -1353,7 +1353,7 @@ export default function VaultInputs({
             transition={{ duration: 0.3 }}
           >
             <div className="mb-4">
-              {selectedChain && onSelectChain && vaultId && isDeposit && (
+              {onSelectChain && vaultId && isDeposit && (
                 <ChainSelector
                   selectedChain={selectedChain}
                   onSelectChain={onSelectChain}
@@ -1403,11 +1403,11 @@ export default function VaultInputs({
             </div>
             <ExpectedSlippageBlock
               conversionOutput={conversionOutput}
-              isVisible={!!conversionOutput.slippageActualValue}
+              isVisible={!!conversionOutput.slippageActualValue && !outputBoxErrorMessage}
             />
 
             <div className="mb-4">
-              {selectedChain && onSelectChain && vaultId && !isDeposit && (
+              {onSelectChain && vaultId && !isDeposit && (
                 <ChainSelector
                   selectedChain={selectedChain}
                   onSelectChain={onSelectChain}
@@ -1455,7 +1455,7 @@ export default function VaultInputs({
             transition={{ duration: 0.3 }}
           >
             <div className="mb-4">
-              {selectedChain && onSelectChain && vaultId && isDeposit && (
+              {onSelectChain && vaultId && isDeposit && (
                 <ChainSelector
                   selectedChain={selectedChain}
                   onSelectChain={onSelectChain}
@@ -1495,7 +1495,7 @@ export default function VaultInputs({
             />
             <div className="mb-6 md:mb-10"></div>
             <div className="mb-4">
-              {selectedChain && onSelectChain && vaultId && !isDeposit && (
+              {onSelectChain && vaultId && !isDeposit && (
                 <ChainSelector
                   selectedChain={selectedChain}
                   onSelectChain={onSelectChain}

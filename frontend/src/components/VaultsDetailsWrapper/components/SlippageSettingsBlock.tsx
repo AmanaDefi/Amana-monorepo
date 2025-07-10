@@ -13,7 +13,7 @@ export default function SlippageSettingsBlock({
   setInputBalance,
   vaultId,
 }: SlippageSettingsBlockProps): JSX.Element {
-  const { slippageValue, isAuto } = useSlippage();
+  const { slippageValue, isAuto } = useSlippage(vaultId);
 
   const displayValue = isAuto ? "Auto" : `${slippageValue}%`;
 

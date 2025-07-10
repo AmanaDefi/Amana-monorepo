@@ -1,12 +1,12 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { 
-  VaultData, 
-  VaultAPY, 
-  VaultTotalAssets, 
-  VaultTotalAssetsinToken, 
-  UserVaultBalance 
+import {
+  VaultData,
+  VaultAPY,
+  VaultTotalAssets,
+  VaultTotalAssetsinToken,
+  UserVaultBalance
 } from '@/types/types';
 import { formatNumberWithSuffix, getOnlyTokenSymbol, formatBalance, formatTokenBalance } from '@/utils/utils';
 import LoadingLogo from './LoadingLogo';
@@ -340,7 +340,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     // For other tokens, try to get their price
     return tokenPrices[tokenSymbol] || 0;
   }, [tokenPrices]);
-  
+
   if (loading) {
     return <LoadingLogo />;
   }
@@ -417,7 +417,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                 sortBy === option
                   ? "bg-gradient-to-r from-[#262830] to-[#06afbc] text-white"
                   : "bg-customNeutral300 text-white"
-              }`}
+                }`}
             >
               {option.toUpperCase()}
               {sortBy === option && (
@@ -621,10 +621,10 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                     </div>
                   </div>
                   <div className="bg-customNeutral300 p-3 rounded-md">
-                                          <p className="text-gray-400 text-xs mb-1">TVL</p>
-                      <p className="text-white font-bold text-xl">
+                    <p className="text-gray-400 text-xs mb-1">TVL</p>
+                    <p className="text-white font-bold text-xl">
                         {formatTVLInUSD(Number(vaultTotalAssetsData?.totalAssets || 0), vault.inputToken.symbol, getTokenPrice(vault.inputToken.symbol))}
-                      </p>
+                    </p>
                   </div>
                 </div>
 
@@ -729,7 +729,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                 currentPage === 1
                   ? "bg-customNeutral300 text-gray-500 cursor-not-allowed"
                   : "bg-customNeutral300 text-white hover:bg-customNeutral100"
-              }`}
+                }`}
             >
               ←
             </button>
@@ -745,7 +745,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                   currentPage === index + 1
                     ? "bg-gradient-to-r from-[#262830] to-[#06afbc] text-white"
                     : "bg-customNeutral300 text-white hover:bg-customNeutral100"
-                }`}
+                  }`}
               >
                 {index + 1}
               </button>
@@ -762,7 +762,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                 currentPage === displayTotalPages
                   ? "bg-customNeutral300 text-gray-500 cursor-not-allowed"
                   : "bg-customNeutral300 text-white hover:bg-customNeutral100"
-              }`}
+                }`}
             >
               →
             </button>

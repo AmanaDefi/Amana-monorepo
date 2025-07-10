@@ -956,7 +956,7 @@ function Interaction({
   const activeAccount = filteredWallets[0];
   const walletContext = useWallet();
   const prevLebel = useRef(label);
-  const { openStep } = useAuthStore();
+  const { openStep, setChain } = useAuthStore();
   const { selectedChain } = useMultiChain();
   const [isMobile, setIsMobile] = useState(false);
 
@@ -1291,6 +1291,7 @@ function Interaction({
   }, [refreshBalance, vaultData?.id]);
 
   const handleWalletConnect = () => {
+    setChain(activeChain);
     if (activeChain?.id === zetachain.id) {
       openStep(isMobile ? "mobileOptionsA" : "optionsA");
     } else {

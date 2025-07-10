@@ -56,11 +56,13 @@ export default function FeeDisplay({
   performanceFee = 0,
 }: FeeDisplayProps): JSX.Element {
   const isEthereumVault = !vaultData.depositFeePaidFromGasTank;
-  const hasValidGasFee =
+
+  const hasNonZeroGasFee =
     conversionOutput.gasFeeInVaultAsset &&
-    Number(conversionOutput.gasFeeInVaultAsset) > 0 &&
-    conversionOutput.gasFeeInETH &&
-    conversionOutput.gasFeeInUSD;
+    Number(conversionOutput.gasFeeInVaultAsset) > 0;
+
+  const shouldShowDepositFee = isDeposit && isEthereumVault && hasNonZeroGasFee;
+  const shouldShowWithdrawalFee = !isDeposit && performanceFee > 0;
 
   const isDepositTooLow =
     isDeposit &&
@@ -69,6 +71,10 @@ export default function FeeDisplay({
     Number(
       conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, ""),
     ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, ""));
+
+  const netDepositValue = parseFloat(
+    conversionOutput.netDepositToVaultUSD?.replace(/[^0-9.]/g, "") || "0",
+  );
 
   return (
     <div>
@@ -80,16 +86,13 @@ export default function FeeDisplay({
         </div>
       )}
 
-      {/* Only show fee block if there's an actual fee */}
-      {(isDeposit && isEthereumVault && hasValidGasFee) ||
-      !isDeposit ||
-      !isEthereumVault ? (
+      {shouldShowDepositFee || shouldShowWithdrawalFee ? (
         <div className="w-full">
           <span className="flex flex-row items-center justify-between text-white py-1">
             <div className="flex items-center gap-2">
               <p>{isDeposit ? "Ethereum Deposit Fee" : "Withdrawal Fee"}</p>
 
-              {isDeposit && isEthereumVault && hasValidGasFee && (
+              {shouldShowDepositFee && (
                 <InfoBlock>
                   <ErrorInputIcon
                     width={14}
@@ -102,7 +105,7 @@ export default function FeeDisplay({
                 </InfoBlock>
               )}
 
-              {(!isDeposit || !isEthereumVault) && (
+              {shouldShowWithdrawalFee && (
                 <InfoBlock isMiddle>
                   💡 {performanceFee}% deducted from the profit earned in the
                   vault.
@@ -110,9 +113,11 @@ export default function FeeDisplay({
               )}
             </div>
             <span className="font-bold">
-              {isDeposit && isEthereumVault && hasValidGasFee
+              {shouldShowDepositFee
                 ? `${conversionOutput.gasFeeInUSD}`
-                : "$0"}
+                : shouldShowWithdrawalFee
+                  ? `$${performanceFee}`
+                  : "$0"}
             </span>
           </span>
         </div>
@@ -121,18 +126,11 @@ export default function FeeDisplay({
       {isDeposit &&
         !vaultData.depositFeePaidFromGasTank &&
         conversionOutput.netDepositToVaultUSD &&
-        Number(debouncedInputBalance.value) > 0 && (
-          <p className="text-white font-normal mt-2 text-start flex items-center">
+        Number(debouncedInputBalance.value) > 0 &&
+        netDepositValue > 0 && (
+          <p className="text-white font-normal mt-4 text-start flex items-center">
             <span className="mr-2">
-              Net Deposit to Vault:{" "}
-              {formatUSDAmount(
-                parseFloat(
-                  conversionOutput.netDepositToVaultUSD?.replace(
-                    /[^0-9.]/g,
-                    "",
-                  ) || "0",
-                ),
-              )}
+              Net Deposit to Vault: {formatUSDAmount(netDepositValue)}
             </span>
             <InfoBlock isMiddle>
               {(() => {
@@ -142,12 +140,7 @@ export default function FeeDisplay({
                     "",
                   ) || "0",
                 );
-                const netDepositUSD = parseFloat(
-                  conversionOutput.netDepositToVaultUSD?.replace(
-                    /[^0-9.]/g,
-                    "",
-                  ) || "0",
-                );
+                const netDepositUSD = netDepositValue;
                 const actualFeeUSD = inputUSD - netDepositUSD;
 
                 return `Input amount (${formatUSDAmount(inputUSD)}) - Gas fee (${formatUSDAmount(actualFeeUSD)}) = Net deposit (${formatUSDAmount(netDepositUSD)})`;

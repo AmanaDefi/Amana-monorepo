@@ -168,8 +168,9 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     hasNetworkFilterActive && onChainFilterChange;
   const shouldUseSubgraphProtocolFilter =
     hasProtocolFilterActive && onProtocolFilterChange;
-  const shouldUseSubgraphSort =
-    sortBy.toLowerCase() === "tvl" && onSortChange && onPageChange;
+
+  const shouldUseSubgraphSort = false;
+
   const shouldUseLocalFiltering =
     !shouldUseSubgraphSearch &&
     !shouldUseSubgraphNetworkFilter &&
@@ -233,42 +234,36 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   ]);
 
   const sortedVaults = useMemo(() => {
-    if (!shouldUseLocalFiltering) {
-      // If using subgraph (TVL sorting), return data as is
-      return filteredVaults;
-    }
-
-    // Local sorting for APY, Risk and TVL (when My Vaults)
-    return [...filteredVaults].sort((a, b) => {
-      let aValue: any, bValue: any;
-
+    // Helper to compute value for sorting key (APY / Risk only)
+    const getSortValue = (vault: VaultData) => {
       switch (sortBy.toLowerCase()) {
         case "apy":
-          aValue = Number(
-            vaultAPYs.find((apy) => apy.vaultId === a.id)?.APY7d || 0,
+          return Number(
+            vaultAPYs.find((apy) => apy.vaultId === vault.id)?.APY7d || 0,
           );
-          bValue = Number(
-            vaultAPYs.find((apy) => apy.vaultId === b.id)?.APY7d || 0,
-          );
-          break;
-        case "tvl":
-          // TVL sorting only for My Vaults or when there is no subgraph/search
-          aValue = Number(
-            vaultTotalAssets.find((asset) => asset.vaultId === a.id)
-              ?.totalAssets || 0,
-          );
-          bValue = Number(
-            vaultTotalAssets.find((asset) => asset.vaultId === b.id)
-              ?.totalAssets || 0,
-          );
-          break;
         case "risk":
-          aValue = calculateRiskLevel(a);
-          bValue = calculateRiskLevel(b);
-          break;
+          return calculateRiskLevel(vault);
         default:
           return 0;
       }
+    };
+
+    if (sortBy.toLowerCase() === "tvl") {
+      return sortOrder === "asc"
+        ? [...filteredVaults].reverse()
+        : filteredVaults;
+    }
+
+    // If we're relying on remote pagination but sorting field is APY or RISK,
+    // we still need to sort the received page locally to ensure numeric order.
+    const listToSort = [...filteredVaults];
+
+    // (TVL handled above)
+
+    // Perform local sorting for APY / TVL (My Vaults) / Risk
+    return listToSort.sort((a, b) => {
+      const aValue = getSortValue(a);
+      const bValue = getSortValue(b);
 
       return sortOrder === "asc" ? aValue - bValue : bValue - aValue;
     });

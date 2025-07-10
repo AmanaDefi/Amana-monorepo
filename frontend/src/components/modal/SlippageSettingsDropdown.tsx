@@ -19,7 +19,8 @@ export default function SlippageSettingsDropdown({
   setInputBalance: Function;
   vaultId: string;
 }) {
-  const { slippageValue, isAuto, setSlippage, toggleAuto } = useSlippage();
+  const { slippageValue, isAuto, setSlippage, toggleAuto } =
+    useSlippage(vaultId);
   const [isOpen, setIsOpen] = useState(false);
   const [customInputValue, setCustomInputValue] = useState("");
   const [showCustomInput, setShowCustomInput] = useState(false);

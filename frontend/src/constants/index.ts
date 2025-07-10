@@ -764,7 +764,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       imgURL: "/USDC.png",
       price: 1,
       balance: EMPTY_BALANCE,
-      isNative: false
+      isNative: false,
     },
     protocol: {
       name: "YieldFi",
@@ -772,9 +772,10 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       rewardsContractAddress: "",
       network: "Ethereum",
       chainId: 1,
-      netdes: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
+      netdes:
+        "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
       imgURL: "/yieldfi.png",
-      des: "YieldFi is a yield automation protocol designed to simplify and maximize returns on stablecoin deposits. Users deposit stable assets like USDC or YUSD, which YieldFi routes through optimized on-chain strategies to generate yield. The protocol automatically aggregates and compounds rewards, offering a seamless experience for earning stable, passive income in DeFi."
+      des: "YieldFi is a yield automation protocol designed to simplify and maximize returns on stablecoin deposits. Users deposit stable assets like USDC or YUSD, which YieldFi routes through optimized on-chain strategies to generate yield. The protocol automatically aggregates and compounds rewards, offering a seamless experience for earning stable, passive income in DeFi.",
     },
   },
   {
@@ -785,7 +786,7 @@ const MAINNET_VAULT_DATA: VaultData[] = [
     symbol: "aAegisYUSD",
     imgURL: "/bnb_logo.png",
     depositFeePaidFromGasTank: true,
-    minDeposit: 1, 
+    minDeposit: 1,
     maxWithdraw: 1000000,
     inputToken: {
       symbol: "USDT.BSC",
@@ -794,16 +795,17 @@ const MAINNET_VAULT_DATA: VaultData[] = [
       imgURL: "/usdt.png",
       price: 1,
       balance: EMPTY_BALANCE,
-      isNative: false
+      isNative: false,
     },
     protocol: {
       name: "Aegis",
       strategyAddress: "0x3bbB4509B4ffbc7fF48E33D74Ce9e2f7fFb041B8",
       network: "BSC",
       chainId: 56,
-      netdes: "BNB Smart Chain (BSC) is a fast, low-cost blockchain supporting smart contracts and EVM-compatible dApps. It offers high throughput but has a more centralized validator structure compared to some networks, impacting governance and security.",
+      netdes:
+        "BNB Smart Chain (BSC) is a fast, low-cost blockchain supporting smart contracts and EVM-compatible dApps. It offers high throughput but has a more centralized validator structure compared to some networks, impacting governance and security.",
       imgURL: "/aegis.jpeg",
-      des: "Aegis is a yield protocol that issues YUSD, a Bitcoin-backed stablecoin designed to generate stable returns through delta-neutral strategies. Users can mint or swap into YUSD to earn passive yield without staking. The protocol emphasizes transparency and capital efficiency. Risks include market volatility, BTC price movements, and smart contract vulnerabilities."
+      des: "Aegis is a yield protocol that issues YUSD, a Bitcoin-backed stablecoin designed to generate stable returns through delta-neutral strategies. Users can mint or swap into YUSD to earn passive yield without staking. The protocol emphasizes transparency and capital efficiency. Risks include market volatility, BTC price movements, and smart contract vulnerabilities.",
     },
   },
   // {
@@ -855,16 +857,17 @@ const TESTNET_VAULT_DATA: VaultData[] = [
       imgURL: "/ETH.png",
       price: ethPrice,
       balance: EMPTY_BALANCE,
-      isNative: false
+      isNative: false,
     },
     protocol: {
       name: "Aave",
       strategyAddress: "0x6e16D120f8207b4f376A4aDA0CD499757BB7129E",
       chainId: 84532,
       network: "Base Sepolia",
-      netdes: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
+      netdes:
+        "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum’s decentralized security.",
       imgURL: "/aave.png",
-      des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted."
+      des: "Aave is one of the oldest and most established lending protocols in web3. It is highly trusted.",
     },
   },
   // {
@@ -978,8 +981,7 @@ export const USER_SETTINGS_LOCAL_STORAGE_KEY = "user_settings";
 
 export const ONE_MINUTE = 60 * 1000;
 
-export const RECEIPT_LOCAL_STORAGE_KEY = 'receipt_local_storage_key'
-
+export const RECEIPT_LOCAL_STORAGE_KEY = "receipt_local_storage_key";
 
 export const ZERO_ACCOUNT = {
   address: "0x0000000000000000000000000000000000000000",
@@ -998,5 +1000,7 @@ export const EXCLUDED_VAULTS = [
   "0x0552d4c51491d9bfed97eb795e101e90a5f16d44",
   "0x8b934de59fde50a91daa7e788389f8fcad35a14f",
   "0x86351ca28ffadc520c940fa6b5dbe441289b55cb", //YieldFi from path in web
-  "0xCF18fc631e05BA7DcBCadCd212176C381256FAA8" //YieldFi from constants (doesn't detected)
+  "0xCF18fc631e05BA7DcBCadCd212176C381256FAA8", //YieldFi from constants (doesn't detected)
 ];
+
+export const GLOBAL_SLIPPAGE_SETTINGS_KEY = "globalSlippageSettings";
