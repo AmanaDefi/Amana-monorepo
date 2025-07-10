@@ -791,15 +791,25 @@ export async function fetchNoonCapitalAPY(): Promise<number> {
   try {
     const response = await fetch("https://back.noon.capital/api/v1/protocol-metrics");
     const json = await response.json();
-    console.log('[NoonCapital] API response in actions by Rohit:', json); // Debug log
 
+    // Use 7d average APY from apyTimeSeries if available
+    if (json.apyTimeSeries) {
+      const apyTimeSeries = json.apyTimeSeries;
+      const dates = Object.keys(apyTimeSeries).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+      const last7 = dates.slice(0, 7);
+      const apys = last7.map(date => parseFloat(apyTimeSeries[date])).filter(x => !isNaN(x));
+      if (apys.length > 0) {
+        const avg = apys.reduce((a, b) => a + b, 0) / apys.length;
+        // Return as decimal (not percent)
+        return avg / 100;
+      }
+    }
+
+    // Fallback to raw apy if 7d average is not available
     if (!json.apy && json.apy !== 0) {
       throw new Error("Invalid response from NoonCapital API - missing apy field");
     }
-
-    // apy is already a 7-day average and returned as a decimal (e.g., 0.0537 for 5.37%)
-    const apy = Number(json.apy);
-
+    const apy = Number(json.apy) / 100;
     return apy;
   } catch (error) {
     console.error("Failed to fetch NoonCapital APY:", error);
