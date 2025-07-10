@@ -9,7 +9,7 @@ export const DropdownList = ({
   handleSelectedOption,
   isShownList,
   needReset = true,
-  variant = "chain", 
+  variant = "chain",
 }: {
   width: number;
   isIconButton: boolean;
@@ -36,9 +36,9 @@ export const DropdownList = ({
         padding: isShownList ? "16px" : "0px",
         border: isShownList ? "1px" : "0px",
       }}
-      className={`z-10 !w-[200px] rounded-2xl absolute md:-right-3 left-0 md:left-auto flex flex-col items-center gap-3 transition-all duration-500 ease-in-out overflow-hidden
+      className={`z-10 !w-[200px] rounded-2xl absolute -right-3 flex flex-col items-center gap-3 transition-all duration-500 ease-in-out overflow-hidden
         ${isShownList ? "bg-[#161C27] border border-[#3E3C59]" : ""}
-        ${isToken ? "rounded-[16px] bg-[#1D2A41] p-4" : ""} ${isIconButton && "!right-0 left-auto"}`}
+        ${isToken ? "rounded-[16px] bg-[#1D2A41] p-4" : ""} ${isIconButton && "!right-0"}`}
       role="menu"
     >
       {isIconButton && (
@@ -80,7 +80,11 @@ export const DropdownList = ({
               {option.value}
             </p>
           </div>
-          <CheckBox isSelected={option.value.toLowerCase() === selectedOption.toLowerCase()} />
+          <CheckBox
+            isSelected={
+              option.value.toLowerCase() === selectedOption.toLowerCase()
+            }
+          />
         </div>
       ))}
 

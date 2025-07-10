@@ -15,7 +15,6 @@ import { WithTooltip } from "../common/Tooltip";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 
-
 // Destructure chainsWithCustomRpcs() to get zetaChain for default
 const [zetachain] = chainsWithCustomRpcs();
 
@@ -29,10 +28,22 @@ const ChainSwitcher: React.FC = () => {
   const { publicKey } = useWallet();
   const [isOpen, setIsOpen] = useState(false);
   const { switchToChain, activeChain: currentChain } = useMultiChain();
-  const [isLoading, setIsLoading] = useState<number | null>(null); // Track loading state by chain ID
+  const [isLoading, setIsLoading] = useState<number | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const previousChainRef = useRef<string | null>(null);
   const { setSelectedChainFromModal } = useChainTokenModalStore();
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -65,7 +76,6 @@ const ChainSwitcher: React.FC = () => {
       );
       if (chain) {
         setSelectedChainFromModal(chain);
-        // Use a try-catch to handle potential toast errors
         try {
           showSuccessToast(
             `Successfully switched to ${chain?.name || "new network"}`,
@@ -78,7 +88,6 @@ const ChainSwitcher: React.FC = () => {
       console.log("Successfully switched", chain?.id);
     }
 
-    // Update the previous chain ref
     previousChainRef.current = wallet?.chainId?.split(":")[1] || null;
   }, [wallet?.chainId]);
 
@@ -103,7 +112,6 @@ const ChainSwitcher: React.FC = () => {
       return;
     }
 
-    // Don't switch if already on this chain
     if (wallet?.chainId?.split(":")[1] === chain.id.toString()) {
       setIsOpen(false);
       return;
@@ -111,22 +119,17 @@ const ChainSwitcher: React.FC = () => {
 
     setIsLoading(chain.id);
     try {
-      // Switch chain
       switchToChain(chain);
-
-      // Close dropdown
       setIsOpen(false);
     } catch (error) {
       console.log("Failed to switch chain:", error);
-      // Pass the error directly to the error toast function
-      // which will extract the revert reason if available
       showErrorToast(error);
     } finally {
       setIsLoading(null);
     }
   };
 
-  // Determine the chain to display (use currentChain if available, otherwise fallback to zetaChain)
+  // Determine the chain to display
   const displayChain = wallet?.chainId
     ? chainsWithCustomRpcs().find(
         (c: Chain) => c.id.toString() === wallet?.chainId?.split(":")[1],
@@ -153,26 +156,50 @@ const ChainSwitcher: React.FC = () => {
     }
   };
 
+  const handleButtonClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsOpen(!isOpen);
+  };
+
   return (
-    <div className="z-50 relative rounded-full " ref={dropdownRef}>
-      <WithTooltip content="Switch network" subId="chain-switcher">
-       <Button
-        variant="secondary"
-        disabled={!wallet && !publicKey}
-        onClick={() => setIsOpen(!isOpen)}
-        className="cursor-pointer !p-[3px] md:!p-2 md:!w-[56px] md:!h-[56px] !w-10 !h-10"
-        data-tooltip-id="chain-switcher-tooltip"
-        data-tooltip-content={"Switch network"}
-      >
-        <div className="bg-[#24262f] relative md:!w-10 md:!h-10 !h-8 !w-8 rounded-full flex items-center justify-center">
-          <Image
-            src={CHAIN_ICONS[currentChain?.id ?? 7000].url}
-            alt={currentChain?.name ?? "Zetachain"}
-            fill
-          />
-        </div>
-      </Button>
-      </WithTooltip>
+    <div className="z-50 relative rounded-full" ref={dropdownRef}>
+      {!isMobile ? (
+        <WithTooltip content="Switch network" subId="chain-switcher">
+          <Button
+            variant="secondary"
+            disabled={!wallet && !publicKey}
+            onClick={handleButtonClick}
+            className="cursor-pointer !p-[3px] md:!p-2 md:!w-[56px] md:!h-[56px] !w-10 !h-10"
+            data-tooltip-id="chain-switcher-tooltip"
+            data-tooltip-content="Switch network"
+          >
+            <div className="bg-[#24262f] relative md:!w-10 md:!h-10 !h-8 !w-8 rounded-full flex items-center justify-center">
+              <Image
+                src={CHAIN_ICONS[currentChain?.id ?? 7000].url}
+                alt={currentChain?.name ?? "Zetachain"}
+                fill
+              />
+            </div>
+          </Button>
+        </WithTooltip>
+      ) : (
+        <Button
+          variant="secondary"
+          disabled={!wallet && !publicKey}
+          onClick={handleButtonClick}
+          className="cursor-pointer !p-[3px] md:!p-2 md:!w-[56px] md:!h-[56px] !w-10 !h-10"
+          style={{ touchAction: "manipulation" }}
+        >
+          <div className="bg-[#24262f] relative md:!w-10 md:!h-10 !h-8 !w-8 rounded-full flex items-center justify-center">
+            <Image
+              src={CHAIN_ICONS[currentChain?.id ?? 7000].url}
+              alt={currentChain?.name ?? "Zetachain"}
+              fill
+            />
+          </div>
+        </Button>
+      )}
 
       <DropdownList
         width={250}
