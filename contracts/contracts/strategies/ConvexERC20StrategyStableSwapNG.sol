@@ -410,8 +410,6 @@ contract ConvexERC20StrategyStableSwapNG is ERC20StrategyParent {
         uint256 amount,
         uint256 minimumOut
     ) internal override {
-        harvest();
-
         uint256[] memory amounts = new uint256[](3);
         amounts[inputTokenIndex] = amount;
 
@@ -427,7 +425,6 @@ contract ConvexERC20StrategyStableSwapNG is ERC20StrategyParent {
         uint256 assetAmount,
         uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
-        harvest();
         uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(assetAmount);
         rewardPool.withdrawAndUnwrap(sharesToWithdraw, false);
 
