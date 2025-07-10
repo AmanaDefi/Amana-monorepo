@@ -356,8 +356,8 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       maxWithdraw: 1000000,
     };
   }
-
-  if (addr == "0x8426929568b1cbc281f5787556f84c5b101399d") {
+             
+  if (addr == "0x8426929d568b1cbc281f5787556f84c5b101399d") {
     return {
       type: "Yield-Bearing Stablecoin",
       name: "Noon Capital sUSN",

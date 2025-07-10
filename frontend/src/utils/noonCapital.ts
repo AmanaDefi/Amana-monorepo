@@ -1,8 +1,8 @@
 // Utility for Noon Capital APY and historical data
 
 const NOON_CAPITAL_API_URL = "https://back.noon.capital/api/v1/protocol-metrics";
-const NOON_CAPITAL_VAULT_ID = "0x98fEc66c0892B67760F60DB42757BA462086B67a";
-
+const NOON_CAPITAL_VAULT_ID = "0x8426929d568b1cbc281f5787556f84c5b101399d";
+                              
 let cachedNoonCapitalData: any = null;
 let lastFetchTime: number = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
@@ -14,7 +14,7 @@ async function fetchNoonCapitalData(): Promise<any> {
   }
   const response = await fetch(NOON_CAPITAL_API_URL);
   const json = await response.json();
-  console.log('[NoonCapital] API response:', json); // Debug log
+
   cachedNoonCapitalData = json;
   lastFetchTime = now;
   return json;
@@ -23,6 +23,7 @@ async function fetchNoonCapitalData(): Promise<any> {
 export async function getNoonCapital30dAvgAPY(): Promise<number | null> {
   try {
     const data = await fetchNoonCapitalData();
+  
     const apyTimeSeries = data.apyTimeSeries;
     if (!apyTimeSeries) return null;
     // Get last 30 days, sorted by date descending
