@@ -529,6 +529,7 @@ export const useUpdateAPYs = (
     const updateAPYs = async () => {
       if (!vaults) return;
 
+      console.log('[UPDATE APYS DEBUG] Starting APY update for vaults:', vaults.map(v => ({ id: v.id, name: v.name, protocol: v.protocol.name })));
       const now = Date.now();
       try {
         const receiptTokenAddresses = await fetchReceiptTokens(vaults, activeAccount);
@@ -557,7 +558,9 @@ export const useUpdateAPYs = (
               } else if (vault.protocol.name === "YieldFi") {
                 APY7d = await fetchYieldFiAPY();
               } else if (vault.protocol.name === "Noon Capital sUSN") {
+                console.log('[NOON CAPITAL DEBUG] Fetching APY for vault:', vault.id, vault.name);
                 APY7d = await fetchNoonCapitalAPY();
+                console.log('[NOON CAPITAL DEBUG] APY result:', APY7d);
               } else if (vault.protocol.name === "Compound") {
                 APY7d = await calculateCompoundAPY(
                   receiptTokenAddress as Address,
