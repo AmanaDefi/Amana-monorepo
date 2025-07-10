@@ -15,7 +15,6 @@ const VaultsContainer = () => {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [chainFilter, setChainFilter] = useState("");
   const [protocolFilter, setProtocolFilter] = useState("");
-  const [pageLading, setLoading] = useState(true);
 
   const itemsPerPage = useLayoutStore((state) => state.itemsPerPage);
 
@@ -54,12 +53,6 @@ const VaultsContainer = () => {
     protocolFilter,
   );
 
-  useEffect(() => {
-    if (!loading && pageLading) {
-      setLoading(false);
-    }
-  }, [loading, pageLading]);
-
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages && page !== currentPage) {
       setCurrentPage(page);
@@ -89,7 +82,7 @@ const VaultsContainer = () => {
 
   const isSearchTermTooLong = searchTerm.length > 100;
 
-  const shouldShowLoading = pageLading || isSearching;
+  const shouldShowLoading = loading || isSearching;
 
   if (hasError) {
     isSearchError =
