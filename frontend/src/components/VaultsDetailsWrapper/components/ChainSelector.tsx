@@ -5,6 +5,7 @@ import { Chain } from "viem";
 import {
   APPROVED_TOKENS,
   CHAIN_ICONS,
+  CHAIN_ID,
   SUPPORTED_CHAINS,
 } from "@/constants/chainConfig";
 import { useMultiChain } from "@/providers/MultiChainProvider";
@@ -19,7 +20,7 @@ import { Token, VaultData } from "@/types/types";
 import { useFundWalletStore } from "@/store/fundWalletStore";
 
 interface ChainSelectorProps {
-  selectedChain?: Chain;
+  selectedChain?: Chain | null;
   onSelectChain: (chain: Chain) => void;
   selectedToken?: Token;
   onSelectChainAndToken?: (chain: Chain, token: Token) => void;
@@ -89,7 +90,7 @@ export default function ChainSelector({
         tokens.find((token) => token.symbol === "USDC") || tokens[0];
 
       if (onSelectChainAndToken) {
-        console.log('onSelectChainAndToken from chain selector')
+        console.log("onSelectChainAndToken from chain selector");
         setSelectedChainFromModal(chainToSelect);
         onSelectChainAndToken(chainToSelect, defaultToken);
       }
@@ -98,19 +99,33 @@ export default function ChainSelector({
 
   const chainIconsList = CHAINS_ICONS_BUTTON;
 
+  if (activeAccount?.walletClientType === "privy" && !isFromTopUp) {
+    return (
+      <div className="font-gotham w-full max-h-[56px] bg-[#161C27] pl-4 pr-[19px] py-3 rounded-lg shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] flex flex-row justify-between items-center">
+        <div className="flex items-center gap-4">
+          <img
+            src={CHAIN_ICONS[CHAIN_ID["zetachain"]]?.url}
+            alt={"Zetachain"}
+            className="w-[32px] h-[32px] rounded-full"
+          />
+          <p className="text-[16px] font-normal">{"ZetaChain"}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       onClick={handleOpenModal}
       className="font-gotham w-full max-h-[56px] bg-[#161C27] pl-4 pr-[19px] py-3 rounded-lg shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] flex flex-row justify-between items-center hover:cursor-pointer"
     >
       <div className="flex items-center gap-4">
-        {displayedChain?.id && (
-          <img
-            src={CHAIN_ICONS[displayedChain.id]?.url}
-            alt={displayedChain.name}
-            className="w-[32px] h-[32px] rounded-full"
-          />
-        )}
+        <img
+          src={CHAIN_ICONS[displayedChain?.id ?? CHAIN_ID["zetachain"]]?.url}
+          alt={displayedChain?.name ?? "Zetachain"}
+          className="w-[32px] h-[32px] rounded-full"
+        />
+
         <p className="text-[16px] font-normal">
           {displayedChain?.name || "ZetaChain"}
         </p>
