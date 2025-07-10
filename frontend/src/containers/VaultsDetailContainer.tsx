@@ -184,15 +184,17 @@ const VaultsDetailContainer: React.FC<{
     [],
   );
 
-  const loadSlippageFromStorage = useUserSettingsStore(
-    (state) => state.loadSlippageFromStorage,
-  );
+const loadSlippageForVault = useUserSettingsStore(
+  (state) => state.loadSlippageForVault,
+);
 
   useEffect(() => {
+    const vaultIdStr = Array.isArray(vaultID) ? vaultID[0] : vaultID; 
+
     if (vaultIdStr) {
-      loadSlippageFromStorage(vaultIdStr);
+      loadSlippageForVault(vaultIdStr); 
     }
-  }, [vaultIdStr]);
+  }, [vaultID, loadSlippageForVault]);
 
   const handleChainSelect = useCallback(
     async (chain: Chain) => {
