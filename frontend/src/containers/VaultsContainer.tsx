@@ -16,6 +16,8 @@ const VaultsContainer = () => {
   const [chainFilter, setChainFilter] = useState("");
   const [protocolFilter, setProtocolFilter] = useState("");
 
+  const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
+
   const itemsPerPage = useLayoutStore((state) => state.itemsPerPage);
 
   useEffect(() => {
@@ -53,6 +55,12 @@ const VaultsContainer = () => {
     protocolFilter,
   );
 
+  useEffect(() => {
+    if (!loading && vaults.length > 0 && !hasInitiallyLoaded) {
+      setHasInitiallyLoaded(true);
+    }
+  }, [loading, vaults.length, hasInitiallyLoaded]);
+
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages && page !== currentPage) {
       setCurrentPage(page);
@@ -82,7 +90,8 @@ const VaultsContainer = () => {
 
   const isSearchTermTooLong = searchTerm.length > 100;
 
-  const shouldShowLoading = loading || isSearching;
+  const shouldShowLoading =
+    loading || isSearching || (!hasInitiallyLoaded && vaults.length === 0);
 
   if (hasError) {
     isSearchError =
