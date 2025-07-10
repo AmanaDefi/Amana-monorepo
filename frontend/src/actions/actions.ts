@@ -791,6 +791,7 @@ export async function fetchNoonCapitalAPY(): Promise<number> {
   try {
     const response = await fetch("https://back.noon.capital/api/v1/protocol-metrics");
     const json = await response.json();
+    console.log('[NoonCapital] API response in actions by Rohit:', json); // Debug log
 
     if (!json.apy && json.apy !== 0) {
       throw new Error("Invalid response from NoonCapital API - missing apy field");

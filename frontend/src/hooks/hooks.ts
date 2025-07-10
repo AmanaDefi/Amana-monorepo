@@ -556,7 +556,7 @@ export const useUpdateAPYs = (
                 APY7d = await fetchAegisAPR();
               } else if (vault.protocol.name === "YieldFi") {
                 APY7d = await fetchYieldFiAPY();
-              } else if (vault.protocol.name === "NoonCapital") {
+              } else if (vault.protocol.name === "Noon Capital sUSN") {
                 APY7d = await fetchNoonCapitalAPY();
               } else if (vault.protocol.name === "Compound") {
                 APY7d = await calculateCompoundAPY(

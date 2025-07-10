@@ -357,7 +357,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
     };
   }
 
-  if (addr == "0x8426929d568b1cbc281f5787556f84c5b101399d") {
+  if (addr == "0x98fEc66c0892B67760F60DB42757BA462086B67a") {
     return {
       type: "Yield-Bearing Stablecoin",
       name: "Noon Capital sUSN",

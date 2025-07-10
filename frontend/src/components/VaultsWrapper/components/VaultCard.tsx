@@ -21,6 +21,7 @@ import { useChartStore } from "@/store/chartStore";
 import { getVaultHistoricalAPY } from '@/utils/defillama';
 import { getFilteredChartData } from '@/utils/chart';
 import { useAPYDisplay } from "@/hooks/useAPYDisplay";
+import { getNoonCapital30dAvgAPY, getNoonCapitalHistoricalAPY, isNoonCapitalVault } from '@/utils/noonCapital';
 
 const MOCK_DIGITS = 6.43;
 
@@ -41,6 +42,8 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
 
     // Add state for chart range
     const [chartRange, setChartRange] = useState<'30d' | '90d'>('30d');
+    const [noonCapitalAPY, setNoonCapitalAPY] = useState<number | null>(null);
+    const [noonCapitalChart, setNoonCapitalChart] = useState<{ apy: number, timestamp: string }[]>([]);
 
     const vaultAPY = vaultAPYs.find((apy) => apy.vaultId === vault.id);
     const totalAssets = vaultTotalAssets.find(
@@ -55,16 +58,23 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
     const percentageChange = getPercentageChange(vault.id);
     const hasChartData = hasHistoricalData(vault.id);
 
-    // Type guard to check if historicalData is array of objects with timestamp
-    // function isHistoricalObjArray(arr: any[]): arr is { apy: number; timestamp: string | number }[] {
-    //   return arr.length > 0 && typeof arr[0] === 'object' && 'timestamp' in arr[0];
-    // }
 
     // Use utility to get filtered chart data
-    const { filteredTimestamps, filteredChartPoints } = getFilteredChartData(historicalData, chartRange);
+    const chartData = getFilteredChartData(historicalData, chartRange);
+    let filteredTimestamps = chartData.filteredTimestamps;
+    let filteredChartPoints = chartData.filteredChartPoints;
+    if (isNoonCapitalVault(vault.id) && noonCapitalChart.length > 0) {
+      // Use Noon Capital chart data
+      const allPoints = noonCapitalChart;
+      const sorted = allPoints.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      const range = chartRange === '30d' ? 30 : 90;
+      const lastN = sorted.slice(-range);
+      filteredTimestamps = lastN.map(p => p.timestamp);
+      filteredChartPoints = lastN.map(p => p.apy);
+    }
 
     const apyDisplay = useAPYDisplay({
-      apyValue: vaultAPY?.apy30d,
+      apyValue: isNoonCapitalVault(vault.id) ? noonCapitalAPY ?? undefined : vaultAPY?.apy30d,
       vaultId: vault.id,
     });
 
@@ -98,12 +108,19 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
     };
 
     useEffect(() => {
-      getVaultHistoricalAPY(vault.id).then(data => {
-        if (data && Array.isArray(data)) {
-          const apyArray = data.map(d => d.apy);
-          setHistoricalAPY(vault.id, apyArray);
-        }
-      });
+      console.log("NoonCapital effect running", vault.id);
+      if (isNoonCapitalVault(vault.id)) {
+        console.log("Fetching NoonCapital data for", vault.id);
+        getNoonCapital30dAvgAPY().then(setNoonCapitalAPY);
+        getNoonCapitalHistoricalAPY().then(setNoonCapitalChart);
+      } else {
+        getVaultHistoricalAPY(vault.id).then(data => {
+          if (data && Array.isArray(data)) {
+            const apyArray = data.map(d => d.apy);
+            setHistoricalAPY(vault.id, apyArray);
+          }
+        });
+      }
     }, [vault.id, setHistoricalAPY]);
 
     const renderPredictionDisplay = () => {
@@ -215,7 +232,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
             </div>
           </div>
 
-          {hasChartData && (
+          {(hasChartData || (isNoonCapitalVault(vault.id) && noonCapitalChart.length > 0)) && (
             <div className="flex flex-col w-full rounded-lg pt-2 bg-[#3E73C40D] border border-[#3E3C59] mb-2">
               <div className="flex flex-row gap-1 items-center justify-between px-2">
                 <p className="font-normal text-sm leading-4 text-white pl-[9px]">
