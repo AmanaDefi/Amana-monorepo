@@ -1040,9 +1040,6 @@ export const PRICE_IDS: { [key: string]: string } = {
   OP: "0x385f64d993f7b77d8182ed5003d97c60aa3361f3cecfe711544d2d59165e9bdf",
   CBBTC: "0x2817d7bfe5c64b8ea956e9a26f573ef64e72e4d7891f2d6af9bcc93f7aff9a97",
 
-  // CBBTC uses BTC price since it's 1:1 backed
-  CBBTC: "0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43",
-
   // Chain-specific tokens - using the "(CHAIN)" format
   "ETH (BASE)":
     "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
