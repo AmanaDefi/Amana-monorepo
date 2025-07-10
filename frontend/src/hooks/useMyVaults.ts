@@ -11,7 +11,7 @@ export const useMyVaults = ({
   userVaultBalances,
 }: UseMyVaultsProps) => {
   const myVaults = useMemo(() => {
-    return vaults.filter((vault) => {
+    return vaults?.filter((vault) => {
       const hasDeposited = userVaultBalances
         ? !!Number(
             userVaultBalances?.find((balance) => balance?.vaultId === vault?.id)

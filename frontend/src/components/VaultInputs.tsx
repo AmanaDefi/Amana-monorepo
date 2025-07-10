@@ -42,7 +42,7 @@ import {
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { calculateGasFeeInVaultAsset } from "@/utils/gasFeeCalculations";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { trackEvent } from "@/utils/trackEvent";
 
 import { motion, AnimatePresence } from "framer-motion";
