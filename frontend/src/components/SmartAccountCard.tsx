@@ -33,7 +33,7 @@ const SmartAccountCard = ({
           <OnboardingIcon
             width={12}
             height={8}
-            className="mt-[6px] flex-shrink-0"
+            className="mt-[4px] flex-shrink-0"
           />
           <p className="max-w-[227px] leading-tight">{item}</p>
         </li>
@@ -45,7 +45,7 @@ const SmartAccountCard = ({
           <OnboardingIcon
             width={12}
             height={8}
-            className="mt-[6px] flex-shrink-0"
+            className="mt-[4px] flex-shrink-0"
           />
           <p className="max-w-[227px] leading-tight">{item.text}</p>
         </div>

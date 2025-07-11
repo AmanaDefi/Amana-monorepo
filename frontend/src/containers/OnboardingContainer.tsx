@@ -122,7 +122,7 @@ const OnboardingContainer = () => {
           What are <span className="">smart accounts?</span>
         </h1>
 
-        <p className="text-[14px] md:text-[16px] 2xl:text-[24px] text-[#535E73] font-normal md:font-medium text-center max-w-[273px] md:max-w-2xl 2xl:max-w-3xl max-h-[48px] mb-6 xl:mb-10 3xl:mb-[76px] font-gotham">
+        <p className="leading-4 text-[14px] md:text-[16px] 2xl:text-[24px] text-[#535E73] font-normal md:font-medium text-center max-w-[273px] md:max-w-2xl 2xl:max-w-3xl max-h-[48px] mb-4 xl:mb-10 3xl:mb-[76px] font-gotham">
           A new, secure way to use DeFi — no seed phrases, no gas fees, just
           simple login and powerful features.
         </p>
@@ -247,7 +247,7 @@ const OnboardingContainer = () => {
         </div>
       </div>
 
-      <div className="max-w-[352px] mt-4 md:mt-6 3xl:mt-12  mx-auto w-full">
+      <div className="max-w-[328px] mt-4 md:mt-6 3xl:mt-12  mx-auto w-full">
         <div
           className={`transition-opacity duration-300 ${
             (isMobile && !isLastSlide) || (isTablet && !isLastSlideTablet)
@@ -257,7 +257,7 @@ const OnboardingContainer = () => {
         >
           <Button
             onClick={handleCreateWallet}
-            className="!w-[352px] !h-[48px]"
+            className="!w-[328px] !h-[40px] !text-base !font-bold"
             variant="custom"
           >
             Create Wallet

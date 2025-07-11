@@ -295,7 +295,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
         </div>
         <div className="flex gap-4 mt-auto">
           <AppButton variant="blue" onClick={handlePressButton}>
-            {!!walletAddress ? "Deposit" : "Invest"}
+           Invest
           </AppButton>
 
           {userBalance?.balance && Number(userBalance.balance) > 0 && (
