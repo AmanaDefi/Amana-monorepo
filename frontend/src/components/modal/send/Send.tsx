@@ -33,6 +33,42 @@ import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { MiniSpinner } from "@/components/PendingDots";
 import { useSendTransaction } from "@/hooks/useSendTransaction";
 
+const getSendErrorMessage = (
+  amount: string,
+  selectedToken: Token | null,
+  activeChain: any,
+  tokenBalances: Map<
+    string,
+    { balance: Balance; price: number; isLoading: boolean }
+  >,
+  balance?: Balance,
+): string => {
+  const num = parseFloat(amount);
+
+  if (!amount || isNaN(num) || num <= 0) {
+    return "";
+  }
+
+  if (selectedToken && activeChain) {
+    const tokenKey = `${selectedToken.address.toLowerCase()}-${activeChain?.id}`;
+    const tokenData = tokenBalances.get(tokenKey);
+
+    if (tokenData?.balance) {
+      const tokenBalance = parseFloat(tokenData.balance.formatted);
+      if (num > tokenBalance) {
+        return `Not enough ${getOnlyTokenSymbol(selectedToken.symbol)} tokens. Available: ${tokenData.balance.formatted}`;
+      }
+    }
+  } else {
+    const userBalance = parseFloat(balance?.formatted || "0");
+    if (num > userBalance) {
+      return "Not enough tokens on your wallet";
+    }
+  }
+
+  return "";
+};
+
 const sendSchema = z.object({
   recipientAddress: z
     .string()
@@ -175,6 +211,8 @@ export const Send = () => {
   const [networkSearchQuery, setNetworkSearchQuery] = useState("");
   const [tokenSearchQuery, setTokenSearchQuery] = useState("");
   const [selectedToken, setSelectedToken] = useState<Token | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string>("");
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const { walletAddress, activeChain, switchToChain, balance } =
     useMultiChain();
@@ -204,7 +242,13 @@ export const Send = () => {
     solanaConnected,
     setLoading,
     setError,
-    onSuccess: closeAll,
+    onSuccess: () => {
+      setIsSuccess(true);
+      setTimeout(() => {
+        setIsSuccess(false);
+        closeAll();
+      }, 2000);
+    },
   });
 
   const { isLoading: isGlobalLoading } = useAuthStore();
@@ -295,32 +339,6 @@ export const Send = () => {
     [activeChain],
   );
 
-  const validateAmount = (value: string) => {
-    const num = parseFloat(value);
-    if (isNaN(num) || num <= 0) {
-      return "Amount must be a positive number";
-    }
-
-    if (selectedToken && activeChain) {
-      const tokenKey = `${selectedToken.address.toLowerCase()}-${activeChain?.id}`;
-      const tokenData = tokenBalances.get(tokenKey);
-
-      if (tokenData?.balance) {
-        const tokenBalance = parseFloat(tokenData.balance.formatted);
-        if (num > tokenBalance) {
-          return `Not enough ${getOnlyTokenSymbol(selectedToken.symbol)} tokens. Available: ${tokenData.balance.formatted}`;
-        }
-      }
-    } else {
-      const userBalance = parseFloat(balance?.formatted || "0");
-      if (num > userBalance) {
-        return "Not enough tokens on your wallet";
-      }
-    }
-
-    return true;
-  };
-
   const {
     register,
     handleSubmit,
@@ -363,6 +381,29 @@ export const Send = () => {
       setValue("token", undefined, { shouldValidate: true });
     }
   }, [sortedTokens, selectedToken, setValue, activeChain]);
+
+  useEffect(() => {
+    const currentAmount = watch("amount");
+    if (currentAmount && selectedToken) {
+      const error = getSendErrorMessage(
+        currentAmount,
+        selectedToken,
+        activeChain,
+        tokenBalances,
+        balance,
+      );
+      setErrorMessage(error);
+    } else {
+      setErrorMessage("");
+    }
+  }, [
+    watch("amount"),
+    selectedToken,
+    activeChain,
+    tokenBalances,
+    balance,
+    watch,
+  ]);
 
   const selectedNetworkValue = watch("network") || "";
   const selectedTokenValue = watch("token") || "";
@@ -434,6 +475,44 @@ export const Send = () => {
     setShowTokenSelection(false);
     setTokenSearchQuery("");
   };
+
+  const isButtonDisabled = useMemo(() => {
+    const currentAmount = watch("amount");
+
+    if (
+      !currentAmount ||
+      currentAmount === "0" ||
+      parseFloat(currentAmount) <= 0
+    ) {
+      return true;
+    }
+
+    if (errorMessage) {
+      return true;
+    }
+
+    if (!isValid) {
+      return true;
+    }
+
+    if (sortedTokens.length > 0 && !selectedToken) {
+      return true;
+    }
+
+    if (isGlobalLoading) {
+      return true;
+    }
+
+    return false;
+  }, [
+    watch("amount"),
+    errorMessage,
+    isValid,
+    sortedTokens.length,
+    selectedToken,
+    isGlobalLoading,
+    watch,
+  ]);
 
   const onSubmit = async (data: SendFormData) => {
     if (sortedTokens.length > 0 && !selectedToken) {
@@ -812,16 +891,14 @@ export const Send = () => {
               <input
                 type="text"
                 placeholder="0.00"
-                {...register("amount", {
-                  validate: validateAmount,
-                })}
+                {...register("amount")}
                 className={`w-full rounded-[8px] px-4 py-3 text-[16px] font-normal text-white placeholder-[#535E73] bg-[#161C27] border transition-all duration-200 focus:outline-none focus:border-[#3E73C4] hover:border-[#3E73C4] ${
-                  errors.amount
+                  errorMessage || errors.amount
                     ? "border-[#FFC700] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]"
                     : "border-[#2C2F36]"
                 }`}
               />
-              {errors.amount && (
+              {(errorMessage || errors.amount) && (
                 <div className="flex gap-1 items-center mt-2 text-[#FFC700]">
                   <ErrorInputIcon
                     width={16}
@@ -829,7 +906,7 @@ export const Send = () => {
                     className="text-[#FFC700]"
                   />
                   <p className="text-[12px] font-normal">
-                    {errors.amount.message}
+                    {errorMessage || errors.amount?.message}
                   </p>
                 </div>
               )}
@@ -839,13 +916,40 @@ export const Send = () => {
               <Button
                 variant="custom"
                 type="submit"
-                disabled={!isValid || isGlobalLoading}
-                className="!max-h-[48px] !w-full !mt-6"
+                disabled={isButtonDisabled && !isSuccess}
+                className={`!max-h-[48px] !w-full !mt-6 ${
+                  isSuccess ? "!bg-green-500 !opacity-100 !cursor-default" : ""
+                }`}
               >
                 {isGlobalLoading ? (
                   <span className="flex items-center justify-center gap-2">
                     <MiniSpinner size={20} color="#1B46E0" /> Sending...
                   </span>
+                ) : isSuccess ? (
+                  <motion.span
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex items-center justify-center gap-2"
+                  >
+                    <motion.svg
+                      width={20}
+                      height={20}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 0.1 }}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </motion.svg>
+                    Sent Successfully!
+                  </motion.span>
                 ) : (
                   "Send"
                 )}

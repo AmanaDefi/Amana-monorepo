@@ -146,7 +146,6 @@ export const useSendTransaction = ({
             await connection.confirmTransaction(txSignature, "confirmed");
             console.log("Solana Transaction Confirmed!");
             onSuccess();
-            alert(`Solana Transaction Sent! Hash: ${txSignature}`);
           } catch (solanaError: any) {
             console.error("Solana Transaction Error:", solanaError);
             setError(
@@ -189,8 +188,8 @@ export const useSendTransaction = ({
               });
               console.log("EVM Native Token Transaction Hash:", hash);
               await publicClient.waitForTransactionReceipt({ hash });
+              console.log("EVM Native Token Transaction Confirmed!");
               onSuccess();
-              alert(`EVM Native Token Transaction Sent! Hash: ${hash}`);
             } catch (evmError: any) {
               console.error("EVM Native Token Send Error:", evmError);
               setError(
@@ -227,8 +226,8 @@ export const useSendTransaction = ({
 
               console.log("EVM ERC-20 Token Transaction Hash:", hash);
               await publicClient.waitForTransactionReceipt({ hash });
+              console.log("EVM ERC-20 Token Transaction Confirmed!");
               onSuccess();
-              alert(`EVM ERC-20 Token Transaction Sent! Hash: ${hash}`);
             } catch (evmError: any) {
               console.error("EVM ERC-20 Token Send Error:", evmError);
               setError(
