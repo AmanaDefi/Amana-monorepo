@@ -54,7 +54,7 @@ const SmartAccountCard = ({
             {item.subItems.map((subItem: SubItem, subIdx: number) => (
               <li
                 key={subIdx}
-                className="flex items-center text-[#3E73C4] text-xs"
+                className="flex items-center text-[#3E73C4] text-xs relative"
               >
                 <DoneIcon
                   width={12}
@@ -64,12 +64,15 @@ const SmartAccountCard = ({
                 <span className="leading-tight">{subItem.text}</span>
 
                 {img === IconTypes.FUND && subIdx === 0 && (
-                  <div>
-                    <CryptoIcons />
-                  </div>
+                  <>
+                    <div className="w-[92px]"></div>
+                    <div className="absolute right-12 top-0">
+                      <CryptoIcons />
+                    </div>
+                  </>
                 )}
                 {img === IconTypes.FUND && subIdx === 1 && (
-                  <div className="flex gap-1 ml-2">
+                  <div className="flex gap-1 ml-3">
                     <div className="w-6 h-4 rounded-sm flex items-center ">
                       <VisaIcon width={20} height={12} />
                     </div>
