@@ -231,7 +231,6 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
               </VaultCardInfoBlock>
             </div>
           </div>
-
           {(hasChartData || (isNoonCapitalVault(vault.id) && noonCapitalChart.length > 0)) && (
             <div className="flex flex-col w-full rounded-lg pt-2 bg-[#3E73C40D] border border-[#3E3C59] mb-2">
               <div className="flex flex-row gap-1 items-center justify-between px-2">

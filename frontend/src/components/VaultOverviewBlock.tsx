@@ -184,8 +184,8 @@ export const VaultOverviewBlock: React.FC<Props> = ({
               isLoading={isAPYLoading}
               skeletonClassName="h-6 w-16"
             />
-          
-            {vault.protocolPoints && vault.protocolPoints > 0 ? (
+            {isReward && vault.protocolPoints && vault.protocolPoints > 0 ? (
+
               <InfoBlock
                 isRight
                 customIcon={<PointsIcon className="w-5 h-5" color="#ffffff" />}
