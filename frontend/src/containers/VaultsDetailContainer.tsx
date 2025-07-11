@@ -366,7 +366,7 @@ const loadSlippageForVault = useUserSettingsStore(
   );
 
   const handleTokenSelect = useCallback(
-    (token: Token) => {
+    (token: Token | undefined) => {
       setSelectedToken(token);
       updateLocalStorageObject(vaultID.toString(), {
         selectedToken: JSON.stringify(token, bigIntReplacer),

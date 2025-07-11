@@ -88,12 +88,14 @@ export default function ChainSelector({
       const tokens = APPROVED_TOKENS[chainId] ?? [];
       const defaultToken =
         tokens.find((token) => token.symbol === "USDC") || tokens[0];
+      
+      onSelectChain(chainToSelect);
 
-      if (onSelectChainAndToken) {
-        console.log("onSelectChainAndToken from chain selector");
-        setSelectedChainFromModal(chainToSelect);
-        onSelectChainAndToken(chainToSelect, defaultToken);
-      }
+     if (onSelectChainAndToken && defaultToken) {
+       console.log("onSelectChainAndToken from chain selector");
+       setSelectedChainFromModal(chainToSelect);
+       onSelectChainAndToken(chainToSelect, defaultToken);
+     }
     }
   };
 
