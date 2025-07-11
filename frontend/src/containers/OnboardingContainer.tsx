@@ -61,11 +61,9 @@ const OnboardingContainer = () => {
     onSelect();
     emblaApi.on("select", onSelect);
 
-    const cleanup = () => {
+    return () => {
       emblaApi.off("select", onSelect);
     };
-
-    return cleanup;
   }, [emblaApi, onSelect]);
 
   useEffect(() => {
@@ -74,11 +72,9 @@ const OnboardingContainer = () => {
     onSelectTablet();
     emblaApiTablet.on("select", onSelectTablet);
 
-    const cleanup = () => {
+    return () => {
       emblaApiTablet.off("select", onSelectTablet);
     };
-
-    return cleanup;
   }, [emblaApiTablet, onSelectTablet]);
 
   const scrollTo = useCallback(
@@ -110,23 +106,21 @@ const OnboardingContainer = () => {
   };
 
   return (
-    <>
-      <div className="flex flex-col items-center px-4 font-gotham mt-3 md:mt-0 3xl:mt-4">
-        <AmanaLogo
-          width={86}
-          height={61}
-          className="w-[86px] h-[61px] 2xl:w-[122px] md:h-[85px] mb-2 md:mb-0 3xl:mb-10"
-        />
+    <div className="flex flex-col items-center px-4 font-gotham mt-3 md:mt-0 3xl:mt-2">
+      <AmanaLogo
+        width={86}
+        height={61}
+        className="w-[86px] h-[61px] 2xl:w-[122px] md:h-[85px] mb-2 md:mb-0"
+      />
 
-        <h1 className="text-[20px] lg:text-[36px] 2xl:text-[64px] font-bold gradient-text text-center mb-2 xl:mb-4 3xl:mb-6 max-h-[61px] xl:max-h-[71px]">
-          What are <span className="">smart accounts?</span>
-        </h1>
+      <h1 className="text-[20px] lg:text-[36px] 2xl:text-[64px] font-bold gradient-text text-center mb-2 xl:mb-4 3xl:mb-6 max-h-[61px] xl:max-h-[71px]">
+        What are <span className="">smart accounts?</span>
+      </h1>
 
-        <p className="leading-4 text-[14px] md:text-[16px] 2xl:text-[24px] text-[#535E73] font-normal md:font-medium text-center max-w-[273px] md:max-w-2xl 2xl:max-w-3xl max-h-[48px] mb-4 xl:mb-10 3xl:mb-[76px] font-gotham">
-          A new, secure way to use DeFi — no seed phrases, no gas fees, just
-          simple login and powerful features.
-        </p>
-      </div>
+      <p className="leading-4 md:leading-none text-[14px] md:text-[16px] 2xl:text-[20px] 3xl:text-[24px] text-[#535E73] font-normal md:font-medium text-center max-w-[273px] md:max-w-2xl 2xl:max-w-3xl max-h-[48px] mb-4 lg:mb-4 xl:mb-4 3xl:mb-[56px] font-gotham">
+        A new, secure way to use DeFi — no seed phrases, no gas fees, just
+        simple login and powerful features.
+      </p>
 
       {/* Desktop Grid */}
       <div className="hidden xl:grid grid-cols-4 gap-6 w-full max-w-[1320px]">
@@ -264,7 +258,7 @@ const OnboardingContainer = () => {
           </Button>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
