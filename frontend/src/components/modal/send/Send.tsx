@@ -1,3 +1,5 @@
+"use client";
+
 import { useAuthStore } from "@/store/authStore";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -29,6 +31,7 @@ import { useMultichainTokenBalanceForModal } from "@/hooks/useMultichainTokenBal
 import { formatTokenBalance, getOnlyTokenSymbol } from "@/utils/utils";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { MiniSpinner } from "@/components/PendingDots";
+import { useSendTransaction } from "@/hooks/useSendTransaction";
 
 const sendSchema = z.object({
   recipientAddress: z
@@ -165,8 +168,8 @@ const TokenBalanceItem = ({
 };
 
 export const Send = () => {
-  const { step, closeAll, updateField, setLoading, setError, openStep } =
-    useAuthStore();
+  const { step, closeAll, setLoading, setError } = useAuthStore();
+
   const [showNetworkSelection, setShowNetworkSelection] = useState(false);
   const [showTokenSelection, setShowTokenSelection] = useState(false);
   const [networkSearchQuery, setNetworkSearchQuery] = useState("");
@@ -179,8 +182,8 @@ export const Send = () => {
   const filteredWallets = wallets.filter(
     (wallet) => wallet.meta.id !== "app.phantom",
   );
-  const activeWallet = filteredWallets[0];
-  const { connected } = useWallet();
+  const activePrivyEVMWallet = filteredWallets[0];
+  const { connected: solanaConnected } = useWallet();
 
   const [tokenBalances, setTokenBalances] = useState<
     Map<
@@ -192,6 +195,19 @@ export const Send = () => {
       }
     >
   >(new Map());
+
+  const { sendTransaction: sendTransactionFromHook } = useSendTransaction({
+    walletAddress,
+    activeChain,
+    selectedToken,
+    privyEVMWallet: activePrivyEVMWallet,
+    solanaConnected,
+    setLoading,
+    setError,
+    onSuccess: closeAll,
+  });
+
+  const { isLoading: isGlobalLoading } = useAuthStore();
 
   const getTokensForChain = useCallback((chain: any): Token[] => {
     if (chain?.id === 7000 || chain?.id === 7001) {
@@ -217,7 +233,7 @@ export const Send = () => {
       );
     }
 
-    if (activeWallet?.walletClientType === "privy") {
+    if (activePrivyEVMWallet?.walletClientType === "privy") {
       return tokens.filter((token) => {
         const tokenKey = `${token.address.toLowerCase()}-${activeChain?.id}`;
         const tokenData = tokenBalances.get(tokenKey);
@@ -233,7 +249,7 @@ export const Send = () => {
   }, [
     availableTokens,
     tokenSearchQuery,
-    activeWallet?.walletClientType,
+    activePrivyEVMWallet?.walletClientType,
     tokenBalances,
     activeChain,
   ]);
@@ -362,9 +378,9 @@ export const Send = () => {
   }, [selectedToken, sortedTokens]);
 
   const chainList =
-    activeWallet?.walletClientType === "privy"
+    activePrivyEVMWallet?.walletClientType === "privy"
       ? [chainsWithCustomRpcs()[0]]
-      : connected
+      : solanaConnected
         ? [chainConfigs[CHAIN_ID["solana"]]]
         : chainsWithCustomRpcs().filter(
             (chain) => chain.id !== CHAIN_ID["solana"],
@@ -378,6 +394,16 @@ export const Send = () => {
     const chainConfig = chainsWithCustomRpcs().find(
       (config) => config.name === chainName,
     );
+    const solanaChainConfig = chainConfigs[CHAIN_ID["solana"]];
+    if (!chainConfig && chainName === solanaChainConfig.name) {
+      if (solanaChainConfig && chainName === solanaChainConfig.name) {
+        await switchToChain(solanaChainConfig);
+        setValue("network", chainName, { shouldValidate: true });
+        setShowNetworkSelection(false);
+        setNetworkSearchQuery("");
+        return;
+      }
+    }
 
     if (!chainConfig) {
       return;
@@ -396,7 +422,10 @@ export const Send = () => {
 
     try {
       await switchToChain(chain);
-    } catch (error) {}
+    } catch (error) {
+      console.error("Failed to switch chain:", error);
+      setError(`Failed to switch to ${chain.name}. Please try again.`);
+    }
   };
 
   const handleTokenSelect = (token: Token) => {
@@ -413,15 +442,7 @@ export const Send = () => {
       return;
     }
 
-    try {
-      setLoading(true);
-      closeAll();
-    } catch (err) {
-      setError("Failed to send transaction");
-      console.log(err);
-    } finally {
-      setLoading(false);
-    }
+    await sendTransactionFromHook(data.recipientAddress, data.amount);
   };
 
   const shouldShowTokenError = useMemo(() => {
@@ -591,7 +612,7 @@ export const Send = () => {
                     >
                       {tokenSearchQuery
                         ? "No tokens found"
-                        : activeWallet?.walletClientType === "privy"
+                        : activePrivyEVMWallet?.walletClientType === "privy"
                           ? "No tokens with balance available to send"
                           : "No tokens available for this network"}
                     </motion.div>
@@ -683,9 +704,15 @@ export const Send = () => {
                       (() => {
                         const networkName =
                           selectedNetworkValue || activeChain?.name;
-                        const chainConfig = chainsWithCustomRpcs().find(
-                          (config) => config.name === networkName,
-                        );
+                        const chainConfig =
+                          chainsWithCustomRpcs().find(
+                            (config) => config.name === networkName,
+                          ) ||
+                          (chainConfigs[CHAIN_ID["solana"]] &&
+                          networkName === chainConfigs[CHAIN_ID["solana"]].name
+                            ? chainConfigs[CHAIN_ID["solana"]]
+                            : undefined);
+
                         return chainConfig ? (
                           <img
                             src={CHAIN_ICONS[chainConfig.id]?.url}
@@ -812,10 +839,16 @@ export const Send = () => {
               <Button
                 variant="custom"
                 type="submit"
-                disabled={!isValid}
+                disabled={!isValid || isGlobalLoading}
                 className="!max-h-[48px] !w-full !mt-6"
               >
-                Send
+                {isGlobalLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <MiniSpinner size={20} color="#1B46E0" /> Sending...
+                  </span>
+                ) : (
+                  "Send"
+                )}
               </Button>
             </div>
           </form>
