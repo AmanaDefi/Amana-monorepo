@@ -17,8 +17,13 @@ export const InfoBlock = ({
   customIcon?: React.ReactNode;
   isLeft?: boolean;
 }) => {
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+  };
+
   return (
-    <div className="hover:cursor-pointer relative group">
+    <div className="hover:cursor-pointer relative group" onClick={handleClick}>
       {customIcon || <InfoIcon />}
       <div
         className={classNames(
@@ -27,7 +32,6 @@ export const InfoBlock = ({
           { "-left-[130px] ": isMiddle },
           { "-left-2 ": isLeft },
         )}
-        
       >
         <InfoPopup isRight={isRight} isMiddle={isMiddle} isLeft={isLeft}>
           {children}

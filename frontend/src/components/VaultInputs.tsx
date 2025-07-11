@@ -1326,13 +1326,24 @@ export default function VaultInputs({
           </p>
         </div>
       )}
-      <div className="relative mb-6 ">
-        <TabSelector
-          availableTabs={["Invest", "Withdraw"]}
-          activeTab={isDeposit ? "Invest" : "Withdraw"}
-          setActiveTab={handleTabChange}
-        />
-        <div className="absolute top-0 right-0 z-30 mt-3">
+      <div className="mb-4 md:mb-6">
+        <div className="relative">
+          <TabSelector
+            availableTabs={["Invest", "Withdraw"]}
+            activeTab={isDeposit ? "Invest" : "Withdraw"}
+            setActiveTab={handleTabChange}
+          />
+
+          <div className="hidden md:block absolute top-0 right-0 z-30 mt-3">
+            <SlippageSettingsBlock
+              setInputBalance={setInputBalance}
+              vaultId={vaultData.id}
+              showTransactionSettings={isSlippageExceedingLimit}
+            />
+          </div>
+        </div>
+
+        <div className="flex md:hidden mt-4 justify-end">
           <SlippageSettingsBlock
             setInputBalance={setInputBalance}
             vaultId={vaultData.id}
@@ -1401,7 +1412,9 @@ export default function VaultInputs({
             </div>
             <ExpectedSlippageBlock
               conversionOutput={conversionOutput}
-              isVisible={!!conversionOutput.slippageActualValue && !outputBoxErrorMessage}
+              isVisible={
+                !!conversionOutput.slippageActualValue && !outputBoxErrorMessage
+              }
             />
 
             <div className="mb-4">

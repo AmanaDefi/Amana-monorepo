@@ -148,7 +148,7 @@ export default function ChainSelector({
               <button
                 onClick={(e) => handleChainSelect(e, icon.id)}
                 key={icon.symbol}
-                className="w-[30px] h-[30px] rounded-full overflow-hidden hover:scale-125 transition-transform duration-200 relative border border-white bg-[#3E73C4]"
+                className="w-5 h-5 md:w-[30px] md:h-[30px] rounded-full overflow-hidden hover:scale-125 transition-transform duration-200 relative border border-white bg-[#3E73C4]"
                 style={{ zIndex: index }}
               >
                 <img

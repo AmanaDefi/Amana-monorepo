@@ -627,7 +627,7 @@ const loadSlippageForVault = useUserSettingsStore(
                 <WithdrawalNotice vault={vaultData} />
               )}
 
-              <div className="bg-[#14171F] pb-8 pt-6 px-4 md:px-5 min-w-[343px] lg:min-w-[490px] 2xl:min-w-[526px] rounded-[16px] w-full xl:max-w-[526px] mt-4 md:mt-4">
+              <div className="bg-[#14171F] pb-8 pt-6 px-4 md:px-5 min-w-[300px] lg:min-w-[490px] 2xl:min-w-[526px] rounded-[16px] w-full xl:max-w-[526px] mt-4 md:mt-4">
                 <VaultInputs
                   vaultData={vaultData}
                   setTransactionCompleted={setFinishedTransaction}

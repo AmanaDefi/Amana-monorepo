@@ -47,12 +47,12 @@ export default function SelectToken({
       </div>
       <div className="relative w-auto justify-end">
         <span
-          className={"flex flex-row items-center justify-end cursor-pointer group"}
+          className={"flex flex-row items-center gap-1 md:gap-2 justify-end cursor-pointer group"}
           onClick={() => {
             setShow(true);
           }}
         >
-          <div className="md:mr-2 relative flex-none w-5 h-5">
+          <div className="relative flex-none w-5 h-5">
             <TokenIcon
               token={selectedToken}
               icon={selectedToken?.imgURL}
