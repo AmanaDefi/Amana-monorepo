@@ -77,7 +77,7 @@ const AboutContainer = ({}) => {
         </motion.p>
 
         <div className="text-[48px] md:text-[72px] lg:text-[96px] font-bold leading-tight">
-          <div className="flex flex-col lg:flex-row lg:flex-wrap justify-center items-start lg:items-center gap-0 lg:gap-5">
+          <div className="flex flex-col lg:flex-row lg:flex-wrap justify-center items-start lg:items-center gap-0 lg:gap-3">
             {/* Mobile version */}
             <div className="flex items-center justify-center gap-2 md:hidden">
               <motion.span
@@ -217,7 +217,7 @@ const AboutContainer = ({}) => {
                 alt="Elephant"
                 width={125}
                 height={71}
-                className="mx-2"
+                
               />
             </motion.div>
 

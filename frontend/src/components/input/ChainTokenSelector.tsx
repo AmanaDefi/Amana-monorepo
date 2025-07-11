@@ -115,7 +115,7 @@ export default function ChainTokenSelector({
               alt={currentToken.symbol}
               width={20}
               height={21}
-              className="rounded-full border border-white"
+              className="rounded-full border border-white bg-[#10B981]"
             />
             <p className="max-w-[82px] md:max-w-[200px] truncate">
               {getOnlyTokenSymbol(currentToken.symbol)}
