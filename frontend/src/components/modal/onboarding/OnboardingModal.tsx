@@ -47,7 +47,7 @@ const OnboardingModal = () => {
               </div>
             </div>
             <div className="flex-1 min-h-0 overflow-y-auto">
-              <div className="min-h-full flex flex-col justify-center py-4 sm:py-6 md:py-8">
+              <div className="flex flex-col justify-center py-4 sm:py-6 md:py-8">
                 <OnboardingContainer />
               </div>
             </div>
