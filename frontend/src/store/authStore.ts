@@ -19,7 +19,7 @@ export type AuthStep =
   | "signature"
   | "checking"
   | "notVerify"
-  | "recieve"
+  | "receive"
   | "send"
   | "mobileInfo"
   | "connectInChosenChain"

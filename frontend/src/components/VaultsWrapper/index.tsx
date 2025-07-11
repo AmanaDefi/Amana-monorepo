@@ -386,12 +386,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
 
     if (displayType === "cards") {
       return (
-        <div
-          className="grid grid-cols-2 gap-2 md:gap-4"
-          style={{
-            gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))",
-          }}
-        >
+        <div className="grid gap-6 md:gap-4 grid-cols-[repeat(auto-fill,minmax(328px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(350px,1fr))]">
           {paginatedVaults.map((vault) => (
             <VaultCard
               key={vault.id}
@@ -404,7 +399,6 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
         </div>
       );
     }
-
     return (
       <div className="flex flex-col gap-4">
         <div className="flex flex-row items-center justify-between ">

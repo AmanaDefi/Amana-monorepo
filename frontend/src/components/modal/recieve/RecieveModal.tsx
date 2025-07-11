@@ -1,4 +1,5 @@
 import CopyIcon from "@/components/svg/CopyIcon";
+import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import { QRCodeCanvas } from "qrcode.react";
 import { useState } from "react";
 import { useAuthStore } from "@/store/authStore";
@@ -21,7 +22,6 @@ const ReceiveModal = () => {
     setTimeout(() => setCopied(false), 1500);
   };
 
-
   const shortenAddress = (address: string | null | undefined): string => {
     if (!address || address.length < 13) return address || "";
     return `${address.slice(0, 4)}...${address.slice(-9)}`;
@@ -30,11 +30,21 @@ const ReceiveModal = () => {
   return (
     <Modal
       maxWidth="max-w-[526px]"
-      isOpen={step === "recieve"}
+      isOpen={step === "receive"}
       onClose={closeAll}
       noBlur={true}
-      paddingClass="py-[45px] px-[20px] w-full"
+      paddingClass="pb-[45px] pt-5 px-5 w-full"
     >
+      <div className="flex justify-start">
+        <button
+          onClick={closeAll}
+          className="rounded-[8px] flex items-center justify-center w-10 h-10"
+          aria-label="Close"
+        >
+          <CloseModalIcon width={16} height={16} />
+        </button>
+      </div>
+
       <div className="flex flex-col items-center font-gotham text-white w-full">
         <h2 className="text-[16px] font-bold mb-4">Use this deposit address</h2>
         <p className="text-sm font-normal text-start mb-10 flex-wrap">

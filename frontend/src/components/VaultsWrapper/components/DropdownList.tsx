@@ -1,5 +1,7 @@
 import { CheckBox } from "@/components/CheckBox";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export const DropdownList = ({
   width,
@@ -9,7 +11,7 @@ export const DropdownList = ({
   handleSelectedOption,
   isShownList,
   needReset = true,
-  variant = "chain", 
+  variant = "chain",
 }: {
   width: number;
   isIconButton: boolean;
@@ -26,6 +28,22 @@ export const DropdownList = ({
   variant?: "chain" | "token";
 }) => {
   const isToken = variant === "token";
+  const pathname = usePathname();
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  const isHomePage = pathname === "/";
+  const shouldRenderReversed = isMobile && isHomePage;
 
   return (
     <div
@@ -36,9 +54,12 @@ export const DropdownList = ({
         padding: isShownList ? "16px" : "0px",
         border: isShownList ? "1px" : "0px",
       }}
-      className={`z-10 !w-[200px] rounded-2xl absolute md:-right-3 left-0 md:left-auto flex flex-col items-center gap-3 transition-all duration-500 ease-in-out overflow-hidden
+      className={`z-10 !w-[200px] rounded-2xl absolute flex flex-col items-center gap-3 transition-all duration-500 ease-in-out overflow-hidden
         ${isShownList ? "bg-[#161C27] border border-[#3E3C59]" : ""}
-        ${isToken ? "rounded-[16px] bg-[#1D2A41] p-4" : ""} ${isIconButton && "!right-0 left-auto"}`}
+        ${isToken ? "rounded-[16px] bg-[#1D2A41] p-4" : ""} 
+        ${isIconButton && "!right-0"}
+        ${shouldRenderReversed ? "-left-3" : "-right-3"}
+        ${shouldRenderReversed ? "flex-col-reverse" : ""}`}
       role="menu"
     >
       {isIconButton && (
@@ -80,7 +101,11 @@ export const DropdownList = ({
               {option.value}
             </p>
           </div>
-          <CheckBox isSelected={option.value.toLowerCase() === selectedOption.toLowerCase()} />
+          <CheckBox
+            isSelected={
+              option.value.toLowerCase() === selectedOption.toLowerCase()
+            }
+          />
         </div>
       ))}
 

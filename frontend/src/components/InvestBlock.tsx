@@ -12,7 +12,7 @@ const InvestBlock = () => {
   const { walletAddress } = useMultiChain();
   const { openStep } = useAuthStore();
   const { setStep } = useFundWalletStore();
-  const {wallets} = useWallets()
+  const { wallets } = useWallets();
   const filteredWallets = wallets.filter(
     (wallet) => wallet.meta.id !== "app.phantom",
   );
@@ -20,7 +20,7 @@ const InvestBlock = () => {
 
   const handleFundWallet = () => {
     if (user?.walletClientType !== "privy") {
-      openStep("recieve");
+      openStep("receive");
     } else {
       setStep("chooseBuyWith");
     }

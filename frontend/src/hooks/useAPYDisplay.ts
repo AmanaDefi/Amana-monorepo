@@ -37,7 +37,7 @@ export const useAPYDisplay = ({
     : "N/A";
 
   const textClass = [
-    "font-bold text-xl leading-5",
+    "font-bold text-base md:text-xl leading-5",
     isNegative || !isDefined ? "text-white" : "text-green-accent",
   ].join(" ");
 
