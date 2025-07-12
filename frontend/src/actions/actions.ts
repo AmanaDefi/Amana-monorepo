@@ -1049,7 +1049,7 @@ const executeDirectDeposit = async (
     (amount: number) => amount.toString(), // Simple formatter
     (usd: number, ethPrice: number) => usd / ethPrice // Simple converter
   );
-
+  console.log("gasFeeResult", gasFeeResult);
   if (gasFeeResult.needsDeduction) {
     // For cross-chain deposits, convert gas fee to input token terms if needed
     const gasFeeInInputTokens = await convertGasFeeToInputToken(
@@ -1058,7 +1058,7 @@ const executeDirectDeposit = async (
       inputToken,
       activeChain
     );
-
+    console.log("gasFeeInInputTokens", gasFeeInInputTokens.toString());
     actualDepositAmount = transactionAmount > gasFeeInInputTokens ?
       transactionAmount - gasFeeInInputTokens : 0n;
 
@@ -1072,6 +1072,7 @@ const executeDirectDeposit = async (
     activeChain,
     activeAccount,
   );
+  console.log("slippage", getCurrentSlippage());
   console.log("minSharesOut", minSharesOut.toString());
 
   const walletClient = await getWalletClient(activeAccount);

@@ -18,6 +18,8 @@ export interface GasFeeCalculationResult {
   needsDeduction: boolean;
 }
 
+const SWAPHELPER_ADDRESS = process.env.NEXT_PUBLIC_SWAPHELPER_ADDRESS as `0x${string}`;
+
 /**
  * Calculates gas fees for vault deposits, handling token conversions if needed
  * @param vaultData - The vault data containing deposit fee configuration
@@ -56,7 +58,7 @@ export const calculateGasFeeInVaultAsset = async (
   // Get public client for the appropriate chain
   const chainToUse = isZetachain(activeChain?.id) ? activeChain : SUPPORTED_CHAINS[0];
   const publicClient = getPublicClient(chainToUse.id);
-  
+
   if (!publicClient) {
     throw new Error(`Failed to get public client for chain ${chainToUse.id}`);
   }
@@ -83,22 +85,17 @@ export const calculateGasFeeInVaultAsset = async (
 
   // Convert gas fee to vault asset if tokens differ
   if (gasZRC20 !== vaultData.inputToken.address) {
-    const { amountOut } = await getPathDataAndAmountOut(
-      gasFee,
-      ZRC20_TOKENS_BY_ADDRESS[gasZRC20] || {
-        address: gasZRC20,
-        symbol: 'GAS',
-        decimals: 18,
-        imgURL: '',
-        price: 0,
-        balance: { value: 0n, formatted: '0' },
-        isNative: false
-      } as Token,
-      vaultData.inputToken,
-      vaultData.id,
-      500
-    );
-    gasFeeInVaultAsset = amountOut;
+    // Call getEquivalentInputAmount on swapHelper
+    gasFeeInVaultAsset = await publicClient.readContract({
+      address: SWAPHELPER_ADDRESS as `0x${string}`,
+      abi: [parseAbiItem("function getEquivalentInputAmount(address,address,uint256) view returns (uint256)")],
+      functionName: "getEquivalentInputAmount",
+      args: [
+        inputToken.address, // vaultAsset (output token)
+        gasZRC20,           // input token (gas token)
+        gasFee              // input amount
+      ],
+    });
   }
 
   // Format gas fee in USD and ETH
