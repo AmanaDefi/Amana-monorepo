@@ -276,11 +276,17 @@ export default function InputTokenWithError({
             className={shouldSwapValues ? "flex" : "flex "}
           >
             {shouldSwapValues ? (
-              <span
-                className={`text-white text-2xl ${conversionOutput.outputAmountInUSDFormatted && conversionOutput.outputAmountInUSDFormatted !== "0.00" ? "font-medium" : "font-normal"}`}
-              >
-                {conversionOutput.outputAmountInUSDFormatted || "0.00"}
-              </span>
+              loadingOutputToken ? (
+                <div className="flex items-center h-9 justify-start">
+                  <MiniSpinner size={18} color="#3E73C4" />
+                </div>
+              ) : (
+                <span
+                  className={`text-white text-2xl ${conversionOutput.outputAmountInUSDFormatted && conversionOutput.outputAmountInUSDFormatted !== "0.00" ? "font-medium" : "font-normal"}`}
+                >
+                  {conversionOutput.outputAmountInUSDFormatted || "0.00"}
+                </span>
+              )
             ) : (
               <span className="text-white text-2xl">{renderMainValue()}</span>
             )}
