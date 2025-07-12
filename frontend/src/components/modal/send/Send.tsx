@@ -93,6 +93,33 @@ const sendSchema = z.object({
 
 type SendFormData = z.infer<typeof sendSchema>;
 
+const SelectedTokenBalanceLoader = ({
+  token,
+  selectedChain,
+  onBalanceUpdate,
+}: {
+  token: Token;
+  selectedChain: any;
+  onBalanceUpdate: (
+    token: Token,
+    balance: Balance,
+    price: number,
+    isLoading: boolean,
+  ) => void;
+}) => {
+  const { balance, isLoading } = useMultichainTokenBalanceForModal(
+    token,
+    selectedChain,
+  );
+  const price = useTokenPriceBySymbol(token.symbol) || 0;
+
+  useEffect(() => {
+    onBalanceUpdate(token, balance, price, isLoading);
+  }, [balance, price, isLoading, token, onBalanceUpdate]);
+
+  return null;
+};
+
 const TokenBalanceItem = ({
   token,
   selectedChain,
@@ -422,6 +449,20 @@ export const Send = () => {
       setValue("token", undefined, { shouldValidate: true });
     }
   }, [sortedTokens, selectedToken, setValue, activeChain]);
+
+  useEffect(() => {
+    if (selectedToken && activeChain && !showTokenSelection) {
+      const tokenKey = `${selectedToken.address.toLowerCase()}-${activeChain?.id}`;
+      const tokenData = tokenBalances.get(tokenKey);
+
+      if (!tokenData) {
+        console.log(
+          "Loading balance for auto-selected token:",
+          selectedToken.symbol,
+        );
+      }
+    }
+  }, [selectedToken, activeChain, tokenBalances, showTokenSelection]);
 
   useEffect(() => {
     const currentAmount = watch("amount");
@@ -987,6 +1028,14 @@ export const Send = () => {
               </Button>
             </div>
           </form>
+        )}
+
+        {selectedToken && activeChain && !showTokenSelection && (
+          <SelectedTokenBalanceLoader
+            token={selectedToken}
+            selectedChain={activeChain}
+            onBalanceUpdate={handleBalanceUpdate}
+          />
         )}
       </motion.div>
     </Modal>

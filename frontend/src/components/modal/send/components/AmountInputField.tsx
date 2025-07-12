@@ -66,7 +66,6 @@ export const AmountInputField: React.FC<AmountInputFieldProps> = ({
     if (allowedKeys.includes(e.key) || isNumberKey) {
       return;
     }
-
     if (isDecimalPoint) {
       const currentValue = (e.target as HTMLInputElement).value;
       if (currentValue.includes(".")) {
@@ -109,7 +108,8 @@ export const AmountInputField: React.FC<AmountInputFieldProps> = ({
 
   const getDisplayMaxAmount = (): string => {
     if (getMaxAmount) {
-      return getMaxAmount();
+      const maxAmount = getMaxAmount();
+      return maxAmount;
     }
 
     if (!selectedToken || !activeChain || !tokenBalances) {
