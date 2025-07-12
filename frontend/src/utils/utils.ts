@@ -6,10 +6,17 @@ import {
   Action,
   UserSettings,
   DEFAULT_SETTINGS,
+  TransactionStepMessages,
+  TransactionStepStatus,
 } from "@/types/types";
 import { isApproved } from "@/utils/approve";
 import { ZeroAddress } from "ethers";
-import { APPROVED_TOKENS, CHAIN_ID, HERMES_URL, isStablecoinSymbol } from "@/constants/chainConfig";
+import {
+  APPROVED_TOKENS,
+  CHAIN_ID,
+  HERMES_URL,
+  isStablecoinSymbol,
+} from "@/constants/chainConfig";
 import { HermesClient } from "@pythnetwork/hermes-client";
 import { USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
 import { PublicKey } from "@solana/web3.js";
@@ -946,4 +953,16 @@ export function formatDateTimeCustom(date: Date): string {
   const seconds = date.getSeconds().toString().padStart(2, "0");
 
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
+export function hasNoErrors(messages: TransactionStepMessages): boolean {
+  const feedbackValues = Object.values(messages);
+
+  return feedbackValues.every((feedback) => {
+    if (feedback === null || feedback === undefined) {
+      return true;
+    }
+
+    return feedback.status !== TransactionStepStatus.error;
+  });
 }
