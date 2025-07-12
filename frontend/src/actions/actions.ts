@@ -1039,13 +1039,41 @@ const executeDirectDeposit = async (
   if (!activeAccount)
     throw new Error("no activeAccount found for perform deposit");
 
+  let actualDepositAmount = transactionAmount;
+  const gasFeeResult = await calculateGasFeeInVaultAsset(
+    vaultData,
+    inputToken,
+    activeChain,
+    1, // Not needed for cross-chain deposits, only for USD formatting which we don't use here
+    1, // Not needed for cross-chain deposits, only for ETH formatting which we don't use here
+    (amount: number) => amount.toString(), // Simple formatter
+    (usd: number, ethPrice: number) => usd / ethPrice // Simple converter
+  );
+
+  if (gasFeeResult.needsDeduction) {
+    // For cross-chain deposits, convert gas fee to input token terms if needed
+    const gasFeeInInputTokens = await convertGasFeeToInputToken(
+      gasFeeResult.gasFeeInVaultAsset,
+      vaultData,
+      inputToken,
+      activeChain
+    );
+
+    actualDepositAmount = transactionAmount > gasFeeInInputTokens ?
+      transactionAmount - gasFeeInInputTokens : 0n;
+
+  }
+  console.log("actualDepositAmount", actualDepositAmount.toString());
+
   const { minSharesOut } = await getPathDataAndMinSharesOut(
     vaultData,
     inputToken,
-    transactionAmount,
+    actualDepositAmount,
     activeChain,
     activeAccount,
   );
+  console.log("minSharesOut", minSharesOut.toString());
+
   const walletClient = await getWalletClient(activeAccount);
   if (!walletClient) {
     return { transactionHash: null };
@@ -1308,10 +1336,35 @@ const executeSolanaDeposit = async (
   setcrossChainTxId: Function,
   activeWallet: ConnectedWallet,
 ) => {
+  let actualDepositAmount = transactionAmount;
+
+  const gasFeeResult = await calculateGasFeeInVaultAsset(
+    vaultData,
+    inputToken,
+    activeChain,
+    1, // Not needed for cross-chain deposits, only for USD formatting which we don't use here
+    1, // Not needed for cross-chain deposits, only for ETH formatting which we don't use here
+    (amount: number) => amount.toString(), // Simple formatter
+    (usd: number, ethPrice: number) => usd / ethPrice // Simple converter
+  );
+
+  if (gasFeeResult.needsDeduction) {
+    // For cross-chain deposits, convert gas fee to input token terms if needed
+    const gasFeeInInputTokens = await convertGasFeeToInputToken(
+      gasFeeResult.gasFeeInVaultAsset,
+      vaultData,
+      inputToken,
+      activeChain
+    );
+
+    actualDepositAmount = transactionAmount > gasFeeInInputTokens ?
+      transactionAmount - gasFeeInInputTokens : 0n;
+
+  }
   const { swapPath, minSharesOut } = await getPathDataAndMinSharesOut(
     vaultData,
     inputToken,
-    transactionAmount,
+    actualDepositAmount,
     activeChain,
     activeWallet,
   );
