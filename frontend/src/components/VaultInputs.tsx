@@ -66,6 +66,7 @@ import { formatTokenBalance, formatUSDAmount, formatUSDValue } from "@/utils/tok
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 import { zetachain } from "viem/chains";
 import { useAPYStore } from "@/store/APYStore";
+import { useMaxAmount } from "@/hooks/useMaxAmount";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -604,48 +605,18 @@ export default function VaultInputs({
     [inputToken, inputTokenPrice, isDeposit, vaultToken.decimals, vaultData.id],
   );
 
-  const handleMaxClick = useCallback(() => {
-    const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
-
-    if (!inputToken || isTxInProgress) return;
-
-    if (isDeposit) {
-      const formattedAmount = Number(tokenBalance.formatted).toFixed(7);
-      const cleanAmount = Number(formattedAmount).toString();
-
-      setInputBalance({
-        ...tokenBalance,
-        formatted: cleanAmount,
-      });
-      setDisplayValue(cleanAmount);
-      updateLocalStorageObject(vaultData.id, {
-        inputBal: JSON.stringify(
-          {
-            ...tokenBalance,
-            formatted: cleanAmount,
-          },
-          bigIntReplacer,
-        ),
-        displayValue: cleanAmount,
-      });
-    } else {
-      const maxValue =
-        vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0.00";
-      const formattedMaxValue = Number(maxValue).toFixed(7);
-      const cleanMaxValue = Number(formattedMaxValue).toString();
-
-      handleChangeInput({
-        currentTarget: { value: cleanMaxValue },
-      } as React.ChangeEvent<HTMLInputElement>);
-    }
-  }, [
-    handleChangeInput,
+  const { handleMaxClick } = useMaxAmount({
     inputToken,
     tokenBalance,
     isDeposit,
+    vaultId: vaultData.id,
     vaultTotalAssetinToken,
-    vaultData.id,
-  ]);
+    onAmountChange: (amount) => {
+      handleChangeInput({
+        currentTarget: { value: amount },
+      } as React.ChangeEvent<HTMLInputElement>);
+    },
+  });
 
   const tokenList = useMemo(() => {
     let tokens: Token[] = [];

@@ -2,7 +2,7 @@
 
 import { useAuthStore } from "@/store/authStore";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, UseFormSetValue } from "react-hook-form";
 import { z } from "zod";
 import { Modal } from "../base/Modal";
 import { motion, AnimatePresence } from "framer-motion";
@@ -29,9 +29,12 @@ import { Token, Balance } from "@/types/types";
 import TokenIcon from "@/components/common/TokenIcon";
 import { useMultichainTokenBalanceForModal } from "@/hooks/useMultichainTokenBalanceForModal";
 import { formatTokenBalance, getOnlyTokenSymbol } from "@/utils/utils";
+import { formatUSDAmount } from "@/utils/tokenFormat";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
-import { MiniSpinner } from "@/components/PendingDots";
+import { MiniSpinner, BreathingValue } from "@/components/PendingDots";
 import { useSendTransaction } from "@/hooks/useSendTransaction";
+import { useMaxAmountSimple } from "@/hooks/useMaxAmount";
+import { AmountInputField } from "./components/AmountInputField";
 
 const getSendErrorMessage = (
   amount: string,
@@ -77,7 +80,10 @@ const sendSchema = z.object({
   amount: z
     .string()
     .min(1, "Amount is required")
+    .regex(/^\d*\.?\d*$/, "Amount must contain only numbers and decimal point")
     .refine((val) => {
+      if (!val || val === "") return false;
+      if (val === ".") return false;
       const num = parseFloat(val);
       return !isNaN(num) && num > 0;
     }, "Amount must be a positive number"),
@@ -253,6 +259,54 @@ export const Send = () => {
 
   const { isLoading: isGlobalLoading } = useAuthStore();
 
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isValid },
+    setValue,
+    watch,
+    trigger,
+    reset,
+  } = useForm<SendFormData>({
+    resolver: zodResolver(sendSchema),
+    mode: "onChange",
+  });
+
+  const { handleMaxClick, getMaxAmount } = useMaxAmountSimple(
+    selectedToken,
+    tokenBalances,
+    activeChain,
+    setValue,
+  );
+
+  const clearForm = useCallback(() => {
+    reset({
+      recipientAddress: "",
+      amount: "",
+      network: "",
+      token: "",
+    });
+    setSelectedToken(null);
+    setErrorMessage("");
+    setShowNetworkSelection(false);
+    setShowTokenSelection(false);
+    setNetworkSearchQuery("");
+    setTokenSearchQuery("");
+    setTokenBalances(new Map());
+    setIsSuccess(false);
+  }, [reset]);
+
+  const handleClose = useCallback(() => {
+    clearForm();
+    closeAll();
+  }, [clearForm, closeAll]);
+
+  useEffect(() => {
+    if (step !== "send") {
+      clearForm();
+    }
+  }, [step, clearForm]);
+
   const getTokensForChain = useCallback((chain: any): Token[] => {
     if (chain?.id === 7000 || chain?.id === 7001) {
       return APPROVED_TOKENS[chain.id] || [];
@@ -326,7 +380,6 @@ export const Send = () => {
     });
   }, [displayTokens, tokenBalances, activeChain]);
 
-  // Callback to handle balance updates from TokenBalanceItem
   const handleBalanceUpdate = useCallback(
     (token: Token, balance: Balance, price: number, isLoading: boolean) => {
       const tokenKey = `${token.address.toLowerCase()}-${activeChain?.id}`;
@@ -338,18 +391,6 @@ export const Send = () => {
     },
     [activeChain],
   );
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isValid },
-    setValue,
-    watch,
-    trigger,
-  } = useForm<SendFormData>({
-    resolver: zodResolver(sendSchema),
-    mode: "onChange",
-  });
 
   useEffect(() => {
     if (activeChain?.name) {
@@ -431,7 +472,7 @@ export const Send = () => {
     chainConfig.name.toLowerCase().includes(networkSearchQuery.toLowerCase()),
   );
 
-  const handleNetworkSelect = async (chainName: string) => {
+  const handleNetworkSelect = async (chainName: string): Promise<void> => {
     const chainConfig = chainsWithCustomRpcs().find(
       (config) => config.name === chainName,
     );
@@ -469,7 +510,7 @@ export const Send = () => {
     }
   };
 
-  const handleTokenSelect = (token: Token) => {
+  const handleTokenSelect = (token: Token): void => {
     setSelectedToken(token);
     setValue("token", token.symbol, { shouldValidate: true });
     setShowTokenSelection(false);
@@ -514,7 +555,7 @@ export const Send = () => {
     watch,
   ]);
 
-  const onSubmit = async (data: SendFormData) => {
+  const onSubmit = async (data: SendFormData): Promise<void> => {
     if (sortedTokens.length > 0 && !selectedToken) {
       setValue("token", "", { shouldValidate: true });
       trigger("token");
@@ -535,7 +576,7 @@ export const Send = () => {
   return (
     <Modal
       isOpen={step === "send"}
-      onClose={closeAll}
+      onClose={handleClose}
       paddingClass="p-6 w-full"
       roundedClass="rounded-[16px]"
       maxWidth="max-w-[436px]"
@@ -550,7 +591,7 @@ export const Send = () => {
               setShowNetworkSelection(false);
               setNetworkSearchQuery("");
             } else {
-              closeAll();
+              handleClose();
             }
           }}
           className="rounded-[8px] flex items-center justify-center w-10 h-10"
@@ -886,31 +927,21 @@ export const Send = () => {
               )}
             </div>
 
-            <div>
-              <p className="text-[18px] font-bold mb-4">Amount</p>
-              <input
-                type="text"
-                placeholder="0.00"
-                {...register("amount")}
-                className={`w-full rounded-[8px] px-4 py-3 text-[16px] font-normal text-white placeholder-[#535E73] bg-[#161C27] border transition-all duration-200 focus:outline-none focus:border-[#3E73C4] hover:border-[#3E73C4] ${
-                  errorMessage || errors.amount
-                    ? "border-[#FFC700] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]"
-                    : "border-[#2C2F36]"
-                }`}
-              />
-              {(errorMessage || errors.amount) && (
-                <div className="flex gap-1 items-center mt-2 text-[#FFC700]">
-                  <ErrorInputIcon
-                    width={16}
-                    height={16}
-                    className="text-[#FFC700]"
-                  />
-                  <p className="text-[12px] font-normal">
-                    {errorMessage || errors.amount?.message}
-                  </p>
-                </div>
-              )}
-            </div>
+            <AmountInputField
+              register={register}
+              watch={watch}
+              errors={errors}
+              fieldName="amount"
+              selectedToken={selectedToken}
+              tokenBalances={tokenBalances}
+              activeChain={activeChain}
+              label="Amount"
+              placeholder="0.00"
+              showMaxButton={true}
+              onMaxClick={handleMaxClick}
+              errorMessage={errorMessage}
+              getMaxAmount={getMaxAmount}
+            />
 
             <div className="">
               <Button
