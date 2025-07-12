@@ -110,7 +110,7 @@ export default function ChainSelector({
             alt={"Zetachain"}
             className="w-[32px] h-[32px] rounded-full"
           />
-          <p className="text-[16px] font-normal">{"ZetaChain"}</p>
+          <p className="text-sm md:text-[16px] font-normal">{"ZetaChain"}</p>
         </div>
       </div>
     );
@@ -128,7 +128,7 @@ export default function ChainSelector({
           className="w-[32px] h-[32px] rounded-full"
         />
 
-        <p className="text-[16px] font-normal">
+        <p className="text-sm md:text-[16px] font-normal">
           {displayedChain?.name || "ZetaChain"}
         </p>
       </div>

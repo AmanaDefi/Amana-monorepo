@@ -287,7 +287,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
     (wallet) => wallet.meta.id !== "app.phantom",
   );
   const activeAccount = filteredWallets[0];
-  
+
   const { openStep } = useAuthStore();
   const { setChain } = useAuthStore();
 
@@ -454,6 +454,16 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
     }
   };
 
+  const isWalletConnected = useMemo(() => {
+    if (!selectedChainLocal) return false;
+
+    if (selectedChainLocal.name === "Solana") {
+      return !!publicKey;
+    } else {
+      return !!activeAccount;
+    }
+  }, [selectedChainLocal, publicKey, activeAccount]);
+
   console.log({ walletAddress, publicKey });
 
   return (
@@ -462,7 +472,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
       onClose={closeModal}
       paddingClass="p-[24px] md:pt-[50px] md:pl-[45px] md:pr-[36px] md:pb-[50px]"
       roundedClass="rounded-[24px]"
-      maxWidth="w-full max-w-[343px] md:max-w-[760px]"
+      maxWidth="w-full max-w-[328px] md:max-w-[760px]"
       minHeight="min-h-[600px] md:min-h-[714px]"
       customCloseButton={
         <motion.button
@@ -478,7 +488,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
       }
     >
       <motion.div
-        className="w-full min-w-[295px] md:min-w-[679px]"
+        className="w-full min-w-[280px] md:min-w-[679px]"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -487,7 +497,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
           className="mb-4 flex items-center justify-between"
           variants={itemVariants}
         >
-          <h2 className="text-white text-[16px] md:text-[24px] font-normal leading-none -tracking-[0.04em]">
+          <h2 className="text-white text-sm md:text-[24px] font-normal leading-none -tracking-[0.04em]">
             Invest Any Token From Any Chain
           </h2>
         </motion.div>
@@ -584,114 +594,110 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
 
           {onSelectChainAndTokenCallback ? (
             <motion.div className="flex-1" variants={itemVariants}>
-              <motion.div className="mb-4" variants={itemVariants}>
-                <div className="relative">
-                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10 pointer-events-none">
-                    <MagnifyingGlassIcon className="w-4 h-4 text-gray-400" />
-                  </div>
-                  <motion.input
-                    type="text"
-                    placeholder="Search tokens..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onFocus={() => setIsSearchFocused(true)}
-                    onBlur={() => setIsSearchFocused(false)}
-                    variants={searchVariants}
-                    animate={isSearchFocused ? "focus" : "blur"}
-                    className="w-full bg-transparent border border-[#1D2A41] rounded-[8px] text-white placeholder-gray-400 focus:outline-none hover:bg-[#0C1015] hover:border-[#3E73C4] focus:bg-[#0C1015] focus:border-[#3E73C4] transition-all h-[40px] p-[8px_10px] pl-[40px]"
-                  />
-                </div>
-              </motion.div>
+              {!selectedChainLocal ? (
+                <motion.div
+                  className="flex items-center justify-center h-full"
+                  variants={itemVariants}
+                >
+                  <motion.div
+                    className="text-center text-gray-400"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    <p>Select a chain to see available tokens</p>
+                  </motion.div>
+                </motion.div>
+              ) : !isWalletConnected ? (
+                <motion.div
+                  className="flex flex-col items-center justify-center h-full py-8"
+                  variants={itemVariants}
+                >
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-center"
+                  >
+                    <AppButton
+                      variant={"reverse"}
+                      onClick={handleWalletConnect}
+                    >
+                      {selectedChainLocal.name === "Solana"
+                        ? "Connect Solana wallet"
+                        : "Connect wallet"}
+                    </AppButton>
+                  </motion.div>
+                </motion.div>
+              ) : (
+                <>
+                  <motion.div className="mb-4" variants={itemVariants}>
+                    <div className="relative">
+                      <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10 pointer-events-none">
+                        <MagnifyingGlassIcon className="w-4 h-4 text-gray-400" />
+                      </div>
+                      <motion.input
+                        type="text"
+                        placeholder="Search tokens..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onFocus={() => setIsSearchFocused(true)}
+                        onBlur={() => setIsSearchFocused(false)}
+                        variants={searchVariants}
+                        animate={isSearchFocused ? "focus" : "blur"}
+                        className="w-full bg-transparent border border-[#1D2A41] rounded-[8px] text-white placeholder-gray-400 focus:outline-none hover:bg-[#0C1015] hover:border-[#3E73C4] focus:bg-[#0C1015] focus:border-[#3E73C4] transition-all h-[40px] p-[8px_10px] pl-[40px]"
+                      />
+                    </div>
+                  </motion.div>
 
-              <motion.div className="mb-4" variants={itemVariants}>
-                <h3 className="text-[#535E73] text-[16px] font-normal leading-none -tracking-[0.04em]">
-                  Tokens
-                </h3>
-              </motion.div>
+                  <motion.div className="mb-4" variants={itemVariants}>
+                    <h3 className="text-[#535E73] text-[16px] font-normal leading-none -tracking-[0.04em]">
+                      Tokens
+                    </h3>
+                  </motion.div>
 
-              <motion.div
-                className="flex flex-col gap-2 h-[264px] md:h-[400px] overflow-y-auto overflow-x-hidden"
-                variants={containerVariants}
-              >
-                <AnimatePresence mode="wait">
-                  {!selectedChainLocal ? (
-                    <motion.div
-                      key="no-chain"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      className="text-center text-gray-400 py-8"
-                    >
-                      Select a network first
-                    </motion.div>
-                  ) : sortedTokens.length === 0 ? (
-                    <motion.div
-                      key="no-tokens"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      className="text-center text-gray-400 py-8 w-full"
-                    >
-                      {searchQuery
-                        ? "No tokens found"
-                        : "No tokens available for this network"}
-                    </motion.div>
-                  ) : selectedChainLocal.name === "Solana" && !publicKey ? (
-                    <motion.div
-                      key="no-tokens"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      className="text-center text-gray-400 py-8 w-full justify-center align"
-                    >
-                      <AppButton
-                        variant={"reverse"}
-                        onClick={handleWalletConnect}
-                      >
-                        Connect Solana wallet
-                      </AppButton>
-                    </motion.div>
-                  ) : (selectedChainLocal.name !== "Solana" &&
-                      !activeAccount) ||
-                    (!activeAccount && !publicKey) ? (
-                    <motion.div
-                      key="no-tokens"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      className="text-center text-gray-400 py-8 w-full h-full justify-center align"
-                    >
-                      <AppButton
-                        variant={"reverse"}
-                        onClick={handleWalletConnect}
-                      >
-                        Connect wallet
-                      </AppButton>
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="tokens-list"
-                      variants={containerVariants}
-                      initial="hidden"
-                      animate="visible"
-                      exit="hidden"
-                      className="flex flex-col gap-2"
-                    >
-                      {sortedTokens.map((token, index) => (
-                        <TokenBalanceItem
-                          key={`${token.address}-${selectedChainLocal.id}`}
-                          token={token}
-                          selectedChain={selectedChainLocal}
-                          isSelected={isTokenSelected(token)}
-                          onClick={() => handleTokenSelect(token)}
-                          onBalanceUpdate={handleBalanceUpdate}
-                          index={index}
-                        />
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
+                  <motion.div
+                    className="flex flex-col gap-2 h-[264px] md:h-[400px] overflow-y-auto overflow-x-hidden"
+                    variants={containerVariants}
+                  >
+                    <AnimatePresence mode="wait">
+                      {sortedTokens.length === 0 ? (
+                        <motion.div
+                          key="no-tokens"
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                          className="text-center text-gray-400 py-8 w-full"
+                        >
+                          {searchQuery
+                            ? "No tokens found"
+                            : "No tokens available for this network"}
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="tokens-list"
+                          variants={containerVariants}
+                          initial="hidden"
+                          animate="visible"
+                          exit="hidden"
+                          className="flex flex-col gap-2"
+                        >
+                          {sortedTokens.map((token, index) => (
+                            <TokenBalanceItem
+                              key={`${token.address}-${selectedChainLocal.id}`}
+                              token={token}
+                              selectedChain={selectedChainLocal}
+                              isSelected={isTokenSelected(token)}
+                              onClick={() => handleTokenSelect(token)}
+                              onBalanceUpdate={handleBalanceUpdate}
+                              index={index}
+                            />
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                </>
+              )}
             </motion.div>
           ) : (
             <motion.div

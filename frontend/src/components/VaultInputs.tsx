@@ -1317,7 +1317,7 @@ export default function VaultInputs({
     <>
       {/* Add prominent message about gas fees for Ethereum vaults */}
       {isDeposit && !vaultData.depositFeePaidFromGasTank && (
-        <div className="bg-yellow-900/30 border border-yellow-500 py-3 px-4 rounded-lg mb-5">
+        <div className="bg-yellow-900/30 border border-yellow-500 py-3 px-4 rounded-lg mb-5 text-xs md:text-base">
           <p className="text-yellow-400 flex items-center">
             <span className="font-normal">
               For Ethereum Vaults, Ethereum gas fees are deducted directly from

@@ -155,14 +155,14 @@ export const Deposit = () => {
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 200, damping: 18 }}
       >
-        <div className="flex flex-col justify-center items-center gap-[24px] px-7 w-full font-gotham">
+        <div className="flex flex-col justify-center items-center px-0 md:px-7 w-full font-gotham">
           <div className="flex flex-col w-full">
             <h2 className="text-[24px] font-medium text-white">Deposit</h2>
             <p className="text-[16px] font-normal text-[#4874DB]">
               Select network and asset
             </p>
           </div>
-          <div className="flex flex-col gap-2 w-full">
+          <div className="flex flex-col gap-2 w-full mt-6">
             <div className="mb-4 w-full ">
               <ChainSelector
                 selectedChain={chain}
@@ -173,7 +173,7 @@ export const Deposit = () => {
             </div>
             <DepositInput setError={setError} error={error} />
           </div>
-          <div className="mt-3 w-full">
+          <div className="w-full">
             <div className="bg-[#181D29] h-[1px] w-full mb-6" />
             <AppButton
               disabled={isButtonDisabled}
@@ -187,14 +187,16 @@ export const Deposit = () => {
                   : "Connect Wallet"}
             </AppButton>
           </div>
-          <div className="flex flex-row h-4 items-center gap-[10px] mt-[10px]">
-            {!!txError && <WarningIcon height={16} width={16} />}
-            <p className={`text-[#FFC700] text-xs leading-4`}>
-              {txError ? "Transaction failed please try again" : ""}
-            </p>
-          </div>
+          {txError && (
+            <div className="flex flex-row items-center gap-[10px] mt-[10px] mb-2">
+              <WarningIcon height={16} width={16} />
+              <p className="text-[#FFC700] text-xs leading-4">
+                Transaction failed please try again
+              </p>
+            </div>
+          )}
 
-          <div className="flex flex-row items-center gap-3 opacity-40">
+          <div className="flex flex-row items-center gap-3 opacity-40 mt-8">
             <span className="uppercase text-white text-base leading-7 font-normal tracking-wide">
               Backed by
             </span>

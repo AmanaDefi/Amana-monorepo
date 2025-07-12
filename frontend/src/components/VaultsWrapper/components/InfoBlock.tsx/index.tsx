@@ -28,7 +28,7 @@ export const InfoBlock = ({
       <div
         className={classNames(
           "absolute bottom-10 -left-5 hidden group-hover:block transition-all z-[9999]",
-          { "-left-[295px] ": isRight },
+          { "-left-[230px] md:-left-[295px] ": isRight },
           { "-left-[130px] ": isMiddle },
           { "-left-2 ": isLeft },
         )}
