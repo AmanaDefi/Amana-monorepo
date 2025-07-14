@@ -16,6 +16,7 @@ import {
 } from "@/hooks/useInstructionStepLogic";
 import Link from "next/link";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/solid";
+import { hasNoErrors } from "@/utils/utils";
 
 interface DepositInstructionProps {
   transactionStepFeedback?: TransactionStepMessages;
@@ -26,6 +27,7 @@ interface DepositInstructionProps {
   isDeposit?: boolean;
   currentStep?: DepositStep;
   isProcessing?: boolean;
+  isFailedOnConfirmation: boolean;
 }
 
 const getStepIcon = (step: DepositStep): React.ReactNode => {
@@ -56,7 +58,13 @@ const getStepState = (
   isDeposit: boolean,
   getUserStepStatus: any,
   isStaticMode: boolean,
+  isFailedOnConfirmation: boolean,
+  finishedTransaction: boolean,
 ) => {
+  if (isFailedOnConfirmation && step === DepositStep.CONFIRM_DEPOSIT) {
+    return "error";
+  }
+
   if (isStaticMode && step === DepositStep.SELECT_TOKEN) {
     return "active";
   }
@@ -73,11 +81,19 @@ const getStepState = (
       return "active";
     }
 
+    const shouldShowFinalStep =
+      finishedTransaction &&
+      Object.keys(activeFeedback ?? {}).length > 0 &&
+      hasNoErrors(activeFeedback ?? {}) &&
+      !isFailedOnConfirmation;
+
     const stepStatus = getUserStepStatus(
       step,
       activeFeedback,
       isType2Transaction,
       isDeposit,
+      shouldShowFinalStep,
+      isFailedOnConfirmation,
     );
 
     if (stepStatus.status === TransactionStepStatus.processing) {
@@ -168,7 +184,11 @@ const progressVariants: Variants = {
 };
 
 const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
-  const { isDeposit = true, finishedTransaction = false } = props;
+  const {
+    isDeposit = true,
+    finishedTransaction = false,
+    isFailedOnConfirmation,
+  } = props;
 
   const {
     isFirstStepActive,
@@ -185,6 +205,8 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
     currentStepIndex,
     completedSteps,
   } = useInstructionStepLogic(props);
+
+  console.log({activeFeedback})
 
   const shouldShowElephant = isDynamicMode && progressPercent > 0;
 
@@ -209,7 +231,11 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
             isDeposit,
             getUserStepStatus,
             isStaticMode,
+            isFailedOnConfirmation,
+            finishedTransaction,
           );
+
+          console.log(stepState)
 
           let stepStatus;
           let bgColor = "#535E73";
@@ -234,7 +260,7 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
               textColor = "#FFFFFF";
               break;
             case "error":
-              bgColor = "#535E73";
+              bgColor = "#FF1E1E";
               textColor = "#FFFFFF";
               break;
             default:
@@ -251,12 +277,19 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
             step !== DepositStep.SELECT_TOKEN &&
             step !== DepositStep.CONFIRM_DEPOSIT
           ) {
+            const shouldShowFinalStep =
+              finishedTransaction &&
+              Object.keys(activeFeedback ?? {}).length > 0 &&
+              hasNoErrors(activeFeedback ?? {}) &&
+              !isFailedOnConfirmation;
+
             stepStatus = getUserStepStatus(
               step,
               activeFeedback,
               isType2Transaction,
               isDeposit,
-              finishedTransaction
+              shouldShowFinalStep,
+              isFailedOnConfirmation,
             );
           }
 
@@ -371,9 +404,9 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
                   </AnimatePresence>
                 </motion.div>
 
-                <div className="flex-1">
+                <div className="flex-1 w-4/5">
                   <motion.p
-                    className="text-[18px] font-normal tracking-[-0.06em] transition-all duration-300"
+                    className="text-[18px] break-words font-normal tracking-[-0.06em] transition-all duration-300 w-full"
                     style={{ color: textColor }}
                     animate={
                       isHighlighted
@@ -388,7 +421,7 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
                     step === DepositStep.CONFIRM_DEPOSIT
                       ? getStepDescription(step, isDeposit)
                       : stepStatus?.description ||
-                        getStepDescription(step, isDeposit)}
+                        getStepDescription(step, isDeposit)} 
                   </motion.p>
                 </div>
                 <AnimatePresence>
@@ -457,7 +490,7 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
             <motion.div
               className="absolute top-[-16px] z-10"
               style={{
-                left: `${elephantPosition}%`,
+                left: `${Math.max(0, elephantPosition - 4)}%`,
                 transform: "translateX(-50%)",
               }}
               initial={{ opacity: 0, scale: 0, y: -10 }}

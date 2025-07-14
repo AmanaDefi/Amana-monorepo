@@ -1,7 +1,6 @@
 import Image from "next/image";
 import LightingIcon from "@/components/svg/about/LightningIcon";
 import CrossChainIcon from "@/components/svg/about/CrossChainIcon";
-import EmailIcon from "@/components/svg/about/EmailIcon";
 import InfoIcon from "@/components/svg/PointsIcon";
 import RecoveryIcon from "@/components/svg/about/RecoveryIcon";
 import WalletIcon from "@/components/svg/about/WalletIcon";
@@ -31,7 +30,15 @@ const BENEFITS_DATA: Benefit[] = [
   {
     id: "email-start",
     title: "Start with email",
-    icon: <EmailIcon />,
+    icon: (
+      <Image
+        src="/email.png"
+        alt="email"
+        quality={100}
+        width={20}
+        height={16}
+      />
+    ),
   },
   {
     id: "earn-rewards",
@@ -55,12 +62,19 @@ const BENEFITS_DATA: Benefit[] = [
     title: "Stablecoin Yield",
     icon: (
       <div className="relative flex items-center mr-3">
-        <Image src="/USDC.png" alt="USDC" width={20} height={20} />
         <Image
-          src="/tether.png"
+          src="/usdc-about.png"
+          alt="USDC"
+          width={20}
+          height={20}
+          quality={100}
+        />
+        <Image
+          src="/tether-about.png"
           alt="Tether"
           width={20}
           height={20}
+          quality={100}
           className="absolute left-3 "
         />
       </div>
@@ -96,12 +110,19 @@ const MOBILE_BENEFITS_DATA: Benefit[] = [
     title: "Stablecoin Yield",
     icon: (
       <div className="relative flex items-center mr-3">
-        <Image src="/USDC.png" alt="USDC" width={20} height={20} />
+        <Image
+          src="/USDC.png"
+          alt="USDC"
+          width={20}
+          height={20}
+          quality={100}
+        />
         <Image
           src="/tether.png"
           alt="Tether"
           width={20}
           height={20}
+          quality={100}
           className="absolute left-3 "
         />
       </div>

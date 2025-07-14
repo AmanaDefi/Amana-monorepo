@@ -18,8 +18,9 @@ const Advice = () => {
         <Image
           src="/wallet-about.png"
           alt="wallet icon"
-          width="29"
+          width="28"
           height="25"
+          quality={100}
         />
       ),
     },
@@ -31,8 +32,9 @@ const Advice = () => {
         <Image
           src="/deposit-about.png"
           alt="deposit icon"
-          width="29"
+          width="25"
           height="25"
+          quality={100}
         />
       ),
     },
@@ -41,7 +43,13 @@ const Advice = () => {
       description:
         "Your assets will be automatically allocated to the highest-yield strategies available. Amana manages everything in the background, allowing you to passively earn yield.",
       icon: (
-        <Image src="/earn-about.png" alt="earn icon" width="20" height="28" />
+        <Image
+          src="/earn-about.png"
+          alt="earn icon"
+          width="20"
+          height="27"
+          quality={100}
+        />
       ),
     },
     {
@@ -54,6 +62,7 @@ const Advice = () => {
           alt="withdraw icon"
           width="24"
           height="24"
+          quality={100}
         />
       ),
     },
@@ -134,7 +143,7 @@ const Advice = () => {
 
       {/* Tablet layout */}
       <div className="hidden md:block lg:hidden px-6">
-        <div className="grid grid-cols-2 gap-6 max-w-[728px] mx-auto">
+        <div className="grid grid-cols-2 gap-x-16 gap-y-16 max-w-[728px] mx-auto">
           {ADVICE_DATA.map((advice, index) => (
             <motion.div
               key={index}
@@ -145,7 +154,7 @@ const Advice = () => {
               className="relative"
             >
               <div
-                className="absolute -top-12 left-1 text-[42px] font-normal "
+                className="absolute -top-11 left-1 text-[42px] font-normal"
                 style={{
                   fontFamily: "var(--font-family)",
                   background:
@@ -195,7 +204,7 @@ const Advice = () => {
 
       {/* Desktop layout */}
       <div className="hidden lg:block px-4">
-        <div className="grid grid-cols-2 2xl:grid-cols-4 gap-6 max-w-[780px] 2xl:max-w-none mx-auto px-6 xl:px-2">
+        <div className="grid grid-cols-2 2xl:grid-cols-4 gap-x-16 gap-y-16 2xl:gap-x-6 max-w-[780px] 2xl:max-w-[1360px] 3xl:max-w-none mx-auto px-6 xl:px-2">
           {ADVICE_DATA.map((advice, index) => (
             <motion.div
               key={index}
@@ -206,7 +215,7 @@ const Advice = () => {
               className="relative"
             >
               <div
-                className="absolute -top-12 left-1 text-[48px] font-normal "
+                className="absolute -top-12 left-1 text-[48px] font-normal"
                 style={{
                   fontFamily: "var(--font-family)",
                   background:

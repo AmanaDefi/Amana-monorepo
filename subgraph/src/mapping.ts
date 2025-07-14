@@ -339,7 +339,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       depositFeePaidFromGasTank: false,
       assetSymbol: "USDC.ETH",
       assetDecimals: 6,
-      assetImgURL: "/usdc.png",
+      assetImgURL: "/USDC.png",
       assetPrice: BigDecimal.fromString("1.0"),
       strategyNetwork: "Ethereum",
       strategyChainId: 1,
@@ -356,7 +356,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       maxWithdraw: 1000000,
     };
   }
-             
+
   if (addr == "0x8426929d568b1cbc281f5787556f84c5b101399d") {
     return {
       type: "Yield-Bearing Stablecoin",

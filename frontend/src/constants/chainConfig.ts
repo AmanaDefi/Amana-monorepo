@@ -672,6 +672,15 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       balance: EMPTY_BALANCE,
       isNative: false,
     },
+    {
+      symbol: "CBBTC.ETH",
+      address: "0x3e128c169564DD527C8e9bd85124BF6A890E5a5f",
+      decimals: 8,
+      imgURL: TOKEN_LOGO_URLS.CBBTC,
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false,
+    }
   ],
   1: [
     {

@@ -63,8 +63,8 @@ const handleDepositTransaction = async (
   setcrossChainTxId: Function,
   setInputBalance: Function,
   setLastEventTxHash: Function,
+  setFailedOnConfirmation: (value: boolean) => void,
 ) => {
-  console.log("deposit", activeAccount);
   if (!activeAccount) return;
   console.log("=== DEPOSIT TRANSACTION START ===");
   console.log("Active Chain ID:", activeChain?.id);
@@ -76,16 +76,22 @@ const handleDepositTransaction = async (
   try {
     const depositAmount = inputBalance.value;
 
-    const receipt = await executeDeposit(
-      vaultData,
-      inputToken,
-      walletContext,
-      activeAccount,
-      activeChain,
-      depositAmount,
-      setcrossChainTxId,
-    );
-    if (!receipt || !receipt.transactionHash) {
+    const receipt: { transactionHash: string | null; status?: string } =
+      await executeDeposit(
+        vaultData,
+        inputToken,
+        walletContext,
+        activeAccount,
+        activeChain,
+        depositAmount,
+        setcrossChainTxId,
+      );
+    if (
+      !receipt ||
+      !receipt.transactionHash ||
+      (receipt?.status && receipt?.status !== "success")
+    ) {
+      setFailedOnConfirmation(true);
       throw new Error("Failed Tx");
     }
 
@@ -185,6 +191,7 @@ const handleDepositTransaction = async (
 
     return true;
   } catch (error: any) {
+    console.log("catch error", error);
     try {
       if (!error.message.includes("User denied transaction")) {
         trackEvent("Deposit Failed", {
@@ -216,6 +223,7 @@ const handleWithdrawTransaction = async (
   setcrossChainTxId: Function,
   setInputBalance: Function,
   setLastEventTxHash: Function,
+  setFailedOnConfirmation: (value: boolean) => void,
 ) => {
   setTransactionCompleted(false);
   updateLocalStorageObject(vaultData.id, { transactionCompleted: false });
@@ -238,16 +246,26 @@ const handleWithdrawTransaction = async (
       withdrawAmountFormatted * (withdrawToken.price || 0)
     ).toFixed(2);
 
-    const receipt = await executeWithdrawal(
-      vaultData,
-      walletContext,
-      activeAccount,
-      activeChain,
-      withdrawAssetAmount,
-      withdrawToken.address as Address,
-      withdrawZRC20 as Token,
-      setcrossChainTxId,
-    );
+    const receipt: { transactionHash: string | null; status?: string } =
+      await executeWithdrawal(
+        vaultData,
+        walletContext,
+        activeAccount,
+        activeChain,
+        withdrawAssetAmount,
+        withdrawToken.address as Address,
+        withdrawZRC20 as Token,
+        setcrossChainTxId,
+      );
+
+    if (
+      !receipt ||
+      !receipt.transactionHash ||
+      (receipt?.status && receipt?.status !== "success")
+    ) {
+      setFailedOnConfirmation(true);
+      throw new Error("Failed Tx");
+    }
 
     if (activeChain?.id === CHAIN_ID.solana) {
     } else {
@@ -320,7 +338,7 @@ export default function InteractionContainer({
   hideStepsDisplay = false,
   setLabel,
   label,
-  outputAmountFormatted
+  outputAmountFormatted,
 }: {
   step: number;
   setStep: Function;
@@ -340,7 +358,7 @@ export default function InteractionContainer({
   hideStepsDisplay?: boolean;
   setLabel: Dispatch<SetStateAction<string>>;
   label: string;
-  outputAmountFormatted: string
+  outputAmountFormatted: string;
 }): JSX.Element {
   // Core transaction state
   const [crosschainInvestHash, setCrosschainInvestHash] = useState("");
@@ -947,7 +965,7 @@ function Interaction({
   isTrackingActiveRef: React.MutableRefObject<boolean>;
   isDeposit: boolean;
   hideStepsDisplay?: boolean;
-  outputAmountFormatted: string
+  outputAmountFormatted: string;
 }): JSX.Element {
   const { wallets } = useWallets();
   const filteredWallets = wallets.filter(
@@ -959,6 +977,7 @@ function Interaction({
   const { openStep, setChain } = useAuthStore();
   const { selectedChain } = useMultiChain();
   const [isMobile, setIsMobile] = useState(false);
+  const { setIsFailedOnCOnfirmation } = useTransactionStore();
 
   useEffect(() => {
     const checkIsMobile = () => {
@@ -1153,6 +1172,7 @@ function Interaction({
 
   async function handleMainAction(directAction?: Action) {
     const currenAction = directAction ?? action;
+    setIsFailedOnCOnfirmation(false);
 
     if (isTransactionProcessing || !inputToken) {
       return;
@@ -1249,6 +1269,7 @@ function Interaction({
       setcrossChainTxId,
       setInputBalance,
       setLastEventTxHash,
+      setIsFailedOnCOnfirmation,
     )();
 
     await interactionPostHook(!!success, !currenAction);
@@ -1296,7 +1317,8 @@ function Interaction({
       openStep(isMobile ? "mobileOptionsA" : "optionsA");
     } else {
       if (
-        (selectedChain === "solana" && activeChain?.id !== CHAIN_ID["solana"]) ||
+        (selectedChain === "solana" &&
+          activeChain?.id !== CHAIN_ID["solana"]) ||
         (selectedChain === "evm" && activeChain?.id === CHAIN_ID["solana"])
       ) {
         if (selectedChain === "evm" && activeAccount?.address) {
@@ -1491,6 +1513,7 @@ function Interaction({
     setcrossChainTxId: Function,
     setInputBalance: Function,
     setLastEventTxHash: Function,
+    setFailedOnConfirmation: (value: boolean) => void,
   ) {
     switch (action) {
       case Action.depositApprove:
@@ -1525,6 +1548,7 @@ function Interaction({
             setcrossChainTxId,
             setInputBalance,
             setLastEventTxHash,
+            setFailedOnConfirmation,
           );
           return result;
         };
@@ -1542,6 +1566,7 @@ function Interaction({
             setcrossChainTxId,
             setInputBalance,
             setLastEventTxHash,
+            setFailedOnConfirmation,
           );
           return result;
         };

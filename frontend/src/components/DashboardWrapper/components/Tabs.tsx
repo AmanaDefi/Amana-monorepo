@@ -120,7 +120,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         <Button
           variant="custom"
           onClick={action.onClick}
-          className="!w-[300px] md:!w-[423px] !h-10 !text-[16px] !font-normal !font-gotham"
+          className="!min-w-[232px] !w-fll md:!w-[423px] !h-10 !text-[16px] !font-normal !font-gotham"
         >
           {action.label}
         </Button>
@@ -286,13 +286,7 @@ const PortfolioTabs: React.FC<PortfolioTabsProps> = ({
           />
         ) : (
           <div className="space-y-6">
-            <div
-              className="grid gap-4"
-              style={{
-                gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))",
-                justifyContent: "start",
-              }}
-            >
+            <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(328px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(380px,1fr))] justify-start">
               {myVaults.map((vault) => (
                 <VaultCard
                   key={vault.id}
