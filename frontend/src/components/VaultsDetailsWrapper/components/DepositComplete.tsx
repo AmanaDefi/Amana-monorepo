@@ -36,7 +36,8 @@ const DepositComplete = ({
   const outputTokenSymbol = depositedOutputSymbol;
   const { lastTransactionStepFeedback } = useTransactionStore();
 
-  const isSuccess = hasNoErrors(lastTransactionStepFeedback);
+  // const isSuccess = hasNoErrors(lastTransactionStepFeedback);
+  const isSuccess = true;
 
   const handleExploreClick = () => {
     onClose();
@@ -143,7 +144,7 @@ const DepositComplete = ({
         </div>
       </div>
       <div className="flex flex-row gap-2 md:gap-[47px]">
-        <div className="py-4 md:py-[21px] px-4 md:px-[20px] shadow-xl font-gotham before-gradient-border bg-[#14171F] min-h-[171px] md:min-h-[222px] w-full md:max-w-[240px] rounded-[16px] flex flex-col justify-between">
+        <div className="py-4 md:py-[21px] px-4 md:px-[20px] shadow-xl font-gotham before-gradient-border bg-[#14171F] min-h-[171px] md:min-h-[222px] w-full  md:max-w-[240px] xl:min-w-[240px] rounded-[16px] flex flex-col justify-between">
           <div>
             <div className="flex flex-row gap-4 text-sm md:text-lg font-bold items-center">
               <EarnIcon
@@ -166,7 +167,7 @@ const DepositComplete = ({
             {firstCardContent.buttonText}
           </Button>
         </div>
-        <div className="py-4 md:py-[23px] px-4 md:px-[15px] shadow-xl font-gotham before-gradient-border bg-[#14171F] min-h-[171px] md:min-h-[222px] w-full md:max-w-[240px] rounded-[16px] flex flex-col justify-between">
+        <div className="py-4 md:py-[23px] px-4 md:px-[15px] shadow-xl font-gotham before-gradient-border bg-[#14171F] min-h-[171px] md:min-h-[222px] w-full md:max-w-[240px] xl:min-w-[240px] rounded-[16px] flex flex-col justify-between">
           <div>
             <div className="flex flex-row gap-4 text-sm md:text-lg font-bold items-center">
               <DiscordLogo
