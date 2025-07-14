@@ -28,6 +28,7 @@ import {
   Address,
   encodeAbiParameters,
   parseAbiItem,
+  parseUnits,
 } from "viem";
 import {
   getCurrentSlippage,
@@ -40,6 +41,7 @@ import {
   calculateGasFeeInVaultAsset,
   convertGasFeeToInputToken,
 } from "../utils/gasFeeCalculations";
+import { calculateDepositOutput } from "../utils/depositCalculations";
 
 // import { fetchEthPrice } from "@/utils/utils";
 
@@ -1061,39 +1063,33 @@ const executeDirectDeposit = async (
   if (!activeAccount)
     throw new Error("no activeAccount found for perform deposit");
 
-  let actualDepositAmount = transactionAmount;
-  const gasFeeResult = await calculateGasFeeInVaultAsset(
+  // Use the unified calculation function
+  const calculationResult = await calculateDepositOutput(
+    transactionAmount,
     vaultData,
     inputToken,
     activeChain,
-    1, // Not needed for cross-chain deposits, only for USD formatting which we don't use here
-    1, // Not needed for cross-chain deposits, only for ETH formatting which we don't use here
+    activeAccount,
+    1, // vaultTokenPrice - not needed for execution
+    1, // inputTokenPrice - not needed for execution
+    1, // ethPriceUsd - not needed for execution
     (amount: number) => amount.toString(), // Simple formatter
     (usd: number, ethPrice: number) => usd / ethPrice // Simple converter
   );
-  console.log("gasFeeResult", gasFeeResult);
-  if (gasFeeResult.needsDeduction) {
-    // For cross-chain deposits, convert gas fee to input token terms if needed
-    const gasFeeInInputTokens = await convertGasFeeToInputToken(
-      gasFeeResult.gasFeeInVaultAsset,
-      vaultData,
-      inputToken,
-      activeChain
-    );
-    console.log("gasFeeInInputTokens", gasFeeInInputTokens.toString());
-    actualDepositAmount = transactionAmount > gasFeeInInputTokens ?
-      transactionAmount - gasFeeInInputTokens : 0n;
 
-  }
-  console.log("actualDepositAmount", actualDepositAmount.toString());
+  console.log("Unified calculation result for direct deposit:", {
+    inputAmount: calculationResult.inputAmount.toString(),
+    amountAfterFee: calculationResult.amountAfterFee.toString(),
+    amountForStrategy: calculationResult.amountForStrategy.toString(),
+    sharesAmount: calculationResult.sharesAmount.toString(),
+    needsGasFee: calculationResult.needsGasFee,
+    needsTokenSwap: calculationResult.needsTokenSwap,
+  });
 
-  const { minSharesOut } = await getPathDataAndMinSharesOut(
-    vaultData,
-    inputToken,
-    actualDepositAmount,
-    activeChain,
-    activeAccount,
-  );
+  // Calculate minSharesOut with slippage
+  const sharesAmountBigInt = parseUnits(calculationResult.sharesAmount, vaultData.inputToken.decimals);
+  const minSharesOut = (sharesAmountBigInt * BigInt(10000 - getCurrentSlippage() * 100)) / BigInt(10000);
+  
   console.log("slippage", getCurrentSlippage());
   console.log("minSharesOut", minSharesOut.toString());
 
@@ -1150,47 +1146,50 @@ const executeCrossChainDeposit = async (
   const walletClient = await getWalletClient(activeAccount);
   if (!activeAccount || !walletClient) return { transactionHash: null };
 
-  let actualDepositAmount = transactionAmount;
-
-  const gasFeeResult = await calculateGasFeeInVaultAsset(
+  // Use the unified calculation function
+  const calculationResult = await calculateDepositOutput(
+    transactionAmount,
     vaultData,
     inputToken,
-    activeChain,
-    1, // Not needed for cross-chain deposits, only for USD formatting which we don't use here
-    1, // Not needed for cross-chain deposits, only for ETH formatting which we don't use here
-    (amount: number) => amount.toString(), // Simple formatter
-    (usd: number, ethPrice: number) => usd / ethPrice, // Simple converter
-  );
-
-  if (gasFeeResult.needsDeduction) {
-    // For cross-chain deposits, convert gas fee to input token terms if needed
-    const gasFeeInInputTokens = await convertGasFeeToInputToken(
-      gasFeeResult.gasFeeInVaultAsset,
-      vaultData,
-      inputToken,
-      activeChain,
-    );
-
-    actualDepositAmount =
-      transactionAmount > gasFeeInInputTokens
-        ? transactionAmount - gasFeeInInputTokens
-        : 0n;
-  }
-  const { swapPath, minSharesOut } = await getPathDataAndMinSharesOut(
-    vaultData,
-    inputToken,
-    actualDepositAmount,
     activeChain,
     activeAccount,
+    1, // vaultTokenPrice - not needed for execution
+    1, // inputTokenPrice - not needed for execution
+    1, // ethPriceUsd - not needed for execution
+    (amount: number) => amount.toString(), // Simple formatter
+    (usd: number, ethPrice: number) => usd / ethPrice // Simple converter
   );
 
-  console.log("🎯 Cross-Chain Deposit - MinSharesOut Calculation:", {
-    inputForCalculation: actualDepositAmount.toString(),
-    originalAmount: transactionAmount.toString(),
-    amountChanged: actualDepositAmount !== transactionAmount,
-    minSharesOut: minSharesOut.toString(),
-    swapPathLength: swapPath.length,
+  console.log("Unified calculation result for cross-chain deposit:", {
+    inputAmount: calculationResult.inputAmount.toString(),
+    amountAfterFee: calculationResult.amountAfterFee.toString(),
+    amountForStrategy: calculationResult.amountForStrategy.toString(),
+    sharesAmount: calculationResult.sharesAmount.toString(),
+    needsGasFee: calculationResult.needsGasFee,
+    needsTokenSwap: calculationResult.needsTokenSwap,
   });
+
+  // Get swap path if needed
+  let swapPath: `0x${string}` = "0x";
+  if (calculationResult.needsTokenSwap) {
+    const actualInputToken = isZetachain(activeChain?.id) ? inputToken : inputToken?.ZRC20equivalent;
+    if (actualInputToken) {
+      const swapResult = await getPathDataAndAmountOut(
+        calculationResult.amountAfterFee,
+        actualInputToken,
+        vaultData.inputToken,
+        vaultData.id as Address,
+        getCurrentSlippage() * 100,
+      );
+      swapPath = swapResult.encodedPath ?? "0x";
+    }
+  }
+
+  // Calculate minSharesOut with slippage
+  const sharesAmountBigInt = parseUnits(calculationResult.sharesAmount, vaultData.inputToken.decimals);
+  const minSharesOut = (sharesAmountBigInt * BigInt(10000 - getCurrentSlippage() * 100)) / BigInt(10000);
+
+
 
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(
@@ -1370,38 +1369,48 @@ const executeSolanaDeposit = async (
   setcrossChainTxId: Function,
   activeWallet: ConnectedWallet,
 ) => {
-  let actualDepositAmount = transactionAmount;
-
-  const gasFeeResult = await calculateGasFeeInVaultAsset(
+  // Use the unified calculation function
+  const calculationResult = await calculateDepositOutput(
+    transactionAmount,
     vaultData,
     inputToken,
     activeChain,
-    1, // Not needed for cross-chain deposits, only for USD formatting which we don't use here
-    1, // Not needed for cross-chain deposits, only for ETH formatting which we don't use here
+    activeWallet,
+    1, // vaultTokenPrice - not needed for execution
+    1, // inputTokenPrice - not needed for execution
+    1, // ethPriceUsd - not needed for execution
     (amount: number) => amount.toString(), // Simple formatter
     (usd: number, ethPrice: number) => usd / ethPrice // Simple converter
   );
 
-  if (gasFeeResult.needsDeduction) {
-    // For cross-chain deposits, convert gas fee to input token terms if needed
-    const gasFeeInInputTokens = await convertGasFeeToInputToken(
-      gasFeeResult.gasFeeInVaultAsset,
-      vaultData,
-      inputToken,
-      activeChain
-    );
+  console.log("Unified calculation result for Solana deposit:", {
+    inputAmount: calculationResult.inputAmount.toString(),
+    amountAfterFee: calculationResult.amountAfterFee.toString(),
+    amountForStrategy: calculationResult.amountForStrategy.toString(),
+    sharesAmount: calculationResult.sharesAmount.toString(),
+    needsGasFee: calculationResult.needsGasFee,
+    needsTokenSwap: calculationResult.needsTokenSwap,
+  });
 
-    actualDepositAmount = transactionAmount > gasFeeInInputTokens ?
-      transactionAmount - gasFeeInInputTokens : 0n;
-
+  // Get swap path if needed
+  let swapPath: `0x${string}` = "0x";
+  if (calculationResult.needsTokenSwap) {
+    const actualInputToken = isZetachain(activeChain?.id) ? inputToken : inputToken?.ZRC20equivalent;
+    if (actualInputToken) {
+      const swapResult = await getPathDataAndAmountOut(
+        calculationResult.amountAfterFee,
+        actualInputToken,
+        vaultData.inputToken,
+        vaultData.id as Address,
+        getCurrentSlippage() * 100,
+      );
+      swapPath = swapResult.encodedPath ?? "0x";
+    }
   }
-  const { swapPath, minSharesOut } = await getPathDataAndMinSharesOut(
-    vaultData,
-    inputToken,
-    actualDepositAmount,
-    activeChain,
-    activeWallet,
-  );
+
+  // Calculate minSharesOut with slippage
+  const sharesAmountBigInt = parseUnits(calculationResult.sharesAmount, vaultData.inputToken.decimals);
+  const minSharesOut = (sharesAmountBigInt * BigInt(10000 - getCurrentSlippage() * 100)) / BigInt(10000);
   const walletAddress = walletContext.publicKey!.toBase58();
 
   // Generate a unique transaction ID

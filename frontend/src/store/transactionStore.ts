@@ -26,6 +26,14 @@ interface TransactionState {
     outputSymbol: string;
   } | null;
 
+  // New fields for deposit calculation caching
+  lastDepositCalculation: {
+    inputAmount: string;
+    vaultId: string;
+    result: any;
+    timestamp: number;
+  } | null;
+
   setIsTransactionProcessing: (isTransactionProcessing: boolean) => void;
   setFinishedTransaction: (finishedTransaction: boolean) => void;
   setTransactionStepFeedback: (
@@ -60,6 +68,15 @@ interface TransactionState {
       outputSymbol: string;
     } | null,
   ) => void;
+
+  setLastDepositCalculation: (
+    calculation: {
+      inputAmount: string;
+      vaultId: string;
+      result: any;
+      timestamp: number;
+    } | null,
+  ) => void;
 }
 
 export const useTransactionStore = create<TransactionState>((set) => ({
@@ -74,6 +91,7 @@ export const useTransactionStore = create<TransactionState>((set) => ({
 
   lastDepositInfo: null,
   lastWithdrawInfo: null,
+  lastDepositCalculation: null,
   isFailedOnConfirmation: false,
 
   setIsTransactionProcessing: (isTransactionProcessing) =>
@@ -95,4 +113,5 @@ export const useTransactionStore = create<TransactionState>((set) => ({
 
   setLastDepositInfo: (info) => set({ lastDepositInfo: info }),
   setLastWithdrawInfo: (info) => set({ lastWithdrawInfo: info }),
+  setLastDepositCalculation: (calculation) => set({ lastDepositCalculation: calculation }),
 }));

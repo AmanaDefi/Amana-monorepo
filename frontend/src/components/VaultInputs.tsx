@@ -41,8 +41,8 @@ import {
 } from "@/actions/actions";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
-import { calculateGasFeeInVaultAsset } from "@/utils/gasFeeCalculations";
-import { useRouter, usePathname } from "next/navigation";
+
+import { calculateDepositOutput, DepositCalculationResult } from "@/utils/depositCalculations";
 import { trackEvent } from "@/utils/trackEvent";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -96,6 +96,13 @@ export type ConversionOutput = {
   netDepositToVaultUSD?: string;
   inputAmountInUSDFormatted?: string;
   slippageAmountInUSDFormatted?: string;
+  // New fields for detailed breakdown
+  swapSlippageUSD?: string;
+  depositSlippageUSD?: string;
+  totalLossUSD?: string;
+  swapSlippagePercentage?: number;
+  depositSlippagePercentage?: number;
+  totalLossPercentage?: number;
 };
 
 export default function VaultInputs({
@@ -738,168 +745,71 @@ export default function VaultInputs({
 
   const getDepositOutputAmount = useCallback(
     async (inputAmountValue: bigint) => {
-      const actualInputToken = isZetachain(activeChain?.id as number)
-        ? inputToken
-        : inputToken?.ZRC20equivalent;
-
-      if (!actualInputToken) {
+      if (!inputToken || !activeChain) {
         return;
       }
 
-      let assetsConversionAmount: bigint = inputAmountValue;
-
-      // Step 1: Convert input token to vault token if needed
-      if (
-        actualInputToken.address.toLowerCase() !==
-        vaultData.inputToken.address.toLowerCase()
-      ) {
-        const result = await getPathDataAndAmountOut(
+      try {
+        // Use the unified calculation function
+        const calculationResult = await calculateDepositOutput(
           inputAmountValue,
-          actualInputToken,
-          vaultData.inputToken,
-          vaultData.id as Address,
-          userSlippage * 100,
+          vaultData,
+          inputToken,
+          activeChain,
+          activeWallet,
+          vaultTokenPrice,
+          inputTokenPrice,
+          ethPriceUsd,
+          formatUSDAmount,
+          convertUsdToEth
         );
-        assetsConversionAmount = result.amountOut;
-      }
 
-      console.log("Double Box - Pre Gas Conversion amounts:", {
-        assetsConversionAmount: assetsConversionAmount.toString(),
-      });
+        // Format the output for display
+        const sharesAmountFormatted = formatTokenBalance(
+          calculationResult.sharesAmount,
+          vaultData.symbol,
+        );
 
-      // 2. Fetch gas fee info from the ZRC20 token
+        const outputAmountInUSD = (Number(calculationResult.outputAmount) / 10 ** vaultData.inputToken.decimals) * vaultTokenPrice;
 
-      let gasFeeInVaultAsset = BigInt(0);
-      let gasFeeInUSD = "0";
-      let gasFeeInETH = "0";
-      let netDepositToVaultUSD = "0";
-
-      const publicClient = getPublicClient(SUPPORTED_CHAINS[0].id);
-      if (!vaultData.depositFeePaidFromGasTank && !!publicClient) {
-        const gasLimitForWithdrawAndCall = await publicClient.readContract({
-          address: vaultData.id as Address,
-          abi: [
-            parseAbiItem(
-              "function gasLimitForWithdrawAndCall() view returns (uint256)",
-            ),
-          ],
-          functionName: "gasLimitForWithdrawAndCall",
-        });
-
-        console.log("gas limit:", gasLimitForWithdrawAndCall);
-
-        const result = await publicClient.readContract({
-          address: vaultData.inputToken.address as Address,
-          abi: [
-            parseAbiItem(
-              "function withdrawGasFeeWithGasLimit(uint256) view returns (address, uint256)",
-            ),
-          ],
-          functionName: "withdrawGasFeeWithGasLimit",
-          args: [gasLimitForWithdrawAndCall],
-        });
-        const gasZRC20 = result[0] as Address;
-        const gasFee = result[1] as bigint;
-
-        gasFeeInVaultAsset = gasFee;
-
-        if (gasZRC20 !== vaultData.inputToken.address) {
-          // Convert fee from gas token into vault asset terms
-          const result = await getPathDataAndAmountOut(
-            gasFee,
-            ZRC20_TOKENS_BY_ADDRESS[gasZRC20],
-            vaultData.inputToken,
-            vaultData.id as Address,
-            userSlippage * 100,
-          );
-          gasFeeInVaultAsset = result.amountOut;
+        if (inputAmountValue === debouncedInputBalance.value) {
+          setConversionOutput({
+            slippageActualValue: Number(calculationResult.totalLoss.percentage.toFixed(2)),
+            slippageAmountInUSDFormatted: calculationResult.totalLoss.amountInUSD,
+            finalConvertedAmountInUSDFormatted: formatUSDValue(outputAmountInUSD),
+            outputAmountFormatted: sharesAmountFormatted,
+            outputAmountInUSDFormatted: formatUSDValue(outputAmountInUSD),
+            gasFeeInVaultAsset: calculationResult.gasFee.amount.toString(),
+            gasFeeInUSD: calculationResult.gasFee.amountInUSD,
+            gasFeeInETH: calculationResult.gasFee.amountInETH,
+            netDepositToVaultUSD: formatUSDValue(outputAmountInUSD),
+            inputAmountInUSDFormatted: formatUSDValue((Number(inputAmountValue) / 10 ** (inputToken?.decimals ?? 18)) * inputTokenPrice),
+            // New detailed breakdown fields
+            swapSlippageUSD: calculationResult.swapSlippage.amountInUSD,
+            depositSlippageUSD: calculationResult.depositSlippage.amountInUSD,
+            totalLossUSD: calculationResult.totalLoss.amountInUSD,
+            swapSlippagePercentage: calculationResult.swapSlippage.percentage,
+            depositSlippagePercentage: calculationResult.depositSlippage.percentage,
+            totalLossPercentage: calculationResult.totalLoss.percentage,
+          });
         }
-        // Format gas fee in USD and ETH
-        const gasFeeInTokenUnits =
-          Number(gasFeeInVaultAsset) / 10 ** vaultData.inputToken.decimals;
-        const gasFeeInUSDAmount = gasFeeInTokenUnits * vaultTokenPrice;
-        gasFeeInUSD = formatUSDAmount(gasFeeInUSDAmount);
-        const ethAmount = convertUsdToEth(gasFeeInUSDAmount, ethPriceUsd);
-        gasFeeInETH = ethAmount.toFixed(5);
-      }
 
-      // 4. Subtract gas fee from converted amount
-      const finalConvertedAmount =
-        assetsConversionAmount > gasFeeInVaultAsset
-          ? assetsConversionAmount - gasFeeInVaultAsset
-          : BigInt(0);
-
-      console.log("Double Box - Final converted amount after gas fee:", {
-        finalConvertedAmount: finalConvertedAmount.toString(),
-        gasFeeInVaultAsset: gasFeeInVaultAsset.toString(),
-      });
-
-      const sharesAmountRaw = await getSharesFromDeposit(
-        finalConvertedAmount,
-        vaultData,
-        activeWallet,
-      );
-
-      // Use formatTokenBalance for the output amount formatting
-      const sharesAmountFormatted = formatTokenBalance(
-        sharesAmountRaw,
-        vaultData.symbol,
-      );
-
-      const outputSharesAmountInUSD = Number(sharesAmountRaw) * vaultTokenPrice;
-
-      console.log("Double Box - Shares calculation:", {
-        sharesAmountFormatted,
-        finalConvertedAmount: finalConvertedAmount.toString(),
-      });
-      const inputAmountValueInUSD =
-        (Number(inputAmountValue) / 10 ** (inputToken?.decimals ?? 18)) *
-        inputTokenPrice;
-
-      const finalConvertedAmountInUSD =
-        (Number(finalConvertedAmount) / 10 ** vaultData.inputToken.decimals) *
-        vaultTokenPrice;
-
-      const finalConvertedAmountInUSDFormatted = formatCurrency(
-        finalConvertedAmountInUSD,
-      ).toString();
-
-      // Calculate slippage excluding gas fee
-      const slippageActualValue = Math.max(
-        0,
-        100 - (finalConvertedAmountInUSD * 100) / inputAmountValueInUSD,
-      );
-
-      const calculatedSlippageUSD =
-        inputAmountValueInUSD - finalConvertedAmountInUSD;
-
-      const slippageAmountInUSDFormatted = formatSlippageUSD(
-        calculatedSlippageUSD,
-      );
-
-      if (!vaultData.depositFeePaidFromGasTank && gasFeeInVaultAsset > 0n) {
-        const totalLossUSD = inputAmountValueInUSD - finalConvertedAmountInUSD;
-        const gasFeeUSD = parseFloat(gasFeeInUSD.replace(/[^0-9.]/g, ""));
-        const gasFeeETH = parseFloat(gasFeeInETH);
-        const swapLossUSD = totalLossUSD - gasFeeUSD;
-      }
-
-      if (inputAmountValue === debouncedInputBalance.value) {
-        setConversionOutput({
-          slippageActualValue: Number(slippageActualValue.toFixed(2)),
-          slippageAmountInUSDFormatted: slippageAmountInUSDFormatted,
-          finalConvertedAmountInUSDFormatted: formatUSDValue(
-            finalConvertedAmountInUSD,
-          ),
-          outputAmountFormatted: sharesAmountFormatted,
-          outputAmountInUSDFormatted: formatUSDValue(outputSharesAmountInUSD),
-          gasFeeInVaultAsset: gasFeeInVaultAsset.toString(),
-          gasFeeInUSD,
-          gasFeeInETH,
-          netDepositToVaultUSD: formatUSDValue(finalConvertedAmountInUSD),
-          inputAmountInUSDFormatted: formatUSDValue(inputAmountValueInUSD),
+        console.log("Unified Deposit Calculation Result:", {
+          inputAmount: calculationResult.inputAmount.toString(),
+          outputAmount: calculationResult.outputAmount.toString(),
+          gasFee: calculationResult.gasFee.amount.toString(),
+          swapSlippage: calculationResult.swapSlippage.amount.toString(),
+          depositSlippage: calculationResult.depositSlippage.amount.toString(),
+          totalLoss: calculationResult.totalLoss.amount.toString(),
+          needsTokenSwap: calculationResult.needsTokenSwap,
+          needsGasFee: calculationResult.needsGasFee,
         });
+
+      } catch (error) {
+        console.error("Error in deposit calculation:", error);
+        setOutputBoxErrorMessage("Error calculating deposit output");
       }
+
       setLoadingOutputToken(false);
     },
     [
