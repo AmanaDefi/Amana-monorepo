@@ -247,7 +247,7 @@ export default function VaultInputs({
      const setTokenBasedOnChain = () => {
        if (
          selectedChain &&
-         selectedChain.id === CHAIN_ID["zetachain"] && // <-- Тепер тільки для основної мережі ZetaChain
+         selectedChain.id === CHAIN_ID["zetachain"] && 
          vaultData?.inputToken
        ) {
          setInputToken(vaultData.inputToken);

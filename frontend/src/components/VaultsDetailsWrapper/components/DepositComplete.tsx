@@ -36,8 +36,7 @@ const DepositComplete = ({
   const outputTokenSymbol = depositedOutputSymbol;
   const { lastTransactionStepFeedback } = useTransactionStore();
 
-  // const isSuccess = hasNoErrors(lastTransactionStepFeedback);
-  const isSuccess = true;
+  const isSuccess = hasNoErrors(lastTransactionStepFeedback);
 
   const handleExploreClick = () => {
     onClose();
@@ -64,7 +63,8 @@ const DepositComplete = ({
   const getDescription = () =>
     isSuccess ? getDescriptionSuccess() : getDescriptionFail();
 
-  const getTransactionLabel = () => (!isSuccess ? 'Failed:' : isDeposit ? "Deposited:" : "Withdrawn:");
+  const getTransactionLabel = () =>
+    !isSuccess ? "Failed:" : isDeposit ? "Deposited:" : "Withdrawn:";
 
   const getFirstCardContent = () => {
     if (isDeposit) {
