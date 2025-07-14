@@ -66,6 +66,7 @@ import { formatTokenBalance, formatUSDAmount, formatUSDValue } from "@/utils/tok
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 import { zetachain } from "viem/chains";
 import { useAPYStore } from "@/store/APYStore";
+import { useMaxAmount } from "@/hooks/useMaxAmount";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -627,9 +628,14 @@ export default function VaultInputs({
     inputToken,
     tokenBalance,
     isDeposit,
+    vaultId: vaultData.id,
     vaultTotalAssetinToken,
-    vaultData.id,
-  ]);
+    onAmountChange: (amount) => {
+      handleChangeInput({
+        currentTarget: { value: amount },
+      } as React.ChangeEvent<HTMLInputElement>);
+    },
+  });
 
   const tokenList = useMemo(() => {
     let tokens: Token[] = [];
