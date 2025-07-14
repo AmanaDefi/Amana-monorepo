@@ -106,7 +106,7 @@ const Roadmap = () => {
 
   return (
     <section className="mt-[167px] lg:mt-[275px] relative">
-      <div className="relative z-30 right-0 md:right-[192px] xl:right-0 2xl:right-4 -bottom-3 lg:-bottom-2 xl:-bottom-0 w-full">
+      <div className="relative z-30 right-0 md:right-[192px] xl:right-0 2xl:right-6 -bottom-3 lg:-bottom-2 xl:-bottom-3 w-full">
         <RoadmapIcon className="w-full" />
       </div>
 
@@ -428,7 +428,7 @@ const Roadmap = () => {
       </div>
 
       {/* Extra large layout (xl) - horizontal */}
-      <div className="hidden xl:flex flex-row justify-between items-start px-0 2xl:px-5 max-w-[1200px] 2xl:max-w-[1400px] mx-auto">
+      <div className="hidden xl:flex flex-row justify-between items-start px-0 2xl:px-5 max-w-[1200px] 2xl:max-w-[1400px] mx-auto -mt-60">
         {ROADMAP_DATA.map((item, index) => (
           <motion.div
             key={index}
@@ -436,104 +436,74 @@ const Roadmap = () => {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: index * 0.15 }}
             viewport={{ once: true }}
-            className="relative max-w-[300px] 2xl:max-w-[330px]"
+            className={`min-w-[300px] 2xl:min-w-[340px] h-[748px] rounded-[24px] pt-[22px] px-4 ${
+              item.isHighlighted ? "-mt-30" : "mt-10"
+            }`}
+            style={{
+              background: item.isHighlighted
+                ? "linear-gradient(180deg, #101219 0%, #1b46e0 100%)"
+                : "transparent",
+            }}
           >
-            {item.isHighlighted ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.8, delay: 0.3 }}
-                viewport={{ once: true }}
-                className="absolute top-[-281px] left-0 min-w-[300px] 2xl:min-w-[340px] h-[748px] rounded-[24px] pt-[22px] px-4 z-10"
-                style={{
-                  background:
-                    "linear-gradient(180deg, #101219 0%, #1b46e0 100%)",
-                }}
-              >
-                <div className="font-normal text-[16px] text-[#9A9CB3] mb-10">
-                  Roadmap
-                </div>
+            {item.isHighlighted && (
+              <div className="font-normal text-[16px] text-[#9A9CB3] mb-[20px]">
+                Roadmap
+              </div>
+            )}
 
-                <div className="font-normal text-[40px] text-white mb-[144px] max-h-[48px]">
-                  {item.highlightLabel}
-                </div>
-
-                <h2
-                  className="font-bold text-[48px] mb-2"
-                  style={{
-                    background:
-                      "linear-gradient(180deg, #f6faff 11%, #1b46e0 84.13%)",
-                    backgroundClip: "text",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                  }}
-                >
-                  {item.quarter}
-                </h2>
-
-                <h3 className="font-medium text-base lg:text-[24px] text-white mb-6">
-                  {item.title}
-                </h3>
-
-                <ul className="flex flex-col gap-8">
-                  {item.tasks.map((task, taskIndex) => (
-                    <motion.li
-                      key={taskIndex}
-                      initial={{ opacity: 0, x: -20 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      transition={{
-                        duration: 0.4,
-                        delay: 0.6 + taskIndex * 0.1,
-                      }}
-                      viewport={{ once: true }}
-                      className="font-normal text-[16px] text-[#9A9CB3] flex items-center gap-3 "
-                    >
-                      <div
-                        className={`w-[10px] h-[10px] rounded-full flex-shrink-0 ${
-                          taskIndex !== 2 ? "bg-[#1B46E0]" : "bg-white"
-                        }`}
-                      ></div>
-                      <span className="leading-tight">{task}</span>
-                    </motion.li>
-                  ))}
-                </ul>
-              </motion.div>
-            ) : null}
-
-            <div className="pl-3">
-              <h2
-                className="font-bold text-[48px] mb-2 min-w-[350px]"
-                style={{
-                  background:
-                    "linear-gradient(180deg, #f6faff 11%, #1b46e0 84.13%)",
-                  backgroundClip: "text",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-              >
-                {item.quarter}
-              </h2>
-
-              <h3 className="font-medium text-[24px] text-white mb-6">
-                {item.title}
-              </h3>
-
-              <ul className="flex flex-col gap-8 pl-2">
-                {item.tasks.map((task, taskIndex) => (
-                  <motion.li
-                    key={taskIndex}
-                    initial={{ opacity: 0, x: -10 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.4, delay: 0.3 + taskIndex * 0.1 }}
-                    viewport={{ once: true }}
-                    className="font-normal text-[16px] text-[#9A9CB3] flex items-center gap-3"
-                  >
-                    <div className="w-[10px] h-[10px] bg-white rounded-full flex-shrink-0"></div>
-                    <span className="leading-tight">{task}</span>
-                  </motion.li>
-                ))}
-              </ul>
+            <div
+              className={`font-normal text-[40px] text-white max-h-[48px] ${item.isHighlighted ? "mb-[180px]" : "mb-[186px]"}`}
+            >
+              {item.isHighlighted ? (
+                item.highlightLabel
+              ) : index < 2 ? (
+                getStatusLabel(index)
+              ) : (
+                <div className="h-[48px]"></div>
+              )}
             </div>
+
+            <h2
+              className="font-bold text-[48px] mb-2"
+              style={{
+                background:
+                  "linear-gradient(180deg, #f6faff 11%, #1b46e0 84.13%)",
+                backgroundClip: "text",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            >
+              {item.quarter}
+            </h2>
+
+            <h3 className="font-medium text-[24px] text-white mb-6">
+              {item.title}
+            </h3>
+
+            <ul className="flex flex-col gap-8">
+              {item.tasks.map((task, taskIndex) => (
+                <motion.li
+                  key={taskIndex}
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  transition={{
+                    duration: 0.4,
+                    delay: 0.6 + taskIndex * 0.1,
+                  }}
+                  viewport={{ once: true }}
+                  className="font-normal text-[16px] text-[#9A9CB3] flex items-center gap-3"
+                >
+                  <div
+                    className={`w-[10px] h-[10px] rounded-full flex-shrink-0 ${
+                      item.isHighlighted && taskIndex !== 2
+                        ? "bg-[#1B46E0]"
+                        : "bg-white"
+                    }`}
+                  ></div>
+                  <span className="leading-tight">{task}</span>
+                </motion.li>
+              ))}
+            </ul>
           </motion.div>
         ))}
       </div>

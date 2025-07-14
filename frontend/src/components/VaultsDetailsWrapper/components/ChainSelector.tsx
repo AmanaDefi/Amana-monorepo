@@ -88,12 +88,14 @@ export default function ChainSelector({
       const tokens = APPROVED_TOKENS[chainId] ?? [];
       const defaultToken =
         tokens.find((token) => token.symbol === "USDC") || tokens[0];
+      
+      onSelectChain(chainToSelect);
 
-      if (onSelectChainAndToken) {
-        console.log("onSelectChainAndToken from chain selector");
-        setSelectedChainFromModal(chainToSelect);
-        onSelectChainAndToken(chainToSelect, defaultToken);
-      }
+     if (onSelectChainAndToken && defaultToken) {
+       console.log("onSelectChainAndToken from chain selector");
+       setSelectedChainFromModal(chainToSelect);
+       onSelectChainAndToken(chainToSelect, defaultToken);
+     }
     }
   };
 
@@ -108,7 +110,7 @@ export default function ChainSelector({
             alt={"Zetachain"}
             className="w-[32px] h-[32px] rounded-full"
           />
-          <p className="text-[16px] font-normal">{"ZetaChain"}</p>
+          <p className="text-sm md:text-[16px] font-normal">{"ZetaChain"}</p>
         </div>
       </div>
     );
@@ -126,7 +128,7 @@ export default function ChainSelector({
           className="w-[32px] h-[32px] rounded-full"
         />
 
-        <p className="text-[16px] font-normal">
+        <p className="text-sm md:text-[16px] font-normal">
           {displayedChain?.name || "ZetaChain"}
         </p>
       </div>
@@ -146,7 +148,7 @@ export default function ChainSelector({
               <button
                 onClick={(e) => handleChainSelect(e, icon.id)}
                 key={icon.symbol}
-                className="w-[30px] h-[30px] rounded-full overflow-hidden hover:scale-125 transition-transform duration-200 relative border border-white bg-[#3E73C4]"
+                className="w-5 h-5 md:w-[30px] md:h-[30px] rounded-full overflow-hidden hover:scale-125 transition-transform duration-200 relative border border-white bg-[#3E73C4]"
                 style={{ zIndex: index }}
               >
                 <img

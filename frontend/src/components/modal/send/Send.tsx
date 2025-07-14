@@ -635,7 +635,7 @@ export const Send = () => {
               handleClose();
             }
           }}
-          className="rounded-[8px] flex items-center justify-center w-10 h-10"
+          className="rounded-[8px] flex items-center justify-center w-6 h-6 md:w-10 md:h-10"
           aria-label={
             showNetworkSelection || showTokenSelection ? "Back" : "Close"
           }
@@ -652,12 +652,12 @@ export const Send = () => {
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 200, damping: 18 }}
-        className="text-sm font-normal text-white mt-5"
+        className="text-sm font-normal text-white mt-2 md:mt-5"
       >
         {showNetworkSelection ? (
           <div className="space-y-4">
             <div>
-              <div className="relative mb-4">
+              <div className="relative mb-2 md:mb-4">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <MagnifyingGlassIcon className="h-5 w-5 text-[#535E73]" />
                 </div>
@@ -811,36 +811,41 @@ export const Send = () => {
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="space-y-2 md:space-y-4"
+          >
             <div>
-              <p className="text-[12px] md:text-[18px] font-bold mb-4">
+              <p className="text-sm md:text-[18px] font-bold mb-2 md:mb-4">
                 Send from
               </p>
-              <div className="w-full h-[48px] bg-[#161C27] px-3 rounded-lg shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] flex items-center overflow-x-auto whitespace-nowrap scrollbar-hide text-[14px] sm:text-[16px]">
+              <div className="w-full h-[44px] md:h-[48px] bg-[#161C27] px-3 rounded-lg shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] flex items-center overflow-x-auto whitespace-nowrap scrollbar-hide text-[12px] sm:text-[16px]">
                 {walletAddress}
               </div>
             </div>
 
             <div>
-              <p className="text-[18px] font-bold mb-4">Send to</p>
+              <p className="text-sm md:text-[18px] font-bold mb-2 md:mb-4">
+                Send to
+              </p>
               <input
                 type="text"
                 placeholder="Enter wallet address..."
                 {...register("recipientAddress")}
-                className={`w-full rounded-[8px] px-3 py-3 text-[16px] font-normal text-white placeholder-[#535E73] bg-[#161C27] border transition-all duration-200 focus:outline-none focus:border-[#3E73C4] hover:border-[#3E73C4] ${
+                className={`w-full rounded-[8px] px-3 py-3 text-xs md:text-[16px] font-normal text-white placeholder-[#535E73] bg-[#161C27] border transition-all duration-200 focus:outline-none focus:border-[#3E73C4] hover:border-[#3E73C4] ${
                   errors.recipientAddress
                     ? "border-[#FFC700] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]"
                     : "border-[#2C2F36]"
                 }`}
               />
               {errors.recipientAddress && (
-                <div className="flex gap-1 items-center mt-2">
+                <div className="flex gap-1 items-center mt-1 md:mt-2">
                   <ErrorInputIcon
                     width={16}
                     height={16}
-                    className="text-[#FFC700]"
+                    className="text-[#FFC700] w-3 h-3 md:w-4 md:h-4"
                   />
-                  <p className="text-[#FFC700] text-[12px] font-normal">
+                  <p className="text-[#FFC700] text-[10px] md: font-normal ">
                     {errors.recipientAddress.message}
                   </p>
                 </div>
@@ -849,12 +854,14 @@ export const Send = () => {
 
             {/* Network Selection */}
             <div>
-              <p className="text-[18px] font-bold mb-4">Network</p>
+              <p className="text-sm md:text-[18px] font-bold mb-2 md:mb-4">
+                Network
+              </p>
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => setShowNetworkSelection(true)}
-                  className={`w-full rounded-[8px] px-4 py-3 text-[16px] font-normal text-white placeholder-[#535E73] bg-[#161C27] border transition-all duration-200 focus:outline-none focus:border-[#3E73C4] hover:border-[#3E73C4] ${
+                  className={`w-full rounded-[8px] px-4 py-3 text-xs md:text-[16px] font-normal text-white placeholder-[#535E73] bg-[#161C27] border transition-all duration-200 focus:outline-none focus:border-[#3E73C4] hover:border-[#3E73C4] ${
                     errors.network
                       ? "border-[#FFC700] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]"
                       : "border-[#2C2F36]"
@@ -901,11 +908,11 @@ export const Send = () => {
               </div>
 
               {errors.network && (
-                <div className="flex gap-1 items-center mt-2">
+                <div className="flex gap-1 items-center mt-1 md:mt-2">
                   <ErrorInputIcon
                     width={16}
                     height={16}
-                    className="text-[#FFC700]"
+                    className="text-[#FFC700] w-3 h-3 md:w-4 md:h-4"
                   />
                   <p className="text-[#FFC700] text-[12px] font-normal">
                     {errors.network.message}
@@ -916,13 +923,15 @@ export const Send = () => {
 
             {/* Token Selection */}
             <div>
-              <p className="text-[18px] font-bold mb-4">Token</p>
+              <p className="text-sm md:text-[18px] font-bold mb-2 md:mb-4">
+                Token
+              </p>
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => setShowTokenSelection(true)}
                   disabled={!activeChain}
-                  className={`w-full rounded-[8px] px-4 py-3 text-[16px] font-normal text-white placeholder-[#535E73] bg-[#161C27] border transition-all duration-200 focus:outline-none focus:border-[#3E73C4] hover:border-[#3E73C4] ${
+                  className={`w-full rounded-[8px] px-4 py-3 text-xs md:text-[16px] font-normal text-white placeholder-[#535E73] bg-[#161C27] border transition-all duration-200 focus:outline-none focus:border-[#3E73C4] hover:border-[#3E73C4] ${
                     shouldShowTokenError
                       ? "border-[#FFC700] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]"
                       : "border-[#2C2F36]"
@@ -955,11 +964,11 @@ export const Send = () => {
               </div>
 
               {shouldShowTokenError && (
-                <div className="flex gap-1 items-center mt-2">
+                <div className="flex gap-1 items-center mt-1 md:mt-2">
                   <ErrorInputIcon
                     width={16}
                     height={16}
-                    className="text-[#FFC700]"
+                    className="text-[#FFC700] w-3 h-3 md:w-4 md:h-4"
                   />
                   <p className="text-[#FFC700] text-[12px] font-normal">
                     Please select a token
@@ -967,7 +976,6 @@ export const Send = () => {
                 </div>
               )}
             </div>
-
             <AmountInputField
               register={register}
               watch={watch}
@@ -988,8 +996,8 @@ export const Send = () => {
               <Button
                 variant="custom"
                 type="submit"
-                disabled={isButtonDisabled && !isSuccess}
-                className={`!max-h-[48px] !w-full !mt-6 ${
+                disabled={isButtonDisabled && !isSuccess && !isValid}
+                className={`!max-h-[32px] md:!max-h-[48px] !w-full !mt-4 md:!mt-6 !text-sm md:!text-base ${
                   isSuccess ? "!bg-green-500 !opacity-100 !cursor-default" : ""
                 }`}
               >

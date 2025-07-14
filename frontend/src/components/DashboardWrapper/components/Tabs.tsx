@@ -139,7 +139,7 @@ const TransactionItem: React.FC<{ transaction: Transaction }> = ({
   };
 
   return (
-    <div className="grid grid-cols-[auto_1fr_auto_1fr_auto] md:grid-cols-[auto_1fr_auto_1fr_auto] gap-4 md:gap-6 items-center text-white rounded-[16px]">
+    <div className="grid grid-cols-[auto_1fr_auto_1fr_auto] md:grid-cols-[auto_1fr_auto_1fr_auto] gap-2 md:gap-6 items-start md:items-center text-white rounded-[16px]">
       {/* Transaction Icon */}
       <div className="w-8 h-8 md:w-11 md:h-11 flex items-center justify-center">
         <Image
@@ -156,7 +156,7 @@ const TransactionItem: React.FC<{ transaction: Transaction }> = ({
         <span className="font-medium text-sm md:text-lg capitalize truncate">
           {transaction.type}
         </span>
-        <span className="text-[12px] md:text-sm truncate">
+        <span className="text-[12px] md:text-sm break-words">
           {transaction.timestamp}
         </span>
       </div>

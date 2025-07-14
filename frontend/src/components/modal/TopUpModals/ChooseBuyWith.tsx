@@ -46,14 +46,23 @@ export const ChooseBuyWith = () => {
             Add Funds
           </h2>
           <div className="flex flex-col gap-4">
-            <ModalButton
-              text="Coming soon"
-              className="w-[316px] md:w-[484px]"
-              label="Buy crypto"
-              withArrow
-              icon={<CardIcon width={35} height={32} />}
-              onClick={() => handleChoose(BuyWithEnum.FIAT)}
-            />
+            <div className="relative">
+              <ModalButton
+                text="Using card"
+                className="w-[316px] md:w-[484px] opacity-50"
+                label="Buy crypto"
+                withArrow
+                icon={<CardIcon width={35} height={32} />}
+                onClick={() => {}}
+                
+              />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="bg-blue-600 text-white px-3 py-1 rounded-md text-sm font-medium">
+                  Coming Soon
+                </span>
+              </div>
+            </div>
+
             <ModalButton
               text="From another wallet, exchange or chain"
               className="w-[316px] md:w-[484px]"

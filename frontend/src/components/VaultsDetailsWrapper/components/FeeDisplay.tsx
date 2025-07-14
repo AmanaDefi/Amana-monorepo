@@ -37,7 +37,7 @@ export const ExpectedSlippageBlock: React.FC<ExpectedSlippageProps> = ({
 
   return (
     <div
-      className={`flex justify-between items-center py-1 text-white mb-6 ${className}`}
+      className={`flex justify-between items-center py-1 text-white mb-6 text-[14px] md:text-base ${className}`}
     >
       <span className="text-white">Expected slippage:</span>
       <span className="font-normal flex-row gap-1">
@@ -79,7 +79,7 @@ export default function FeeDisplay({
   return (
     <div>
       {isDepositTooLow && (
-        <div className="bg-red-900/30 border border-red-500 py-2 px-4 rounded-lg mb-4">
+        <div className="bg-red-900/30 border border-red-500 py-2 px-4 rounded-lg mb-4 text-[14px] md:text-base">
           <p className="text-red-400 font-medium">
             Your deposit amount is too low to cover the deposit gas fee.
           </p>
@@ -87,7 +87,7 @@ export default function FeeDisplay({
       )}
 
       {shouldShowDepositFee || shouldShowWithdrawalFee ? (
-        <div className="w-full">
+        <div className="w-full text-[14px] md:text-base">
           <span className="flex flex-row items-center justify-between text-white py-1">
             <div className="flex items-center gap-2">
               <p>{isDeposit ? "Ethereum Deposit Fee" : "Withdrawal Fee"}</p>
@@ -128,7 +128,7 @@ export default function FeeDisplay({
         conversionOutput.netDepositToVaultUSD &&
         Number(debouncedInputBalance.value) > 0 &&
         netDepositValue > 0 && (
-          <p className="text-white font-normal mt-4 text-start flex items-center">
+          <p className="text-white font-normal mt-4 text-start flex items-center text-[14px] md:text-base">
             <span className="mr-2">
               Net Deposit to Vault: {formatUSDAmount(netDepositValue)}
             </span>

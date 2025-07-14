@@ -132,7 +132,7 @@ const VaultsDetailContainer: React.FC<{
     lastDepositInfo,
     setLastWithdrawInfo,
     lastWithdrawInfo,
-    isFailedOnConfirmation
+    isFailedOnConfirmation,
   } = useTransactionStore();
 
   const { switchToChain, walletAddress, activeChain, selectedChain } =
@@ -186,15 +186,15 @@ const VaultsDetailContainer: React.FC<{
     [],
   );
 
-const loadSlippageForVault = useUserSettingsStore(
-  (state) => state.loadSlippageForVault,
-);
+  const loadSlippageForVault = useUserSettingsStore(
+    (state) => state.loadSlippageForVault,
+  );
 
   useEffect(() => {
-    const vaultIdStr = Array.isArray(vaultID) ? vaultID[0] : vaultID; 
+    const vaultIdStr = Array.isArray(vaultID) ? vaultID[0] : vaultID;
 
     if (vaultIdStr) {
-      loadSlippageForVault(vaultIdStr); 
+      loadSlippageForVault(vaultIdStr);
     }
   }, [vaultID, loadSlippageForVault]);
 
@@ -368,7 +368,7 @@ const loadSlippageForVault = useUserSettingsStore(
   );
 
   const handleTokenSelect = useCallback(
-    (token: Token) => {
+    (token: Token | undefined) => {
       setSelectedToken(token);
       updateLocalStorageObject(vaultID.toString(), {
         selectedToken: JSON.stringify(token, bigIntReplacer),
@@ -405,7 +405,11 @@ const loadSlippageForVault = useUserSettingsStore(
     (Object.keys(lastTransactionStepFeedback).length > 0 ||
       Object.keys(transactionStepFeedback).length > 0);
 
-  console.log({shouldShowTransactionComplete}, {lastTransactionStepFeedback}, {transactionStepFeedback});
+  console.log(
+    { shouldShowTransactionComplete },
+    { lastTransactionStepFeedback },
+    { transactionStepFeedback },
+  );
 
   const currentTransactionInfo = isDeposit ? lastDepositInfo : lastWithdrawInfo;
 
@@ -439,7 +443,10 @@ const loadSlippageForVault = useUserSettingsStore(
               onClick={() => {
                 if (!walletAddress || isDeposit) {
                   openStep("mobileInfo");
-                } else if (vaultData?.protocolPoints && vaultData.protocolPoints > 0) {
+                } else if (
+                  vaultData?.protocolPoints &&
+                  vaultData.protocolPoints > 0
+                ) {
                   setShowMobileInvestment((prev) => !prev);
                 } else {
                   openStep("mobileInfo");
@@ -477,7 +484,12 @@ const loadSlippageForVault = useUserSettingsStore(
             />
 
             <MobileInvestmentPopover
-              isVisible={showMobileInvestment && isWithdraw && !!walletAddress && !!(vaultData?.protocolPoints && vaultData.protocolPoints > 0)}
+              isVisible={
+                showMobileInvestment &&
+                isWithdraw &&
+                !!walletAddress &&
+                !!(vaultData?.protocolPoints && vaultData.protocolPoints > 0)
+              }
               onClose={() => setShowMobileInvestment(false)}
               triggerRef={giftButtonRef}
               depositAmount={depositData.amount}
@@ -633,7 +645,7 @@ const loadSlippageForVault = useUserSettingsStore(
                 <WithdrawalNotice vault={vaultData} />
               )}
 
-              <div className="bg-[#14171F] pb-8 pt-6 px-4 md:px-5 min-w-[343px] lg:min-w-[490px] 2xl:min-w-[526px] rounded-[16px] w-full xl:max-w-[526px] mt-4 md:mt-4">
+              <div className="bg-[#14171F] pb-8 pt-6 px-4 md:px-5 min-w-[300px] lg:min-w-[490px] 2xl:min-w-[526px] rounded-[16px] w-full xl:max-w-[526px] mt-4 md:mt-4">
                 <VaultInputs
                   vaultData={vaultData}
                   setTransactionCompleted={setFinishedTransaction}
@@ -661,14 +673,16 @@ const loadSlippageForVault = useUserSettingsStore(
         </AnimatePresence>
 
         <div className="hidden md:flex flex-col w-full 2xl:max-w-[576px] mt-8 md:mt-0 space-y-4 font-gotham">
-          {isWithdraw && walletAddress && (vaultData?.protocolPoints ?? 0) > 0 && (
-            <YourInvestment
-              depositAmount={userVaultBalance?.formatted || "0"}
-              vaultTokenSymbol={vaultData?.inputToken.symbol || ""}
-              depositUSDValue={0}
-              vaultData={vaultData}
-            />
-          )}
+          {isWithdraw &&
+            walletAddress &&
+            (vaultData?.protocolPoints ?? 0) > 0 && (
+              <YourInvestment
+                depositAmount={userVaultBalance?.formatted || "0"}
+                vaultTokenSymbol={vaultData?.inputToken.symbol || ""}
+                depositUSDValue={0}
+                vaultData={vaultData}
+              />
+            )}
           {walletAddress && isDeposit && (
             <div className="hidden lg:block">
               <VaultStats
