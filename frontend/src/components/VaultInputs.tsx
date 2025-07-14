@@ -607,35 +607,23 @@ export default function VaultInputs({
 
     if (!inputToken || isTxInProgress) return;
 
-    if (isDeposit) {
-      const formattedAmount = Number(tokenBalance.formatted).toFixed(7);
-      const cleanAmount = Number(formattedAmount).toString();
+   if (isDeposit) {
+     // Use the full balance without rounding
+     setInputBalance(tokenBalance);
+     setDisplayValue(tokenBalance.formatted);
+     updateLocalStorageObject(vaultData.id, {
+       inputBal: JSON.stringify(tokenBalance, bigIntReplacer),
+       displayValue: tokenBalance.formatted,
+     });
+   } else {
+     const maxValue =
+       vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0.00";
 
-      setInputBalance({
-        ...tokenBalance,
-        formatted: cleanAmount,
-      });
-      setDisplayValue(cleanAmount);
-      updateLocalStorageObject(vaultData.id, {
-        inputBal: JSON.stringify(
-          {
-            ...tokenBalance,
-            formatted: cleanAmount,
-          },
-          bigIntReplacer,
-        ),
-        displayValue: cleanAmount,
-      });
-    } else {
-      const maxValue =
-        vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0.00";
-      const formattedMaxValue = Number(maxValue).toFixed(7);
-      const cleanMaxValue = Number(formattedMaxValue).toString();
-
-      handleChangeInput({
-        currentTarget: { value: cleanMaxValue },
-      } as React.ChangeEvent<HTMLInputElement>);
-    }
+    
+     handleChangeInput({
+       currentTarget: { value: maxValue },
+     } as React.ChangeEvent<HTMLInputElement>);
+   }
   }, [
     handleChangeInput,
     inputToken,
