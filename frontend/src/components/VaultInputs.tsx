@@ -66,6 +66,7 @@ import { formatTokenBalance, formatUSDAmount, formatUSDValue } from "@/utils/tok
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 import { zetachain } from "viem/chains";
 import { useAPYStore } from "@/store/APYStore";
+import { useMaxAmount } from "@/hooks/useMaxAmount";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -600,37 +601,17 @@ export default function VaultInputs({
     [inputToken, inputTokenPrice, isDeposit, vaultToken.decimals, vaultData.id],
   );
 
-  const handleMaxClick = useCallback(() => {
-    const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
-
-    if (!inputToken || isTxInProgress) return;
-
-   if (isDeposit) {
-     // Use the full balance without rounding
-     setInputBalance(tokenBalance);
-     setDisplayValue(tokenBalance.formatted);
-     updateLocalStorageObject(vaultData.id, {
-       inputBal: JSON.stringify(tokenBalance, bigIntReplacer),
-       displayValue: tokenBalance.formatted,
-     });
-   } else {
-     const maxValue =
-       vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0.00";
-
-    
-     handleChangeInput({
-       currentTarget: { value: maxValue },
-     } as React.ChangeEvent<HTMLInputElement>);
-   }
-  }, [
-    handleChangeInput,
+  const { handleMaxClick } = useMaxAmount({
     inputToken,
     tokenBalance,
     isDeposit,
+    vaultId: vaultData.id,
     vaultTotalAssetinToken,
-    vaultData.id,
-  ]);
-
+    setInputBalance,
+    setDisplayValue,
+    handleChangeInput,
+  });
+  
   const tokenList = useMemo(() => {
     let tokens: Token[] = [];
 

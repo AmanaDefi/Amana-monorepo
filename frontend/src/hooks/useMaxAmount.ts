@@ -11,11 +11,11 @@ interface UseMaxAmountProps {
   inputToken: Token | null | undefined;
   tokenBalance: Balance;
   isDeposit: boolean;
-  vaultId?: string;
+  vaultId: string;
   vaultTotalAssetinToken?: VaultTotalAssetsinToken;
-  onAmountChange: (amount: string) => void;
-  setValue?: (field: string, value: string, options?: any) => void;
-  fieldName?: string;
+  setInputBalance: (balance: Balance) => void;
+  setDisplayValue: (value: string) => void;
+  handleChangeInput: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export const useMaxAmount = ({
@@ -24,45 +24,30 @@ export const useMaxAmount = ({
   isDeposit,
   vaultId,
   vaultTotalAssetinToken,
-  onAmountChange,
-  setValue,
-  fieldName = "amount",
+  setInputBalance,
+  setDisplayValue,
+  handleChangeInput,
 }: UseMaxAmountProps) => {
   const handleMaxClick = useCallback(() => {
-    const isTxInProgress = vaultId ? CheckTheTxIsInProgress(vaultId) : false;
+    const isTxInProgress = CheckTheTxIsInProgress(vaultId);
 
     if (!inputToken || isTxInProgress) return;
 
-    let maxAmount: string;
-
     if (isDeposit) {
-      // For deposits, we use wallet balance
-      const formattedAmount = Number(tokenBalance.formatted).toFixed(7);
-      maxAmount = Number(formattedAmount).toString();
-    } else {
-      // For withdrawals, we use vault balance
-      const vaultMaxValue =
-        vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0.00";
-      const formattedMaxValue = Number(vaultMaxValue).toFixed(7);
-      maxAmount = Number(formattedMaxValue).toString();
-    }
-
-    onAmountChange(maxAmount);
-
-    if (setValue) {
-      setValue(fieldName, maxAmount, { shouldValidate: true });
-    }
-
-    if (vaultId) {
-      const updatedBalance: Balance = {
-        ...tokenBalance,
-        formatted: maxAmount,
-      };
+      setInputBalance(tokenBalance);
+      setDisplayValue(tokenBalance.formatted);
 
       updateLocalStorageObject(vaultId, {
-        inputBal: JSON.stringify(updatedBalance, bigIntReplacer),
-        displayValue: maxAmount,
+        inputBal: JSON.stringify(tokenBalance, bigIntReplacer),
+        displayValue: tokenBalance.formatted,
       });
+    } else {
+      const maxValue =
+        vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0.00";
+
+      handleChangeInput({
+        currentTarget: { value: maxValue },
+      } as React.ChangeEvent<HTMLInputElement>);
     }
   }, [
     inputToken,
@@ -70,30 +55,25 @@ export const useMaxAmount = ({
     isDeposit,
     vaultId,
     vaultTotalAssetinToken,
-    onAmountChange,
-    setValue,
-    fieldName,
+    setInputBalance,
+    setDisplayValue,
+    handleChangeInput,
   ]);
 
   const getMaxAmount = useCallback((): string => {
     if (!inputToken) return "0";
 
     if (isDeposit) {
-      const formattedAmount = Number(tokenBalance.formatted).toFixed(7);
-      return Number(formattedAmount).toString();
+      return tokenBalance.formatted;
     } else {
-      const vaultMaxValue =
-        vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0.00";
-      const formattedMaxValue = Number(vaultMaxValue).toFixed(7);
-      return Number(formattedMaxValue).toString();
+      return vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0.00";
     }
   }, [inputToken, tokenBalance, isDeposit, vaultTotalAssetinToken]);
 
   return {
     handleMaxClick,
     getMaxAmount,
-    isMaxDisabled:
-      !inputToken || (vaultId ? CheckTheTxIsInProgress(vaultId) : false),
+    isMaxDisabled: !inputToken || CheckTheTxIsInProgress(vaultId),
   };
 };
 
