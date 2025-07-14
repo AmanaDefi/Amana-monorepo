@@ -244,17 +244,15 @@ export default function VaultInputs({
 
    useEffect(() => {
      const setTokenBasedOnChain = () => {
-       // Якщо selectedChain є ZetaChain або ZetaChain Testnet, завжди використовуємо vaultData.inputToken
        if (
          selectedChain &&
-         selectedChain.id === CHAIN_ID["zetachain"] && // <-- Тепер тільки для основної мережі ZetaChain
+         selectedChain.id === CHAIN_ID["zetachain"] && 
          vaultData?.inputToken
        ) {
          setInputToken(vaultData.inputToken);
          if (onTokenSelect) {
            onTokenSelect(vaultData.inputToken);
          }
-         // Тримайте це для узгодженості взаємодії з модаллю
          setSelectedTokenFromModal(vaultData.inputToken);
        } else if (selectedChain) {
          const tokens = APPROVED_TOKENS[selectedChain.id] || [];
