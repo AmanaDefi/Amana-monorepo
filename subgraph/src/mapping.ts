@@ -250,7 +250,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
   if (addr == "0xcf18fc631e05ba7dcbcadcd212176c381256faa8") {
     return {
       type: "Yield-Bearing Stablecoin",
-      name: "YieldFi vyUSD",
+      name: "vyUSD",
       description: "This strategy deposits USDC into the vyUSD vault on Ethereum, a yield-optimized vault built on top of yUSD. vyUSD amplifies returns through automated DeFi strategies such as stablecoin LP positions and leverage looping. Yield is generated from protocol-driven strategies and auto-compounded within the vault. Because the underlying assets are stablecoins, risk from impermanent loss is minimal. APY is variable and influenced by vault utilization, market conditions, and strategy performance within the YieldFi protocol.",
       imgURL: "/ETH.png",
       depositFeePaidFromGasTank: false,
@@ -277,7 +277,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
   if (addr == "0x4cb4dfc521a5c44817a1fda79fb7eafaf6f1952e") {
     return {
       type: "Yield-Bearing Stablecoin",
-      name: "Aegis YUSD",
+      name: "YUSD",
       description: "This strategy swaps USDT for YUSD, a Bitcoin-backed stablecoin that passively earns yield through delta-neutral hedging and BTC-collateralized positions. Users benefit from stable, crypto-native returns without the need to stake or lock funds. Holding YUSD also earns Aegis points, offering additional rewards.",
       imgURL: "/bnb_logo.png",
       depositFeePaidFromGasTank: true,
@@ -333,7 +333,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
   if (addr == "0xe501cbd03fa739273f49a8b54dd49de1248101f6") {
     return {
       type: "Liquidity Pool",
-      name: "USDC/USDf Liquidity Pool",
+      name: "USDC/USDf Pool",
       description: "This strategy deposits USDC into the Curve USDC/USDf pool on Ethereum, then deposits the resulting Curve LP tokens into Convex to maximize CRV and CVX rewards. It earns trading fees from Curve and enhances yield through Convex staking rewards. Since USDC and USDf are both pegged to the US dollar, impermanent loss is minimal to negligible. Fees vary with trading volume, and reward rates are subject to change at the discretion of the underlying protocols. APY decreases as total TVL in the pool increases.",
       imgURL: "/ETH.png",
       depositFeePaidFromGasTank: false,
@@ -356,11 +356,11 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       maxWithdraw: 1000000,
     };
   }
-             
+
   if (addr == "0x8426929d568b1cbc281f5787556f84c5b101399d") {
     return {
       type: "Yield-Bearing Stablecoin",
-      name: "Noon Capital sUSN",
+      name: "sUSN",
       description: "This strategy swaps USDC for sUSN, the staked version of USN — a crypto-native stablecoin issued by Noon Capital. sUSN is yield-bearing by design, with returns generated through delta-neutral strategies like funding rate arbitrage and collateralized lending. As sUSN appreciates in value over time, users earn passive, compounding yield without needing to claim or stake manually.",
       imgURL: "/ETH.png",
       depositFeePaidFromGasTank: false,
@@ -371,7 +371,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       strategyNetwork: "Ethereum",
       strategyChainId: 1,
       protocolName: "Noon Capital",
-      protocolImgURL: "/sUSN.png",
+      protocolImgURL: "/noon_capital.jpeg",
       protocolDescription: "Noon Capital is the protocol behind USN and sUSN — stablecoins designed to generate consistent, crypto-native returns. While USN offers a liquid, dollar-pegged asset, sUSN is its yield-bearing counterpart, earning passive income through delta-neutral strategies like funding rate arbitrage and overcollateralized lending. Users can mint or swap into sUSN to earn without staking or lockups. The protocol emphasizes transparency, capital efficiency, and seamless DeFi integration. Risks include funding rate shifts, collateral volatility, and smart contract exposure.",
       networkDescription: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
       riskLevel: 3,
