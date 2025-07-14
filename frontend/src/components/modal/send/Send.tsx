@@ -310,7 +310,7 @@ export const Send = () => {
     reset({
       recipientAddress: "",
       amount: "",
-      network: "",
+      network: activeChain?.name || "",
       token: "",
     });
     setSelectedToken(null);
@@ -321,7 +321,7 @@ export const Send = () => {
     setTokenSearchQuery("");
     setTokenBalances(new Map());
     setIsSuccess(false);
-  }, [reset]);
+  }, [reset, activeChain]);
 
   const handleClose = useCallback(() => {
     clearForm();
