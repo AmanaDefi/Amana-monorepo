@@ -993,7 +993,8 @@ function Interaction({
     };
   }, []);
 
-  const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
+  const { isButtonDisabled, setLastDepositInfo, setLastWithdrawInfo } =
+    useTransactionStore();
 
   // Simplified feedback update for local transactions only
   function updateLocalTransactionFeedback(
@@ -1554,6 +1555,12 @@ function Interaction({
         };
       case Action.withdraw:
         return async () => {
+          setLastWithdrawInfo({
+            inputAmount: inputBalance.formatted,
+            outputAmount: outputAmountFormatted,
+            inputSymbol: inputToken?.symbol || "",
+            outputSymbol: vaultData.symbol,
+          });
           const result = await handleWithdrawTransaction(
             vaultData,
             inputBalance,

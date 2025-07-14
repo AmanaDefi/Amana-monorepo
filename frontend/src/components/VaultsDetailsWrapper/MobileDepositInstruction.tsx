@@ -66,8 +66,6 @@ const MobileDepositInstruction: React.FC<MobileDepositInstructionProps> = (
     steps,
   } = useInstructionStepLogic(props);
 
-  console.log({ isDynamicMode });
-
   let currentStepStatus = TransactionStepStatus.pending;
   let showLoader = false;
 

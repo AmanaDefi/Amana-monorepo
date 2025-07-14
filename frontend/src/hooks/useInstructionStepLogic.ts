@@ -31,6 +31,7 @@ const mapActionToUserStep = (
         case Action.CrossChainDepositFailed:
           return DepositStep.CROSS_CHAIN_TRANSFER;
         case Action.deposited:
+        case Action.failed:
           return DepositStep.FINAL_CONFIRMATION;
         default:
           return null;
@@ -46,6 +47,7 @@ const mapActionToUserStep = (
         case Action.InvestConfirmFailed:
           return DepositStep.CROSS_CHAIN_TRANSFER;
         case Action.deposited:
+        case Action.failed:
           return DepositStep.FINAL_CONFIRMATION;
         default:
           return null;
@@ -58,8 +60,13 @@ const mapActionToUserStep = (
           return DepositStep.CONFIRM_DEPOSIT;
         case Action.DivestSent:
         case Action.DivestFailed:
+        case Action.FundsReturnedError:
+        case Action.ReturnFundsToUserSent:
+        case Action.ReturnFundsToUserFailed:
+        case Action.ReturnFundsFromStrategyFailed:
           return DepositStep.CROSS_CHAIN_TRANSFER;
         case Action.withdrew:
+        case Action.failed:
           return DepositStep.FINAL_CONFIRMATION;
         default:
           return null;
@@ -70,12 +77,16 @@ const mapActionToUserStep = (
           return DepositStep.CONFIRM_DEPOSIT;
         case Action.withdrawconfirmed:
         case Action.DivestSent:
-        case Action.FundsDivested:
-        case Action.ReturnFundsToUserSent:
-        case Action.CrossChainWithdrawFailed:
         case Action.DivestFailed:
+        case Action.FundsDivested:
+        case Action.CrossChainWithdrawFailed:
+        case Action.ReturnFundsToUserSent:
+        case Action.FundsReturnedError:
+        case Action.ReturnFundsToUserFailed:
+        case Action.ReturnFundsFromStrategyFailed:
           return DepositStep.CROSS_CHAIN_TRANSFER;
         case Action.withdrew:
+        case Action.failed:
           return DepositStep.FINAL_CONFIRMATION;
         default:
           return null;
@@ -131,10 +142,10 @@ const getUserStepStatus = (
   let txHash: string | undefined;
   let isWaitingTooLong = false;
 
-  console.log({feedback})
+  console.log({ feedback });
   for (const action of relevantActions) {
     const actionFeedback = feedback[action];
-    console.log({actionFeedback})
+    console.log({ actionFeedback });
     if (actionFeedback) {
       latestStatus = actionFeedback.status;
       description = actionFeedback.description || description;
@@ -146,13 +157,6 @@ const getUserStepStatus = (
         actionFeedback.status !== TransactionStepStatus.error
       ) {
         latestStatus = TransactionStepStatus.completed;
-      }
-
-      if (
-        latestStatus === TransactionStepStatus.processing ||
-        latestStatus === TransactionStepStatus.completed
-      ) {
-        break;
       }
     }
   }
