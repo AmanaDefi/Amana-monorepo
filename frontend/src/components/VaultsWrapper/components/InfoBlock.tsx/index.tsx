@@ -22,8 +22,17 @@ export const InfoBlock = ({
     e.preventDefault();
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+  };
+
   return (
-    <div className="hover:cursor-pointer relative group" onClick={handleClick}>
+    <div
+      className="hover:cursor-pointer relative group"
+      onClick={handleClick}
+      onTouchStart={handleTouchStart}
+    >
       {customIcon || <InfoIcon />}
       <div
         className={classNames(
