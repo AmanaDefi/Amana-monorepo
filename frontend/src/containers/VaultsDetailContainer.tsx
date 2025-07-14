@@ -69,6 +69,7 @@ import VaultStats from "@/components/VaultsDetailsWrapper/components/VaultStats"
 import ChainsModal from "@/components/modal/chains/ChainsModal";
 import Image from "next/image";
 import { useAuthStore } from "@/store/authStore";
+import { AiOutlineConsoleSql } from "react-icons/ai";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -131,6 +132,7 @@ const VaultsDetailContainer: React.FC<{
     lastDepositInfo,
     setLastWithdrawInfo,
     lastWithdrawInfo,
+    isFailedOnConfirmation
   } = useTransactionStore();
 
   const { switchToChain, walletAddress, activeChain, selectedChain } =
@@ -403,6 +405,8 @@ const loadSlippageForVault = useUserSettingsStore(
     (Object.keys(lastTransactionStepFeedback).length > 0 ||
       Object.keys(transactionStepFeedback).length > 0);
 
+  console.log({shouldShowTransactionComplete}, {lastTransactionStepFeedback}, {transactionStepFeedback});
+
   const currentTransactionInfo = isDeposit ? lastDepositInfo : lastWithdrawInfo;
 
   return vaultData ? (
@@ -537,6 +541,7 @@ const loadSlippageForVault = useUserSettingsStore(
           vaultStrategyChainId={vaultData?.protocol?.chainId}
           isDeposit={isDeposit}
           isProcessing={isTransactionProcessing}
+          isFailedOnConfirmation={isFailedOnConfirmation}
         />
       </div>
 
@@ -555,6 +560,7 @@ const loadSlippageForVault = useUserSettingsStore(
                 selectedToken={selectedToken}
                 userVaultBalance={userVaultBalance}
                 isDeposit={isDeposit}
+                isFailedOnConfirmation={isFailedOnConfirmation}
                 onClose={() => {
                   setFinishedTransaction(false);
                   setLastTransactionStepFeedback({});
@@ -699,6 +705,7 @@ const loadSlippageForVault = useUserSettingsStore(
               vaultStrategyChainId={vaultData?.protocol?.chainId}
               isDeposit={isDeposit}
               isProcessing={isTransactionProcessing}
+              isFailedOnConfirmation={isFailedOnConfirmation}
             />
           </Dropdown>
           <Dropdown
