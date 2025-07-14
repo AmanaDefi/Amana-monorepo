@@ -142,10 +142,8 @@ const getUserStepStatus = (
   let txHash: string | undefined;
   let isWaitingTooLong = false;
 
-  console.log({ feedback });
   for (const action of relevantActions) {
     const actionFeedback = feedback[action];
-    console.log({ actionFeedback });
     if (actionFeedback) {
       latestStatus = actionFeedback.status;
       description = actionFeedback.description || description;
@@ -339,7 +337,6 @@ export const useInstructionStepLogic = ({
           isFailedOnConfirmation,
         );
 
-        console.log({ stepStatus });
         if (stepStatus.status === TransactionStepStatus.completed) {
           completedStepsCount = Math.max(completedStepsCount, index + 1);
         } else if (
@@ -372,8 +369,6 @@ export const useInstructionStepLogic = ({
       isFailedOnConfirmation,
     );
     currentDesc = currentStepStatusObj.description;
-
-    console.log({ currentStepStatusObj });
 
     let progress = (completedStepsCount / steps.length) * 100;
     if (

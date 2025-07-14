@@ -92,7 +92,6 @@ export default function ChainSelector({
       onSelectChain(chainToSelect);
 
      if (onSelectChainAndToken && defaultToken) {
-       console.log("onSelectChainAndToken from chain selector");
        setSelectedChainFromModal(chainToSelect);
        onSelectChainAndToken(chainToSelect, defaultToken);
      }

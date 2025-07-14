@@ -464,8 +464,6 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
     }
   }, [selectedChainLocal, publicKey, activeAccount]);
 
-  console.log({ walletAddress, publicKey });
-
   return (
     <Modal
       isOpen={isOpen}

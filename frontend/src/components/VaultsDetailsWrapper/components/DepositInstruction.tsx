@@ -206,8 +206,6 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
     completedSteps,
   } = useInstructionStepLogic(props);
 
-  console.log({ activeFeedback });
-
   const shouldShowElephant = isDynamicMode && progressPercent > 0;
 
   return (
@@ -234,8 +232,6 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
             isFailedOnConfirmation,
             finishedTransaction,
           );
-
-          console.log(stepState);
 
           let stepStatus;
           let bgColor = "#535E73";

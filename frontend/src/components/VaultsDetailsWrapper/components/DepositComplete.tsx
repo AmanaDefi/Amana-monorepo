@@ -82,6 +82,8 @@ const DepositComplete = ({
     }
   };
 
+  console.log(depositedInputAmount);
+
   const firstCardContent = getFirstCardContent();
 
   return (

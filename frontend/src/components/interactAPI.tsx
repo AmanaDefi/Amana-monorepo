@@ -675,7 +675,6 @@ export default function InteractionContainer({
 
         const onStepComplete = (stepIndex: number, stepData: any) => {
           const actionKey = actionMapping[stepIndex];
-          console.log("actionKey", actionKey, actionMapping);
           if (!actionKey) return;
           useTransactionStore.setState((prev) => {
             updateLocalStorageObject(vaultData.id, {

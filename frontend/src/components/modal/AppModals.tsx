@@ -25,7 +25,6 @@ import { useFundWalletStore } from "@/store/fundWalletStore";
 export const AppModals = () => {
   const { step } = useAuthStore();
   const { step: fundWalletStep } = useFundWalletStore();
-  console.log(step);
   return (
     <>
       <SignUpModal />

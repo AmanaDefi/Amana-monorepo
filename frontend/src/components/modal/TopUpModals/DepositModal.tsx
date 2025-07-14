@@ -97,7 +97,6 @@ export const Deposit = () => {
         newAmt,
         walletContext,
       );
-      console.log({ transactionHash });
       if (transactionHash) {
         setTxHash(transactionHash);
         showSuccessToast("Successfully Topped Up");

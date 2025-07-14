@@ -100,7 +100,6 @@ const ConnectChosenChain = () => {
 
           if (error.name === "ConnectorAlreadyConnectedError") {
             connector.disconnect();
-            console.log("connectorId removed from error");
             localStorage.removeItem("connectorId");
 
             setActiveConnector(null);
@@ -138,7 +137,7 @@ const ConnectChosenChain = () => {
       try {
         await connectSolana();
       } catch (e) {
-        console.log("connect solana error");
+        console.log("connect solana error", e);
       }
       select(connector.name);
       solanaConnect();
