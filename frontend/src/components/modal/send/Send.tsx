@@ -997,7 +997,7 @@ export const Send = () => {
                 variant="custom"
                 type="submit"
                 disabled={isButtonDisabled && !isSuccess && !isValid}
-                className={`md:!max-h-[48px] !w-full !mt-4 md:!mt-6 !text-sm md:!text-base !max-h-[48px] ${
+                className={`!max-h-[32px] md:!max-h-[48px] !w-full !mt-4 md:!mt-6 !text-sm md:!text-base ${
                   isSuccess ? "!bg-green-500 !opacity-100 !cursor-default" : ""
                 }`}
               >
