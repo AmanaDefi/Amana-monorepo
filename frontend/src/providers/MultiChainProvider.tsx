@@ -24,7 +24,11 @@ import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { zetachain } from "viem/chains";
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import { useTemporaryBitcoinWallet } from "@/hooks/useBitcoinWallet";
-import { getBitcoinBalance } from "@/actions/bitcoinActions";
+import dynamic from 'next/dynamic';
+const getBitcoinBalanceDynamic = async (bitcoinWallet: any) => {
+  const mod = await import('@/actions/bitcoinActions');
+  return mod.getBitcoinBalance(bitcoinWallet);
+};
 import { convertStringToBalance } from "@/utils/graphUtils";
 import { useAuthStore } from "@/store/authStore";
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
@@ -242,7 +246,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     if (!bitcoinWallet) return { value: 0n, formatted: "0" };
     
     try {
-      const balanceInSatoshis = await getBitcoinBalance(bitcoinWallet);
+      const balanceInSatoshis = await getBitcoinBalanceDynamic(bitcoinWallet);
       const balanceInBTC = Number(balanceInSatoshis) / 100000000; // Convert satoshis to BTC
       
       const balance = {

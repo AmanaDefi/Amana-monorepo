@@ -60,7 +60,15 @@ import { showErrorToast } from "@/toasts";
 
 import { trackEvent } from "@/utils/trackEvent";
 import { RevertOptions } from "@/lib/solanaGateway/cli/lib/scripts";
-import { executeBitcoinDeposit, validateBitcoinDeposit } from "./bitcoinActions";
+// import { executeBitcoinDeposit, validateBitcoinDeposit } from "./bitcoinActions";
+const executeBitcoinDepositDynamic = async (params: any) => {
+  const mod = await import('./bitcoinActions');
+  return mod.executeBitcoinDeposit(params);
+};
+const validateBitcoinDepositDynamic = async (bitcoinWallet: any, transactionAmount: any, vaultData: any) => {
+  const mod = await import('./bitcoinActions');
+  return mod.validateBitcoinDeposit(bitcoinWallet, transactionAmount, vaultData);
+};
 // import { executeOfficialBitcoinDeposit } from "./bitcoinActionsOfficial";
 // import { validateBitcoinDeposit } from "./bitcoinActions";
 
@@ -829,11 +837,11 @@ export const executeDeposit = async (
     if (!enforcedBitcoinWallet || !enforcedBitcoinWallet.publicKey) {
       throw new Error('Bitcoin wallet publicKey is required for Bitcoin deposits.');
     }
-    const validation = validateBitcoinDeposit(enforcedBitcoinWallet, transactionAmount, vaultData);
+    const validation = await validateBitcoinDepositDynamic(enforcedBitcoinWallet, transactionAmount, vaultData);
     if (!validation.isValid) {
       throw new Error(validation.error || "Invalid Bitcoin deposit parameters");
     }
-    return executeBitcoinDeposit({
+    return await executeBitcoinDepositDynamic({
       vaultData,
       bitcoinWallet: enforcedBitcoinWallet,
       transactionAmount,

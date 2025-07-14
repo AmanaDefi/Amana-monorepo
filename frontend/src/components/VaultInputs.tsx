@@ -63,7 +63,10 @@ import APYChangeCard from "./VaultsDetailsWrapper/components/APYChangeCard";
 import { useWallets } from "@privy-io/react-auth";
 import { useTransactionStore } from "@/store/transactionStore";
 import { formatTokenBalance, formatUSDValue } from "@/utils/tokenFormat";
-import { getBitcoinBalance } from "@/actions/bitcoinActions";
+const getBitcoinBalanceDynamic = async (bitcoinWallet: any) => {
+  const mod = await import('@/actions/bitcoinActions');
+  return mod.getBitcoinBalance(bitcoinWallet);
+};
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 import { zetachain } from "viem/chains";
 import { useAPYStore } from "@/store/APYStore";
@@ -355,7 +358,7 @@ export default function VaultInputs({
     const fetchBitcoinBalance = async () => {
       if (selectedChain?.id === CHAIN_ID.bitcoin && bitcoinWallet) {
         try {
-          const balance = await getBitcoinBalance(bitcoinWallet);
+          const balance = await getBitcoinBalanceDynamic(bitcoinWallet);
           const balanceInBTC = Number(balance) / 100000000; // Convert satoshis to BTC
           setBitcoinBalanceFormatted(balanceInBTC.toFixed(8));
         } catch (error) {

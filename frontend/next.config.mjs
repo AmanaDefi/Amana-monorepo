@@ -7,6 +7,11 @@ const nextConfig = {
       test: /\.svg$/,
       use: ['@svgr/webpack'],
     });
+    // Enable WebAssembly support for tiny-secp256k1/bitcoinjs-lib
+    config.experiments = {
+      ...config.experiments,
+      asyncWebAssembly: true,
+    };
     return config;
   },
 

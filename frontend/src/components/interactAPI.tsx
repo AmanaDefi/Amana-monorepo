@@ -46,8 +46,13 @@ import { ConnectedWallet, useWallets } from "@privy-io/react-auth";
 import { useAuthStore } from "@/store/authStore";
 import { zetachain } from "viem/chains";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { executeBitcoinDeposit } from '@/actions/bitcoinActions';
 // import { executeOfficialBitcoinDeposit } from '@/actions/bitcoinActionsOfficial';
+
+// Dynamic import helper for Bitcoin actions
+const executeBitcoinDepositDynamic = async (params: any) => {
+  const mod = await import('@/actions/bitcoinActions');
+  return mod.executeBitcoinDeposit(params);
+};
 
 function isHex(value: string): value is `0x${string}` {
   return typeof value === "string" && value.startsWith("0x");
@@ -1198,7 +1203,7 @@ const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
         );
         
         try {
-          const result = await executeBitcoinDeposit({
+          const result = await executeBitcoinDepositDynamic({
             vaultData,
             bitcoinWallet,
             transactionAmount: inputBalance.value,
