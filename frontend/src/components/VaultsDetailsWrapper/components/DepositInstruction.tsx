@@ -206,8 +206,6 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
     completedSteps,
   } = useInstructionStepLogic(props);
 
-  console.log({activeFeedback})
-
   const shouldShowElephant = isDynamicMode && progressPercent > 0;
 
   return (
@@ -234,8 +232,6 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
             isFailedOnConfirmation,
             finishedTransaction,
           );
-
-          console.log(stepState)
 
           let stepStatus;
           let bgColor = "#535E73";
@@ -350,7 +346,10 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
                     )}
                   </AnimatePresence>
 
+                  {/* Always show the main step icon */}
                   <div>{getStepIcon(step)}</div>
+
+                  {/* Loader overlay */}
                   <AnimatePresence>
                     {showLoader && (
                       <motion.div
@@ -368,37 +367,6 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
                             ease: "linear",
                           }}
                         />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                  <AnimatePresence>
-                    {stepState === "completed" && (
-                      <motion.div
-                        className="absolute inset-0 rounded-full flex items-center justify-center"
-                        initial={{ scale: 0, rotate: -180 }}
-                        animate={{ scale: 1, rotate: 0 }}
-                        transition={{
-                          type: "spring",
-                          stiffness: 400,
-                          damping: 20,
-                        }}
-                      >
-                        <motion.svg
-                          className="w-4 h-4 text-white"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          initial={{ pathLength: 0 }}
-                          animate={{ pathLength: 1 }}
-                          transition={{ duration: 0.5, ease: "easeInOut" }}
-                        >
-                          <motion.path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={3}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </motion.svg>
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -421,7 +389,7 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
                     step === DepositStep.CONFIRM_DEPOSIT
                       ? getStepDescription(step, isDeposit)
                       : stepStatus?.description ||
-                        getStepDescription(step, isDeposit)} 
+                        getStepDescription(step, isDeposit)}
                   </motion.p>
                 </div>
                 <AnimatePresence>

@@ -54,8 +54,6 @@ const AllWAllets = () => {
   const { logout } = usePrivy();
   const activeAccount = filteredWallets[0];
 
-  console.log(activeAccount);
-
   const {
     wallets: solanaAdapters,
     select,
@@ -119,7 +117,6 @@ const AllWAllets = () => {
 
           if (error.name === "ConnectorAlreadyConnectedError") {
             connector.disconnect();
-            console.log("connectorId removed from error");
             localStorage.removeItem("connectorId");
 
             setActiveConnector(null);

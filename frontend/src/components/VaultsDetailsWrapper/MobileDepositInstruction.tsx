@@ -66,8 +66,6 @@ const MobileDepositInstruction: React.FC<MobileDepositInstructionProps> = (
     steps,
   } = useInstructionStepLogic(props);
 
-  console.log({ isDynamicMode });
-
   let currentStepStatus = TransactionStepStatus.pending;
   let showLoader = false;
 
@@ -87,7 +85,6 @@ const MobileDepositInstruction: React.FC<MobileDepositInstructionProps> = (
       currentStepStatus = TransactionStepStatus.processing;
       showLoader = false;
     } else {
-      console.log("get step status");
       const stepStatus = getUserStepStatus(
         steps[currentStepIndex],
         activeFeedback,
@@ -97,13 +94,10 @@ const MobileDepositInstruction: React.FC<MobileDepositInstructionProps> = (
         isFailedOnConfirmation,
       );
 
-      console.log(stepStatus.status);
       currentStepStatus = stepStatus.status;
       showLoader = currentStepStatus === TransactionStepStatus.processing;
     }
   }
-
-  console.log({ currentStepStatus });
 
   return (
     <div className="flex flex-col gap-[20px] bg-[#14171F] py-4 px-[14px] rounded-lg">

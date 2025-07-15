@@ -10,8 +10,6 @@ import { RISK_LEVELS } from "./VaultsGrid";
 import PointsIcon from "./svg/PointsIcon";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 
-import Image from "next/image";
-
 type Props = {
   vault: VaultData;
   vaultAPY?: VaultAPY;
@@ -84,10 +82,14 @@ export const VaultOverviewBlock: React.FC<Props> = ({
   const isAPYLoading = isLoading || vaultAPY === undefined;
   const isTVLLoading = isLoading || totalAssets === undefined;
 
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
   return (
     <>
       {/* TVL Section */}
-      <div className="flex items-center w-full">
+      <div className="flex items-center w-full " onClick={handleClick}>
         <div className="flex flex-col gap-2">
           <div className="flex flex-row gap-1 items-center">
             <p
@@ -191,7 +193,6 @@ export const VaultOverviewBlock: React.FC<Props> = ({
               skeletonClassName="h-6 w-16"
             />
             {isReward && vault.protocolPoints && vault.protocolPoints > 0 ? (
-
               <InfoBlock
                 isRight
                 customIcon={<PointsIcon className="w-5 h-5" color="#ffffff" />}

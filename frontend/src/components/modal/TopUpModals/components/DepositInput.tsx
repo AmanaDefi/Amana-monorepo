@@ -150,12 +150,12 @@ export const DepositInput = ({
             "focused:border-[#3E73C4]",
           )}
         >
-          <div className="flex items-center justify-between text-sm text-[#535E73] relative">
+          <div className="flex items-center justify-between text-xs md:text-sm text-[#535E73] relative">
             <span>You send (min 0.0015)</span>
             {!!activeConnector && (
               <button
                 onClick={onMaxClick}
-                className="text-[#3E73C4] hover:underline font-normal absolute left-[50%]"
+                className="text-[#3E73C4] hover:underline font-normal absolute left-[65%]"
               >
                 MAX
               </button>
@@ -183,10 +183,12 @@ export const DepositInput = ({
           </div>
         </div>
 
-        <div className="flex flex-row h-4 items-center gap-[10px] mt-[10px]">
-          {!!error && <WarningIcon height={16} width={16} />}
-          <p className={`text-[#FFC700] text-xs leading-4`}>{error}</p>
-        </div>
+        {error && (
+          <div className="flex flex-row h-4 items-center gap-[10px] mt-[10px] mb-2">
+            <WarningIcon height={16} width={16} />
+            <p className={`text-[#FFC700] text-xs leading-4`}>{error}</p>
+          </div>
+        )}
       </div>
     </div>
   );

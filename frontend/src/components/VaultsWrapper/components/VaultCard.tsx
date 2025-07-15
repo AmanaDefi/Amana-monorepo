@@ -167,8 +167,8 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                 className="rounded-full flex-none"
                 sizes="36px"
               />
-              <div className="flex flex-col gap-1 flex-auto min-w-0">
-                <div className="flex flex-row gap-2 items-baseline">
+              <div className="flex flex-col flex-auto min-w-0 gap-0 md:gap-1 leading-none">
+                <div className="flex flex-col md:flex-row gap-0 leading-none md:gap-2 items-baseline">
                   <p className="text-white font-[600] md:text-lg leading-5 -tracking-1 whitespace-nowrap">
                     {vault.name.replace("Pool", "").replace("Lend", "")}
                   </p>
@@ -214,7 +214,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                 </div>
               </VaultCardInfoBlock>
             )}
-            <VaultCardInfoBlock>
+            <VaultCardInfoBlock onClick={(e) => e.stopPropagation()}>
               <VaultOverviewBlock
                 vault={vault}
                 vaultAPY={vaultAPY}
@@ -222,7 +222,10 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
               />
             </VaultCardInfoBlock>
 
-            <div className="flex flex-row gap-2 md:gap-4">
+            <div
+              className="flex flex-row gap-2 md:gap-4"
+              onClick={(e) => e.stopPropagation()}
+            >
               <VaultCardInfoBlock>
                 <div className="flex flex-col gap-2 w-full relative md:pr-6">
                   <p className="font-normal text-xs md:text-sm leading-4 text-white">
@@ -251,7 +254,10 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
 
           {(hasChartData ||
             (isNoonCapitalVault(vault.id) && noonCapitalChart.length > 0)) && (
-            <div className="flex flex-col w-full rounded-lg pt-2 bg-[#3E73C40D] border border-[#3E3C59] mb-2">
+            <div
+              className="flex flex-col w-full rounded-lg pt-2 bg-[#3E73C40D] border border-[#3E3C59] mb-2"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="flex flex-row gap-1 items-center justify-between px-2">
                 <p className="font-normal text-sm leading-4 text-white pl-[9px]">
                   Historical APY
@@ -295,7 +301,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
         </div>
         <div className="flex gap-4 mt-auto">
           <AppButton variant="blue" onClick={handlePressButton}>
-            {!!walletAddress ? "Deposit" : "Invest"}
+            Invest
           </AppButton>
 
           {userBalance?.balance && Number(userBalance.balance) > 0 && (

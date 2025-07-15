@@ -88,7 +88,7 @@ const Team = () => {
   };
 
   return (
-    <section className="mt-[116px] lg:mt-[364px]">
+    <section className="mt-[116px] lg:mt-[128px]">
       <motion.h1
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -344,7 +344,7 @@ const Team = () => {
       {/* XL layout - original grid */}
       <div className="hidden xl:flex flex-col justify-center items-center w-full px-4">
         {/* First row - 2 members */}
-        <div className="flex justify-between w-full max-w-[912px] 2xl:max-w-[1034px] mb-10 items-center">
+        <div className="flex justify-between w-full max-w-[872px] 3xl:max-w-[1034px] mb-10 items-center">
           {teamData.slice(0, 2).map((member, index) => (
             <motion.div
               key={member.id}
@@ -353,14 +353,14 @@ const Team = () => {
               transition={{ duration: 0.6, delay: index * 0.2 }}
               viewport={{ once: true }}
               whileHover={{ y: -10 }}
-              className="rounded-[24px] px-7 py-10 w-[408px] 2xl:w-[469px] h-[516px] shadow-lg bg-[#0D1117] text-center"
+              className="rounded-[24px] px-7 py-10 w-[388px] 3xl:w-[469px] h-[516px] shadow-lg bg-[#0D1117] text-center"
             >
               <motion.div
                 initial={{ scale: 0.8 }}
                 whileInView={{ scale: 1 }}
                 transition={{ duration: 0.5, delay: index * 0.2 + 0.3 }}
                 viewport={{ once: true }}
-                className="relative w-[356px] 2xl:w-[413px] h-[356px] rounded-[16px] overflow-hidden mb-6 mx-auto"
+                className="relative w-[332px] 3xl:w-[413px] h-[356px] rounded-[16px] overflow-hidden mb-6 mx-auto"
               >
                 <img
                   src={member.image}
@@ -404,7 +404,7 @@ const Team = () => {
         </div>
 
         {/* Second row - 3 members */}
-        <div className="flex justify-between max-w-[1256px] 2xl:max-w-[1431px] w-full gap-3">
+        <div className="flex justify-between max-w-[1200px] 3xl:max-w-[1431px] w-full gap-3">
           {teamData.slice(2, 5).map((member, index) => (
             <motion.div
               key={member.id}
@@ -413,14 +413,14 @@ const Team = () => {
               transition={{ duration: 0.6, delay: index * 0.2 + 0.4 }}
               viewport={{ once: true }}
               whileHover={{ y: -10 }}
-              className="rounded-[24px] px-7 py-10 w-[408px] 2xl:w-[469px] h-[516px] shadow-lg bg-[#0D1117] text-center"
+              className="rounded-[24px] px-7 py-10 w-[388px] 3xl:w-[469px] h-[516px] shadow-lg bg-[#0D1117] text-center"
             >
               <motion.div
                 initial={{ scale: 0.8 }}
                 whileInView={{ scale: 1 }}
                 transition={{ duration: 0.5, delay: index * 0.2 + 0.7 }}
                 viewport={{ once: true }}
-                className="relative w-[356px] 2xl:w-[413px] h-[356px] rounded-[16px] overflow-hidden mb-6 mx-auto"
+                className="relative w-[332px] 3xl:w-[413px] h-[356px] rounded-[16px] overflow-hidden mb-6 mx-auto"
               >
                 <img
                   src={member.image}

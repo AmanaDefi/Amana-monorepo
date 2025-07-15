@@ -675,7 +675,6 @@ export default function InteractionContainer({
 
         const onStepComplete = (stepIndex: number, stepData: any) => {
           const actionKey = actionMapping[stepIndex];
-          console.log("actionKey", actionKey, actionMapping);
           if (!actionKey) return;
           useTransactionStore.setState((prev) => {
             updateLocalStorageObject(vaultData.id, {
@@ -993,7 +992,8 @@ function Interaction({
     };
   }, []);
 
-  const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
+  const { isButtonDisabled, setLastDepositInfo, setLastWithdrawInfo } =
+    useTransactionStore();
 
   // Simplified feedback update for local transactions only
   function updateLocalTransactionFeedback(
@@ -1554,6 +1554,12 @@ function Interaction({
         };
       case Action.withdraw:
         return async () => {
+          setLastWithdrawInfo({
+            inputAmount: inputBalance.formatted,
+            outputAmount: outputAmountFormatted,
+            inputSymbol: inputToken?.symbol || "",
+            outputSymbol: vaultData.symbol,
+          });
           const result = await handleWithdrawTransaction(
             vaultData,
             inputBalance,

@@ -48,8 +48,8 @@ export default function ChainTokenSelector({
 
   if (!currentChain) {
     return (
-      <div className={`flex items-center opacity-50 ${className}`}>
-        <span className="text-gray-400">Select chain first</span>
+      <div className={`flex items-center opacity-50 text-xs md:text-sm ${className}`}>
+        <span className="text-gray-400">Select chain</span>
       </div>
     );
   }
@@ -122,7 +122,7 @@ export default function ChainTokenSelector({
             </p>
           </>
         ) : (
-          <p className="max-w-[82px] md:max-w-[200px] truncate">Select token</p>
+          <p className="max-w-[82px] md:max-w-[200px] truncate text-xs md:text-sm">Select token</p>
         )}
       </button>
       <DropdownList

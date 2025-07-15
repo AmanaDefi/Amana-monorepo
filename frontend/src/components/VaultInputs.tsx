@@ -66,6 +66,7 @@ import { formatTokenBalance, formatUSDAmount, formatUSDValue } from "@/utils/tok
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 import { zetachain } from "viem/chains";
 import { useAPYStore } from "@/store/APYStore";
+import { useMaxAmount } from "@/hooks/useMaxAmount";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -74,7 +75,7 @@ export interface VaultInputsProps {
   vaultTotalAssetinToken?: VaultTotalAssetsinToken;
   transactionCompleted: boolean;
   initialIsDeposit?: boolean;
-  onTokenSelect?: (token: Token) => void;
+  onTokenSelect: (token: Token | undefined) => void;
   selectedToken?: Token;
   selectedChain?: Chain | null;
   onSelectChain?: (chain: Chain) => void;
@@ -249,58 +250,54 @@ export default function VaultInputs({
     };
   }, [vaultData]);
 
-  useEffect(() => {
-    const setToken = () => {
-      if (
-        selectChain?.id === selectedChainFromModal?.id &&
-        inputToken &&
-        !(
-          selectChain?.id === zetachain.id &&
-          inputToken.address !== vaultData?.inputToken?.address
-        )
-      ) {
-        return;
-      }
-      if (
-        selectChain &&
-        (selectChain.id === 7001 || selectChain.id === 7000) &&
-        vaultData?.inputToken
-      ) {
-        setInputToken(vaultData.inputToken);
-        if (onTokenSelect) {
-          onTokenSelect(vaultData.inputToken);
-          setSelectedTokenFromModal(vaultData.inputToken);
-        }
-      } else if (vaultData?.inputToken && selectChain) {
-        const tokens = APPROVED_TOKENS[selectChain.id] || [];
-        const defaultToken =
-          tokens.find((token) => token.symbol === "USDC") || tokens[0];
+   useEffect(() => {
+     const setTokenBasedOnChain = () => {
+       if (
+         selectedChain &&
+         selectedChain.id === CHAIN_ID["zetachain"] && 
+         vaultData?.inputToken
+       ) {
+         setInputToken(vaultData.inputToken);
+         if (onTokenSelect) {
+           onTokenSelect(vaultData.inputToken);
+         }
+         setSelectedTokenFromModal(vaultData.inputToken);
+       } else if (selectedChain) {
+         const tokens = APPROVED_TOKENS[selectedChain.id] || [];
+         const defaultToken =
+           tokens.find((token) => token.symbol === "USDC") || tokens[0];
 
-        if (defaultToken) {
-          setInputToken(defaultToken);
-          if (onTokenSelect) {
-            onTokenSelect(defaultToken);
-            setSelectedTokenFromModal(defaultToken);
-          }
-        }
-      }
-    };
+         if (defaultToken) {
+           setInputToken(defaultToken);
+           if (onTokenSelect) {
+             onTokenSelect(defaultToken);
+           }
+           setSelectedTokenFromModal(defaultToken);
+         }
+       } else {
+         setInputToken(undefined);
+         if (onTokenSelect) {
+           onTokenSelect(undefined);
+         }
+         setSelectedTokenFromModal(null);
+       }
+     };
 
-    if (vaultData?.id) {
-      const vaultInfo = getLocalStorageObject(vaultData?.id);
-      const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
+     if (vaultData?.id) {
+       const vaultInfo = getLocalStorageObject(vaultData?.id);
+       const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
 
-      if (isTxInProgress && vaultInfo?.selectedToken) {
-        setInputToken(JSON.parse(vaultInfo.selectedToken, bigIntReviver));
-      } else {
-        setToken();
-      }
-    } else {
-      setToken();
-    }
+       if (isTxInProgress && vaultInfo?.selectedToken) {
+         setInputToken(JSON.parse(vaultInfo.selectedToken, bigIntReviver));
+       } else {
+         setTokenBasedOnChain();
+       }
+     } else {
+       setTokenBasedOnChain();
+     }
 
-    setAllowInput(true);
-  }, [selectChain, vaultData, onTokenSelect, selectedChainFromModal]);
+     setAllowInput(true);
+   }, [selectedChain, vaultData, onTokenSelect, setSelectedTokenFromModal]);
 
   // Update inputTokenBalance state when useTokenBalance returns a new value
   const { balance: tokenBalance, fetchBalance } =
@@ -611,49 +608,17 @@ export default function VaultInputs({
     [inputToken, inputTokenPrice, isDeposit, vaultToken.decimals, vaultData.id],
   );
 
-  const handleMaxClick = useCallback(() => {
-    const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
-
-    if (!inputToken || isTxInProgress) return;
-
-    if (isDeposit) {
-      const formattedAmount = Number(tokenBalance.formatted).toFixed(7);
-      const cleanAmount = Number(formattedAmount).toString();
-
-      setInputBalance({
-        ...tokenBalance,
-        formatted: cleanAmount,
-      });
-      setDisplayValue(cleanAmount);
-      updateLocalStorageObject(vaultData.id, {
-        inputBal: JSON.stringify(
-          {
-            ...tokenBalance,
-            formatted: cleanAmount,
-          },
-          bigIntReplacer,
-        ),
-        displayValue: cleanAmount,
-      });
-    } else {
-      const maxValue =
-        vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0.00";
-      const formattedMaxValue = Number(maxValue).toFixed(7);
-      const cleanMaxValue = Number(formattedMaxValue).toString();
-
-      handleChangeInput({
-        currentTarget: { value: cleanMaxValue },
-      } as React.ChangeEvent<HTMLInputElement>);
-    }
-  }, [
-    handleChangeInput,
+  const { handleMaxClick } = useMaxAmount({
     inputToken,
     tokenBalance,
     isDeposit,
+    vaultId: vaultData.id,
     vaultTotalAssetinToken,
-    vaultData.id,
-  ]);
-
+    setInputBalance,
+    setDisplayValue,
+    handleChangeInput,
+  });
+  
   const tokenList = useMemo(() => {
     let tokens: Token[] = [];
 
@@ -1229,7 +1194,7 @@ export default function VaultInputs({
     <>
       {/* Add prominent message about gas fees for Ethereum vaults */}
       {isDeposit && !vaultData.depositFeePaidFromGasTank && (
-        <div className="bg-yellow-900/30 border border-yellow-500 py-3 px-4 rounded-lg mb-5">
+        <div className="bg-yellow-900/30 border border-yellow-500 py-3 px-4 rounded-lg mb-5 text-xs md:text-base">
           <p className="text-yellow-400 flex items-center">
             <span className="font-normal">
               For Ethereum Vaults, Ethereum gas fees are deducted directly from
@@ -1238,13 +1203,24 @@ export default function VaultInputs({
           </p>
         </div>
       )}
-      <div className="relative mb-6 ">
-        <TabSelector
-          availableTabs={["Invest", "Withdraw"]}
-          activeTab={isDeposit ? "Invest" : "Withdraw"}
-          setActiveTab={handleTabChange}
-        />
-        <div className="absolute top-0 right-0 z-30 mt-3">
+      <div className="mb-4 md:mb-6">
+        <div className="relative">
+          <TabSelector
+            availableTabs={["Invest", "Withdraw"]}
+            activeTab={isDeposit ? "Invest" : "Withdraw"}
+            setActiveTab={handleTabChange}
+          />
+
+          <div className="hidden md:block absolute top-0 right-0 z-30 mt-3">
+            <SlippageSettingsBlock
+              setInputBalance={setInputBalance}
+              vaultId={vaultData.id}
+              showTransactionSettings={isSlippageExceedingLimit}
+            />
+          </div>
+        </div>
+
+        <div className="flex md:hidden mt-4 justify-end">
           <SlippageSettingsBlock
             setInputBalance={setInputBalance}
             vaultId={vaultData.id}
@@ -1313,7 +1289,9 @@ export default function VaultInputs({
             </div>
             <ExpectedSlippageBlock
               conversionOutput={conversionOutput}
-              isVisible={!!conversionOutput.slippageActualValue && !outputBoxErrorMessage}
+              isVisible={
+                !!conversionOutput.slippageActualValue && !outputBoxErrorMessage
+              }
             />
 
             <div className="mb-4">
