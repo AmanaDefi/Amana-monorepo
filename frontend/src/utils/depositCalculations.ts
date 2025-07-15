@@ -214,26 +214,46 @@ export const calculateGasFeeIfNeeded = async (
   const gasZRC20 = result[0] as string;
   const gasFee = result[1] as bigint;
 
+  console.log("Raw gas fee calculation:", {
+    gasZRC20,
+    gasFee: gasFee.toString(),
+    vaultAsset: vaultData.inputToken.address,
+    gasLimitForWithdrawAndCall: gasLimitForWithdrawAndCall.toString()
+  });
+
   let gasFeeInVaultAsset = gasFee;
 
   // Convert gas fee to vault asset if tokens differ
   if (gasZRC20 !== vaultData.inputToken.address) {
-    const { amountOut } = await getPathDataAndAmountOut(
-      gasFee,
-      ZRC20_TOKENS_BY_ADDRESS[gasZRC20] || {
-        address: gasZRC20,
-        symbol: 'GAS',
-        decimals: 18,
-        imgURL: '',
-        price: 0,
-        balance: { value: 0n, formatted: '0' },
-        isNative: false
-      } as Token,
-      vaultData.inputToken,
-      vaultData.id,
-      500
-    );
-    gasFeeInVaultAsset = amountOut;
+    // Use getEquivalentInputAmount on swapHelper contract to convert gas fee to vault asset
+    const publicClient = getPublicClient(SUPPORTED_CHAINS[0].id);
+    if (publicClient) {
+      try {
+        gasFeeInVaultAsset = await publicClient.readContract({
+          address: SWAP_HELPER_ADDRESS as Address,
+          abi: [parseAbiItem("function getEquivalentInputAmount(address,address,uint256) view returns (uint256)")],
+          functionName: "getEquivalentInputAmount",
+          args: [
+            vaultData.inputToken.address as Address, // vaultAsset (output token)
+            gasZRC20 as Address,                     // input token (gas token)
+            gasFee                                   // input amount
+          ],
+        });
+        console.log("Gas fee conversion successful:", {
+          gasZRC20,
+          gasFee: gasFee.toString(),
+          gasFeeInVaultAsset: gasFeeInVaultAsset.toString(),
+          vaultAsset: vaultData.inputToken.address
+        });
+      } catch (error) {
+        console.error("Error converting gas fee using getEquivalentInputAmount:", error);
+        // Fallback to direct conversion if the function fails
+        gasFeeInVaultAsset = gasFee;
+      }
+    } else {
+      console.error("Failed to get public client for gas fee conversion");
+      gasFeeInVaultAsset = gasFee;
+    }
   }
 
   // Format gas fee in USD and ETH
@@ -242,6 +262,16 @@ export const calculateGasFeeIfNeeded = async (
   const gasFeeInUSD = formatCurrency(gasFeeInUSDAmount);
   const ethAmount = convertUsdToEth(gasFeeInUSDAmount, ethPriceUsd);
   const gasFeeInETH = ethAmount.toFixed(5);
+
+  console.log("Final gas fee calculation:", {
+    gasFeeInVaultAsset: gasFeeInVaultAsset.toString(),
+    gasFeeInTokenUnits,
+    gasFeeInUSDAmount,
+    gasFeeInUSD,
+    gasFeeInETH,
+    vaultTokenPrice,
+    ethPriceUsd
+  });
 
   return {
     gasFeeInVaultAsset,
