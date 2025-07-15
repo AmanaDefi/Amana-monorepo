@@ -61,6 +61,12 @@ export const ExpectedSlippageBlock: React.FC<ExpectedSlippageProps> = ({
               </span>
             </div>
             <div className="flex justify-between">
+              <span>Total Slippage:</span> 
+              <span>
+              {conversionOutput.slippageActualValue?.toFixed(2)}% ({conversionOutput.slippageAmountInUSDFormatted})
+              </span>
+            </div>
+            <div className="flex justify-between">
               <span>Total Loss:</span> 
               <span>
               {conversionOutput.totalLossPercentage?.toFixed(2)}% ({conversionOutput.totalLossUSD})

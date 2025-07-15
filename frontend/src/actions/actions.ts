@@ -391,9 +391,6 @@ export async function calculateConvexEthereumRewardsAPY(
 
   const publicClient = getPublicClient(strategyChain.id);
   if (!publicClient) {
-    console.log(
-      `Failed to get public client for chain id: ${strategyChain.id}`,
-    );
     return 0;
   }
 
@@ -419,9 +416,6 @@ export async function calculateConvexEthereumRewardsAPY(
       (Number(cvxRewardRate) * secondsPerYear) / Number(totalSupply);
 
     const lpPriceInInput = Number(virtualPrice) / 1e18;
-    console.log("inputToken", inputToken);
-    console.log("inputToken", inputToken.symbol);
-    console.log("btcTokenPrice", btcTokenPrice);
     const lpPriceInUSD = (() => {
       if (inputToken.symbol === "ETH.ETH")
         return lpPriceInInput * ethTokenPrice;
@@ -429,18 +423,14 @@ export async function calculateConvexEthereumRewardsAPY(
         return lpPriceInInput * btcTokenPrice;
       return lpPriceInInput; // fallback (e.g. stablecoins)
     })();
-    console.log("virtualPrice", virtualPrice.toString());
-    console.log("lpPriceInInput", lpPriceInInput);
-    console.log("lpPriceInUSD", lpPriceInUSD);
+
     // Step 4: APY Calculation
     const crvApy = (crvPerLpPerYear * crvTokenPrice) / lpPriceInUSD;
     const cvxApy = (cvxPerTokenPerYear * cvxTokenPrice) / lpPriceInUSD;
 
     const annualApy = crvApy + cvxApy;
-    console.log("Annual APY:", annualApy);
     return annualApy;
   } catch (error) {
-    console.log("calculateConvexEthereumRewardsAPY failed:", error);
     return 0;
   }
 }
@@ -2347,83 +2337,7 @@ export const getPathDataAndAmountOut = async (
   }
 };
 
-export const getSharesFromDeposit = async (
-  amount: bigint,
-  vaultData: VaultData,
-  activeWallet: ConnectedWallet,
-) => {
-  const previewDepositAbi = [
-    {
-      inputs: [{ name: "assets", type: "uint256" }],
-      name: "previewDeposit",
-      outputs: [{ name: "shares", type: "uint256" }],
-      stateMutability: "view",
-      type: "function",
-    },
-  ] as const;
 
-  const publicClient = getPublicClient(SUPPORTED_CHAINS[0].id);
-
-  if (!publicClient) {
-    const errorMsg = `can't get publicClient for chain with id: ${SUPPORTED_CHAINS[0].id}`;
-    throw new Error(errorMsg);
-  }
-
-  // try {
-  const sharesAsBigInt = await publicClient.readContract({
-    address: vaultData.id,
-    abi: previewDepositAbi,
-    functionName: "previewDeposit",
-    args: [amount],
-  });
-
-  const formattedShares = formatUnits(
-    sharesAsBigInt,
-    vaultData.inputToken.decimals,
-  );
-
-  return formattedShares;
-  // } catch (e) {
-  //   return "0";
-  // }
-};
-
-export const getAssetsFromShares = async (
-  amount: bigint,
-  vaultData: VaultData,
-  chainId: number,
-  activeWallet: ConnectedWallet,
-) => {
-  const previewRedeemAbi = [
-    {
-      inputs: [{ name: "shares", type: "uint256" }],
-      name: "previewRedeem",
-      outputs: [{ name: "assets", type: "uint256" }],
-      stateMutability: "view",
-      type: "function",
-    },
-  ] as const;
-
-  const publicClient = getPublicClient(SUPPORTED_CHAINS[0].id);
-
-  if (!publicClient) {
-    console.log(`error get publicClient  for chain with ID ${chainId}`);
-    return 0n;
-  }
-
-  try {
-    const result = await publicClient.readContract({
-      address: vaultData.id,
-      abi: previewRedeemAbi,
-      functionName: "previewRedeem",
-      args: [amount],
-    });
-
-    return result;
-  } catch (e) {
-    return BigInt("0");
-  }
-};
 
 export const getPerformanceFee = async (
   vaultId: Address,

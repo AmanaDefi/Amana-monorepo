@@ -37,7 +37,6 @@ import { useSlippage, useTokenPriceBySymbol } from "@/hooks/hooks";
 import {
   getPathDataAndAmountOut,
   getPerformanceFee,
-  getSharesFromDeposit,
 } from "@/actions/actions";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
@@ -739,8 +738,8 @@ export default function VaultInputs({
 
         if (inputAmountValue === debouncedInputBalance.value) {
           setConversionOutput({
-            slippageActualValue: Number(calculationResult.totalLoss.percentage.toFixed(2)),
-            slippageAmountInUSDFormatted: calculationResult.totalLoss.amountInUSD,
+            slippageActualValue: Number(calculationResult.totalSlippage.percentage.toFixed(2)),
+            slippageAmountInUSDFormatted: calculationResult.totalSlippage.amountInUSD,
             finalConvertedAmountInUSDFormatted: formatUSDValue(outputAmountInUSD),
             outputAmountFormatted: sharesAmountFormatted,
             outputAmountInUSDFormatted: formatUSDValue(outputAmountInUSD),
