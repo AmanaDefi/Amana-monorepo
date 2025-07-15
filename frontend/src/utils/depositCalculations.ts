@@ -420,7 +420,7 @@ export const calculateDepositOutput = async (
   // Step 6: Calculate USD values for formatting
   const inputAmountInUSD = (Number(inputAmount) / 10 ** (inputToken?.decimals ?? 18)) * inputTokenPrice;
   const gasFeeInUSD = parseFloat(gasFeeResult.gasFeeInUSD.replace(/[^0-9.]/g, "") || "0");
-  const swapSlippageInUSD = (Number(swapSlippage) / 10 ** (inputToken?.decimals ?? 18)) * inputTokenPrice;
+  const swapSlippageInUSD = (Number(swapSlippage) / 10 ** vaultData.inputToken.decimals) * vaultTokenPrice;
   const depositSlippageInUSD = (Number(depositSlippage) / 10 ** vaultData.inputToken.decimals) * vaultTokenPrice;
   const outputAmountInUSD = (Number(outputAmount) / 10 ** vaultData.inputToken.decimals) * vaultTokenPrice;
 

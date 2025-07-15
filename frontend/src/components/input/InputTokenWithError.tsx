@@ -180,7 +180,8 @@ export default function InputTokenWithError({
           </div>
         );
       }
-      return <span>{outputAmount}</span>;
+      // Hide shares number from UI display only - return empty span
+      return <span></span>;
     }
 
     return (
