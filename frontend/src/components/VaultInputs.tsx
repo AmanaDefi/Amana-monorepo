@@ -816,6 +816,20 @@ export default function VaultInputs({
       }
 
       try {
+        // Bitcoin-specific simplified display (TSS handles everything)
+        if (selectedChain?.id === CHAIN_ID.bitcoin) {
+          console.log("🟠 Using simplified Bitcoin deposit calculation display");
+          const simpleConversion = Number(inputAmountValue) / 10 ** 8; // Bitcoin has 8 decimals
+          setConversionOutput({
+            slippageActualValue: 0,
+            finalConvertedAmountInUSDFormatted: "~" + formatUSDValue(simpleConversion * inputTokenPrice),
+            outputAmountFormatted: "~" + simpleConversion.toFixed(8),
+            outputAmountInUSDFormatted: "~" + formatUSDValue(simpleConversion * inputTokenPrice),
+          });
+          setLoadingOutputToken(false);
+          return;
+        }
+
         // Check cache first - look for existing calculation with same parameters
         const cached = useTransactionStore.getState().lastDepositCalculation;
         
