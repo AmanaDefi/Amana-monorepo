@@ -529,7 +529,6 @@ export const useUpdateAPYs = (
     const updateAPYs = async () => {
       if (!vaults) return;
 
-      console.log('[UPDATE APYS DEBUG] Starting APY update for vaults:', vaults.map(v => ({ id: v.id, name: v.name, protocol: v.protocol.name })));
       const now = Date.now();
       try {
         const receiptTokenAddresses = await fetchReceiptTokens(vaults, activeAccount);
@@ -644,12 +643,7 @@ export const useUpdateAPYs = (
               }
 
               const realApy30d = await getVault30dAvgAPY(vault.id);
-              console.log('[30d APY DEBUG]', {
-                vaultId: vault.id,
-                vaultName: vault.name,
-                realApy30d,
-                mapping: VAULT_TO_DEFILLAMA_POOL?.[vault.id] || null,
-              });
+             
               return {
                 vaultId: vault.id,
                 APY7d,
@@ -840,7 +834,3 @@ export const useUserPortfolioFromGraph = (userAddress?: string) => {
   };
 };
 
-// TEST: Log historical APY for Fluid USDC vault (replace with any mapped vaultId as needed)
-getVaultHistoricalAPY('0x5cd6e196ca1d85b8edfdf162d3a0c77268f42c69').then(data => {
-  console.log('[Historical APY TEST] Fluid USDC:', data);
-});

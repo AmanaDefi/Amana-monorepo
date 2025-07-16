@@ -669,8 +669,6 @@ export const getERC20TokenBalance = async (
       abi: erc20Abi,
     });
 
-    console.log(publicClient, "publicClient.account");
-
     try {
       // Get token decimals first to avoid potential read issues
       let decimals = 18;

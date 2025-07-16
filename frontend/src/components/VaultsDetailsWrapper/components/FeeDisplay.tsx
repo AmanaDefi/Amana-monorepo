@@ -39,7 +39,42 @@ export const ExpectedSlippageBlock: React.FC<ExpectedSlippageProps> = ({
     <div
       className={`flex justify-between items-center py-1 text-white mb-6 text-[14px] md:text-base ${className}`}
     >
-      <span className="text-white">Expected slippage:</span>
+      <span className="text-white flex items-center gap-1">
+        Expected slippage:
+        <InfoBlock>
+          <ErrorInputIcon
+            width={14}
+            height={14}
+            className="ml-1 cursor-pointer fill-[#1B46E0]"
+          />
+          <div className="text-xs text-white mt-2 flex flex-col gap-1">
+            <div className="flex justify-between">
+              <span>Swap Slippage:</span> 
+              <span>
+              {conversionOutput.swapSlippagePercentage?.toFixed(2)}% ({conversionOutput.swapSlippageUSD})
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>Deposit Slippage:</span> 
+              <span>
+              {conversionOutput.depositSlippagePercentage?.toFixed(2)}% ({conversionOutput.depositSlippageUSD})
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>Total Slippage:</span> 
+              <span>
+              {conversionOutput.slippageActualValue?.toFixed(2)}% ({conversionOutput.slippageAmountInUSDFormatted})
+              </span>
+            </div>
+            {/* <div className="flex justify-between">
+              <span>Total Loss:</span> 
+              <span>
+              {conversionOutput.totalLossPercentage?.toFixed(2)}% ({conversionOutput.totalLossUSD})
+              </span>
+            </div> */}
+          </div>
+        </InfoBlock>
+      </span>
       <span className="font-normal flex-row gap-1">
         {conversionOutput.slippageActualValue.toFixed(2)}%{" "}
         <span className="font-medium">({formattedUSDSlippage}) </span>
@@ -128,10 +163,9 @@ export default function FeeDisplay({
         conversionOutput.netDepositToVaultUSD &&
         Number(debouncedInputBalance.value) > 0 &&
         netDepositValue > 0 && (
-          <p className="text-white font-normal mt-4 text-start flex items-center text-[14px] md:text-base">
-            <span className="mr-2">
-              Net Deposit to Vault: {formatUSDAmount(netDepositValue)}
-            </span>
+          <p className="text-white font-normal mt-4 text-start flex items-center text-[14px] md:text-base justify-between">
+            <span className="mr-2 flex flex-row gap-1 items-center">
+              Net Deposit to Vault: 
             <InfoBlock isMiddle>
               {(() => {
                 const inputUSD = parseFloat(
@@ -146,6 +180,10 @@ export default function FeeDisplay({
                 return `Input amount (${formatUSDAmount(inputUSD)}) - Gas fee (${formatUSDAmount(actualFeeUSD)}) = Net deposit (${formatUSDAmount(netDepositUSD)})`;
               })()}
             </InfoBlock>
+            </span>
+            <span className="font-bold">
+              {formatUSDAmount(netDepositValue)}
+            </span>
           </p>
         )}
     </div>
