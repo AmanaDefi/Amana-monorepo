@@ -120,7 +120,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         <Button
           variant="custom"
           onClick={action.onClick}
-          className="!w-[300px] md:!w-[423px] !h-10 !text-[16px] !font-normal !font-gotham"
+          className="!min-w-[232px] !w-fll md:!w-[423px] !h-10 !text-[16px] !font-normal !font-gotham"
         >
           {action.label}
         </Button>
@@ -139,7 +139,7 @@ const TransactionItem: React.FC<{ transaction: Transaction }> = ({
   };
 
   return (
-    <div className="grid grid-cols-[auto_1fr_auto_1fr_auto] md:grid-cols-[auto_1fr_auto_1fr_auto] gap-4 md:gap-6 items-center text-white rounded-[16px]">
+    <div className="grid grid-cols-[auto_1fr_auto_1fr_auto] md:grid-cols-[auto_1fr_auto_1fr_auto] gap-2 md:gap-6 items-start md:items-center text-white rounded-[16px]">
       {/* Transaction Icon */}
       <div className="w-8 h-8 md:w-11 md:h-11 flex items-center justify-center">
         <Image
@@ -156,7 +156,7 @@ const TransactionItem: React.FC<{ transaction: Transaction }> = ({
         <span className="font-medium text-sm md:text-lg capitalize truncate">
           {transaction.type}
         </span>
-        <span className="text-[12px] md:text-sm truncate">
+        <span className="text-[12px] md:text-sm break-words">
           {transaction.timestamp}
         </span>
       </div>
@@ -286,13 +286,7 @@ const PortfolioTabs: React.FC<PortfolioTabsProps> = ({
           />
         ) : (
           <div className="space-y-6">
-            <div
-              className="grid gap-4"
-              style={{
-                gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))",
-                justifyContent: "start",
-              }}
-            >
+            <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(328px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(380px,1fr))] justify-start">
               {myVaults.map((vault) => (
                 <VaultCard
                   key={vault.id}

@@ -10,6 +10,7 @@ import ConfirmDepositIcon from "../svg/instruction/ConfirmDepositIcon";
 import CrossChainTransferIcon from "../svg/instruction/CrossChainTransferIcon";
 import FinalConfirmationIcon from "../svg/instruction/FinalConfirmationIcon";
 import { useInstructionStepLogic } from "@/hooks/useInstructionStepLogic";
+import { hasNoErrors } from "@/utils/utils";
 
 interface MobileDepositInstructionProps {
   transactionStepFeedback?: TransactionStepMessages;
@@ -20,6 +21,7 @@ interface MobileDepositInstructionProps {
   isDeposit?: boolean;
   currentStep?: DepositStep;
   isProcessing?: boolean;
+  isFailedOnConfirmation: boolean;
 }
 
 const getStepIcon = (step: DepositStep): React.ReactNode => {
@@ -42,7 +44,12 @@ const getStepIcon = (step: DepositStep): React.ReactNode => {
 const MobileDepositInstruction: React.FC<MobileDepositInstructionProps> = (
   props,
 ) => {
-  const { isDeposit = true } = props;
+  const {
+    isDeposit = true,
+    isFailedOnConfirmation,
+    transactionStepFeedback,
+    lastTransactionStepFeedback,
+  } = props;
 
   const {
     isFirstStepActive,
@@ -62,7 +69,14 @@ const MobileDepositInstruction: React.FC<MobileDepositInstructionProps> = (
   let currentStepStatus = TransactionStepStatus.pending;
   let showLoader = false;
 
-  if (isDynamicMode && currentStepIndex < steps.length) {
+  const shouldShowFinalStep =
+    props?.finishedTransaction &&
+    (Object.keys(transactionStepFeedback ?? {}).length > 0 ||
+      Object.keys(lastTransactionStepFeedback ?? {}).length > 0) &&
+    hasNoErrors(transactionStepFeedback ?? {}) &&
+    !isFailedOnConfirmation;
+
+  if (currentStepIndex < steps.length) {
     if (
       currentStepIndex === DepositStep.SELECT_TOKEN &&
       isFirstStepActive &&
@@ -76,8 +90,10 @@ const MobileDepositInstruction: React.FC<MobileDepositInstructionProps> = (
         activeFeedback,
         isType2Transaction,
         isDeposit,
-        props?.finishedTransaction ?? false
+        shouldShowFinalStep ?? false,
+        isFailedOnConfirmation,
       );
+
       currentStepStatus = stepStatus.status;
       showLoader = currentStepStatus === TransactionStepStatus.processing;
     }
@@ -129,17 +145,18 @@ const MobileDepositInstruction: React.FC<MobileDepositInstructionProps> = (
         </div>
       </div>
 
-      <div className="flex flex-row gap-2 items-center">
+      <div className="flex w-full flex-row gap-2 items-center">
         <div
           className="rounded-full w-6 h-6 flex items-center justify-center relative flex-shrink-0"
           style={{
-            backgroundColor: isFirstStepActive
-              ? "#1B46E0"
-              : currentStepStatus === TransactionStepStatus.completed
-                ? "#1B46E0"
-                : currentStepStatus === TransactionStepStatus.error
-                  ? "#DC2626"
-                  : "#535E73",
+            backgroundColor:
+              currentStepStatus === TransactionStepStatus.error
+                ? "#DC2626"
+                : isFirstStepActive
+                  ? "#1B46E0"
+                  : currentStepStatus === TransactionStepStatus.completed
+                    ? "#1B46E0"
+                    : "#535E73",
           }}
         >
           {currentStepIndex < steps.length &&
@@ -152,8 +169,9 @@ const MobileDepositInstruction: React.FC<MobileDepositInstructionProps> = (
           )}
         </div>
 
-        <p className="text-sm font-normal tracking-[-0.06em] text-white">
+        <p className="text-sm break-all w-full font-normal tracking-[-0.06em] text-white">
           {currentStepDescription}
+
         </p>
       </div>
     </div>

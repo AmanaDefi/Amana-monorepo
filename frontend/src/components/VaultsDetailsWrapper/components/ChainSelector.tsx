@@ -5,6 +5,7 @@ import { Chain } from "viem";
 import {
   APPROVED_TOKENS,
   CHAIN_ICONS,
+  CHAIN_ID,
   SUPPORTED_CHAINS,
 } from "@/constants/chainConfig";
 import { useMultiChain } from "@/providers/MultiChainProvider";
@@ -19,7 +20,7 @@ import { Token, VaultData } from "@/types/types";
 import { useFundWalletStore } from "@/store/fundWalletStore";
 
 interface ChainSelectorProps {
-  selectedChain?: Chain;
+  selectedChain?: Chain | null;
   onSelectChain: (chain: Chain) => void;
   selectedToken?: Token;
   onSelectChainAndToken?: (chain: Chain, token: Token) => void;
@@ -87,16 +88,32 @@ export default function ChainSelector({
       const tokens = APPROVED_TOKENS[chainId] ?? [];
       const defaultToken =
         tokens.find((token) => token.symbol === "USDC") || tokens[0];
+      
+      onSelectChain(chainToSelect);
 
-      if (onSelectChainAndToken) {
-        console.log('onSelectChainAndToken from chain selector')
-        setSelectedChainFromModal(chainToSelect);
-        onSelectChainAndToken(chainToSelect, defaultToken);
-      }
+     if (onSelectChainAndToken && defaultToken) {
+       setSelectedChainFromModal(chainToSelect);
+       onSelectChainAndToken(chainToSelect, defaultToken);
+     }
     }
   };
 
   const chainIconsList = CHAINS_ICONS_BUTTON;
+
+  if (activeAccount?.walletClientType === "privy" && !isFromTopUp) {
+    return (
+      <div className="font-gotham w-full max-h-[56px] bg-[#161C27] pl-4 pr-[19px] py-3 rounded-lg shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] flex flex-row justify-between items-center">
+        <div className="flex items-center gap-4">
+          <img
+            src={CHAIN_ICONS[CHAIN_ID["zetachain"]]?.url}
+            alt={"Zetachain"}
+            className="w-[32px] h-[32px] rounded-full"
+          />
+          <p className="text-sm md:text-[16px] font-normal">{"ZetaChain"}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -104,14 +121,13 @@ export default function ChainSelector({
       className="font-gotham w-full max-h-[56px] bg-[#161C27] pl-4 pr-[19px] py-3 rounded-lg shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] flex flex-row justify-between items-center hover:cursor-pointer"
     >
       <div className="flex items-center gap-4">
-        {displayedChain?.id && (
-          <img
-            src={CHAIN_ICONS[displayedChain.id]?.url}
-            alt={displayedChain.name}
-            className="w-[32px] h-[32px] rounded-full"
-          />
-        )}
-        <p className="text-[16px] font-normal">
+        <img
+          src={CHAIN_ICONS[displayedChain?.id ?? CHAIN_ID["zetachain"]]?.url}
+          alt={displayedChain?.name ?? "Zetachain"}
+          className="w-[32px] h-[32px] rounded-full"
+        />
+
+        <p className="text-sm md:text-[16px] font-normal">
           {displayedChain?.name || "ZetaChain"}
         </p>
       </div>
@@ -131,7 +147,7 @@ export default function ChainSelector({
               <button
                 onClick={(e) => handleChainSelect(e, icon.id)}
                 key={icon.symbol}
-                className="w-[30px] h-[30px] rounded-full overflow-hidden hover:scale-125 transition-transform duration-200 relative border border-white bg-[#3E73C4]"
+                className="w-5 h-5 md:w-[30px] md:h-[30px] rounded-full overflow-hidden hover:scale-125 transition-transform duration-200 relative border border-white bg-[#3E73C4]"
                 style={{ zIndex: index }}
               >
                 <img

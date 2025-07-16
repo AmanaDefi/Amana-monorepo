@@ -13,5 +13,8 @@ export const VAULT_TO_DEFILLAMA_POOL: Record<string, string> = {
   '0xf4fa4d8115e78acf52308fdbad10a5f9042991de': 'c130b363-10fa-46d9-8221-3b23ed8027b4',
   // Aegis YUSD
   '0x4cb4dfc521a5c44817a1fda79fb7eafaf6f1952e': '85307805-6873-4ed7-bfff-e0e871ca1d50',
- 
+  // Convex tacBTC/cbBTC/FBTC
+  '0x5e3adc840b55fe0b99c0418ac69113e1f0296992': '14769af2-5b5c-40cd-8452-2f4ddde854b8',
+  // Convex USDC/USDf
+  '0xe501cbd03fa739273f49a8b54dd49de1248101f6': '977bc628-7476-43cf-abb8-68934bf56171',
 }; 

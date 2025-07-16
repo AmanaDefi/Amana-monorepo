@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { Suspense } from "react";
 import VaultsContainer from "../containers/VaultsContainer";
 import InvestBlock from "@/components/InvestBlock";
 import BitcoinIntegrationTest from "@/components/BitcoinIntegrationTest";
@@ -11,8 +11,10 @@ export default function Page() {
         <InvestBlock />
         <BitcoinIntegrationTest />
       <div className="flex-1 h-full flex flex-col w-full justify-between">
-        <div className="flex-1 h-full w-full gap-5 mt-6">
-          <VaultsContainer />
+        <div className="flex-1 h-full w-full gap-5 mt-1 md:mt-6">
+          <Suspense fallback={<div>Loading...</div>}>
+            <VaultsContainer />
+          </Suspense>
         </div>
       </div>
     </div>

@@ -70,9 +70,9 @@ const handleDepositTransaction = async (
   setcrossChainTxId: Function,
   setInputBalance: Function,
   setLastEventTxHash: Function,
+  setFailedOnConfirmation: (value: boolean) => void,
   bitcoinWallet?: any, // Add Bitcoin wallet parameter
 ) => {
-  console.log("deposit", activeAccount);
   if (!activeAccount) return;
   console.log("=== DEPOSIT TRANSACTION START ===");
   console.log("Active Chain ID:", activeChain?.id);
@@ -84,17 +84,23 @@ const handleDepositTransaction = async (
   try {
     const depositAmount = inputBalance.value;
 
-    const receipt = await executeDeposit(
-      vaultData,
-      inputToken,
-      walletContext,
-      activeAccount,
-      activeChain,
-      depositAmount,
-      setcrossChainTxId,
-      bitcoinWallet, // Pass Bitcoin wallet to executeDeposit
-    );
-    if (!receipt || !receipt.transactionHash) {
+    const receipt: { transactionHash: string | null; status?: string } =
+      await executeDeposit(
+        vaultData,
+        inputToken,
+        walletContext,
+        activeAccount,
+        activeChain,
+        depositAmount,
+        setcrossChainTxId,
+        bitcoinWallet, // Pass Bitcoin wallet to executeDeposit
+      );
+    if (
+      !receipt ||
+      !receipt.transactionHash ||
+      (receipt?.status && receipt?.status !== "success")
+    ) {
+      setFailedOnConfirmation(true);
       throw new Error("Failed Tx");
     }
 
@@ -194,6 +200,7 @@ const handleDepositTransaction = async (
 
     return true;
   } catch (error: any) {
+    console.log("catch error", error);
     try {
       if (!error.message.includes("User denied transaction")) {
         trackEvent("Deposit Failed", {
@@ -225,6 +232,7 @@ const handleWithdrawTransaction = async (
   setcrossChainTxId: Function,
   setInputBalance: Function,
   setLastEventTxHash: Function,
+  setFailedOnConfirmation: (value: boolean) => void,
 ) => {
   setTransactionCompleted(false);
   updateLocalStorageObject(vaultData.id, { transactionCompleted: false });
@@ -247,16 +255,26 @@ const handleWithdrawTransaction = async (
       withdrawAmountFormatted * (withdrawToken.price || 0)
     ).toFixed(2);
 
-    const receipt = await executeWithdrawal(
-      vaultData,
-      walletContext,
-      activeAccount,
-      activeChain,
-      withdrawAssetAmount,
-      withdrawToken.address as Address,
-      withdrawZRC20 as Token,
-      setcrossChainTxId,
-    );
+    const receipt: { transactionHash: string | null; status?: string } =
+      await executeWithdrawal(
+        vaultData,
+        walletContext,
+        activeAccount,
+        activeChain,
+        withdrawAssetAmount,
+        withdrawToken.address as Address,
+        withdrawZRC20 as Token,
+        setcrossChainTxId,
+      );
+
+    if (
+      !receipt ||
+      !receipt.transactionHash ||
+      (receipt?.status && receipt?.status !== "success")
+    ) {
+      setFailedOnConfirmation(true);
+      throw new Error("Failed Tx");
+    }
 
     if (activeChain?.id === CHAIN_ID.solana) {
     } else {
@@ -330,7 +348,7 @@ export default function InteractionContainer({
   setLabel,
   label,
   outputAmountFormatted,
-  bitcoinWallet // <-- Add this line
+  bitcoinWallet, // <-- Add this line
 }: {
   step: number;
   setStep: Function;
@@ -669,7 +687,6 @@ export default function InteractionContainer({
 
         const onStepComplete = (stepIndex: number, stepData: any) => {
           const actionKey = actionMapping[stepIndex];
-          console.log("actionKey", actionKey, actionMapping);
           if (!actionKey) return;
           useTransactionStore.setState((prev) => {
             updateLocalStorageObject(vaultData.id, {
@@ -973,9 +990,10 @@ function Interaction({
   const activeAccount = filteredWallets[0];
   const walletContext = useWallet();
   const prevLebel = useRef(label);
-  const { openStep } = useAuthStore();
+  const { openStep, setChain } = useAuthStore();
   const { selectedChain } = useMultiChain();
   const [isMobile, setIsMobile] = useState(false);
+  const { setIsFailedOnCOnfirmation } = useTransactionStore();
 
   useEffect(() => {
     const checkIsMobile = () => {
@@ -991,8 +1009,8 @@ function Interaction({
     };
   }, []);
 
-const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
-  
+  const { isButtonDisabled, setLastDepositInfo, setLastWithdrawInfo } =
+    useTransactionStore();
   // Simplified feedback update for local transactions only
   function updateLocalTransactionFeedback(
     actionKey: Action,
@@ -1171,6 +1189,7 @@ const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
   // --- PATCH: Sync stepper with Bitcoin commit/reveal transactions ---
   async function handleMainAction(directAction?: Action) {
     const currenAction = directAction ?? action;
+    setIsFailedOnCOnfirmation(false);
 
     if (isTransactionProcessing || !inputToken) {
       return;
@@ -1330,6 +1349,7 @@ const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
       setInputBalance,
       setLastEventTxHash,
       bitcoinWallet, // Pass Bitcoin wallet
+      setIsFailedOnCOnfirmation,
     )();
 
     await interactionPostHook(!!success, !currenAction);
@@ -1372,11 +1392,13 @@ const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
   }, [refreshBalance, vaultData?.id]);
 
   const handleWalletConnect = () => {
+    setChain(activeChain);
     if (activeChain?.id === zetachain.id) {
       openStep(isMobile ? "mobileOptionsA" : "optionsA");
     } else {
       if (
-        (selectedChain === "solana" && activeChain?.id !== CHAIN_ID["solana"]) ||
+        (selectedChain === "solana" &&
+          activeChain?.id !== CHAIN_ID["solana"]) ||
         (selectedChain === "evm" && activeChain?.id === CHAIN_ID["solana"])
       ) {
         if (selectedChain === "evm" && activeAccount?.address) {
@@ -1583,6 +1605,7 @@ const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
     setcrossChainTxId: Function,
     setInputBalance: Function,
     setLastEventTxHash: Function,
+    setFailedOnConfirmation: (value: boolean) => void,
     bitcoinWallet?: any, // Add Bitcoin wallet parameter
   ) {
     switch (action) {
@@ -1619,11 +1642,18 @@ const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
             setInputBalance,
             setLastEventTxHash,
             bitcoinWallet, // Pass Bitcoin wallet to handleDepositTransaction
+            setFailedOnConfirmation,
           );
           return result;
         };
       case Action.withdraw:
         return async () => {
+          setLastWithdrawInfo({
+            inputAmount: inputBalance.formatted,
+            outputAmount: outputAmountFormatted,
+            inputSymbol: inputToken?.symbol || "",
+            outputSymbol: vaultData.symbol,
+          });
           const result = await handleWithdrawTransaction(
             vaultData,
             inputBalance,
@@ -1636,6 +1666,7 @@ const { isButtonDisabled, setLastDepositInfo } = useTransactionStore();
             setcrossChainTxId,
             setInputBalance,
             setLastEventTxHash,
+            setFailedOnConfirmation,
           );
           return result;
         };

@@ -58,9 +58,6 @@ const ConnectChosenChain = () => {
   } = useConnect({
     mutation: {
       onSuccess: async (result) => {
-        if (connected) {
-          disconnect();
-        }
         if (fundWalletStep === "reconnectChain") {
           setWalletAddress(result.accounts[0]);
           localStorage.removeItem("connectorId");
@@ -84,9 +81,11 @@ const ConnectChosenChain = () => {
 
       await logout();
     }
+    if (connected) {
+      disconnect();
+    }
     setActiveConnector(connector);
     localStorage.setItem("connectorId", connector.id);
-    console.log({ chain, activeChain });
     connect(
       {
         connector,
@@ -101,7 +100,6 @@ const ConnectChosenChain = () => {
 
           if (error.name === "ConnectorAlreadyConnectedError") {
             connector.disconnect();
-            console.log("connectorId removed from error");
             localStorage.removeItem("connectorId");
 
             setActiveConnector(null);
@@ -125,8 +123,7 @@ const ConnectChosenChain = () => {
       if (
         (adapter.adapter.name.toLowerCase() === "metamask" &&
           !(adapter.adapter as WalletAdapter & { wallet?: { client?: any } })
-            ?.wallet?.client) ||
-        adapter.adapter.name.toLowerCase() === "phantom"
+            ?.wallet?.client)
       ) {
         return false;
       }
@@ -140,7 +137,7 @@ const ConnectChosenChain = () => {
       try {
         await connectSolana();
       } catch (e) {
-        console.log("connect solana error");
+        console.log("connect solana error", e);
       }
       select(connector.name);
       solanaConnect();
@@ -172,7 +169,7 @@ const ConnectChosenChain = () => {
         step === "connectInChosenChain" || fundWalletStep === "reconnectChain"
       }
       onClose={handleClose}
-      paddingClass="pt-[90px] w-full pl-[57px] pb-10 pr-[24px] flex max-h-[80%] md:max-h-[700px]"
+      paddingClass="pt-14 md:pt-[90px] w-full pl-6 md:pl-[57px] pb-6 md:pb-10 pr-[24px] flex max-h-[98%] md:max-h-[700px]"
       roundedClass="rounded-[16px]"
       maxWidth="max-w-[526px]"
       customCloseButton={
@@ -185,7 +182,7 @@ const ConnectChosenChain = () => {
         </button>
       }
     >
-      <div className="flex w-full items-center flex-col overflow-hidden gap-8">
+      <div className="flex w-full items-center justify-center  flex-col overflow-hidden gap-8">
         <p className="text-base text-white">
           Connect your wallet in chosen chain
         </p>

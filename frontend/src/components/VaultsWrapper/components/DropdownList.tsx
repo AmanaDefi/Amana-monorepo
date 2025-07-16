@@ -1,5 +1,9 @@
 import { CheckBox } from "@/components/CheckBox";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+
+type DropdownPosition = "left" | "right" | "center";
 
 export const DropdownList = ({
   width,
@@ -9,7 +13,8 @@ export const DropdownList = ({
   handleSelectedOption,
   isShownList,
   needReset = true,
-  variant = "chain", 
+  variant = "chain",
+  position = "right",
 }: {
   width: number;
   isIconButton: boolean;
@@ -24,8 +29,42 @@ export const DropdownList = ({
   isShownList: boolean;
   needReset?: boolean;
   variant?: "chain" | "token";
+  position?: DropdownPosition;
 }) => {
   const isToken = variant === "token";
+  const pathname = usePathname();
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  const shouldRenderReversed =
+    isMobile && (pathname === "/" || pathname === "/about");
+
+  const getPositionClasses = () => {
+    if (isIconButton) {
+      return "!right-0";
+    }
+
+    switch (position) {
+      case "left":
+        return shouldRenderReversed ? "-right-3" : "-left-3";
+      case "right":
+        return shouldRenderReversed ? "-left-3" : "-right-3";
+      case "center":
+        return "left-1/2 -translate-x-1/2";
+      default:
+        return shouldRenderReversed ? "-left-3" : "-right-3";
+    }
+  };
 
   return (
     <div
@@ -36,9 +75,11 @@ export const DropdownList = ({
         padding: isShownList ? "16px" : "0px",
         border: isShownList ? "1px" : "0px",
       }}
-      className={`z-10 !w-[200px] rounded-2xl absolute md:-right-3 left-0 md:left-auto flex flex-col items-center gap-3 transition-all duration-500 ease-in-out overflow-hidden
+      className={`z-10 !w-[200px] rounded-2xl absolute flex flex-col items-center gap-3 transition-all duration-500 ease-in-out overflow-hidden
         ${isShownList ? "bg-[#161C27] border border-[#3E3C59]" : ""}
-        ${isToken ? "rounded-[16px] bg-[#1D2A41] p-4" : ""} ${isIconButton && "!right-0 left-auto"}`}
+        ${isToken ? "rounded-[16px] bg-[#1D2A41] p-4" : ""} 
+        ${getPositionClasses()}
+        ${shouldRenderReversed ? "flex-col-reverse" : ""}`}
       role="menu"
     >
       {isIconButton && (
@@ -80,7 +121,11 @@ export const DropdownList = ({
               {option.value}
             </p>
           </div>
-          <CheckBox isSelected={option.value === selectedOption} />
+          <CheckBox
+            isSelected={
+              option.value.toLowerCase() === selectedOption.toLowerCase()
+            }
+          />
         </div>
       ))}
 

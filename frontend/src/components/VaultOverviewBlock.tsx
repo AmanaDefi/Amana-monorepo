@@ -10,8 +10,6 @@ import { RISK_LEVELS } from "./VaultsGrid";
 import PointsIcon from "./svg/PointsIcon";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 
-import Image from "next/image";
-
 type Props = {
   vault: VaultData;
   vaultAPY?: VaultAPY;
@@ -84,15 +82,19 @@ export const VaultOverviewBlock: React.FC<Props> = ({
   const isAPYLoading = isLoading || vaultAPY === undefined;
   const isTVLLoading = isLoading || totalAssets === undefined;
 
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
   return (
     <>
       {/* TVL Section */}
-      <div className="flex items-center w-full">
+      <div className="flex items-center w-full " onClick={handleClick}>
         <div className="flex flex-col gap-2">
           <div className="flex flex-row gap-1 items-center">
             <p
               className={classNames(
-                "font-normal text-base leading-4 uppercase",
+                "font-normal text-sm md:text-base leading-4 uppercase",
                 { [titleColor]: !isHexColor },
               )}
               style={isHexColor ? { color: titleColor } : undefined}
@@ -111,7 +113,7 @@ export const VaultOverviewBlock: React.FC<Props> = ({
                 ? `$${formatTVLInUSD(Number(totalAssets.totalAssets), vault.inputToken.symbol, tokenPrice)}`
                 : "$0"
             }
-            className="text-blue-digits font-bold text-xl leading-6"
+            className="text-blue-digits font-bold text-base md:text-xl leading-6"
             isLoading={isTVLLoading}
             skeletonClassName="h-6 w-20"
           />
@@ -123,9 +125,12 @@ export const VaultOverviewBlock: React.FC<Props> = ({
         <div className="flex flex-col gap-2 items-center justify-center">
           <div className="flex flex-row gap-1 items-center">
             <p
-              className={classNames("font-normal text-base leading-4", {
-                [titleColor]: !isHexColor,
-              })}
+              className={classNames(
+                "font-normal text-sm md:text-base leading-4",
+                {
+                  [titleColor]: !isHexColor,
+                },
+              )}
               style={isHexColor ? { color: titleColor } : undefined}
             >
               Risk
@@ -159,7 +164,7 @@ export const VaultOverviewBlock: React.FC<Props> = ({
           <div className="flex flex-row gap-1 items-end">
             <p
               className={classNames(
-                "font-normal text-base leading-4 uppercase",
+                "font-normal text-sm md:text-base leading-4 uppercase",
                 {
                   [titleColor]: !isHexColor,
                 },
@@ -177,15 +182,17 @@ export const VaultOverviewBlock: React.FC<Props> = ({
           <div className="flex flex-row items-center gap-1">
             <AnimatedValue
               value={`${(apyValue * 100).toFixed(2)}%`}
-              className={classNames("font-bold text-xl leading-6", {
-                "text-green-accent": apyValue > 0,
-                "text-red-error": apyValue <= 0,
-              })}
+              className={classNames(
+                "font-bold text-base md:text-xl leading-6",
+                {
+                  "text-green-accent": apyValue > 0,
+                  "text-red-error": apyValue <= 0,
+                },
+              )}
               isLoading={isAPYLoading}
               skeletonClassName="h-6 w-16"
             />
-          
-            {vault.protocolPoints && vault.protocolPoints > 0 ? (
+            {isReward && vault.protocolPoints && vault.protocolPoints > 0 ? (
               <InfoBlock
                 isRight
                 customIcon={<PointsIcon className="w-5 h-5" color="#ffffff" />}

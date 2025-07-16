@@ -108,7 +108,7 @@ abstract contract ERC20StrategyParent is StrategyParent {
         address token,
         uint256 amountIn,
         uint16 initialSlippageBps
-    ) internal returns (uint256 amountOut) {
+    ) internal virtual returns (uint256 amountOut) {
         if (amountIn == 0) return 0;
 
         IERC20(token).safeTransfer(swapHelper, amountIn);

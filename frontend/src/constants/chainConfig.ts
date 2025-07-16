@@ -327,17 +327,17 @@ export const SUPPORTED_CHAINS =
 const zetaChain = deployEnv === "testnet" ? zetachainAthensTestnet : zetachain;
 export const customZetachain = zetaRpcUrl
   ? {
-      ...zetaChain,
-      rpcUrls: {
-        ...zetaChain.rpcUrls,
-        public: {
-          http: [zetaRpcUrl],
-        },
-        default: {
-          http: [zetaRpcUrl],
-        },
+    ...zetaChain,
+    rpcUrls: {
+      ...zetaChain.rpcUrls,
+      public: {
+        http: [zetaRpcUrl],
       },
-    }
+      default: {
+        http: [zetaRpcUrl],
+      },
+    },
+  }
   : zetaChain;
 
 export const chainsWithCustomRpcs = () => {
@@ -724,6 +724,15 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       balance: EMPTY_BALANCE,
       isNative: false,
     },
+    {
+      symbol: "CBBTC.ETH",
+      address: "0x3e128c169564DD527C8e9bd85124BF6A890E5a5f",
+      decimals: 8,
+      imgURL: TOKEN_LOGO_URLS.CBBTC,
+      price: 1,
+      balance: EMPTY_BALANCE,
+      isNative: false,
+    }
   ],
   1: [
     {
@@ -1104,6 +1113,7 @@ export const PRICE_IDS: { [key: string]: string } = {
   CRV: "0xa19d04ac696c7a6616d291c7e5d1377cc8be437c327b75adb5dc1bad745fcae8",
   CVX: "0x6aac625e125ada0d2a6b98316493256ca733a5808cd34ccef79b0e28c64d1e76",
   OP: "0x385f64d993f7b77d8182ed5003d97c60aa3361f3cecfe711544d2d59165e9bdf",
+  CBBTC: "0x2817d7bfe5c64b8ea956e9a26f573ef64e72e4d7891f2d6af9bcc93f7aff9a97",
 
   // Chain-specific tokens - using the "(CHAIN)" format
   "ETH (BASE)":
@@ -1200,6 +1210,32 @@ export const NETWORK_FILTER_OPTIONS = [
     icon: TOKEN_LOGO_URLS.POL,
   },
 ];
+
+// Centralized stablecoin configuration
+export const STABLECOIN_SYMBOLS = [
+  "USD",
+  "USDC",
+  "USDC.e", // Ethereum bridged USDC on other chains
+  "USDT",
+  "USDT.e", // Ethereum bridged USDT on other chains
+  "DAI",
+  "BUSD",
+  "TUSD",
+  "USDP",
+  "FRAX",
+  "LUSD",
+  "FDUSD",
+  "YUSD",
+  "eUSD",
+  "sUSN",
+] as const;
+
+// Helper function to check if a token is a stablecoin
+export const isStablecoinSymbol = (symbol: string): boolean => {
+  if (!symbol) return false;
+  const baseSymbol = symbol.split('.')[0].toUpperCase();
+  return STABLECOIN_SYMBOLS.includes(baseSymbol as any);
+};
 
 export const PROTOCOL_FILTER_OPTIONS = [
   {

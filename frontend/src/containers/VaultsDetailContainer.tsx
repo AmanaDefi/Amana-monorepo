@@ -69,6 +69,7 @@ import VaultStats from "@/components/VaultsDetailsWrapper/components/VaultStats"
 import ChainsModal from "@/components/modal/chains/ChainsModal";
 import Image from "next/image";
 import { useAuthStore } from "@/store/authStore";
+import { AiOutlineConsoleSql } from "react-icons/ai";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -98,8 +99,7 @@ const VaultsDetailContainer: React.FC<{
   const [isDeposit, setIsDeposit] = useState<boolean>(initialIsDeposit);
   const [showMobileInvestment, setShowMobileInvestment] = useState(false);
   const giftButtonRef = useRef<HTMLButtonElement>(null);
-    const {openStep } = useAuthStore();
-
+  const { openStep } = useAuthStore();
 
   const [openDropdown, setOpenDropdown] = useState<string | null>(
     "transaction-progress",
@@ -130,8 +130,9 @@ const VaultsDetailContainer: React.FC<{
     isTransactionProcessing,
     setLastDepositInfo,
     lastDepositInfo,
-    setLastWithdrawInfo, 
+    setLastWithdrawInfo,
     lastWithdrawInfo,
+    isFailedOnConfirmation,
   } = useTransactionStore();
 
   const { switchToChain, walletAddress, activeChain, selectedChain } =
@@ -185,15 +186,17 @@ const VaultsDetailContainer: React.FC<{
     [],
   );
 
-  const loadSlippageFromStorage = useUserSettingsStore(
-    (state) => state.loadSlippageFromStorage,
+  const loadSlippageForVault = useUserSettingsStore(
+    (state) => state.loadSlippageForVault,
   );
 
   useEffect(() => {
+    const vaultIdStr = Array.isArray(vaultID) ? vaultID[0] : vaultID;
+
     if (vaultIdStr) {
-      loadSlippageFromStorage(vaultIdStr);
+      loadSlippageForVault(vaultIdStr);
     }
-  }, [vaultIdStr]);
+  }, [vaultID, loadSlippageForVault]);
 
   const handleChainSelect = useCallback(
     async (chain: Chain) => {
@@ -330,6 +333,7 @@ const VaultsDetailContainer: React.FC<{
   const ethTokenPrice = useTokenPriceBySymbol("ETH");
   const compTokenPrice = useTokenPriceBySymbol("COMP");
   const opTokenPrice = useTokenPriceBySymbol("OP");
+  const btcTokenPrice = useTokenPriceBySymbol("CBBTC");
 
   const memoizedPrices = useMemo(
     () => ({
@@ -338,6 +342,7 @@ const VaultsDetailContainer: React.FC<{
       eth: ethTokenPrice,
       comp: compTokenPrice,
       op: opTokenPrice,
+      btc: btcTokenPrice,
     }),
     [
       Math.floor((crvTokenPrice || 0) * 100),
@@ -345,6 +350,7 @@ const VaultsDetailContainer: React.FC<{
       Math.floor((ethTokenPrice || 0) * 100),
       Math.floor((compTokenPrice || 0) * 100),
       Math.floor((opTokenPrice || 0) * 100),
+      Math.floor((btcTokenPrice || 0) * 100),
     ],
   );
 
@@ -357,11 +363,12 @@ const VaultsDetailContainer: React.FC<{
     memoizedPrices.eth,
     memoizedPrices.comp,
     memoizedPrices.op,
+    memoizedPrices.btc,
     user,
   );
 
   const handleTokenSelect = useCallback(
-    (token: Token) => {
+    (token: Token | undefined) => {
       setSelectedToken(token);
       updateLocalStorageObject(vaultID.toString(), {
         selectedToken: JSON.stringify(token, bigIntReplacer),
@@ -397,7 +404,13 @@ const VaultsDetailContainer: React.FC<{
     finishedTransaction &&
     (Object.keys(lastTransactionStepFeedback).length > 0 ||
       Object.keys(transactionStepFeedback).length > 0);
-  
+
+  console.log(
+    { shouldShowTransactionComplete },
+    { lastTransactionStepFeedback },
+    { transactionStepFeedback },
+  );
+
   const currentTransactionInfo = isDeposit ? lastDepositInfo : lastWithdrawInfo;
 
   return vaultData ? (
@@ -430,7 +443,10 @@ const VaultsDetailContainer: React.FC<{
               onClick={() => {
                 if (!walletAddress || isDeposit) {
                   openStep("mobileInfo");
-                } else if (vaultData?.protocolPoints && vaultData.protocolPoints > 0) {
+                } else if (
+                  vaultData?.protocolPoints &&
+                  vaultData.protocolPoints > 0
+                ) {
                   setShowMobileInvestment((prev) => !prev);
                 } else {
                   openStep("mobileInfo");
@@ -468,7 +484,12 @@ const VaultsDetailContainer: React.FC<{
             />
 
             <MobileInvestmentPopover
-              isVisible={showMobileInvestment && isWithdraw && !!walletAddress && !!(vaultData?.protocolPoints && vaultData.protocolPoints > 0)}
+              isVisible={
+                showMobileInvestment &&
+                isWithdraw &&
+                !!walletAddress &&
+                !!(vaultData?.protocolPoints && vaultData.protocolPoints > 0)
+              }
               onClose={() => setShowMobileInvestment(false)}
               triggerRef={giftButtonRef}
               depositAmount={depositData.amount}
@@ -479,28 +500,30 @@ const VaultsDetailContainer: React.FC<{
           </>
         )}
 
-        <div className={`hidden md:flex items-center gap-4`}>
-          <p className="text-white text-[18px] font-bold">
-            Invest from any chain
-          </p>
+        {user?.walletClientType !== "privy" && (
+          <div className={`hidden md:flex items-center gap-4`}>
+            <p className="text-white text-[18px] font-bold">
+              Invest from any chain
+            </p>
 
-          <div className="flex items-center -space-x-2">
-            {SUPPORTED_TOKENS.map((token, index) => (
-              <div
-                key={token.symbol}
-                className="w-8 h-8 rounded-full overflow-hidden hover:scale-110 transition-transform duration-200 relative"
-                title={token.name}
-                style={{ zIndex: index }}
-              >
-                <img
-                  src={token.icon}
-                  alt={token.name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ))}
+            <div className="flex items-center -space-x-2">
+              {SUPPORTED_TOKENS.map((token, index) => (
+                <div
+                  key={token.symbol}
+                  className="w-8 h-8 rounded-full overflow-hidden hover:scale-110 transition-transform duration-200 relative"
+                  title={token.name}
+                  style={{ zIndex: index }}
+                >
+                  <img
+                    src={token.icon}
+                    alt={token.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
       {/* {walletAddress && isWithdraw && <WithdrawPendingBlock />} */}
 
@@ -530,6 +553,7 @@ const VaultsDetailContainer: React.FC<{
           vaultStrategyChainId={vaultData?.protocol?.chainId}
           isDeposit={isDeposit}
           isProcessing={isTransactionProcessing}
+          isFailedOnConfirmation={isFailedOnConfirmation}
         />
       </div>
 
@@ -548,6 +572,7 @@ const VaultsDetailContainer: React.FC<{
                 selectedToken={selectedToken}
                 userVaultBalance={userVaultBalance}
                 isDeposit={isDeposit}
+                isFailedOnConfirmation={isFailedOnConfirmation}
                 onClose={() => {
                   setFinishedTransaction(false);
                   setLastTransactionStepFeedback({});
@@ -620,7 +645,7 @@ const VaultsDetailContainer: React.FC<{
                 <WithdrawalNotice vault={vaultData} />
               )}
 
-              <div className="bg-[#14171F] pb-8 pt-6 px-4 md:px-5 min-w-[343px] lg:min-w-[490px] 2xl:min-w-[526px] rounded-[16px] w-full xl:max-w-[526px] mt-4 md:mt-4">
+              <div className="bg-[#14171F] pb-8 pt-6 px-4 md:px-5 min-w-[300px] lg:min-w-[490px] 2xl:min-w-[526px] rounded-[16px] w-full xl:max-w-[526px] mt-4 md:mt-4">
                 <VaultInputs
                   vaultData={vaultData}
                   setTransactionCompleted={setFinishedTransaction}
@@ -648,14 +673,16 @@ const VaultsDetailContainer: React.FC<{
         </AnimatePresence>
 
         <div className="hidden md:flex flex-col w-full 2xl:max-w-[576px] mt-8 md:mt-0 space-y-4 font-gotham">
-          {isWithdraw && walletAddress && (vaultData?.protocolPoints ?? 0) > 0 && (
-            <YourInvestment
-              depositAmount={userVaultBalance?.formatted || "0"}
-              vaultTokenSymbol={vaultData?.inputToken.symbol || ""}
-              depositUSDValue={0}
-              vaultData={vaultData}
-            />
-          )}
+          {isWithdraw &&
+            walletAddress &&
+            (vaultData?.protocolPoints ?? 0) > 0 && (
+              <YourInvestment
+                depositAmount={userVaultBalance?.formatted || "0"}
+                vaultTokenSymbol={vaultData?.inputToken.symbol || ""}
+                depositUSDValue={0}
+                vaultData={vaultData}
+              />
+            )}
           {walletAddress && isDeposit && (
             <div className="hidden lg:block">
               <VaultStats
@@ -692,6 +719,7 @@ const VaultsDetailContainer: React.FC<{
               vaultStrategyChainId={vaultData?.protocol?.chainId}
               isDeposit={isDeposit}
               isProcessing={isTransactionProcessing}
+              isFailedOnConfirmation={isFailedOnConfirmation}
             />
           </Dropdown>
           <Dropdown

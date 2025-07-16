@@ -9,7 +9,6 @@ import "./interfaces/ICurveRouterNG.sol";
 import "./interfaces/IV4SwapRouter.sol";
 import "./interfaces/IUniversalRouter.sol";
 import "./interfaces/IPermit2.sol";
-import "hardhat/console.sol";
 
 contract SwapHelperEthereum is SwapHelperParent {
     address public constant ROUTER_NG =
@@ -28,6 +27,8 @@ contract SwapHelperEthereum is SwapHelperParent {
         0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // USDC token
     address public constant USDT_ADDRESS =
         0xdAC17F958D2ee523a2206206994597C13D831ec7; // USDT token
+    address public constant CBBTC_ADDRESS =
+        0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf; // cbBTC token
 
     bytes32 constant crvUsdPriceFeedId =
         0xa19d04ac696c7a6616d291c7e5d1377cc8be437c327b75adb5dc1bad745fcae8;
@@ -35,6 +36,8 @@ contract SwapHelperEthereum is SwapHelperParent {
         0x6aac625e125ada0d2a6b98316493256ca733a5808cd34ccef79b0e28c64d1e76;
     bytes32 constant ethUsdPriceFeedId =
         0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace;
+    bytes32 constant cbbtcUsdPriceFeedId =
+        0x2817d7bfe5c64b8ea956e9a26f573ef64e72e4d7891f2d6af9bcc93f7aff9a97;
 
     address constant UNIVERSAL_ROUTER =
         0x66a9893cC07D91D95644AEDD05D03f95e1dBA8Af; // Uniswap Universal Router address on Ethereum
@@ -73,8 +76,9 @@ contract SwapHelperEthereum is SwapHelperParent {
         } else if (token == CVX_ADDRESS) {
             return cvxUsdPriceFeedId;
         } else if (token == sUSN_ADDRESS) {
-            console.log("Getting sUSN price");
             return susnUsdPriceFeedId;
+        } else if (token == CBBTC_ADDRESS) {
+            return cbbtcUsdPriceFeedId;
         } else {
             return bytes32(0); // Return zero bytes if no price feed exists
         }
@@ -97,7 +101,7 @@ contract SwapHelperEthereum is SwapHelperParent {
             CVX_ADDRESS, // CVX
             0xB576491F1E6e5E62f1d8F26062Ee822B40B0E0d4, // CVX/WETH pool
             WETH_TOKEN, // WETH
-            0x7F86Bf177Dd4F3494b841a37e810A34dD56c829B, // Tricrypto pool
+            0x7F86Bf177Dd4F3494b841a37e810A34dD56c829B, // TricryptoUSDC pool
             USDC_ADDRESS, // USDC
             address(0),
             address(0),
@@ -124,23 +128,41 @@ contract SwapHelperEthereum is SwapHelperParent {
         ];
 
         IERC20(CVX_ADDRESS).approve(ROUTER_NG, amount);
+        amountOut = ICurveRouterNG(ROUTER_NG).exchange(
+            route,
+            swapParams,
+            amount,
+            minOut,
+            pools,
+            msg.sender
+        );
+    }
 
-        try
-            ICurveRouterNG(ROUTER_NG).exchange(
-                route,
-                swapParams,
-                amount,
-                minOut,
-                pools,
-                msg.sender
-            )
-        returns (uint256 out) {
-            amountOut = out;
-        } catch {
-            amountOut = 0;
-        }
+    function swapTokensViaCurveNG(
+        address[11] memory route,
+        uint256[5][5] memory swapParams,
+        address[5] memory pools,
+        uint256 amount,
+        uint16 slippageBps
+    ) external returns (uint256 amountOut) {
+        address finalToken = getLastNonZeroAddress(route);
+        uint256 minAmountOut = calculateMinAmountOut(
+            route[0],
+            finalToken,
+            amount,
+            slippageBps
+        );
 
-        return amountOut;
+        IERC20(route[0]).approve(ROUTER_NG, amount);
+
+        amountOut = ICurveRouterNG(ROUTER_NG).exchange(
+            route,
+            swapParams,
+            amount,
+            minAmountOut,
+            pools,
+            msg.sender
+        );
     }
 
     function getPathV3SpecificIntermediateToken(
@@ -313,22 +335,18 @@ contract SwapHelperEthereum is SwapHelperParent {
                 uint256 j = getTokenIndex(outputToken, curvePool);
                 IERC20(inputToken).approve(curvePool, amount);
 
-                try
-                    ICurvePoolDynamic(curvePool).exchange(
-                        i,
-                        j,
-                        amount,
-                        minimumOut
-                    )
-                returns (uint256 out) {
-                    amountOutCurve = out;
-                    IERC20(outputToken).transfer(strategy, amountOutCurve);
-                    return amountOutCurve;
-                } catch {
-                    return 0;
-                }
+                amountOutCurve = ICurvePoolDynamic(curvePool).exchange(
+                    i,
+                    j,
+                    amount,
+                    minimumOut
+                );
+
+                IERC20(outputToken).transfer(strategy, amountOutCurve);
+                return amountOutCurve;
             } else if (outputToken == USDC_ADDRESS) {
                 amountOutCurve = _swapCVXtoUSDC(amount, minimumOut);
+                return amountOutCurve;
             }
         }
 
@@ -350,13 +368,7 @@ contract SwapHelperEthereum is SwapHelperParent {
                     amountOutMinimum: minimumOut
                 });
 
-            try ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params) returns (
-                uint256 out
-            ) {
-                return out;
-            } catch {
-                return 0;
-            }
+            amountOut = ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params);
         } else {
             // Uniswap V2 Swap
             path = getPathV2(inputToken, outputToken, UNISWAP_V2_FACTORY);
@@ -364,19 +376,16 @@ contract SwapHelperEthereum is SwapHelperParent {
 
             IERC20(inputToken).approve(UNISWAP_V2_ROUTER, amount);
 
-            try
-                IUniswapV2Router02(UNISWAP_V2_ROUTER).swapExactTokensForTokens(
+            uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)
+                .swapExactTokensForTokens(
                     amount,
                     minimumOut,
                     path,
                     strategy,
                     block.timestamp + maxDeadline
-                )
-            returns (uint256[] memory amounts) {
-                return amounts[amounts.length - 1];
-            } catch {
-                return 0;
-            }
+                );
+
+            return amounts[amounts.length - 1];
         }
     }
 
@@ -427,13 +436,7 @@ contract SwapHelperEthereum is SwapHelperParent {
                 amountIn: amount,
                 amountOutMinimum: minimumOut
             });
-        try ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params) returns (
-            uint256 out
-        ) {
-            return out;
-        } catch {
-            return 0;
-        }
+        amountOut = ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params);
     }
 
     function swapViaUniV3SpecificIntermediateTokens(
@@ -481,13 +484,7 @@ contract SwapHelperEthereum is SwapHelperParent {
                 amountIn: amount,
                 amountOutMinimum: minimumOut
             });
-        try ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params) returns (
-            uint256 out
-        ) {
-            return out;
-        } catch {
-            return 0;
-        }
+        amountOut = ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params);
     }
 
     function swapViaUniV4(
@@ -558,17 +555,13 @@ contract SwapHelperEthereum is SwapHelperParent {
         inputs[0] = abi.encode(actions, params);
 
         // === STEP 6: Call Universal Router ===
-        try
-            IUniversalRouter(UNIVERSAL_ROUTER).execute(
-                commands,
-                inputs,
-                block.timestamp + maxDeadline
-            )
-        {
-            amountOut = IERC20(outputToken).balanceOf(receiver);
-        } catch {
-            amountOut = 0;
-        }
+        IUniversalRouter(UNIVERSAL_ROUTER).execute(
+            commands,
+            inputs,
+            block.timestamp + maxDeadline
+        );
+
+        amountOut = IERC20(outputToken).balanceOf(receiver);
     }
 
     function swapViaUniV4MultiHop(
@@ -658,5 +651,16 @@ contract SwapHelperEthereum is SwapHelperParent {
     ) internal {
         IERC20(token).approve(address(permit2), type(uint256).max);
         permit2.approve(token, address(UNIVERSAL_ROUTER), amount, expiration);
+    }
+
+    function getLastNonZeroAddress(
+        address[11] memory route
+    ) internal pure returns (address) {
+        for (uint256 i = route.length; i > 0; i--) {
+            if (route[i - 1] != address(0)) {
+                return route[i - 1];
+            }
+        }
+        return address(0); // All entries were zero
     }
 }

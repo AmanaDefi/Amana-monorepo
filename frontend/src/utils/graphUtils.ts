@@ -43,7 +43,7 @@ export function convertGraphVaultToVaultData(graphVault: GraphVault): VaultData 
 export function convertGraphVaultToAPY(graphVault: GraphVault): VaultAPY {
   return {
     vaultId: graphVault.id,
-    APY7d: parseFloat(graphVault.apy7d),
+    APY7d: graphVault.apy7d ? parseFloat(graphVault.apy7d) : 0,
     apy30d: graphVault.apy30d ? parseFloat(graphVault.apy30d) : undefined
   };
 }

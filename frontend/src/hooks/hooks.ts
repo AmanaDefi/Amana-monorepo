@@ -521,6 +521,7 @@ export const useUpdateAPYs = (
   ethTokenPrice: number,
   compTokenPrice: number,
   opTokenPrice: number,
+  btcTokenPrice: number,
   activeAccount: ConnectedWallet,
   isFromVaultGrid?: boolean,
 ) => {
@@ -528,6 +529,7 @@ export const useUpdateAPYs = (
     const updateAPYs = async () => {
       if (!vaults) return;
 
+      console.log('[UPDATE APYS DEBUG] Starting APY update for vaults:', vaults.map(v => ({ id: v.id, name: v.name, protocol: v.protocol.name })));
       const now = Date.now();
       try {
         const receiptTokenAddresses = await fetchReceiptTokens(vaults, activeAccount);
@@ -555,8 +557,8 @@ export const useUpdateAPYs = (
                 APY7d = await fetchAegisAPR();
               } else if (vault.protocol.name === "YieldFi") {
                 APY7d = await fetchYieldFiAPY();
-              } else if (vault.protocol.name === "NoonCapital") {
-                APY7d = await fetchNoonCapitalAPY();
+              } else if (vault.protocol.name === "Noon Capital") {       
+                APY7d = await fetchNoonCapitalAPY();       
               } else if (vault.protocol.name === "Compound") {
                 APY7d = await calculateCompoundAPY(
                   receiptTokenAddress as Address,
@@ -623,6 +625,7 @@ export const useUpdateAPYs = (
                       crvTokenPrice,
                       cvxTokenPrice,
                       ethTokenPrice,
+                      btcTokenPrice,
                       activeAccount
                     );
                   } else if (strategyChain.id === 42161) {
@@ -763,15 +766,26 @@ export function useUserSettings() {
   return { userSettings, updateSettings };
 }
 
-export const useSlippage = () => {
-  const { slippage, setSlippage, toggleAuto } = useUserSettingsStore();
+export function useSlippage(vaultId: string) {
+  const store = useUserSettingsStore();
+
+  useEffect(() => {
+    if (vaultId) {
+      store.loadSlippageForVault(vaultId);
+    }
+  }, [vaultId, store.loadSlippageForVault]);
+
+  const slippageSettings = useMemo(() => {
+    return store.getSlippageForVault(vaultId);
+  }, [vaultId, store.slippage, store.getSlippageForVault]);
+
   return {
-    slippageValue: slippage.value,
-    isAuto: slippage.isAuto,
-    setSlippage,
-    toggleAuto,
+    slippageValue: slippageSettings.value,
+    isAuto: slippageSettings.isAuto,
+    setSlippage: store.setSlippage,
+    toggleAuto: store.toggleAuto,
   };
-};
+}
 
 // Hooks for working with subgraph
 export const useUserTransactionsHistory = (userAddress?: string) => {

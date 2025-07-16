@@ -54,8 +54,6 @@ const AllWAllets = () => {
   const { logout } = usePrivy();
   const activeAccount = filteredWallets[0];
 
-  console.log(activeAccount);
-
   const {
     wallets: solanaAdapters,
     select,
@@ -76,9 +74,6 @@ const AllWAllets = () => {
   } = useConnect({
     mutation: {
       onSuccess: (result) => {
-        if (connected) {
-          disconnect();
-        }
         if (fundWalletStep === "connectWallet") {
           setWalletAddress(result.accounts[0]);
           localStorage.removeItem("connectorId");
@@ -103,6 +98,11 @@ const AllWAllets = () => {
 
       await logout();
     }
+
+    if (connected) {
+      disconnect();
+    }
+    
     setActiveConnector(connector);
     localStorage.setItem("connectorId", connector.id);
     connect(
@@ -117,7 +117,6 @@ const AllWAllets = () => {
 
           if (error.name === "ConnectorAlreadyConnectedError") {
             connector.disconnect();
-            console.log("connectorId removed from error");
             localStorage.removeItem("connectorId");
 
             setActiveConnector(null);
@@ -162,7 +161,7 @@ const AllWAllets = () => {
         console.log("connect solana error");
       }
       select(connector.name);
-      // solanaConnect();
+      solanaConnect();
     } catch (error) {
       console.log(error);
 

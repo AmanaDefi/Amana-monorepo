@@ -11,6 +11,7 @@ import { bigIntReplacer } from "@/utils/utils";
 import { InfoBlock } from "../VaultsWrapper/components/InfoBlock.tsx/index";
 import CloseModalIcon from "../svg/CloseModalIcon";
 import AutoDropdownIcon from "../svg/AutoDropdownIcon";
+import { DEFAULT_SETTINGS } from "@/types/types";
 
 export default function SlippageSettingsDropdown({
   setInputBalance,
@@ -19,7 +20,8 @@ export default function SlippageSettingsDropdown({
   setInputBalance: Function;
   vaultId: string;
 }) {
-  const { slippageValue, isAuto, setSlippage, toggleAuto } = useSlippage();
+  const { slippageValue, isAuto, setSlippage, toggleAuto } =
+    useSlippage(vaultId);
   const [isOpen, setIsOpen] = useState(false);
   const [customInputValue, setCustomInputValue] = useState("");
   const [showCustomInput, setShowCustomInput] = useState(false);
@@ -125,7 +127,8 @@ export default function SlippageSettingsDropdown({
     }
   };
   const isPresetActive = (v: number) =>
-    !isAuto && !showCustomInput && slippageValue === v;
+    (!isAuto && !showCustomInput && slippageValue === v) ||
+    (isAuto && v === DEFAULT_SETTINGS.slippage.value);
 
   const isCustomActive = () =>
     !isAuto && (!presetValues.includes(slippageValue) || showCustomInput);

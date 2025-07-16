@@ -1,5 +1,6 @@
 import { GraphQLClient } from "graphql-request";
 import { GRAPH_URL, GRAPH_API_KEY } from "@/config.ts/apiConfig";
+import { STABLECOIN_SYMBOLS } from "@/constants/chainConfig";
 import {
   GetVaultsResponse,
   GetVaultDetailsResponse,
@@ -1076,6 +1077,145 @@ class GraphClient {
 
     return result;
   }
+
+  // NEW HELPERS FOR STABLE / NON-STABLE VAULT QUERIES
+  // These queries fetch ALL vaults (no pagination) sorted by TVL and split by stablecoin prefix.
+  // Note: TheGraph does not natively support passing an array to *_starts_with_nocase, so we
+  //       construct an `or` clause dynamically for each stablecoin prefix. For non-stable vaults
+  //       we simply exclude those prefixes via `and` with *_not_starts_with_nocase filters.
+  //       If TheGraph ever adds support for `_starts_with_any`, this can be simplified.
+  // Commented out parts of duplicated field lists are kept intentionally for clarity and easier
+  // maintenance.
+  async getStableVaults(
+    stablePrefixes: readonly string[] = STABLECOIN_SYMBOLS,
+    excludedIds: string[] = [],
+  ): Promise<GetVaultsResponse> {
+    const orClauses = stablePrefixes
+      .map(
+        (prefix) => `{ assetSymbol_starts_with_nocase: \"${prefix}\" }`,
+      )
+      .join(", ");
+
+    const query = `
+      query GetStableVaults($excludedIds: [ID!]) {
+        vaults(
+          orderBy: normalizedTVL,
+          orderDirection: desc,
+          where: { and: [ { id_not_in: $excludedIds }, { or: [${orClauses}] } ] }
+        ) {
+          id
+          name
+          symbol
+          type
+          description
+          imgURL
+          depositFeePaidFromGasTank
+          asset
+          assetSymbol
+          assetDecimals
+          assetImgURL
+          assetPrice
+          decimals
+          strategy
+          strategyNetwork
+          strategyChainId
+          protocolName
+          protocolImgURL
+          protocolDescription
+          networkDescription
+          rewardsContractAddress
+          treasury
+          perfFee
+          createdAtBlock
+          createdAtTimestamp
+          tvl
+          totalDeposited
+          totalWithdrawn
+          sharesSupply
+          pricePerShare
+          normalizedTVL
+          apy7d
+          apy30d
+          riskLevel
+          protocolPoints
+          protocolPointsDescription
+          cooldownPeriod
+          minDeposit
+          maxWithdraw
+        }
+      }
+    `;
+
+    return this.client.request(query, {
+      excludedIds,
+    }) as Promise<GetVaultsResponse>;
+  }
+
+  async getNonStableVaults(
+    stablePrefixes: readonly string[] = STABLECOIN_SYMBOLS,
+    excludedIds: string[] = [],
+  ): Promise<GetVaultsResponse> {
+    // Build AND clause to exclude stable prefixes
+    const andClauses = stablePrefixes
+      .map(
+        (prefix) => `{ assetSymbol_not_starts_with_nocase: \"${prefix}\" }`,
+      )
+      .join(", ");
+
+    const query = `
+      query GetNonStableVaults($excludedIds: [ID!]) {
+        vaults(
+          orderBy: normalizedTVL,
+          orderDirection: desc,
+          where: { and: [ { id_not_in: $excludedIds }, ${andClauses} ] }
+        ) {
+          id
+          name
+          symbol
+          type
+          description
+          imgURL
+          depositFeePaidFromGasTank
+          asset
+          assetSymbol
+          assetDecimals
+          assetImgURL
+          assetPrice
+          decimals
+          strategy
+          strategyNetwork
+          strategyChainId
+          protocolName
+          protocolImgURL
+          protocolDescription
+          networkDescription
+          rewardsContractAddress
+          treasury
+          perfFee
+          createdAtBlock
+          createdAtTimestamp
+          tvl
+          totalDeposited
+          totalWithdrawn
+          sharesSupply
+          pricePerShare
+          normalizedTVL
+          apy7d
+          apy30d
+          riskLevel
+          protocolPoints
+          protocolPointsDescription
+          cooldownPeriod
+          minDeposit
+          maxWithdraw
+        }
+      }
+    `;
+
+    return this.client.request(query, {
+      excludedIds,
+    }) as Promise<GetVaultsResponse>;
+  }
 }
 
-export const graphClient = new GraphClient();
+export const graphClient = new GraphClient(); 

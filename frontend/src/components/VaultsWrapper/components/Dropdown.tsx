@@ -84,10 +84,17 @@ export const Dropdown: React.FC<Props> = ({
       ) : (
         <div
           style={{ maxWidth: width }}
-          className="flex w-fit md:w-auto hover:cursor-pointer border-[#535E73] flex-row px-3 justify-between py-[6px] border-[0.5px] rounded-lg gap-2 hover:border-blue-button h-fit"
+          className="flex w-fit md:w-auto hover:cursor-pointer border-[#535E73] flex-row px-3 justify-between py-[6px] tracking-[-0.06em] border-[0.5px] rounded-lg gap-2 hover:border-blue-button h-fit"
           onClick={handleToggleDropdown}
         >
-          <span>{selectedOption ? selectedOption : emptyLabel}</span>
+          <span>
+            {selectedOption
+              ? options.find(
+                  (opt) =>
+                    opt.value.toLowerCase() === selectedOption.toLowerCase(),
+                )?.value || selectedOption
+              : emptyLabel}
+          </span>
           <button
             aria-label="dropdown-arrow"
             type="button"

@@ -11,6 +11,7 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import { Chain } from "viem";
 import clsx from "clsx";
 import { BreathingValue, MiniSpinner } from "../PendingDots";
+import { useWallets } from "@privy-io/react-auth";
 
 export type InputTokenWithErrorProps = {
   errorMessage?: string;
@@ -73,6 +74,11 @@ export default function InputTokenWithError({
   const selectedTokenPrice = useTokenPriceBySymbol(selectedToken?.symbol);
   const { walletAddress } = useMultiChain();
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const { wallets } = useWallets();
+  const filteredWallets = wallets.filter(
+    (wallet) => wallet.meta.id !== "app.phantom",
+  );
+  const activeAccount = filteredWallets[0];
 
   const isConnected = !!walletAddress;
 
@@ -81,15 +87,14 @@ export default function InputTokenWithError({
       ((isDeposit && !isOutput) || (!isDeposit && isOutput)) &&
       tokenList &&
       tokenList.length > 0 &&
-      selectedChain
+      activeAccount?.walletClientType !== "privy"
     );
-  }, [isDeposit, isOutput, tokenList, selectedChain]);
+  }, [isDeposit, isOutput, tokenList, activeAccount]);
 
   const renderTopSection = () => {
     if (!isOutput && isDeposit) {
       return {
         leftText: "You send (min 0.0015)",
-        leftTextMobile: "(min 0.0015)",
         showMaxButton: true,
         maxButtonPosition: "left",
       };
@@ -98,7 +103,6 @@ export default function InputTokenWithError({
     if (!isOutput && !isDeposit) {
       return {
         leftText: "",
-        leftTextMobile: "",
         showMaxButton: true,
         maxButtonPosition: "left",
       };
@@ -107,7 +111,6 @@ export default function InputTokenWithError({
     if (isOutput && !isDeposit) {
       return {
         leftText: "You receive",
-        leftTextMobile: "",
         showMaxButton: false,
         maxButtonPosition: null,
       };
@@ -116,7 +119,6 @@ export default function InputTokenWithError({
     if (isOutput && isDeposit) {
       return {
         leftText: "You receive",
-        leftTextMobile: "",
         showMaxButton: false,
         maxButtonPosition: null,
       };
@@ -124,7 +126,6 @@ export default function InputTokenWithError({
 
     return {
       leftText: "",
-      leftTextMobile: "",
       showMaxButton: false,
       maxButtonPosition: null,
     };
@@ -144,19 +145,22 @@ export default function InputTokenWithError({
     }
 
     if (isOutput && loadingOutputToken) {
+      const justifyClass = isDeposit ? "justify-end" : "justify-start";
+      const spinnerSize = isDeposit ? 18 : 12;
+      const height = isDeposit ? "h-9" : "h-5";
+
       return (
-        <div className="flex items-center space-x-1">
-          <span>$</span>
-          <MiniSpinner size={12} />
+        <div className={clsx("flex items-center", height, justifyClass)}>
+          <MiniSpinner size={spinnerSize} color="#3E73C4" />
         </div>
       );
     }
 
     return (
       <BreathingValue
-        value={`$ ${usdValue}`}
+        value={`$${usdValue}`}
         isBreathing={!isOutput && !!loadingOutputToken}
-        className="text-[#535E73]"
+        className={shouldSwapValues ? "" : "text-[#535E73]"}
       />
     );
   };
@@ -166,13 +170,17 @@ export default function InputTokenWithError({
       const outputAmount = conversionOutput.outputAmountFormatted || "0.00";
 
       if (loadingOutputToken) {
+        const justifyClass = isDeposit ? "justify-end" : "justify-start";
+        const spinnerSize = isDeposit ? 12 : 18;
+        const height = isDeposit ? "h-5" : "h-9";
+
         return (
-          <div className="flex items-center justify-start min-w-[60px] min-h-[32px]">
-            <MiniSpinner size={18} color="#3E73C4" />
+          <div className={clsx("flex items-center", height, justifyClass)}>
+            <MiniSpinner size={spinnerSize} color="#3E73C4" />
           </div>
         );
       }
-      return <span className="text-white text-2xl">{outputAmount}</span>;
+      return <span>{outputAmount}</span>;
     }
 
     return (
@@ -227,13 +235,14 @@ export default function InputTokenWithError({
             style={{ gridArea: "top-left" }}
             className="flex items-center text-sm text-[#535E73]"
           >
-            <span className="hidden md:inline">{topSectionData.leftText}</span>
-            <span className="md:hidden">{topSectionData.leftTextMobile}</span>
+            <span className="text-xs md:text-sm whitespace-nowrap mr-2">
+              {topSectionData.leftText}
+            </span>
             {topSectionData.showMaxButton &&
               topSectionData.maxButtonPosition === "left" && (
                 <button
                   onClick={onMaxClick}
-                  className="text-[#3E73C4] hover:underline font-normal text-sm ml-2"
+                  className={`text-[#3E73C4] hover:underline font-normal text-xs md:text-sm text-start ${!isDeposit ? "-ml-2" : ""}`}
                 >
                   MAX
                 </button>
@@ -249,12 +258,14 @@ export default function InputTokenWithError({
             style={{ gridArea: "top-right" }}
             className={
               shouldSwapValues
-                ? "flex justify-end items-start"
-                : "flex justify-end items-start text-sm"
+                ? "flex justify-end items-start text-xs md:text-sm"
+                : "flex justify-end items-start text-xs md:text-sm"
             }
           >
             {shouldSwapValues ? (
-              <span className="text-white text-2xl">{renderMainValue()}</span>
+              <p className="group-hover/max:text-white text-[#535E73]">
+                {renderMainValue()}
+              </p>
             ) : (
               <p className="group-hover/max:text-white">{renderUSDValue()}</p>
             )}
@@ -262,12 +273,20 @@ export default function InputTokenWithError({
 
           <div
             style={{ gridArea: "main-left" }}
-            className={shouldSwapValues ? "flex text-sm" : "flex "}
+            className={shouldSwapValues ? "flex" : "flex "}
           >
             {shouldSwapValues ? (
-              <p className="group-hover/max:text-white text-[#535E73]">
-                {renderUSDValue()}
-              </p>
+              loadingOutputToken ? (
+                <div className="flex items-center h-9 justify-start">
+                  <MiniSpinner size={18} color="#3E73C4" />
+                </div>
+              ) : (
+                <span
+                  className={`text-white text-2xl ${conversionOutput.outputAmountInUSDFormatted && conversionOutput.outputAmountInUSDFormatted !== "0.00" ? "font-medium" : "font-normal"}`}
+                >
+                  {conversionOutput.outputAmountInUSDFormatted || "0.00"}
+                </span>
+              )
             ) : (
               <span className="text-white text-2xl">{renderMainValue()}</span>
             )}
@@ -293,8 +312,8 @@ export default function InputTokenWithError({
                 onSelectChainAndToken={onSelectChainAndToken}
               />
             ) : (
-              <div className="flex items-center">
-                <div className="md:mr-2 relative flex-none w-5 h-5 border border-white rounded-full bg-[#10B981]">
+              <div className="flex items-center flex-row gap-1 md:gap-2">
+                <div className="relative flex-none w-5 h-5 border border-white rounded-full bg-[#10B981]">
                   <TokenIcon
                     token={selectedToken as Token}
                     icon={selectedToken?.imgURL}

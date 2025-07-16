@@ -5,7 +5,7 @@ import {
   TransactionStepStatus,
   Balance,
 } from "@/types/types";
-import { isZetachain } from "@/utils/utils";
+import { hasNoErrors, isZetachain } from "@/utils/utils";
 import { useTransactionStore } from "@/store/transactionStore";
 import { CHAIN_ID } from "@/constants/chainConfig";
 
@@ -40,9 +40,13 @@ const mapActionToUserStep = (
       switch (action) {
         case Action.deposit:
           return DepositStep.CONFIRM_DEPOSIT;
+        case Action.depositConfirmed:
         case Action.crosschainInvest:
+        case Action.CrossChainInvestFailed:
+        case Action.CrossChainDepositFailed:
           return DepositStep.CROSS_CHAIN_TRANSFER;
         case Action.deposited:
+        case Action.failed:
           return DepositStep.FINAL_CONFIRMATION;
         default:
           return null;
@@ -50,12 +54,15 @@ const mapActionToUserStep = (
     } else {
       switch (action) {
         case Action.deposit:
-        case Action.depositConfirmed:
           return DepositStep.CONFIRM_DEPOSIT;
+        case Action.depositConfirmed:
         case Action.crosschainInvest:
+        case Action.CrossChainInvestFailed:
         case Action.FundsInvest:
+        case Action.InvestConfirmFailed:
           return DepositStep.CROSS_CHAIN_TRANSFER;
         case Action.deposited:
+        case Action.failed:
           return DepositStep.FINAL_CONFIRMATION;
         default:
           return null;
@@ -67,8 +74,14 @@ const mapActionToUserStep = (
         case Action.withdraw:
           return DepositStep.CONFIRM_DEPOSIT;
         case Action.DivestSent:
+        case Action.DivestFailed:
+        case Action.FundsReturnedError:
+        case Action.ReturnFundsToUserSent:
+        case Action.ReturnFundsToUserFailed:
+        case Action.ReturnFundsFromStrategyFailed:
           return DepositStep.CROSS_CHAIN_TRANSFER;
         case Action.withdrew:
+        case Action.failed:
           return DepositStep.FINAL_CONFIRMATION;
         default:
           return null;
@@ -76,13 +89,19 @@ const mapActionToUserStep = (
     } else {
       switch (action) {
         case Action.withdraw:
-        case Action.withdrawconfirmed:
           return DepositStep.CONFIRM_DEPOSIT;
+        case Action.withdrawconfirmed:
         case Action.DivestSent:
+        case Action.DivestFailed:
         case Action.FundsDivested:
+        case Action.CrossChainWithdrawFailed:
         case Action.ReturnFundsToUserSent:
+        case Action.FundsReturnedError:
+        case Action.ReturnFundsToUserFailed:
+        case Action.ReturnFundsFromStrategyFailed:
           return DepositStep.CROSS_CHAIN_TRANSFER;
         case Action.withdrew:
+        case Action.failed:
           return DepositStep.FINAL_CONFIRMATION;
         default:
           return null;
@@ -131,7 +150,7 @@ const getUserStepStatus = (
   isType2Transaction: boolean,
   isDeposit: boolean = true,
   shouldShowFinalStep: boolean,
-  activeChainId?: number,
+  isFailedOnConfirmation: boolean,
 ): {
   status: TransactionStepStatus;
   description: string;
@@ -170,13 +189,16 @@ const getUserStepStatus = (
       ) {
         latestStatus = TransactionStepStatus.completed;
       }
+    }
+  }
 
-      if (
-        latestStatus === TransactionStepStatus.processing ||
-        latestStatus === TransactionStepStatus.completed
-      ) {
-        break;
-      }
+  if (isFailedOnConfirmation) {
+    if (step === DepositStep.SELECT_TOKEN) {
+      latestStatus = TransactionStepStatus.completed;
+    }
+
+    if (step === DepositStep.CONFIRM_DEPOSIT) {
+      latestStatus = TransactionStepStatus.error;
     }
   }
 
@@ -191,6 +213,7 @@ interface UseInstructionStepLogicProps {
   vaultStrategyChainId?: number;
   isDeposit?: boolean;
   isProcessing?: boolean;
+  isFailedOnConfirmation?: boolean;
 }
 
 export const useInstructionStepLogic = ({
@@ -201,6 +224,7 @@ export const useInstructionStepLogic = ({
   vaultStrategyChainId,
   isDeposit = true,
   isProcessing: propIsProcessing = false,
+  isFailedOnConfirmation = false,
 }: UseInstructionStepLogicProps) => {
   const {
     currentInputBalance,
@@ -212,9 +236,9 @@ export const useInstructionStepLogic = ({
   const shouldShowFinalStep =
     finishedTransaction &&
     (Object.keys(lastTransactionStepFeedback).length > 0 ||
-      Object.keys(transactionStepFeedback).length > 0);
-
-  console.log({shouldShowFinalStep});
+      Object.keys(transactionStepFeedback).length > 0) &&
+    hasNoErrors(transactionStepFeedback) &&
+    !isFailedOnConfirmation;
 
   const isUserOnZetachain = activeChainId ? isZetachain(activeChainId) : false;
   const isVaultOnZetachain = vaultStrategyChainId
@@ -264,11 +288,18 @@ export const useInstructionStepLogic = ({
 
   const isDynamicMode = useMemo(() => {
     return (
-      isTransactionProcessing ||
-      Object.keys(activeFeedback).length > 0 ||
-      isFirstStepActive
+      (isTransactionProcessing ||
+        Object.keys(activeFeedback).length > 0 ||
+        isFirstStepActive) &&
+      !isFailedOnConfirmation &&
+      hasNoErrors(activeFeedback)
     );
-  }, [isTransactionProcessing, activeFeedback, isFirstStepActive]);
+  }, [
+    isTransactionProcessing,
+    activeFeedback,
+    isFirstStepActive,
+    isFailedOnConfirmation,
+  ]);
 
   const steps = useMemo(() => {
     // PATCH: For Bitcoin, use commit/reveal steps
@@ -327,12 +358,15 @@ export const useInstructionStepLogic = ({
             isType2Transaction,
             isDeposit,
             shouldShowFinalStep,
+            isFailedOnConfirmation,
           );
           if (
             stepStatus.status === TransactionStepStatus.processing &&
             processingStepIndex === -1
           ) {
             processingStepIndex = index;
+          } else if (isFailedOnConfirmation) {
+            completedStepsCount = 1;
           }
         }
       } else {
@@ -342,6 +376,7 @@ export const useInstructionStepLogic = ({
           isType2Transaction,
           isDeposit,
           shouldShowFinalStep,
+          isFailedOnConfirmation,
         );
 
         if (stepStatus.status === TransactionStepStatus.completed) {
@@ -362,7 +397,6 @@ export const useInstructionStepLogic = ({
       currentStepIdx = DepositStep.SELECT_TOKEN;
     }
 
-
     if (shouldShowFinalStep) {
       currentStepIdx = 4;
       completedStepsCount = 4;
@@ -374,7 +408,7 @@ export const useInstructionStepLogic = ({
       isType2Transaction,
       isDeposit,
       shouldShowFinalStep,
-      activeChainId,
+      isFailedOnConfirmation,
     );
     currentDesc = currentStepStatusObj.description;
 
@@ -404,7 +438,7 @@ export const useInstructionStepLogic = ({
     isDeposit,
     steps,
     shouldShowFinalStep,
-    activeChainId
+    isFailedOnConfirmation,
   ]);
 
   return {

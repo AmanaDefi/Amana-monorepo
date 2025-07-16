@@ -98,10 +98,11 @@ export const VaultFilters: FC<Props> = ({
   };
 
   const handleFilterClick = (filter: string) => {
-    if (sortBy === filter) {
+    const normalizedFilter = filter.toLowerCase();
+    if (sortBy.toLowerCase() === normalizedFilter) {
       toggleSortOrder();
     } else {
-      setSortBy(filter);
+      setSortBy(normalizedFilter);
       setSortOrder("desc");
     }
   };
@@ -203,7 +204,7 @@ export const VaultFilters: FC<Props> = ({
           </div>
           <div
             onClick={() => inputRef?.current?.focus()}
-            className="focus-within:border-blue-button hover:border-blue-button transition-all duration-300 bg-[#14171F] w-[50%] min-w-[190px] focus-within:w-[100%] lg:focus-within:w-[340px] lg:w-[340px] px-4 py-3 pl-[56px] rounded-lg border border-[#454363] relative"
+            className="focus-within:border-blue-button hover:border-blue-button transition-all duration-300 bg-[#14171F] w-[50%] min-w-[190px] focus-within:w-[100%] lg:focus-within:w-[340px] lg:w-[340px] pr-[10px] pl-[56px] md:pr-4 py-2 md:py-3  rounded-lg border border-[#454363] relative"
           >
             <>
               <input
@@ -218,7 +219,7 @@ export const VaultFilters: FC<Props> = ({
                 onChange={(e) => setLocalSearch(e.target.value)}
               />
             </>
-            <div className="absolute left-4 top-3">
+            <div className="absolute left-4 top-[10px] md:top-3">
               <SearchIcon />
             </div>
           </div>

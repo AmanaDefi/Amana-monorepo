@@ -110,7 +110,8 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
         <div className="flex items-center gap-2 lg:gap-6 flex-1 justify-end relative z-50">
           {activeAccount &&
             activeAccount?.walletClientType !== "privy" &&
-            !isMenuOpened && activeChain?.id !== CHAIN_ID['solana'] && <ChainSwitcher />}
+            !isMenuOpened &&
+            activeChain?.id !== CHAIN_ID["solana"] && <ChainSwitcher />}
 
           <div className="hidden lg:block">
             
@@ -151,14 +152,20 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
                     onClick={() =>
                       setIsProfileDropdownOpen(!isProfileDropdownOpen)
                     }
-                    className="!px-4 !h-10 relative z-50"
+                    className="!px-4 !h-8 md:!h-10 relative z-50 !w-[142px] !md:w-[192px]"
                   >
                     <div className="flex flex-row gap-2 leading-[18px] items-center">
                       <ProfileIcon width={18} height={18} />
                       <div className="flex flex-col">
-                        <p className="text-[18px] text-white font-normal">
-                          {walletAddress.slice(0, 6)}...
-                          {walletAddress.slice(-4)}
+                        <p className="text-base md:text-lg text-white font-normal">
+                          <span className="lg:hidden">
+                            {walletAddress.slice(0, 4)}...
+                            {walletAddress.slice(-4)}
+                          </span>
+                          <span className="hidden lg:inline">
+                            {walletAddress.slice(0, 6)}...
+                            {walletAddress.slice(-4)}
+                          </span>
                         </p>
                       </div>
                     </div>
