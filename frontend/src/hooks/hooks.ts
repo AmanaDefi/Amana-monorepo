@@ -529,7 +529,6 @@ export const useUpdateAPYs = (
     const updateAPYs = async () => {
       if (!vaults) return;
 
-      console.log('[UPDATE APYS DEBUG] Starting APY update for vaults:', vaults.map(v => ({ id: v.id, name: v.name, protocol: v.protocol.name })));
       const now = Date.now();
       try {
         const receiptTokenAddresses = await fetchReceiptTokens(vaults, activeAccount);

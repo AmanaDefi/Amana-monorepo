@@ -227,6 +227,40 @@ export class Vault extends Entity {
     this.set("decimals", Value.fromI32(value));
   }
 
+  get outputTokenSymbol(): string | null {
+    let value = this.get("outputTokenSymbol");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toString();
+    }
+  }
+
+  set outputTokenSymbol(value: string | null) {
+    if (!value) {
+      this.unset("outputTokenSymbol");
+    } else {
+      this.set("outputTokenSymbol", Value.fromString(<string>value));
+    }
+  }
+
+  get outputTokenImage(): string | null {
+    let value = this.get("outputTokenImage");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toString();
+    }
+  }
+
+  set outputTokenImage(value: string | null) {
+    if (!value) {
+      this.unset("outputTokenImage");
+    } else {
+      this.set("outputTokenImage", Value.fromString(<string>value));
+    }
+  }
+
   get strategy(): Bytes | null {
     let value = this.get("strategy");
     if (!value || value.kind == ValueKind.NULL) {

@@ -28,6 +28,7 @@ import {
   Address,
   encodeAbiParameters,
   parseAbiItem,
+  parseUnits,
 } from "viem";
 import {
   getCurrentSlippage,
@@ -40,6 +41,7 @@ import {
   calculateGasFeeInVaultAsset,
   convertGasFeeToInputToken,
 } from "../utils/gasFeeCalculations";
+import { calculateDepositOutput, isCachedCalculationValid } from "../utils/depositCalculations";
 
 // import { fetchEthPrice } from "@/utils/utils";
 
@@ -398,9 +400,6 @@ export async function calculateConvexEthereumRewardsAPY(
 
   const publicClient = getPublicClient(strategyChain.id);
   if (!publicClient) {
-    console.log(
-      `Failed to get public client for chain id: ${strategyChain.id}`,
-    );
     return 0;
   }
 
@@ -426,9 +425,6 @@ export async function calculateConvexEthereumRewardsAPY(
       (Number(cvxRewardRate) * secondsPerYear) / Number(totalSupply);
 
     const lpPriceInInput = Number(virtualPrice) / 1e18;
-    console.log("inputToken", inputToken);
-    console.log("inputToken", inputToken.symbol);
-    console.log("btcTokenPrice", btcTokenPrice);
     const lpPriceInUSD = (() => {
       if (inputToken.symbol === "ETH.ETH")
         return lpPriceInInput * ethTokenPrice;
@@ -436,18 +432,14 @@ export async function calculateConvexEthereumRewardsAPY(
         return lpPriceInInput * btcTokenPrice;
       return lpPriceInInput; // fallback (e.g. stablecoins)
     })();
-    console.log("virtualPrice", virtualPrice.toString());
-    console.log("lpPriceInInput", lpPriceInInput);
-    console.log("lpPriceInUSD", lpPriceInUSD);
+
     // Step 4: APY Calculation
     const crvApy = (crvPerLpPerYear * crvTokenPrice) / lpPriceInUSD;
     const cvxApy = (cvxPerTokenPerYear * cvxTokenPrice) / lpPriceInUSD;
 
     const annualApy = crvApy + cvxApy;
-    console.log("Annual APY:", annualApy);
     return annualApy;
   } catch (error) {
-    console.log("calculateConvexEthereumRewardsAPY failed:", error);
     return 0;
   }
 }
@@ -1120,39 +1112,53 @@ const executeDirectDeposit = async (
   if (!activeAccount)
     throw new Error("no activeAccount found for perform deposit");
 
-  let actualDepositAmount = transactionAmount;
-  const gasFeeResult = await calculateGasFeeInVaultAsset(
-    vaultData,
-    inputToken,
-    activeChain,
-    1, // Not needed for cross-chain deposits, only for USD formatting which we don't use here
-    1, // Not needed for cross-chain deposits, only for ETH formatting which we don't use here
-    (amount: number) => amount.toString(), // Simple formatter
-    (usd: number, ethPrice: number) => usd / ethPrice // Simple converter
-  );
-  console.log("gasFeeResult", gasFeeResult);
-  if (gasFeeResult.needsDeduction) {
-    // For cross-chain deposits, convert gas fee to input token terms if needed
-    const gasFeeInInputTokens = await convertGasFeeToInputToken(
-      gasFeeResult.gasFeeInVaultAsset,
+  // Check cache first for existing calculation
+   
+  const cached = useTransactionStore.getState().lastDepositCalculation;
+  
+  let calculationResult;
+  
+  if (isCachedCalculationValid(
+    cached, 
+    transactionAmount, 
+    vaultData.id, 
+    inputToken.address, 
+    activeChain.id
+  )) {
+    
+    console.log("Using cached calculation result for direct deposit execution");
+    calculationResult = cached!.result;
+  } else {
+    console.log("Cache miss - performing new calculation for direct deposit execution");
+    
+    // Use the unified calculation function
+    calculationResult = await calculateDepositOutput(
+      transactionAmount,
       vaultData,
       inputToken,
-      activeChain
+      activeChain,
+      activeAccount,
+      1, // vaultTokenPrice - not needed for execution
+      1, // inputTokenPrice - not needed for execution
+      1, // ethPriceUsd - not needed for execution
+      (amount: number) => amount.toString(), // Simple formatter
+      (usd: number, ethPrice: number) => usd / ethPrice // Simple converter
     );
-    console.log("gasFeeInInputTokens", gasFeeInInputTokens.toString());
-    actualDepositAmount = transactionAmount > gasFeeInInputTokens ?
-      transactionAmount - gasFeeInInputTokens : 0n;
-
   }
-  console.log("actualDepositAmount", actualDepositAmount.toString());
 
-  const { minSharesOut } = await getPathDataAndMinSharesOut(
-    vaultData,
-    inputToken,
-    actualDepositAmount,
-    activeChain,
-    activeAccount,
-  );
+  console.log("Unified calculation result for direct deposit:", {
+    inputAmount: calculationResult.inputAmount.toString(),
+    amountAfterFee: calculationResult.amountAfterFee.toString(),
+    amountForStrategy: calculationResult.amountForStrategy.toString(),
+    sharesAmount: calculationResult.sharesAmount.toString(),
+    needsGasFee: calculationResult.needsGasFee,
+    needsTokenSwap: calculationResult.needsTokenSwap,
+  });
+
+  // Calculate minSharesOut with slippage
+  const sharesAmountBigInt = parseUnits(calculationResult.sharesAmount, vaultData.inputToken.decimals);
+  const minSharesOut = (sharesAmountBigInt * BigInt(10000 - getCurrentSlippage() * 100)) / BigInt(10000);
+  
   console.log("slippage", getCurrentSlippage());
   console.log("minSharesOut", minSharesOut.toString());
 
@@ -1209,47 +1215,68 @@ const executeCrossChainDeposit = async (
   const walletClient = await getWalletClient(activeAccount);
   if (!activeAccount || !walletClient) return { transactionHash: null };
 
-  let actualDepositAmount = transactionAmount;
-
-  const gasFeeResult = await calculateGasFeeInVaultAsset(
-    vaultData,
-    inputToken,
-    activeChain,
-    1, // Not needed for cross-chain deposits, only for USD formatting which we don't use here
-    1, // Not needed for cross-chain deposits, only for ETH formatting which we don't use here
-    (amount: number) => amount.toString(), // Simple formatter
-    (usd: number, ethPrice: number) => usd / ethPrice, // Simple converter
-  );
-
-  if (gasFeeResult.needsDeduction) {
-    // For cross-chain deposits, convert gas fee to input token terms if needed
-    const gasFeeInInputTokens = await convertGasFeeToInputToken(
-      gasFeeResult.gasFeeInVaultAsset,
+  // Check cache first for existing calculation
+   
+  const cached = useTransactionStore.getState().lastDepositCalculation;
+  
+  let calculationResult;
+  
+  if (isCachedCalculationValid(
+    cached, 
+    transactionAmount, 
+    vaultData.id, 
+    inputToken.address, 
+    activeChain.id
+  )) {
+    
+    console.log("Using cached calculation result for cross-chain deposit execution");
+    calculationResult = cached!.result;
+  } else {
+    console.log("Cache miss - performing new calculation for cross-chain deposit execution");
+    
+    // Use the unified calculation function
+    calculationResult = await calculateDepositOutput(
+      transactionAmount,
       vaultData,
       inputToken,
       activeChain,
+      activeAccount,
+      1, // vaultTokenPrice - not needed for execution
+      1, // inputTokenPrice - not needed for execution
+      1, // ethPriceUsd - not needed for execution
+      (amount: number) => amount.toString(), // Simple formatter
+      (usd: number, ethPrice: number) => usd / ethPrice // Simple converter
     );
-
-    actualDepositAmount =
-      transactionAmount > gasFeeInInputTokens
-        ? transactionAmount - gasFeeInInputTokens
-        : 0n;
   }
-  const { swapPath, minSharesOut } = await getPathDataAndMinSharesOut(
-    vaultData,
-    inputToken,
-    actualDepositAmount,
-    activeChain,
-    activeAccount,
-  );
 
-  console.log("🎯 Cross-Chain Deposit - MinSharesOut Calculation:", {
-    inputForCalculation: actualDepositAmount.toString(),
-    originalAmount: transactionAmount.toString(),
-    amountChanged: actualDepositAmount !== transactionAmount,
-    minSharesOut: minSharesOut.toString(),
-    swapPathLength: swapPath.length,
+  console.log("Unified calculation result for cross-chain deposit:", {
+    inputAmount: calculationResult.inputAmount.toString(),
+    amountAfterFee: calculationResult.amountAfterFee.toString(),
+    amountForStrategy: calculationResult.amountForStrategy.toString(),
+    sharesAmount: calculationResult.sharesAmount.toString(),
+    needsGasFee: calculationResult.needsGasFee,
+    needsTokenSwap: calculationResult.needsTokenSwap,
   });
+
+  // Get swap path if needed
+  let swapPath: `0x${string}` = "0x";
+  if (calculationResult.needsTokenSwap) {
+    const actualInputToken = isZetachain(activeChain?.id) ? inputToken : inputToken?.ZRC20equivalent;
+    if (actualInputToken) {
+      const swapResult = await getPathDataAndAmountOut(
+        calculationResult.amountAfterFee,
+        actualInputToken,
+        vaultData.inputToken,
+        vaultData.id as Address,
+        getCurrentSlippage() * 100,
+      );
+      swapPath = swapResult.encodedPath ?? "0x";
+    }
+  }
+
+  // Calculate minSharesOut with slippage
+  const sharesAmountBigInt = parseUnits(calculationResult.sharesAmount, vaultData.inputToken.decimals);
+  const minSharesOut = (sharesAmountBigInt * BigInt(10000 - getCurrentSlippage() * 100)) / BigInt(10000);
 
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(
@@ -1429,38 +1456,68 @@ const executeSolanaDeposit = async (
   setcrossChainTxId: Function,
   activeWallet: ConnectedWallet,
 ) => {
-  let actualDepositAmount = transactionAmount;
-
-  const gasFeeResult = await calculateGasFeeInVaultAsset(
-    vaultData,
-    inputToken,
-    activeChain,
-    1, // Not needed for cross-chain deposits, only for USD formatting which we don't use here
-    1, // Not needed for cross-chain deposits, only for ETH formatting which we don't use here
-    (amount: number) => amount.toString(), // Simple formatter
-    (usd: number, ethPrice: number) => usd / ethPrice // Simple converter
-  );
-
-  if (gasFeeResult.needsDeduction) {
-    // For cross-chain deposits, convert gas fee to input token terms if needed
-    const gasFeeInInputTokens = await convertGasFeeToInputToken(
-      gasFeeResult.gasFeeInVaultAsset,
+  // Check cache first for existing calculation
+   
+  const cached = useTransactionStore.getState().lastDepositCalculation;
+  
+  let calculationResult;
+  
+  if (isCachedCalculationValid(
+    cached, 
+    transactionAmount, 
+    vaultData.id, 
+    inputToken.address, 
+    activeChain.id
+  )) {
+    
+    console.log("Using cached calculation result for Solana deposit execution");
+    calculationResult = cached!.result;
+  } else {
+    console.log("Cache miss - performing new calculation for Solana deposit execution");
+    
+    // Use the unified calculation function
+    calculationResult = await calculateDepositOutput(
+      transactionAmount,
       vaultData,
       inputToken,
-      activeChain
+      activeChain,
+      activeWallet,
+      1, // vaultTokenPrice - not needed for execution
+      1, // inputTokenPrice - not needed for execution
+      1, // ethPriceUsd - not needed for execution
+      (amount: number) => amount.toString(), // Simple formatter
+      (usd: number, ethPrice: number) => usd / ethPrice // Simple converter
     );
-
-    actualDepositAmount = transactionAmount > gasFeeInInputTokens ?
-      transactionAmount - gasFeeInInputTokens : 0n;
-
   }
-  const { swapPath, minSharesOut } = await getPathDataAndMinSharesOut(
-    vaultData,
-    inputToken,
-    actualDepositAmount,
-    activeChain,
-    activeWallet,
-  );
+
+  console.log("Unified calculation result for Solana deposit:", {
+    inputAmount: calculationResult.inputAmount.toString(),
+    amountAfterFee: calculationResult.amountAfterFee.toString(),
+    amountForStrategy: calculationResult.amountForStrategy.toString(),
+    sharesAmount: calculationResult.sharesAmount.toString(),
+    needsGasFee: calculationResult.needsGasFee,
+    needsTokenSwap: calculationResult.needsTokenSwap,
+  });
+
+  // Get swap path if needed
+  let swapPath: `0x${string}` = "0x";
+  if (calculationResult.needsTokenSwap) {
+    const actualInputToken = isZetachain(activeChain?.id) ? inputToken : inputToken?.ZRC20equivalent;
+    if (actualInputToken) {
+      const swapResult = await getPathDataAndAmountOut(
+        calculationResult.amountAfterFee,
+        actualInputToken,
+        vaultData.inputToken,
+        vaultData.id as Address,
+        getCurrentSlippage() * 100,
+      );
+      swapPath = swapResult.encodedPath ?? "0x";
+    }
+  }
+
+  // Calculate minSharesOut with slippage
+  const sharesAmountBigInt = parseUnits(calculationResult.sharesAmount, vaultData.inputToken.decimals);
+  const minSharesOut = (sharesAmountBigInt * BigInt(10000 - getCurrentSlippage() * 100)) / BigInt(10000);
   const walletAddress = walletContext.publicKey!.toBase58();
 
   // Generate a unique transaction ID
@@ -1570,6 +1627,7 @@ const executeSolanaDeposit = async (
 
 // Helper functions for wallet topup
 import { parseAbi } from "viem";
+import { useTransactionStore } from "@/store/transactionStore";
 
 const executeDirectWalletTopup = async (
   inputToken: Token,
@@ -2545,83 +2603,7 @@ export const getPathDataAndAmountOut = async (
   }
 };
 
-export const getSharesFromDeposit = async (
-  amount: bigint,
-  vaultData: VaultData,
-  activeWallet: ConnectedWallet,
-) => {
-  const previewDepositAbi = [
-    {
-      inputs: [{ name: "assets", type: "uint256" }],
-      name: "previewDeposit",
-      outputs: [{ name: "shares", type: "uint256" }],
-      stateMutability: "view",
-      type: "function",
-    },
-  ] as const;
 
-  const publicClient = getPublicClient(SUPPORTED_CHAINS[0].id);
-
-  if (!publicClient) {
-    const errorMsg = `can't get publicClient for chain with id: ${SUPPORTED_CHAINS[0].id}`;
-    throw new Error(errorMsg);
-  }
-
-  // try {
-  const sharesAsBigInt = await publicClient.readContract({
-    address: vaultData.id,
-    abi: previewDepositAbi,
-    functionName: "previewDeposit",
-    args: [amount],
-  });
-
-  const formattedShares = formatUnits(
-    sharesAsBigInt,
-    vaultData.inputToken.decimals,
-  );
-
-  return formattedShares;
-  // } catch (e) {
-  //   return "0";
-  // }
-};
-
-export const getAssetsFromShares = async (
-  amount: bigint,
-  vaultData: VaultData,
-  chainId: number,
-  activeWallet: ConnectedWallet,
-) => {
-  const previewRedeemAbi = [
-    {
-      inputs: [{ name: "shares", type: "uint256" }],
-      name: "previewRedeem",
-      outputs: [{ name: "assets", type: "uint256" }],
-      stateMutability: "view",
-      type: "function",
-    },
-  ] as const;
-
-  const publicClient = getPublicClient(SUPPORTED_CHAINS[0].id);
-
-  if (!publicClient) {
-    console.log(`error get publicClient  for chain with ID ${chainId}`);
-    return 0n;
-  }
-
-  try {
-    const result = await publicClient.readContract({
-      address: vaultData.id,
-      abi: previewRedeemAbi,
-      functionName: "previewRedeem",
-      args: [amount],
-    });
-
-    return result;
-  } catch (e) {
-    return BigInt("0");
-  }
-};
 
 export const getPerformanceFee = async (
   vaultId: Address,

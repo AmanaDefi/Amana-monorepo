@@ -123,9 +123,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
     };
 
     useEffect(() => {
-      console.log("NoonCapital effect running", vault.id);
       if (isNoonCapitalVault(vault.id)) {
-        console.log("Fetching NoonCapital data for", vault.id);
         getNoonCapital30dAvgAPY().then(setNoonCapitalAPY);
         getNoonCapitalHistoricalAPY().then(setNoonCapitalChart);
       } else {
