@@ -9,6 +9,11 @@ export const useResponsiveItemsPerPageByGrid = (
 
   useEffect(() => {
     const update = () => {
+      if (window.innerWidth < 1440) {
+        setItemsPerPage(6);
+        return;
+      }
+
       if (!containerRef.current || !cardRef.current) return;
 
       const containerWidth = containerRef.current.offsetWidth;

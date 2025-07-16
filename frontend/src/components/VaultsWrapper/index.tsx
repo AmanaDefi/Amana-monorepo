@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, SetStateAction } from "react";
+import { useState, useMemo, useEffect, SetStateAction, useRef } from "react";
 import {
   VaultData,
   VaultAPY,
@@ -14,6 +14,7 @@ import { useLayoutStore } from "@/store/store";
 import { useMyVaults } from "@/hooks/useMyVaults";
 import { EmptyState } from "../DashboardWrapper/components/Tabs";
 import { BreathingValue } from "../PendingDots";
+import { useResponsiveItemsPerPageByGrid } from "@/hooks/useResponsiveItemsPerPage";
 
 export const calculateRiskLevel = (vault: VaultData): number => {
   return 1;
@@ -130,30 +131,16 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   );
 
   const itemsPerPage = useLayoutStore((state) => state.itemsPerPage);
-  const setItemsPerPage = useLayoutStore((state) => state.setItemsPerPage);
 
   useEffect(() => {
     setSortBy(externalSortBy);
     setSortOrder(externalSortOrder);
   }, [externalSortBy, externalSortOrder]);
 
-  useEffect(() => {
-    const updatePageSize = () => {
-      const width = window.innerWidth;
-      const newSize = width >= 1805 ? 8 : 6;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
 
-      if (newSize !== itemsPerPage) {
-        setItemsPerPage(newSize);
-      }
-    };
-
-    updatePageSize();
-    window.addEventListener("resize", updatePageSize);
-
-    return () => {
-      window.removeEventListener("resize", updatePageSize);
-    };
-  }, [setItemsPerPage, itemsPerPage]);
+  useResponsiveItemsPerPageByGrid(containerRef, cardRef);
 
   const vaultsList = useMemo(() => {
     if (isShownMyVaults) {
@@ -386,15 +373,22 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
 
     if (displayType === "cards") {
       return (
-        <div className="grid gap-6 md:gap-4 grid-cols-[repeat(auto-fill,minmax(328px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(350px,1fr))]">
-          {paginatedVaults.map((vault) => (
-            <VaultCard
+        <div
+          ref={containerRef}
+          className="grid gap-6 md:gap-4 grid-cols-[repeat(auto-fill,minmax(328px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(350px,1fr))]"
+        >
+          {paginatedVaults.map((vault, index) => (
+            <div
               key={vault.id}
-              vault={vault}
-              vaultAPYs={vaultAPYs}
-              vaultTotalAssets={vaultTotalAssets}
-              userVaultBalances={userVaultBalances}
-            />
+              ref={index === 0 ? cardRef : undefined} 
+            >
+              <VaultCard
+                vault={vault}
+                vaultAPYs={vaultAPYs}
+                vaultTotalAssets={vaultTotalAssets}
+                userVaultBalances={userVaultBalances}
+              />
+            </div>
           ))}
         </div>
       );
