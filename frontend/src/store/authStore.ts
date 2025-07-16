@@ -82,7 +82,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         otp: "",
       });
     } else {
-      if (activeAccount?.walletClientType === "privy") {
+      if (!activeAccount || activeAccount?.walletClientType === "privy") {
         set({
           step: "success",
           isLoading: false,
@@ -104,7 +104,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   updateField: (name, value) => set((state) => ({ ...state, [name]: value })),
   setLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error }),
-  setChain: (chosenChain) => set({chosenChain}),
+  setChain: (chosenChain) => set({ chosenChain }),
   authenticate: (address) =>
     set({
       isAuthenticated: true,

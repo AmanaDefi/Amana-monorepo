@@ -35,6 +35,7 @@ export default function TokenIcon({
       alt="token icon"
       width={32}
       height={32}
+      quality={100}
       style={{ width: 'auto', height: 'auto' }}
       className={className}
       sizes="(max-width: 768px) 24px, 40px"

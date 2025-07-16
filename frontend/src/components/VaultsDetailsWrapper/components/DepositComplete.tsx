@@ -105,42 +105,65 @@ const DepositComplete = ({
                 <>
                   <div className="absolute top-0 left-0">
                     <img
-                      src={selectedToken?.imgURL || "/USDC.png"}
-                      alt={inputTokenSymbol}
+                      src={
+                        isDeposit
+                          ? selectedToken?.imgURL || "/USDC.png"
+                          : vaultData.inputToken.imgURL || "/USDC.png"
+                      }
+                      alt={isDeposit ? inputTokenSymbol : outputTokenSymbol}
                       className="w-[30px] h-[30px] md:w-10 md:h-10 object-cover"
                     />
                   </div>
                   <div className="absolute bottom-0 right-0">
                     <img
-                      src={vaultData.inputToken.imgURL || "/USDC.png"}
-                      alt={outputTokenSymbol}
+                      src={
+                        isDeposit
+                          ? vaultData.inputToken.imgURL || "/USDC.png"
+                          : selectedToken?.imgURL || "/USDC.png"
+                      }
+                      alt={isDeposit ? outputTokenSymbol : inputTokenSymbol}
                       className="w-[30px] h-[30px] md:w-10 md:h-10 object-cover"
                     />
                   </div>
                 </>
               ) : (
                 <span className="text-white font-bold text-lg">
-                  {inputTokenSymbol.slice(0, 2)}
+                  {isDeposit
+                    ? inputTokenSymbol.slice(0, 2)
+                    : outputTokenSymbol.slice(0, 2)}
                 </span>
               )}
             </div>
             <div className="flex flex-col font-bold text-sm justify-between">
               {getTransactionLabel()}
               <div className="font-normal flex flex-row gap-1 items-center text-xs md:text-sm flex-wrap">
-                <p>{inputTokenSymbol}</p>
+                <p>{isDeposit ? inputTokenSymbol : outputTokenSymbol}</p>
                 <ArrowRightIcon width={12} height={10} />
-                <p>{outputTokenSymbol}</p>
+                <p>{isDeposit ? outputTokenSymbol : inputTokenSymbol}</p>
               </div>
             </div>
           </div>
           {isSuccess && (
             <div className="flex flex-col items-end justify-between text-xs md:text-base font-regular md:font-medium">
-              <p className="text-white-400">
-                -{depositedInputAmount} {inputTokenSymbol}
-              </p>
-              <p className="text-white-400">
-                +{depositedOutputAmount} {outputTokenSymbol}
-              </p>
+              {isDeposit ? (
+                <>
+                  <p className="text-white-400">
+                    -{depositedInputAmount} {inputTokenSymbol}
+                  </p>
+                  <p className="text-white-400">
+                    +{depositedOutputAmount} {outputTokenSymbol}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-white-400">
+                    -{depositedOutputAmount} {outputTokenSymbol}
+                  </p>
+                  <p className="text-white-400">
+                    +{depositedInputAmount} {inputTokenSymbol}
+                  </p>
+                </>
+              )}
             </div>
           )}
         </div>
