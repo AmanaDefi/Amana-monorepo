@@ -60,7 +60,11 @@ import FeeDisplay, {
 import APYChangeCard from "./VaultsDetailsWrapper/components/APYChangeCard";
 import { useWallets } from "@privy-io/react-auth";
 import { useTransactionStore } from "@/store/transactionStore";
-import { formatTokenBalance, formatUSDAmount, formatUSDValue } from "@/utils/tokenFormat";
+import {
+  formatTokenBalance,
+  formatUSDAmount,
+  formatUSDValue,
+} from "@/utils/tokenFormat";
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 import { zetachain } from "viem/chains";
 import { useAPYStore } from "@/store/APYStore";
@@ -135,7 +139,7 @@ export default function VaultInputs({
   const activeWallet = filteredWallets[0];
   const selectChain = useMemo(() => selectedChain, [selectedChain]);
 
-  const { slippageValue: userSlippage } = useSlippage(vaultId); 
+  const { slippageValue: userSlippage } = useSlippage(vaultId);
 
   const handleSelectChainAngToken = (chain: Chain, token: Token) => {
     setInputToken(token);
@@ -162,8 +166,7 @@ export default function VaultInputs({
     finishedTransaction,
   } = useTransactionStore();
 
-  const { selectedChainFromModal, setSelectedTokenFromModal } =
-    useChainTokenModalStore();
+  const { isOpen, setSelectedTokenFromModal, selectedTokenFromModal } = useChainTokenModalStore();
 
   const { setPreviousAPY, setCurrentAPY, setActiveTransactionVault } =
     useAPYStore();
@@ -227,6 +230,7 @@ export default function VaultInputs({
   const inputTokenPrice = useTokenPriceBySymbol(inputToken?.symbol);
   const vaultTokenPrice = useTokenPriceBySymbol(vaultData.inputToken?.symbol);
   const ethPriceUsd = useTokenPriceBySymbol("ETH");
+  const isSelectedTokenInput =selectedTokenFromModal && inputToken && selectedTokenFromModal?.address === inputToken?.address && selectedTokenFromModal?.symbol === inputToken?.symbol
 
   const vaultToken: Token = useMemo(() => {
     return {
@@ -241,54 +245,67 @@ export default function VaultInputs({
     };
   }, [vaultData]);
 
-   useEffect(() => {
-     const setTokenBasedOnChain = () => {
-       if (
-         selectedChain &&
-         selectedChain.id === CHAIN_ID["zetachain"] && 
-         vaultData?.inputToken
-       ) {
-         setInputToken(vaultData.inputToken);
-         if (onTokenSelect) {
-           onTokenSelect(vaultData.inputToken);
-         }
-         setSelectedTokenFromModal(vaultData.inputToken);
-       } else if (selectedChain) {
-         const tokens = APPROVED_TOKENS[selectedChain.id] || [];
-         const defaultToken =
-           tokens.find((token) => token.symbol === "USDC") || tokens[0];
+  useEffect(() => {
+    const setTokenBasedOnChain = () => {
+      if (isOpen || isSelectedTokenInput) return;
 
-         if (defaultToken) {
-           setInputToken(defaultToken);
-           if (onTokenSelect) {
-             onTokenSelect(defaultToken);
-           }
-           setSelectedTokenFromModal(defaultToken);
-         }
-       } else {
-         setInputToken(undefined);
-         if (onTokenSelect) {
-           onTokenSelect(undefined);
-         }
-         setSelectedTokenFromModal(null);
-       }
-     };
+      if (!selectedChain) {
+        setInputToken(undefined);
+        if (onTokenSelect) {
+          onTokenSelect(undefined);
+        }
+        setSelectedTokenFromModal(null);
+        return;
+      }
 
-     if (vaultData?.id) {
-       const vaultInfo = getLocalStorageObject(vaultData?.id);
-       const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
+      const tokens = APPROVED_TOKENS[selectedChain.id] || [];
 
-       if (isTxInProgress && vaultInfo?.selectedToken) {
-         setInputToken(JSON.parse(vaultInfo.selectedToken, bigIntReviver));
-       } else {
-         setTokenBasedOnChain();
-       }
-     } else {
-       setTokenBasedOnChain();
-     }
+      if (
+        selectedChain &&
+        selectedChain.id === CHAIN_ID["zetachain"] &&
+        vaultData?.inputToken
+      ) {
+        setInputToken(vaultData.inputToken);
+        if (onTokenSelect) {
+          onTokenSelect(vaultData.inputToken);
+        }
+        setSelectedTokenFromModal(vaultData.inputToken);
+      } else {
+        const defaultToken =
+          tokens.find((token) => token.symbol === "USDC") || tokens[0];
 
-     setAllowInput(true);
-   }, [selectedChain, vaultData, onTokenSelect, setSelectedTokenFromModal]);
+        if (defaultToken) {
+          setInputToken(defaultToken);
+          if (onTokenSelect) {
+            onTokenSelect(defaultToken);
+          }
+          setSelectedTokenFromModal(defaultToken);
+        }
+      }
+    };
+
+    if (vaultData?.id) {
+      const vaultInfo = getLocalStorageObject(vaultData?.id);
+      const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
+
+      if (isTxInProgress && vaultInfo?.selectedToken) {
+        setInputToken(JSON.parse(vaultInfo.selectedToken, bigIntReviver));
+      } else {
+        setTokenBasedOnChain();
+      }
+    } else {
+      setTokenBasedOnChain();
+    }
+
+    setAllowInput(true);
+  }, [
+    selectedChain,
+    vaultData,
+    onTokenSelect,
+    setSelectedTokenFromModal,
+    isOpen,
+    isSelectedTokenInput
+  ]);
 
   // Update inputTokenBalance state when useTokenBalance returns a new value
   const { balance: tokenBalance, fetchBalance } =
@@ -609,11 +626,15 @@ export default function VaultInputs({
     setDisplayValue,
     handleChangeInput,
   });
-  
+
   const tokenList = useMemo(() => {
     let tokens: Token[] = [];
 
-    if ( !selectedChain?.id || selectedChain.id === 7001 || selectedChain.id === 7000) {
+    if (
+      !selectedChain?.id ||
+      selectedChain.id === 7001 ||
+      selectedChain.id === 7000
+    ) {
       if (vaultData.inputToken) {
         tokens = [vaultData.inputToken];
       }
@@ -881,7 +902,6 @@ export default function VaultInputs({
   const timeoutRef = useRef<NodeJS.Timeout>();
 
   const checkSlippageExceedingLimit = () => {
-    
     // If slippage is over 100%, hide the display completely
     if (
       conversionOutput.slippageActualValue !== null &&

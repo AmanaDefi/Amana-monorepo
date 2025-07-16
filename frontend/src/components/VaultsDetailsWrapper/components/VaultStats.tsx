@@ -189,8 +189,6 @@ export default function VaultStats({
     symbol,
   );
 
-  console.log('formattedWalletBalance',formattedWalletBalance)
-
   useEffect(() => {
     // Update deposit amount whenever the vault balance changes
     if (userVaultBalance) {

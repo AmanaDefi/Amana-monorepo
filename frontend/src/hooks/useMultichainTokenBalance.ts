@@ -29,15 +29,8 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
   const retryCountRef = useRef(0);
   const MAX_RETRIES = 3;
 
-  console.log(activeChain?.id);
-
   const internalFetchBalance = useCallback(async () => {
-    console.log(
-      "internalFetchBalance",
-      activeChain?.id,
-      currentToken,
-      walletAddress,
-    );
+    console.log(activeChain, currentToken?.symbol)
     if (!currentToken || !walletAddress || !activeChain?.id) {
       setBalance(DEFAULT_BALANCE);
       setIsLoading(false);
@@ -67,13 +60,11 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
           } catch {
             updatedBalance = DEFAULT_BALANCE;
           }
-          console.log("updatedBalance native", updatedBalance, activeChain?.id);
         } else {
           await refetch();
           updatedBalance = solanaBalance;
         }
 
-        console.log("setBalance native", updatedBalance);
         setBalance(updatedBalance ?? { value: 0n, formatted: "0" });
         setIsLoading(false);
         retryCountRef.current = 0;
@@ -221,7 +212,6 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
 
   const manualRefetchBalance = useCallback(() => {
     if (currentToken && walletAddress && activeChain?.id) {
-      console.log("manual fetch");
       retryCountRef.current = 0;
       internalFetchBalance();
     }

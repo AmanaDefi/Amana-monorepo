@@ -404,12 +404,6 @@ const VaultsDetailContainer: React.FC<{
     (Object.keys(lastTransactionStepFeedback).length > 0 ||
       Object.keys(transactionStepFeedback).length > 0);
 
-  console.log(
-    { shouldShowTransactionComplete },
-    { lastTransactionStepFeedback },
-    { transactionStepFeedback },
-  );
-
   const currentTransactionInfo = isDeposit ? lastDepositInfo : lastWithdrawInfo;
 
   return vaultData ? (

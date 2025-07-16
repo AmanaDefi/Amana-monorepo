@@ -94,8 +94,11 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
 
   const router = useRouter();
   const path = usePathname();
-  const { setSelectedChainFromModal, selectedChainFromModal } =
-    useChainTokenModalStore();
+  const {
+    setSelectedChainFromModal,
+    selectedChainFromModal,
+    setSelectedTokenFromModal,
+  } = useChainTokenModalStore();
 
   const { wallets } = useWallets();
   const filteredWallets = wallets.filter(
@@ -425,6 +428,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
 
     if (!isVaultAddressPath.test(path) && selectedChainFromModal) {
       setSelectedChainFromModal(null);
+      setSelectedTokenFromModal(null);
     }
     if (
       !isVaultAddressPath.test(path) &&
@@ -467,6 +471,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     selectedChainFromModal,
     switchToChain,
     setSelectedChainFromModal,
+    setSelectedTokenFromModal,
   ]);
 
   useEffect(() => {

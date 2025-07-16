@@ -31,7 +31,7 @@ const ChainSwitcher: React.FC = () => {
   const [isLoading, setIsLoading] = useState<number | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const previousChainRef = useRef<string | null>(null);
-  const { setSelectedChainFromModal } = useChainTokenModalStore();
+  const { setSelectedChainFromModal, setSelectedTokenFromModal } = useChainTokenModalStore();
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -120,6 +120,7 @@ const ChainSwitcher: React.FC = () => {
     setIsLoading(chain.id);
     try {
       switchToChain(chain);
+      setSelectedTokenFromModal(null);
       setIsOpen(false);
     } catch (error) {
       console.log("Failed to switch chain:", error);
