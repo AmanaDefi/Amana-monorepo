@@ -200,10 +200,9 @@ const VaultsDetailContainer: React.FC<{
 
   const handleChainSelect = useCallback(
     async (chain: Chain) => {
-      console.log("handleChainSelect", chain.id);
       await switchToChain(chain);
     },
-    [vaultID, switchToChain],
+    [switchToChain],
   );
 
   useEffect(() => {

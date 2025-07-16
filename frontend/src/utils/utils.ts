@@ -607,7 +607,6 @@ export const getERC20TokenBalance = async (
   walletAddress: string,
   tokenAddress: string,
   chain: any,
-  activeWallet: ConnectedWallet,
 ) => {
   try {
     // Skip call for invalid inputs

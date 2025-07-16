@@ -8,26 +8,18 @@ import {
   isEthereumAddress,
   isSolanaAddress,
 } from "@/utils/utils";
-import { useWallets } from "@privy-io/react-auth";
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import useSolanaBalance from "./useSolanaBalance";
+import { getPublicClient } from "@/utils/getPublicClient";
+import { formatEther } from "viem";
 
 const DEFAULT_BALANCE: Balance = { value: 0n, formatted: "0" };
 
 export const useMultichainTokenBalance = (token: Token | undefined) => {
   const currentToken = useMemo(() => token, [token]);
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const activeWallet = filteredWallets[0];
   const { balance: solanaBalance, refetch } = useSolanaBalance();
 
-  const {
-    walletAddress,
-    activeChain,
-    refetchBalance: refetchNativeBalance,
-  } = useMultiChain();
+  const { walletAddress, activeChain } = useMultiChain();
 
   const [balance, setBalance] = useState<Balance>(DEFAULT_BALANCE);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -37,27 +29,52 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
   const retryCountRef = useRef(0);
   const MAX_RETRIES = 3;
 
+  console.log(activeChain?.id);
+
   const internalFetchBalance = useCallback(async () => {
+    console.log(
+      "internalFetchBalance",
+      activeChain?.id,
+      currentToken,
+      walletAddress,
+    );
     if (!currentToken || !walletAddress || !activeChain?.id) {
       setBalance(DEFAULT_BALANCE);
       setIsLoading(false);
       return;
     }
+    setIsLoading(true);
+    setError(null);
 
     try {
-      let balance = DEFAULT_BALANCE;
-      if (activeChain?.id !== CHAIN_ID["solana"]) {
-        balance =
-          (await refetchNativeBalance(walletAddress)) ?? DEFAULT_BALANCE;
-      } else {
-        await refetch();
-        balance = solanaBalance;
-      }
-      setIsLoading(true);
-      setError(null);
-
       if (currentToken.isNative) {
-        setBalance(balance ?? { value: 0n, formatted: "0" });
+        let updatedBalance = DEFAULT_BALANCE;
+        if (activeChain?.id !== CHAIN_ID["solana"]) {
+          try {
+            const publicClient = getPublicClient(activeChain?.id);
+            if (!publicClient) {
+              updatedBalance = DEFAULT_BALANCE;
+            } else {
+              const balanceInEth = await publicClient.getBalance({
+                address: walletAddress,
+              });
+
+              const formattedBalance = formatEther(balanceInEth);
+              updatedBalance = balanceInEth
+                ? { formatted: formattedBalance, value: balanceInEth }
+                : DEFAULT_BALANCE;
+            }
+          } catch {
+            updatedBalance = DEFAULT_BALANCE;
+          }
+          console.log("updatedBalance native", updatedBalance, activeChain?.id);
+        } else {
+          await refetch();
+          updatedBalance = solanaBalance;
+        }
+
+        console.log("setBalance native", updatedBalance);
+        setBalance(updatedBalance ?? { value: 0n, formatted: "0" });
         setIsLoading(false);
         retryCountRef.current = 0;
         return;
@@ -110,7 +127,6 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
                 walletAddress,
                 currentToken.address,
                 activeChain,
-                activeWallet,
               );
             newBalance = {
               value: ercBalance,
@@ -138,7 +154,7 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
       setBalance({ value: 0n, formatted: "0" });
       setIsLoading(false);
     }
-  }, [currentToken, walletAddress, activeChain, error, refetchNativeBalance]);
+  }, [currentToken, walletAddress, activeChain, error, refetch]);
 
   useEffect(() => {
     const currentChainId = activeChain?.id;
@@ -148,7 +164,6 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
 
     if (hasChainSwitched) {
       retryCountRef.current = 0;
-      setBalance(DEFAULT_BALANCE);
     }
     prevChainIdRef.current = currentChainId;
 
@@ -206,6 +221,7 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
 
   const manualRefetchBalance = useCallback(() => {
     if (currentToken && walletAddress && activeChain?.id) {
+      console.log("manual fetch");
       retryCountRef.current = 0;
       internalFetchBalance();
     }

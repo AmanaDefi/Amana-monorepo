@@ -41,8 +41,6 @@ import {
 } from "@/actions/actions";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
-import { calculateGasFeeInVaultAsset } from "@/utils/gasFeeCalculations";
-import { useRouter, usePathname } from "next/navigation";
 import { trackEvent } from "@/utils/trackEvent";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -316,7 +314,6 @@ export default function VaultInputs({
   useEffect(() => {
     const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
     if (inputToken && selectChain && !isTxInProgress) {
-      fetchBalance();
       setInputBalance(EMPTY_BALANCE);
       setDisplayValue("0.00");
 
@@ -325,7 +322,7 @@ export default function VaultInputs({
         displayValue: "0.00",
       });
     }
-  }, [inputToken, selectChain, fetchBalance, vaultData.id]);
+  }, [inputToken, selectChain, vaultData.id]);
 
   // Trigger error message handling
   useEffect(() => {
@@ -375,7 +372,7 @@ export default function VaultInputs({
     inputToken,
     inputBalance,
     isDeposit,
-    vaultData.id,
+    vaultData,
     action,
     steps,
     inputTokenPrice,
@@ -383,6 +380,7 @@ export default function VaultInputs({
     conversionOutput.netDepositToVaultUSD,
     loadingOutputToken,
     userVaultBalance,
+    tokenBalance.formatted,
   ]);
 
   // Watch input balance and trigger steps config selection
@@ -876,7 +874,6 @@ export default function VaultInputs({
       vaultTokenPrice,
       ethPriceUsd,
       activeWallet,
-      selectedChain?.id,
       userSlippage,
     ],
   );
