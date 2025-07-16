@@ -403,7 +403,7 @@ abstract contract StrategyParent is
         RevertOptions memory revertOptions = RevertOptions(
             address(this),
             false,
-            address(this),
+            amanaVault,
             abi.encode(
                 "_investConfirmFailed",
                 0,
@@ -489,7 +489,7 @@ abstract contract StrategyParent is
         RevertOptions memory revertOptions = RevertOptions(
             address(this),
             true,
-            address(this),
+            amanaVault,
             abi.encode(
                 "_returnFundsFromStrategyFailed",
                 amountWithdrawn,
@@ -555,7 +555,7 @@ abstract contract StrategyParent is
         RevertOptions memory revertOptions = RevertOptions(
             address(this),
             false,
-            address(this),
+            amanaVault,
             abi.encode(
                 "_handleRevertOnSendTotalUnderlyingAssets",
                 0,
