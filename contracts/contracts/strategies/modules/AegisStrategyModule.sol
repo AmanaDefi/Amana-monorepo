@@ -1,89 +1,113 @@
-// contracts/modules/AegisStrategyModule.sol
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 import "../../interfaces/ISwapHelper.sol";
 import "../../interfaces/IAegisStakingVault.sol";
-import "../../interfaces/IStrategy.sol";
 import "../../interfaces/IErrors.sol";
+import "../../interfaces/IYieldModule.sol";
 
-abstract contract AegisStrategyModule is IErrors {
+contract AegisStrategyModule is
+    Initializable,
+    UUPSUpgradeable,
+    Ownable2StepUpgradeable,
+    IYieldModule,
+    IErrors
+{
     using SafeERC20 for IERC20;
 
-    address internal receiptToken;
-    IAegisStakingVault internal stakingVault;
+    address public receiptToken;
+    IERC20 public inputToken;
+    ISwapHelper public swapHelper;
+    IAegisStakingVault public stakingVault;
 
-    function getInputToken() public view virtual returns (IERC20);
+    function initialize(
+        address _inputToken,
+        address _receiptToken,
+        address _swapHelper,
+        address _stakingVault
+    ) public initializer {
+        __Ownable_init(msg.sender);
+        __UUPSUpgradeable_init();
 
-    function getSwapHelper() public view virtual returns (address);
+        require(_inputToken != address(0), "Invalid input token");
+        require(_receiptToken != address(0), "Invalid receipt token");
+        require(_swapHelper != address(0), "Invalid swap helper");
+        require(_stakingVault != address(0), "Invalid staking vault");
 
-    function _aegisDeposit(
-        uint256 amount,
-        uint256 minAmountOut
-    ) internal returns (uint256 amountOut) {
-        require(amount > 0, "Deposit amount must be greater than zero");
+        inputToken = IERC20(_inputToken);
+        receiptToken = _receiptToken;
+        swapHelper = ISwapHelper(_swapHelper);
+        stakingVault = IAegisStakingVault(_stakingVault);
+    }
 
-        getInputToken().safeTransfer(getSwapHelper(), amount);
-        amountOut = ISwapHelper(getSwapHelper()).swap(
-            address(getInputToken()),
+    function _authorizeUpgrade(address newImpl) internal override onlyOwner {}
+
+    function deposit(address, uint256 amount) external override {
+        require(amount > 0, "Zero deposit");
+        inputToken.safeTransferFrom(msg.sender, address(swapHelper), amount);
+
+        uint256 amountOut = swapHelper.swap(
+            address(inputToken),
             amount,
             receiptToken,
-            500,
+            500, // Aegis pool fee
             address(this),
-            9999,
+            9999, // Max slippage
             "0x"
         );
-        require(amountOut >= minAmountOut, "Insufficient output amount");
 
-        // Optional staking
+        require(amountOut > 0, "Swap failed");
+
+        // Optional: stake receipt tokens
         // stakingVault.deposit(amountOut, address(this));
     }
 
-    function _aegisWithdraw(
-        uint256 assetAmount,
-        uint256 minAmountOut
-    ) internal returns (uint256 amountOut) {
-        uint256 sharesToWithdraw = _getStrategyWithdrawShareAmount(assetAmount);
-        IERC20(receiptToken).safeTransfer(getSwapHelper(), sharesToWithdraw);
+    function withdraw(
+        address,
+        uint256 minOut
+    ) external override returns (uint256 amountOut) {
+        uint256 shares = _getStrategyWithdrawShareAmount(minOut);
+        IERC20(receiptToken).safeTransfer(address(swapHelper), shares);
 
-        amountOut = ISwapHelper(getSwapHelper()).swap(
+        amountOut = swapHelper.swap(
             receiptToken,
-            sharesToWithdraw,
-            address(getInputToken()),
+            shares,
+            address(inputToken),
             500,
             address(this),
             9999,
             "0x"
         );
-        require(amountOut >= minAmountOut, "Insufficient output amount");
+
+        require(amountOut >= minOut, "Too little out");
+        inputToken.safeTransfer(msg.sender, amountOut);
+    }
+
+    function claimRewards() external override {
+        // Optional: claim if rewards exist
+        // stakingVault.claim(address(this));
+    }
+
+    function totalAssets() external view override returns (uint256) {
+        return IERC20(receiptToken).balanceOf(address(this));
     }
 
     function _getStrategyWithdrawShareAmount(
         uint256 assetAmount
     ) internal view returns (uint256 withdrawShareAmount) {
         uint256 totalShares = IERC20(receiptToken).balanceOf(address(this));
-        uint256 sharesToWithdraw = assetAmount; // 1:1 assumption
+        withdrawShareAmount = assetAmount;
 
-        if (sharesToWithdraw > totalShares) {
-            sharesToWithdraw = totalShares;
+        if (withdrawShareAmount > totalShares) {
+            withdrawShareAmount = totalShares;
         }
-        if (totalShares > 0 && totalShares - sharesToWithdraw <= 1e9) {
-            sharesToWithdraw = totalShares;
+        if (totalShares > 0 && totalShares - withdrawShareAmount <= 1e9) {
+            withdrawShareAmount = totalShares;
         }
-
-        return sharesToWithdraw;
-    }
-
-    function _convertToAssets(uint256 shares) internal pure returns (uint256) {
-        return shares;
-    }
-
-    function _convertToShares(uint256 assets) internal pure returns (uint256) {
-        return assets;
-    }
-
-    function _getTotalUnderlyingAssets() internal view returns (uint256) {
-        return _convertToAssets(IERC20(receiptToken).balanceOf(address(this)));
     }
 }

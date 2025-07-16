@@ -1,3 +1,5 @@
 .DS_Store
 .vercel
 .tx_types
+**/node_modules/
+subgraph/node_modules/
