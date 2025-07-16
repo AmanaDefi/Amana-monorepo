@@ -60,6 +60,7 @@ const getStepState = (
   isStaticMode: boolean,
   isFailedOnConfirmation: boolean,
   finishedTransaction: boolean,
+  activeChainId?: number,
 ) => {
   if (isFailedOnConfirmation && step === DepositStep.CONFIRM_DEPOSIT) {
     return "error";
@@ -94,6 +95,7 @@ const getStepState = (
       isDeposit,
       shouldShowFinalStep,
       isFailedOnConfirmation,
+      activeChainId,
     );
 
     if (stepStatus.status === TransactionStepStatus.processing) {
@@ -231,6 +233,7 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
             isStaticMode,
             isFailedOnConfirmation,
             finishedTransaction,
+            props.activeChainId,
           );
 
           let stepStatus;
@@ -286,6 +289,7 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
               isDeposit,
               shouldShowFinalStep,
               isFailedOnConfirmation,
+              props.activeChainId,
             );
           }
 

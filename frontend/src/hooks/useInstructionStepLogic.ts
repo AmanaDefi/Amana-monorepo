@@ -151,6 +151,7 @@ const getUserStepStatus = (
   isDeposit: boolean = true,
   shouldShowFinalStep: boolean,
   isFailedOnConfirmation: boolean,
+  activeChainId?: number,
 ): {
   status: TransactionStepStatus;
   description: string;
@@ -359,6 +360,7 @@ export const useInstructionStepLogic = ({
             isDeposit,
             shouldShowFinalStep,
             isFailedOnConfirmation,
+            activeChainId,
           );
           if (
             stepStatus.status === TransactionStepStatus.processing &&
@@ -377,6 +379,7 @@ export const useInstructionStepLogic = ({
           isDeposit,
           shouldShowFinalStep,
           isFailedOnConfirmation,
+          activeChainId,
         );
 
         if (stepStatus.status === TransactionStepStatus.completed) {
@@ -409,6 +412,7 @@ export const useInstructionStepLogic = ({
       isDeposit,
       shouldShowFinalStep,
       isFailedOnConfirmation,
+      activeChainId,
     );
     currentDesc = currentStepStatusObj.description;
 
@@ -439,6 +443,7 @@ export const useInstructionStepLogic = ({
     steps,
     shouldShowFinalStep,
     isFailedOnConfirmation,
+    activeChainId,
   ]);
 
   return {

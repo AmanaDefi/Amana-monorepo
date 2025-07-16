@@ -92,6 +92,7 @@ const MobileDepositInstruction: React.FC<MobileDepositInstructionProps> = (
         isDeposit,
         shouldShowFinalStep ?? false,
         isFailedOnConfirmation,
+        props.activeChainId,
       );
 
       currentStepStatus = stepStatus.status;
