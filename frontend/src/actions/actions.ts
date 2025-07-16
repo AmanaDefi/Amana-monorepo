@@ -41,7 +41,7 @@ import {
   calculateGasFeeInVaultAsset,
   convertGasFeeToInputToken,
 } from "../utils/gasFeeCalculations";
-import { calculateDepositOutput } from "../utils/depositCalculations";
+import { calculateDepositOutput, isCachedCalculationValid } from "../utils/depositCalculations";
 
 // import { fetchEthPrice } from "@/utils/utils";
 
@@ -1053,19 +1053,39 @@ const executeDirectDeposit = async (
   if (!activeAccount)
     throw new Error("no activeAccount found for perform deposit");
 
-  // Use the unified calculation function
-  const calculationResult = await calculateDepositOutput(
-    transactionAmount,
-    vaultData,
-    inputToken,
-    activeChain,
-    activeAccount,
-    1, // vaultTokenPrice - not needed for execution
-    1, // inputTokenPrice - not needed for execution
-    1, // ethPriceUsd - not needed for execution
-    (amount: number) => amount.toString(), // Simple formatter
-    (usd: number, ethPrice: number) => usd / ethPrice // Simple converter
-  );
+  // Check cache first for existing calculation
+   
+  const cached = useTransactionStore.getState().lastDepositCalculation;
+  
+  let calculationResult;
+  
+  if (isCachedCalculationValid(
+    cached, 
+    transactionAmount, 
+    vaultData.id, 
+    inputToken.address, 
+    activeChain.id
+  )) {
+    
+    console.log("Using cached calculation result for direct deposit execution");
+    calculationResult = cached!.result;
+  } else {
+    console.log("Cache miss - performing new calculation for direct deposit execution");
+    
+    // Use the unified calculation function
+    calculationResult = await calculateDepositOutput(
+      transactionAmount,
+      vaultData,
+      inputToken,
+      activeChain,
+      activeAccount,
+      1, // vaultTokenPrice - not needed for execution
+      1, // inputTokenPrice - not needed for execution
+      1, // ethPriceUsd - not needed for execution
+      (amount: number) => amount.toString(), // Simple formatter
+      (usd: number, ethPrice: number) => usd / ethPrice // Simple converter
+    );
+  }
 
   console.log("Unified calculation result for direct deposit:", {
     inputAmount: calculationResult.inputAmount.toString(),
@@ -1136,19 +1156,39 @@ const executeCrossChainDeposit = async (
   const walletClient = await getWalletClient(activeAccount);
   if (!activeAccount || !walletClient) return { transactionHash: null };
 
-  // Use the unified calculation function
-  const calculationResult = await calculateDepositOutput(
-    transactionAmount,
-    vaultData,
-    inputToken,
-    activeChain,
-    activeAccount,
-    1, // vaultTokenPrice - not needed for execution
-    1, // inputTokenPrice - not needed for execution
-    1, // ethPriceUsd - not needed for execution
-    (amount: number) => amount.toString(), // Simple formatter
-    (usd: number, ethPrice: number) => usd / ethPrice // Simple converter
-  );
+  // Check cache first for existing calculation
+   
+  const cached = useTransactionStore.getState().lastDepositCalculation;
+  
+  let calculationResult;
+  
+  if (isCachedCalculationValid(
+    cached, 
+    transactionAmount, 
+    vaultData.id, 
+    inputToken.address, 
+    activeChain.id
+  )) {
+    
+    console.log("Using cached calculation result for cross-chain deposit execution");
+    calculationResult = cached!.result;
+  } else {
+    console.log("Cache miss - performing new calculation for cross-chain deposit execution");
+    
+    // Use the unified calculation function
+    calculationResult = await calculateDepositOutput(
+      transactionAmount,
+      vaultData,
+      inputToken,
+      activeChain,
+      activeAccount,
+      1, // vaultTokenPrice - not needed for execution
+      1, // inputTokenPrice - not needed for execution
+      1, // ethPriceUsd - not needed for execution
+      (amount: number) => amount.toString(), // Simple formatter
+      (usd: number, ethPrice: number) => usd / ethPrice // Simple converter
+    );
+  }
 
   console.log("Unified calculation result for cross-chain deposit:", {
     inputAmount: calculationResult.inputAmount.toString(),
@@ -1178,8 +1218,6 @@ const executeCrossChainDeposit = async (
   // Calculate minSharesOut with slippage
   const sharesAmountBigInt = parseUnits(calculationResult.sharesAmount, vaultData.inputToken.decimals);
   const minSharesOut = (sharesAmountBigInt * BigInt(10000 - getCurrentSlippage() * 100)) / BigInt(10000);
-
-
 
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(
@@ -1359,19 +1397,39 @@ const executeSolanaDeposit = async (
   setcrossChainTxId: Function,
   activeWallet: ConnectedWallet,
 ) => {
-  // Use the unified calculation function
-  const calculationResult = await calculateDepositOutput(
-    transactionAmount,
-    vaultData,
-    inputToken,
-    activeChain,
-    activeWallet,
-    1, // vaultTokenPrice - not needed for execution
-    1, // inputTokenPrice - not needed for execution
-    1, // ethPriceUsd - not needed for execution
-    (amount: number) => amount.toString(), // Simple formatter
-    (usd: number, ethPrice: number) => usd / ethPrice // Simple converter
-  );
+  // Check cache first for existing calculation
+   
+  const cached = useTransactionStore.getState().lastDepositCalculation;
+  
+  let calculationResult;
+  
+  if (isCachedCalculationValid(
+    cached, 
+    transactionAmount, 
+    vaultData.id, 
+    inputToken.address, 
+    activeChain.id
+  )) {
+    
+    console.log("Using cached calculation result for Solana deposit execution");
+    calculationResult = cached!.result;
+  } else {
+    console.log("Cache miss - performing new calculation for Solana deposit execution");
+    
+    // Use the unified calculation function
+    calculationResult = await calculateDepositOutput(
+      transactionAmount,
+      vaultData,
+      inputToken,
+      activeChain,
+      activeWallet,
+      1, // vaultTokenPrice - not needed for execution
+      1, // inputTokenPrice - not needed for execution
+      1, // ethPriceUsd - not needed for execution
+      (amount: number) => amount.toString(), // Simple formatter
+      (usd: number, ethPrice: number) => usd / ethPrice // Simple converter
+    );
+  }
 
   console.log("Unified calculation result for Solana deposit:", {
     inputAmount: calculationResult.inputAmount.toString(),
@@ -1510,6 +1568,7 @@ const executeSolanaDeposit = async (
 
 // Helper functions for wallet topup
 import { parseAbi } from "viem";
+import { useTransactionStore } from "@/store/transactionStore";
 
 const executeDirectWalletTopup = async (
   inputToken: Token,

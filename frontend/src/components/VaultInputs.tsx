@@ -41,7 +41,7 @@ import {
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 
-import { calculateDepositOutput, DepositCalculationResult } from "@/utils/depositCalculations";
+import { calculateDepositOutput, DepositCalculationResult, isCachedCalculationValid, getCacheStats } from "@/utils/depositCalculations";
 import { trackEvent } from "@/utils/trackEvent";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -168,6 +168,7 @@ export default function VaultInputs({
     setLastDepositInfo,
     setLastWithdrawInfo,
     finishedTransaction,
+    clearDepositCalculationCache,
   } = useTransactionStore();
 
   const { selectedChainFromModal, setSelectedTokenFromModal } =
@@ -714,6 +715,62 @@ export default function VaultInputs({
       }
 
       try {
+        // Check cache first - look for existing calculation with same parameters
+        const cached = useTransactionStore.getState().lastDepositCalculation;
+        
+        if (cached && isCachedCalculationValid(
+          cached, 
+          inputAmountValue, 
+          vaultData.id, 
+          inputToken.address, 
+          activeChain.id
+        )) {
+          
+          console.log("Using cached deposit calculation result");
+          
+          // Log cache performance stats periodically
+          const stats = getCacheStats();
+          if (stats.hits % 10 === 0) { // Log every 10th cache hit
+            console.log("Cache Performance:", stats);
+          }
+          
+          // Use cached result for display
+          const cachedResult = cached.result;
+          const sharesAmountFormatted = formatTokenBalance(
+            cachedResult.sharesAmount,
+            vaultData.symbol,
+          );
+
+          const outputAmountInUSD = (Number(cachedResult.outputAmount) / 10 ** vaultData.inputToken.decimals) * vaultTokenPrice;
+
+          if (inputAmountValue === debouncedInputBalance.value) {
+            setConversionOutput({
+              slippageActualValue: Number(cachedResult.totalSlippage.percentage.toFixed(2)),
+              slippageAmountInUSDFormatted: cachedResult.totalSlippage.amountInUSD,
+              finalConvertedAmountInUSDFormatted: formatUSDValue(outputAmountInUSD),
+              outputAmountFormatted: sharesAmountFormatted,
+              outputAmountInUSDFormatted: formatUSDValue(outputAmountInUSD),
+              gasFeeInVaultAsset: cachedResult.gasFee.amount.toString(),
+              gasFeeInUSD: cachedResult.gasFee.amountInUSD,
+              gasFeeInETH: cachedResult.gasFee.amountInETH,
+              netDepositToVaultUSD: formatUSDValue(outputAmountInUSD),
+              inputAmountInUSDFormatted: formatUSDValue((Number(inputAmountValue) / 10 ** (inputToken?.decimals ?? 18)) * inputTokenPrice),
+              // New detailed breakdown fields
+              swapSlippageUSD: cachedResult.swapSlippage.amountInUSD,
+              depositSlippageUSD: cachedResult.depositSlippage.amountInUSD,
+              totalLossUSD: cachedResult.totalLoss.amountInUSD,
+              swapSlippagePercentage: cachedResult.swapSlippage.percentage,
+              depositSlippagePercentage: cachedResult.depositSlippage.percentage,
+              totalLossPercentage: cachedResult.totalLoss.percentage,
+            });
+          }
+          
+          setLoadingOutputToken(false);
+          return;
+        }
+
+        console.log("Cache miss - performing new deposit calculation");
+
         // Use the unified calculation function
         const calculationResult = await calculateDepositOutput(
           inputAmountValue,
@@ -727,6 +784,14 @@ export default function VaultInputs({
           formatUSDAmount,
           convertUsdToEth
         );
+
+        // Store result in cache for future use
+        useTransactionStore.getState().setLastDepositCalculation({
+          inputAmount: inputAmountValue.toString(),
+          vaultId: vaultData.id,
+          result: calculationResult,
+          timestamp: Date.now()
+        });
 
         // Format the output for display
         const sharesAmountFormatted = formatTokenBalance(
@@ -1014,6 +1079,11 @@ export default function VaultInputs({
     isDeposit,
     vaultData,
   ]);
+
+  // Clear cache when important parameters change
+  useEffect(() => {
+    clearDepositCalculationCache();
+  }, [vaultData.id, inputToken?.address, activeChain?.id, userSlippage, clearDepositCalculationCache]);
 
   // Create an adapter function for InputTokenWithError in Deposit mode
   const handleDepositTokenSelect = (token: Token) => {

@@ -318,6 +318,60 @@ export const convertGasFeeToInputToken = async (
   return gasFeeInVaultAsset;
 };
 
+// Cache performance tracking
+let cacheHits = 0;
+let cacheMisses = 0;
+
+/**
+ * Get cache performance statistics
+ */
+export const getCacheStats = () => ({
+  hits: cacheHits,
+  misses: cacheMisses,
+  hitRate: cacheHits + cacheMisses > 0 ? (cacheHits / (cacheHits + cacheMisses)) * 100 : 0
+});
+
+/**
+ * Reset cache performance statistics
+ */
+export const resetCacheStats = () => {
+  cacheHits = 0;
+  cacheMisses = 0;
+};
+
+/**
+ * Check if cached deposit calculation is still valid
+ */
+export const isCachedCalculationValid = (
+  cached: any,
+  inputAmount: bigint,
+  vaultId: string,
+  inputTokenAddress: string,
+  activeChainId: number,
+  maxAgeMs: number = 30000 // 30 seconds default
+): cached is any => {
+  if (!cached) {
+    cacheMisses++;
+    return false;
+  }
+  
+  // Check if basic parameters match
+  if (cached.inputAmount !== inputAmount.toString() ||
+      cached.vaultId !== vaultId) {
+    cacheMisses++;
+    return false;
+  }
+  
+  // Check if cache is not too old
+  if (Date.now() - cached.timestamp > maxAgeMs) {
+    cacheMisses++;
+    return false;
+  }
+  
+  cacheHits++;
+  return true;
+};
+
 /**
  * Unified deposit calculation that handles all deposit types (Type 2 and Type 4, with and without fees)
  * This function calculates everything once and can be used for both display and execution
@@ -411,13 +465,16 @@ export const calculateDepositOutput = async (
   const sharesAmount = await getSharesFromStrategyDeposit(amountForStrategy, vaultData, activeWallet);
   
   // Convert shares back to assets using strategy contract
-  const outputAmount = await getAssetsFromShares(parseUnits(sharesAmount, vaultData.inputToken.decimals), vaultData, activeWallet);
+  const outputAmountBeforeSlippage = await getAssetsFromShares(parseUnits(sharesAmount, vaultData.inputToken.decimals), vaultData, activeWallet);
 
   // Step 5: Calculate deposit slippage
   // Deposit slippage = A - D (amount going to strategy - final output amount)
-  const depositSlippage = amountForStrategy > outputAmount ? amountForStrategy - outputAmount : 0n;
+  const depositSlippage = amountForStrategy > outputAmountBeforeSlippage ? amountForStrategy - outputAmountBeforeSlippage : 0n;
 
-  // Step 6: Calculate USD values for formatting
+  // Step 6: Calculate final output amount after deducting slippage
+  const outputAmount = outputAmountBeforeSlippage - swapSlippage - depositSlippage;
+
+  // Step 7: Calculate USD values for formatting
   const inputAmountInUSD = (Number(inputAmount) / 10 ** (inputToken?.decimals ?? 18)) * inputTokenPrice;
   const gasFeeInUSD = parseFloat(gasFeeResult.gasFeeInUSD.replace(/[^0-9.]/g, "") || "0");
   const swapSlippageInUSD = (Number(swapSlippage) / 10 ** vaultData.inputToken.decimals) * vaultTokenPrice;

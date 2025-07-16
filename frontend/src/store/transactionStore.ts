@@ -77,6 +77,9 @@ interface TransactionState {
       timestamp: number;
     } | null,
   ) => void;
+
+  // Clear deposit calculation cache
+  clearDepositCalculationCache: () => void;
 }
 
 export const useTransactionStore = create<TransactionState>((set) => ({
@@ -114,4 +117,7 @@ export const useTransactionStore = create<TransactionState>((set) => ({
   setLastDepositInfo: (info) => set({ lastDepositInfo: info }),
   setLastWithdrawInfo: (info) => set({ lastWithdrawInfo: info }),
   setLastDepositCalculation: (calculation) => set({ lastDepositCalculation: calculation }),
+  
+  // Clear deposit calculation cache
+  clearDepositCalculationCache: () => set({ lastDepositCalculation: null }),
 }));
