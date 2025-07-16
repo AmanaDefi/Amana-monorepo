@@ -616,7 +616,10 @@ const VaultsDetailContainer: React.FC<{
                     (a) => a.vaultId === vaultID.toString(),
                   )}
                   totalAssets={vaultTotalAsset}
-                  isLoading={loading || !vaultAPYs.length}
+                  isLoading={
+                    loading ||
+                    !vaultAPYs.find((a) => a.vaultId === vaultID.toString())
+                  }
                   isDeposit={isDeposit}
                   isReward={true}
                 />
@@ -630,6 +633,10 @@ const VaultsDetailContainer: React.FC<{
                     )}
                     totalAssets={vaultTotalAsset}
                     titleColor="#535E73"
+                    isLoading={
+                      loading ||
+                      !vaultAPYs.find((a) => a.vaultId === vaultID.toString())
+                    }
                     isDeposit={isDeposit}
                     isReward={true}
                   />
