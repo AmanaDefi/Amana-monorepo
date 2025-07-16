@@ -38,6 +38,12 @@ type Vault @entity(immutable: false) {
   "Decimals for share token"
   decimals: Int!
 
+  "Output token symbol"
+  outputTokenSymbol: String
+
+  "Output token image"
+  outputTokenImage: String
+
   "Current strategy address"
   strategy: Bytes
 

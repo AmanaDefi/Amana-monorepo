@@ -48,6 +48,8 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       cooldownPeriod: 0,
       minDeposit: 1,
       maxWithdraw: 1000000,
+      outputTokenSymbol: "Zerolend USDC",
+      outputTokenImage: "/ZeroLend.png",
     };
   }
 
@@ -76,6 +78,8 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       cooldownPeriod: 0,
       minDeposit: 1,
       maxWithdraw: 1000000,
+      outputTokenSymbol: "Fluid USD Coin",
+      outputTokenImage: "/fluid.png",
     };
   }
 
@@ -104,6 +108,8 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       cooldownPeriod: 0,
       minDeposit: 1,
       maxWithdraw: 1000000,
+      outputTokenSymbol: "cPolUSDT",
+      outputTokenImage: "/compound.png",
     };
   }
 
@@ -132,6 +138,8 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       cooldownPeriod: 0,
       minDeposit: 1,
       maxWithdraw: 1000000,
+      outputTokenSymbol: "aBnbUSDT",
+      outputTokenImage: "/aave.png",
     };
   }
 
@@ -139,7 +147,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
   if (addr == "0xf4fa4d8115e78acf52308fdbad10a5f9042991de") {
     return {
       type: "Liquidity Pool",
-      name: "msETH/WETH Pool",
+      name: "msETH/WETH",
       description: "This strategy deposits ETH into the Curve msETH/WETH pool on Ethereum, then deposits the resulting Curve LP tokens into Convex to maximize CRV and CVX rewards. It earns trading fees from Curve and enhances yield through Convex staking rewards. Since msETH and WETH are pegged to the same underlying asset (ETH), impermanent loss is minimal to negligible. Fees vary with trading volume, and reward rates are subject to change at the discretion of the underlying protocols. APY decreases as total TVL in the pool increases.",
       imgURL: "/ETH.png",
       depositFeePaidFromGasTank: false,
@@ -160,6 +168,8 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       cooldownPeriod: 0,
       minDeposit: 1,
       maxWithdraw: 1000000,
+      outputTokenSymbol: "cvx-msETH/WETH",
+      outputTokenImage: "/convex.png",
     };
   }
 
@@ -167,7 +177,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
   if (addr == "0x0552d4c51491d9bfed97eb795e101e90a5f16d44") {
     return {
       type: "Liquidity Pool",
-      name: "USDT/USDe Pool",
+      name: "USDT/USDe",
       description: "This strategy deposits USDT into the Curve USDT/USDe pool on Ethereum, then deposits the resulting Curve LP tokens into Convex to maximize CRV rewards. It earns trading fees from Curve and enhances yield through Convex staking rewards. Because both eUSD and USDC are stablecoins, impermanent loss is minimal to negligible. Fees vary with trading volume, and reward rates are subject to change at the discretion of the underlying protocols. APY decreases as total TVL in the pool increases.",
       imgURL: "/ETH.png",
       depositFeePaidFromGasTank: false,
@@ -188,6 +198,8 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       cooldownPeriod: 0,
       minDeposit: 1,
       maxWithdraw: 1000000,
+      outputTokenSymbol: "cvx-USDT/USDe",
+      outputTokenImage: "/convex.png",
     };
   }
 
@@ -195,7 +207,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
   if (addr == "0x32fecdef376e2ad74c53663bde933116c09408f3") {
     return {
       type: "Liquidity Pool",
-      name: "eUSD/USDC Pool",
+      name: "eUSD/USDC",
       description: "This strategy deposits USDC into the Curve eUSD/USDC pool on Arbitrum, then deposits the resulting Curve LP tokens into Convex to maximize CRV rewards. It earns trading fees from Curve and enhances yield through Convex staking rewards. Because both eUSD and USDC are stablecoins, impermanent loss is minimal to negligible. Fees vary with trading volume, and reward rates are subject to change at the discretion of the underlying protocols. APY decreases as total TVL in the pool increases.",
       imgURL: "/arbitrum-arb-logo.png",
       depositFeePaidFromGasTank: true,
@@ -216,6 +228,8 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       cooldownPeriod: 0,
       minDeposit: 1,
       maxWithdraw: 1000000,
+      outputTokenSymbol: "cvx-eUSD/USDC",
+      outputTokenImage: "/convex.png",
     };
   }
 
@@ -223,7 +237,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
   if (addr == "0x8b934de59fde50a91daa7e788389f8fcad35a14f") {
     return {
       type: "Liquidity Pool",
-      name: "yUSD/USDC Pool",
+      name: "yUSD/USDC",
       description: "This strategy deposits USDC into the Balancer yUSD/USDC pool on Base, earning yield from trading fees and protocol incentives. The resulting LP tokens are staked in Balancer's LiquidityGauge to earn axlOP rewards, which are harvested and reinvested to compound returns. Because both yUSD and USDC are stablecoins, the risk of impermanent loss is minimal. Returns depend on trading activity in the pool and the axlOP incentive program, which is subject to change. As more capital enters the pool, APY may decrease.",
       imgURL: "/base.png",
       depositFeePaidFromGasTank: true,
@@ -244,13 +258,15 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       cooldownPeriod: 0,
       minDeposit: 1,
       maxWithdraw: 1000000,
+      outputTokenSymbol: "vyUSD",
+      outputTokenImage: "/vyUSD.png",
     };
   }
 
   if (addr == "0xcf18fc631e05ba7dcbcadcd212176c381256faa8") {
     return {
       type: "Yield-Bearing Stablecoin",
-      name: "YieldFi vyUSD",
+      name: "vyUSD",
       description: "This strategy deposits USDC into the vyUSD vault on Ethereum, a yield-optimized vault built on top of yUSD. vyUSD amplifies returns through automated DeFi strategies such as stablecoin LP positions and leverage looping. Yield is generated from protocol-driven strategies and auto-compounded within the vault. Because the underlying assets are stablecoins, risk from impermanent loss is minimal. APY is variable and influenced by vault utilization, market conditions, and strategy performance within the YieldFi protocol.",
       imgURL: "/ETH.png",
       depositFeePaidFromGasTank: false,
@@ -271,13 +287,15 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       cooldownPeriod: 0,
       minDeposit: 1,
       maxWithdraw: 1000000,
+      outputTokenSymbol: "vyUSD",
+      outputTokenImage: "/vyUSD.png",
     };
   }
 
   if (addr == "0x4cb4dfc521a5c44817a1fda79fb7eafaf6f1952e") {
     return {
       type: "Yield-Bearing Stablecoin",
-      name: "Aegis YUSD",
+      name: "YUSD",
       description: "This strategy swaps USDT for YUSD, a Bitcoin-backed stablecoin that passively earns yield through delta-neutral hedging and BTC-collateralized positions. Users benefit from stable, crypto-native returns without the need to stake or lock funds. Holding YUSD also earns Aegis points, offering additional rewards.",
       imgURL: "/bnb_logo.png",
       depositFeePaidFromGasTank: true,
@@ -298,6 +316,8 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       cooldownPeriod: 0,
       minDeposit: 1,
       maxWithdraw: 1000000,
+      outputTokenSymbol: "YUSD",
+      outputTokenImage: "/aegis.jpeg",
     };
   }
 
@@ -305,7 +325,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
   if (addr == "0x5e3adc840b55fe0b99c0418ac69113e1f0296992") {
     return {
       type: "Liquidity Pool",
-      name: "tacBTC/cbBTC/FBTC Pool",
+      name: "tacBTC/cbBTC/FBTC",
       description: "This strategy deposits cbBTC into the Curve tacBTC/cbBTC/FBTC pool on Ethereum, then deposits the resulting Curve LP tokens into Convex to maximize CRV and CVX rewards. It earns trading fees from Curve and enhances yield through Convex staking rewards. Since tacBTC, cbBTC, and FBTC are all pegged to the same underlying asset (BTC), impermanent loss is minimal to negligible. Fees vary with trading volume, and reward rates are subject to change at the discretion of the underlying protocols. APY decreases as total TVL in the pool increases.",
       imgURL: "/ETH.png",
       depositFeePaidFromGasTank: false,
@@ -326,6 +346,8 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       cooldownPeriod: 0,
       minDeposit: 1,
       maxWithdraw: 1000000,
+      outputTokenSymbol: "cvx-tacBTC/cbBTC/FBTC",
+      outputTokenImage: "/convex.png",
     };
   }
 
@@ -333,7 +355,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
   if (addr == "0xe501cbd03fa739273f49a8b54dd49de1248101f6") {
     return {
       type: "Liquidity Pool",
-      name: "USDC/USDf Liquidity Pool",
+      name: "USDC/USDf",
       description: "This strategy deposits USDC into the Curve USDC/USDf pool on Ethereum, then deposits the resulting Curve LP tokens into Convex to maximize CRV and CVX rewards. It earns trading fees from Curve and enhances yield through Convex staking rewards. Since USDC and USDf are both pegged to the US dollar, impermanent loss is minimal to negligible. Fees vary with trading volume, and reward rates are subject to change at the discretion of the underlying protocols. APY decreases as total TVL in the pool increases.",
       imgURL: "/ETH.png",
       depositFeePaidFromGasTank: false,
@@ -354,13 +376,15 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       cooldownPeriod: 0,
       minDeposit: 1,
       maxWithdraw: 1000000,
+      outputTokenSymbol: "cvx-USDC/USDf",
+      outputTokenImage: "/convex.png",
     };
   }
 
   if (addr == "0x8426929d568b1cbc281f5787556f84c5b101399d") {
     return {
       type: "Yield-Bearing Stablecoin",
-      name: "Noon Capital sUSN",
+      name: "sUSN",
       description: "This strategy swaps USDC for sUSN, the staked version of USN — a crypto-native stablecoin issued by Noon Capital. sUSN is yield-bearing by design, with returns generated through delta-neutral strategies like funding rate arbitrage and collateralized lending. As sUSN appreciates in value over time, users earn passive, compounding yield without needing to claim or stake manually.",
       imgURL: "/ETH.png",
       depositFeePaidFromGasTank: false,
@@ -371,7 +395,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       strategyNetwork: "Ethereum",
       strategyChainId: 1,
       protocolName: "Noon Capital",
-      protocolImgURL: "/sUSN.png",
+      protocolImgURL: "noon_capital.jpg",
       protocolDescription: "Noon Capital is the protocol behind USN and sUSN — stablecoins designed to generate consistent, crypto-native returns. While USN offers a liquid, dollar-pegged asset, sUSN is its yield-bearing counterpart, earning passive income through delta-neutral strategies like funding rate arbitrage and overcollateralized lending. Users can mint or swap into sUSN to earn without staking or lockups. The protocol emphasizes transparency, capital efficiency, and seamless DeFi integration. Risks include funding rate shifts, collateral volatility, and smart contract exposure.",
       networkDescription: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
       riskLevel: 3,
@@ -381,6 +405,8 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       cooldownPeriod: 0,
       minDeposit: 1,
       maxWithdraw: 1000000,
+      outputTokenSymbol: "sUSN",
+      outputTokenImage: "/sUSN.png",
     };
   }
 
@@ -408,6 +434,8 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
     cooldownPeriod: 0,
     minDeposit: 1,
     maxWithdraw: 1000000,
+    outputTokenSymbol: "Unknown Token",
+    outputTokenImage: "/default.png",
   };
 }
 
@@ -434,6 +462,8 @@ class VaultMetadata {
   cooldownPeriod: i32;
   minDeposit: i32;
   maxWithdraw: i32;
+  outputTokenSymbol: string;
+  outputTokenImage: string;
 }
 
 // Legacy function for backward compatibility
@@ -543,6 +573,8 @@ export function handleVaultInitialized(event: VaultInitialized): void {
   entity.cooldownPeriod = metadata.cooldownPeriod;
   entity.minDeposit = metadata.minDeposit;
   entity.maxWithdraw = metadata.maxWithdraw;
+  entity.outputTokenSymbol = metadata.outputTokenSymbol;
+  entity.outputTokenImage = metadata.outputTokenImage;
 
   // Set rewards contract address if provided
   if (metadata.rewardsContractAddress != null) {
@@ -621,6 +653,8 @@ export function handleStrategyUpdated(event: StrategyUpdated): void {
     entity.cooldownPeriod = metadata.cooldownPeriod;
     entity.minDeposit = metadata.minDeposit;
     entity.maxWithdraw = metadata.maxWithdraw;
+    entity.outputTokenSymbol = metadata.outputTokenSymbol;
+    entity.outputTokenImage = metadata.outputTokenImage;
 
     // Set rewards contract address if provided
     if (metadata.rewardsContractAddress != null) {
