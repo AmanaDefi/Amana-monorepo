@@ -687,8 +687,6 @@ export const getERC20TokenBalance = async (
       // Now get the balance
       const balance = await contract.read.balanceOf([walletAddress]);
 
-      console.log(balance, decimals, "balance, decimals");
-
       return {
         balance: balance,
         decimals,

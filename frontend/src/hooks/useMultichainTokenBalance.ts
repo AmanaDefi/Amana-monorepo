@@ -30,7 +30,6 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
   const MAX_RETRIES = 3;
 
   const internalFetchBalance = useCallback(async () => {
-    console.log(activeChain, currentToken?.symbol)
     if (!currentToken || !walletAddress || !activeChain?.id) {
       setBalance(DEFAULT_BALANCE);
       setIsLoading(false);
