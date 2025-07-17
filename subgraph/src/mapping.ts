@@ -303,7 +303,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       assetDecimals: 18,
       assetImgURL: "/usdt.png",
       assetPrice: BigDecimal.fromString("1.0"),
-      strategyNetwork: "BSC",
+      strategyNetwork: "BNB",
       strategyChainId: 56,
       protocolName: "Aegis",
       protocolImgURL: "/aegis.jpeg",
