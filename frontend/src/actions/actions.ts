@@ -1054,24 +1054,24 @@ const executeDirectDeposit = async (
     throw new Error("no activeAccount found for perform deposit");
 
   // Check cache first for existing calculation
-   
+
   const cached = useTransactionStore.getState().lastDepositCalculation;
-  
+
   let calculationResult;
-  
+
   if (isCachedCalculationValid(
-    cached, 
-    transactionAmount, 
-    vaultData.id, 
-    inputToken.address, 
+    cached,
+    transactionAmount,
+    vaultData.id,
+    inputToken,
     activeChain.id
   )) {
-    
+
     console.log("Using cached calculation result for direct deposit execution");
     calculationResult = cached!.result;
   } else {
     console.log("Cache miss - performing new calculation for direct deposit execution");
-    
+
     // Use the unified calculation function
     calculationResult = await calculateDepositOutput(
       transactionAmount,
@@ -1099,7 +1099,7 @@ const executeDirectDeposit = async (
   // Calculate minSharesOut with slippage
   const sharesAmountBigInt = parseUnits(calculationResult.sharesAmount, vaultData.inputToken.decimals);
   const minSharesOut = (sharesAmountBigInt * BigInt(10000 - getCurrentSlippage() * 100)) / BigInt(10000);
-  
+
   console.log("slippage", getCurrentSlippage());
   console.log("minSharesOut", minSharesOut.toString());
 
@@ -1157,24 +1157,24 @@ const executeCrossChainDeposit = async (
   if (!activeAccount || !walletClient) return { transactionHash: null };
 
   // Check cache first for existing calculation
-   
+
   const cached = useTransactionStore.getState().lastDepositCalculation;
-  
+
   let calculationResult;
-  
+
   if (isCachedCalculationValid(
-    cached, 
-    transactionAmount, 
-    vaultData.id, 
-    inputToken.address, 
+    cached,
+    transactionAmount,
+    vaultData.id,
+    inputToken,
     activeChain.id
   )) {
-    
+
     console.log("Using cached calculation result for cross-chain deposit execution");
     calculationResult = cached!.result;
   } else {
     console.log("Cache miss - performing new calculation for cross-chain deposit execution");
-    
+
     // Use the unified calculation function
     calculationResult = await calculateDepositOutput(
       transactionAmount,
@@ -1243,8 +1243,8 @@ const executeCrossChainDeposit = async (
       "bytes32",
     ],
     [
-      ZeroAddress,
-      inputToken.address,
+      inputToken.ZRC20equivalent, // this is withdrawZRC20 - we need this for the revert! (if cross chain invest fails!)
+      inputToken.address, // this is withdrawERC20
       0,
       minSharesOut,
       slippageValue,
@@ -1266,7 +1266,7 @@ const executeCrossChainDeposit = async (
   revertOptions = [
     activeAccount.address, // revertAddress
     false, // callOnRevert
-    activeAccount.address, // abortAddress
+    vaultData.id, // abortAddress
     revertMessage as `0x${string}`, // revertMessage
     BigInt(1000000), // onRevertGasLimit
   ] as const;
@@ -1310,32 +1310,9 @@ const executeCrossChainDeposit = async (
     console.log("receipt", receipt);
     return { transactionHash: txHash };
   } else {
-    // Case 2: ERC20 token
     console.log("ERC20 token deposit detected");
 
-    // Step 1: Approve the tokens for the EVM Gateway contract
-    // contract = getContract({
-    //   client,
-    //   chain: activeChain,
-    //   address: inputToken,
-    // });
-    // console.log("contract", contract);
-
-    // approveTx = prepareContractCall({
-    //   contract,
-    //   method: "function approve(address to, uint256 value)",
-    //   params: [EVMGatewayAddress, transactionAmount],
-    // });
-    // console.log("approveTx", approveTx);
-
-    // await sendAndConfirmTransaction({
-    //   account: activeAccount,
-    //   transaction: approveTx,
-    // });
-
-    // console.log("Approval confirmed");
-
-    // Step 2: Deposit ERC20 tokens through the Gateway contract
+    // Step 1: Deposit ERC20 tokens through the Gateway contract
     if (!walletClient?.chain) {
       console.log("failed to get chain from WalletClient.");
       return { transactionHash: null };
@@ -1398,24 +1375,24 @@ const executeSolanaDeposit = async (
   activeWallet: ConnectedWallet,
 ) => {
   // Check cache first for existing calculation
-   
+
   const cached = useTransactionStore.getState().lastDepositCalculation;
-  
+
   let calculationResult;
-  
+
   if (isCachedCalculationValid(
-    cached, 
-    transactionAmount, 
-    vaultData.id, 
-    inputToken.address, 
+    cached,
+    transactionAmount,
+    vaultData.id,
+    inputToken,
     activeChain.id
   )) {
-    
+
     console.log("Using cached calculation result for Solana deposit execution");
     calculationResult = cached!.result;
   } else {
     console.log("Cache miss - performing new calculation for Solana deposit execution");
-    
+
     // Use the unified calculation function
     calculationResult = await calculateDepositOutput(
       transactionAmount,
@@ -1507,7 +1484,7 @@ const executeSolanaDeposit = async (
         "bytes32",
       ],
       values: [
-        ZeroAddress,
+        inputToken.ZRC20equivalent,
         getSolanaEVMAddress(inputToken.address),
         0,
         minSharesOut,
@@ -1542,7 +1519,7 @@ const executeSolanaDeposit = async (
         "bytes32",
       ],
       values: [
-        ZeroAddress,
+        inputToken.ZRC20equivalent,
         evmAddress,
         0,
         minSharesOut,
@@ -2125,7 +2102,7 @@ const executeCrossChainWithdrawal = async (
   const revertOptions = [
     activeAccount.address, // revertAddress
     false, // callOnRevert
-    activeAccount.address, // abortAddress
+    vaultData.id, // abortAddress
     revertMessage as `0x${string}`, // revertMessage
     BigInt(1000000), // onRevertGasLimit
   ] as const;
@@ -2430,7 +2407,7 @@ export const getPerformanceFee = async (
   return perfFee;
 };
 
-export const updatePythPrices = async () => {};
+export const updatePythPrices = async () => { };
 
 export async function fetchReceiptTokens(
   vaults: VaultData[],
@@ -2441,7 +2418,7 @@ export async function fetchReceiptTokens(
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     if (raw) cache = JSON.parse(raw);
-  } catch {}
+  } catch { }
 
   const missingIds = vaults.map((v) => v.id).filter((id) => !(id in cache));
 
