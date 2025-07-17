@@ -82,6 +82,8 @@ export default function InputTokenWithError({
 
   const isConnected = !!walletAddress;
 
+  console.log('vaultData for outputTokenSymbol', vaultData);
+
   const showTokenSelector = useMemo(() => {
     return (
       ((isDeposit && !isOutput) || (!isDeposit && isOutput)) &&
@@ -180,7 +182,7 @@ export default function InputTokenWithError({
           </div>
         );
       }
-      // Show shares number in the pink box
+      
       return (
         <span className="text-white text-2xl">
           {outputAmount}
@@ -268,9 +270,11 @@ export default function InputTokenWithError({
             }
           >
             {shouldSwapValues ? (
-              <p className="group-hover/max:text-white text-[#535E73]">
-                {conversionOutput.outputAmountInUSDFormatted || "$0.00"}
-              </p>
+              <BreathingValue
+                value={conversionOutput.outputAmountInUSDFormatted || "$0.00"}
+                isBreathing={!!loadingOutputToken}
+                className="group-hover/max:text-white text-[#535E73]"
+              />
             ) : (
               <p className="group-hover/max:text-white">{renderUSDValue()}</p>
             )}
@@ -319,16 +323,7 @@ export default function InputTokenWithError({
             ) : (
               <div className="flex items-center flex-row gap-1 md:gap-2">
                 <div className="relative flex-none w-5 h-5 border border-white rounded-full bg-[#10B981]">
-                  {/* Log vaultData to check if it provides outputTokenSymbol */}
-                  {process.env.NODE_ENV === "development" && (
-                    <span style={{ display: "none" }}>
-                      {(() => {
-                        // eslint-disable-next-line no-console
-                        console.log("VaultData outputTokenSymbol:", vaultData.outputTokenSymbol, "Full vaultData:", vaultData);
-                        return null;
-                      })()}
-                    </span>
-                  )}
+               
                   <TokenIcon
                     token={isOutput ? { ...selectedToken, symbol: vaultData.outputTokenSymbol || selectedToken?.symbol || "", imgURL: vaultData.outputTokenImage || selectedToken?.imgURL || "" } as Token : selectedToken as Token}
                     icon={isOutput ? vaultData.outputTokenImage || selectedToken?.imgURL : selectedToken?.imgURL}

@@ -52,7 +52,7 @@ export const formatTokenBalanceUSD = (
 
 // Format USD value ensuring it's never negative
 export const formatUSDValue = (value: number): string => {
-  return formatCurrency(Math.max(0, value));
+  return formatUSDAmount(Math.max(0, value));
 };
 
 export const shouldShowInputLoader = (
