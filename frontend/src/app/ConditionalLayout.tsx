@@ -45,7 +45,7 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
 
         <div className="flex flex-col flex-1 mx-auto w-full min-h-screen relative z-10">
           <div
-            className={`${isConnected ? "pt-4 md:pt-6 lg:pt-[60px] lg:px-0" : "pt-4 lg:pt-10 lg:pr-[108px]"} px-4 `}
+            className={`${isConnected ? "pt-4 md:pt-6 lg:pt-[60px] lg:px-0" : "pt-4 lg:pt-10 lg:pr-10"} `}
           >
             <Header activeSection={activeSection} />
           </div>
@@ -107,22 +107,7 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
               />
             </div>
 
-            <div
-              className="flex-1"
-              style={
-                !isMobile
-                  ? {
-                      paddingLeft: isCollapsed ? "20px" : "29px",
-                      paddingRight: "16px",
-                      maxWidth: `calc(100% - ${isCollapsed ? 136 : 302}px - ${
-                        isCollapsed ? 20 : 29
-                      }px)`,
-                    }
-                  : {
-                      padding: "0",
-                    }
-              }
-            >
+            <div className={`flex-1 ${!isMobile ? "pl-[29px] pr-10" : "p-0"}`}>
               {children}
             </div>
           </div>
@@ -130,7 +115,7 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
           <AppModals />
         </div>
       ) : (
-        <div className="flex flex-col flex-1 mx-auto w-full min-h-screen py-4 md:py-6 lg:py-10 px-4 md:px-[44px] lg:pr-[108px] lg:px-0 ">
+        <div className="flex flex-col flex-1 mx-auto w-full min-h-screen py-4 md:py-6 lg:py-10 px-4 md:px-[44px] lg:pr-10 lg:px-0 ">
           <Header activeSection={activeSection} />
           <div className="flex-1 lg:ml-16 lg:pl-[44px]">{children}</div>
           <div className="lg:ml-16">

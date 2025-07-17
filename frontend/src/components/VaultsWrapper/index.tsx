@@ -378,7 +378,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
       return (
         <div
           ref={containerRef}
-          className="grid gap-6 md:gap-4 grid-cols-[repeat(auto-fill,minmax(328px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(350px,1fr))] transition-all duration-700 ease-in-out"
+          className="grid gap-6 md:gap-4 grid-cols-[repeat(auto-fill,minmax(328px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(365px,1fr))] transition-all duration-700 ease-in-out"
           style={{
             transform: "translateZ(0)",
             willChange: "transform",
@@ -407,17 +407,19 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     }
     return (
       <div className="flex flex-col gap-4">
-        <div className="flex flex-row items-center justify-between ">
-          <p className="w-[30%] xl:w-[20%] mr-[10%] xl:mr-[20%] text-center">
-            Pool
-          </p>
-          <div className="w-[60%] flex flex-row items-center  xl:mr-[5%]">
-            <p className="w-[20%] xl:w-[40%] text-center ">TVL</p>
-            <div className="w-[20%]" />
-            <p className="w-[30%] xl:w-[60%] text-center">APY</p>
-            <div className="w-[30%]" />
+        {paginatedVaults.length > 0 && (
+          <div className="flex flex-row items-center justify-between">
+            <p className="w-[30%] xl:w-[20%] mr-[10%] xl:mr-[20%] text-center">
+              Pool
+            </p>
+            <div className="w-[60%] flex flex-row items-center xl:mr-[5%]">
+              <p className="w-[20%] xl:w-[40%] text-center">TVL</p>
+              <div className="w-[20%]" />
+              <p className="w-[30%] xl:w-[60%] text-center">APY</p>
+              <div className="w-[30%]" />
+            </div>
           </div>
-        </div>
+        )}
         {paginatedVaults.map((vault) => (
           <VaultRow
             key={vault.id}

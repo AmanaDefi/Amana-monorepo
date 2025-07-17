@@ -298,7 +298,11 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
           </p>
         </div>
         <div className="flex gap-4 mt-auto">
-          <AppButton variant="blue" onClick={handlePressButton}>
+          <AppButton
+            variant="blue"
+            onClick={handlePressButton}
+            enableAnimations={true}
+          >
             Invest
           </AppButton>
 
