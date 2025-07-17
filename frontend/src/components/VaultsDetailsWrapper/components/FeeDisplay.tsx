@@ -93,8 +93,8 @@ export default function FeeDisplay({
   const isEthereumVault = !vaultData.depositFeePaidFromGasTank;
 
   const hasNonZeroGasFee =
-    conversionOutput.gasFeeInVaultAsset &&
-    Number(conversionOutput.gasFeeInVaultAsset) > 0;
+    conversionOutput.gasFeeInInputToken &&
+    Number(conversionOutput.gasFeeInInputToken) > 0;
 
   const shouldShowDepositFee = isDeposit && isEthereumVault && hasNonZeroGasFee;
   const shouldShowWithdrawalFee = !isDeposit && performanceFee > 0;

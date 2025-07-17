@@ -395,7 +395,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       strategyNetwork: "Ethereum",
       strategyChainId: 1,
       protocolName: "Noon Capital",
-      protocolImgURL: "noon_capital.jpg",
+      protocolImgURL: "noon_capital.svg",
       protocolDescription: "Noon Capital is the protocol behind USN and sUSN — stablecoins designed to generate consistent, crypto-native returns. While USN offers a liquid, dollar-pegged asset, sUSN is its yield-bearing counterpart, earning passive income through delta-neutral strategies like funding rate arbitrage and overcollateralized lending. Users can mint or swap into sUSN to earn without staking or lockups. The protocol emphasizes transparency, capital efficiency, and seamless DeFi integration. Risks include funding rate shifts, collateral volatility, and smart contract exposure.",
       networkDescription: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
       riskLevel: 3,
