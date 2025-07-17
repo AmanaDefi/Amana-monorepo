@@ -25,6 +25,7 @@ import { zetachain } from "viem/chains";
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import { useAuthStore } from "@/store/authStore";
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
+import { useInitializationStore } from "@/store/initializationStore";
 
 // Constants for localStorage
 const WALLET_STATE_KEY = "amana-wallet-state";
@@ -57,7 +58,6 @@ interface MultiChainContextType {
   setIsModalOpen: Dispatch<SetStateAction<boolean>>;
   switchToChain: (chain: Chain) => Promise<void>;
   refetchBalance: (address: string) => Promise<Balance | undefined>;
-  isHydrated: boolean;
   evmDisconnect: () => Promise<void>;
 }
 
@@ -74,8 +74,6 @@ export const useMultiChain = () => {
 };
 
 export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
-  // HYDRATION FIX: Start with consistent state for SSR
-  const [isHydrated, setIsHydrated] = useState(false);
   const [selectedChain, setSelectedChain] = useState<ChainType | null>(null);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -97,6 +95,17 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const { setSelectedChainFromModal, selectedChainFromModal } =
     useChainTokenModalStore();
 
+  const {
+    isHydrated,
+    isInitializationComplete,
+    setIsHydrated,
+    setIsInitializationComplete,
+    setIsWalletConnecting,
+    completeInitialization,
+    startInitialization,
+    resetInitialization,
+  } = useInitializationStore();
+
   const { wallets } = useWallets();
   const filteredWallets = wallets.filter(
     (wallet) => wallet.meta.id !== "app.phantom",
@@ -104,7 +113,8 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const { user } = usePrivy();
   const privyWallet = filteredWallets[0];
   const [activeChain, setActiveChain] = useState<Chain | null>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
+
+  const initializationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   debugLog("Provider initialized with hydration-safe state:", {
     selectedChain,
@@ -148,9 +158,20 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [logout, disconnectConnectors]);
 
+  const completeInitializationProcess = useCallback(() => {
+    if (initializationTimeoutRef.current) {
+      clearTimeout(initializationTimeoutRef.current);
+    }
+
+    initializationTimeoutRef.current = setTimeout(() => {
+      completeInitialization();
+      debugLog("Initialization completed via store");
+    }, 200);
+  }, [completeInitialization]);
+
   useEffect(() => {
     setIsHydrated(true);
-  }, []);
+  }, [setIsHydrated]);
 
   // Connect Solana Wallet
   const connectSolana = async () => {
@@ -271,8 +292,55 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     isHydrated,
   ]);
 
+  useEffect(() => {
+    if (!isHydrated) return;
+    if (step) return;
+
+    const checkInitialization = () => {
+      const hasStableConnection =
+        (publicKey && connected) ||
+        (privyWallet?.address && !connected) ||
+        (!publicKey && !privyWallet?.address);
+
+      if (hasStableConnection) {
+        completeInitializationProcess();
+      }
+    };
+
+    const stabilizationTimer = setTimeout(checkInitialization, 300);
+
+    return () => {
+      clearTimeout(stabilizationTimer);
+      if (initializationTimeoutRef.current) {
+        clearTimeout(initializationTimeoutRef.current);
+      }
+    };
+  }, [
+    isHydrated,
+    publicKey,
+    connected,
+    privyWallet?.address,
+    step,
+    completeInitializationProcess,
+  ]);
+
+  // Fallback timeout:
+  useEffect(() => {
+    if (!isHydrated) return;
+
+    const maxWaitTimer = setTimeout(() => {
+      if (!isInitializationComplete) {
+        debugLog("Forcing initialization completion after max wait time");
+        completeInitialization();
+      }
+    }, 3000);
+
+    return () => clearTimeout(maxWaitTimer);
+  }, [isHydrated, isInitializationComplete, completeInitialization]);
+
   //  Disconnect Wallet
   const disconnectWallet = useCallback(async () => {
+    startInitialization();
     const hasViewedOnboarding = localStorage.getItem("hasViewedOnboarding");
     localStorage.clear();
     if (hasViewedOnboarding) {
@@ -285,6 +353,11 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     setIsModalOpen(false);
     debugLog("All wallets disconnected");
     setWalletAddress(null);
+
+    setTimeout(() => {
+      completeInitialization();
+    }, 500);
+
     const isVaultAddressPath = /^\/vaults\/0x[0-9a-fA-F]{40}$/;
 
     if (
@@ -295,7 +368,14 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     ) {
       router.push("/");
     }
-  }, [disconnect, evmDisconnect, router, path]);
+  }, [
+    disconnect,
+    evmDisconnect,
+    router,
+    path,
+    startInitialization,
+    completeInitialization,
+  ]);
 
   const getEvmBalance = useCallback(
     async (walletAddress: string) => {
@@ -321,40 +401,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     },
     [privyWallet, setBalance, step, activeChain],
   );
-
-  // IMPROVED: Better connection detection logic with initialization delay
-  useEffect(() => {
-    // Wait for hydration before starting initialization
-    if (!isHydrated) return;
-    setIsInitialized(true);
-
-    if (publicKey) {
-      setWalletAddress(publicKey.toBase58());
-      setSelectedChain("solana");
-      if (step) {
-        setFundWalletAddress(publicKey.toBase58());
-      }
-    } else if (
-      privyWallet?.address &&
-      privyWallet?.meta?.id !== "app.phantom"
-    ) {
-      if (!step) {
-        debugLog("EVM wallet connected:", privyWallet?.address);
-        setWalletAddress(privyWallet?.address);
-        setSelectedChain("evm");
-        setIsModalOpen(false);
-      }
-    }
-  }, [
-    privyWallet,
-    publicKey,
-    getEvmBalance,
-    isHydrated,
-    selectedChain,
-    user,
-    step,
-    setFundWalletAddress,
-  ]);
 
   const switchToChain = useCallback(
     async (chain: Chain) => {
@@ -484,6 +530,12 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     privyWallet?.meta?.id,
   ]);
 
+  useEffect(() => {
+    if (connected || privyWallet?.address) {
+      setIsWalletConnecting(false);
+    }
+  }, [connected, privyWallet?.address, setIsWalletConnecting]);
+
   return (
     <MultiChainContext.Provider
       value={{
@@ -497,7 +549,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         setIsModalOpen,
         switchToChain,
         refetchBalance: getEvmBalance,
-        isHydrated,
         evmDisconnect: evmDisconnect,
       }}
     >

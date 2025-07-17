@@ -11,6 +11,7 @@ import { VaultCard } from "./components/VaultCard";
 import { VaultRow } from "./components/VaultRow";
 import { AppButton } from "../button/AppButton";
 import { useLayoutStore } from "@/store/store";
+import { useInitializationStore } from "@/store/initializationStore";
 import { useMyVaults } from "@/hooks/useMyVaults";
 import { EmptyState } from "../DashboardWrapper/components/Tabs";
 import { BreathingValue } from "../PendingDots";
@@ -70,6 +71,8 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   onProtocolFilterChange,
   hasProtocolFilter = false,
 }) => {
+  const { isReady } = useInitializationStore();
+
   const [localSearchTerm, setLocalSearchTerm] = useState("");
   const searchTerm = onSearchChange ? externalSearchTerm : localSearchTerm;
   const setSearchTerm = onSearchChange
@@ -167,20 +170,9 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     !shouldUseSubgraphProtocolFilter &&
     !shouldUseSubgraphSort;
 
-  const mode = shouldUseSubgraphSearch
-    ? "Subgraph Search"
-    : shouldUseSubgraphNetworkFilter
-      ? "Subgraph Network Filter"
-      : shouldUseSubgraphProtocolFilter
-        ? "Subgraph Protocol Filter"
-        : shouldUseSubgraphSort
-          ? "Subgraph Sort"
-          : "Local";
-
   const filteredVaults = useMemo(() => {
     if (!shouldUseLocalFiltering) {
       if (isShownMyVaults) {
-        // Filter only vaults with deposits
         return vaultsList.filter((vault) => {
           const hasDeposited = userVaultBalances
             ? !!Number(
@@ -195,7 +187,6 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
       return vaultsList;
     }
 
-    // Local filtering for APY and Risk sorting
     return vaultsList.filter((vault) => {
       const matchesSearch =
         searchTerm === "" ||
@@ -224,7 +215,6 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   ]);
 
   const sortedVaults = useMemo(() => {
-    // Helper to compute value for sorting key (APY / Risk only)
     const getSortValue = (vault: VaultData) => {
       switch (sortBy.toLowerCase()) {
         case "apy":
@@ -244,13 +234,8 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
         : filteredVaults;
     }
 
-    // If we're relying on remote pagination but sorting field is APY or RISK,
-    // we still need to sort the received page locally to ensure numeric order.
     const listToSort = [...filteredVaults];
 
-    // (TVL handled above)
-
-    // Perform local sorting for APY / TVL (My Vaults) / Risk
     return listToSort.sort((a, b) => {
       const aValue = getSortValue(a);
       const bValue = getSortValue(b);
@@ -366,7 +351,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   };
 
   const renderVaultsContent = () => {
-    if (loading) {
+    if (!isReady() || loading) {
       return (
         <div className="flex justify-center items-center py-20 min-h-[400px]">
           <LoadingLogo />
@@ -405,6 +390,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
         </div>
       );
     }
+
     return (
       <div className="flex flex-col gap-4">
         {paginatedVaults.length > 0 && (
@@ -433,7 +419,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   };
 
   const renderEmptyState = () => {
-    if (loading) return null;
+    if (!isReady() || loading) return null;
 
     if (paginatedVaults.length === 0) {
       if (isShownMyVaults && !MyVaults?.length) {
@@ -497,14 +483,16 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
           setIsShownMyVaults={setIsShownMyVaults}
         />
 
-        <BreathingValue
-          value={
-            <div className="text-gray-400 mb-4 text-sm">
-              Showing {paginatedVaults.length} of {displayTotalCount} vaults
-            </div>
-          }
-          isBreathing={loading}
-        />
+        {isReady() && (
+          <BreathingValue
+            value={
+              <div className="text-gray-400 mb-4 text-sm">
+                Showing {paginatedVaults.length} of {displayTotalCount} vaults
+              </div>
+            }
+            isBreathing={loading}
+          />
+        )}
       </div>
 
       <div className="flex-grow">
@@ -512,8 +500,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
         {renderEmptyState()}
       </div>
 
-      {/* Pagination Section */}
-      {!loading && displayTotalPages > 1 && (
+      {isReady() && !loading && displayTotalPages > 1 && (
         <div className="flex justify-center mt-6 flex-shrink-0">
           <div className="flex gap-2 flex-row items-center">
             <div className={`${currentPage === 1 && "cursor-not-allowed"}`}>

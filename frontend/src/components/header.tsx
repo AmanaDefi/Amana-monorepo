@@ -71,10 +71,10 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   return (
     <>
       <header
-        className={`w-full flex items-center justify-between font-gotham relative z-50 ${
+        className={`w-full flex items-center justify-between font-gotham relative z-50 h-[60px] md:h-[80px] ${
           isConnected
-            ? "px-0 lg:px-11 mb-7 lg:mb-10 h-[60px] lg:h-[40px]"
-            : "px-0 lg:pl-11 lg:pr-0 h-[80px] mb-0 lg:mb-9"
+            ? "px-0 lg:px-11 mb-7 lg:mb-10 "
+            : "px-0 lg:pl-11 lg:pr-0  mb-0 lg:mb-10"
         }`}
       >
         <div className="flex items-center gap-[41px] flex-1 relative z-50">
