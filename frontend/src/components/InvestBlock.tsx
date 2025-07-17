@@ -7,6 +7,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useWallets } from "@privy-io/react-auth";
+import { ShimmerAnimation } from "./button/ShimmerAnimation";
 
 const InvestBlock = () => {
   const { walletAddress } = useMultiChain();
@@ -47,17 +48,20 @@ const InvestBlock = () => {
           variant="primary"
           className="w-[192px] h-[56px] text-[14px] font-normal text-white"
           onClick={handleFundWallet}
+          enableAnimations={true}
         >
           Fund Wallet
         </Button>
       ) : (
         <div className="thirdweb-invest-button">
-          <button
-            onClick={() => openStep("optionsA")}
-            className="w-[192px] h-[56px] text-[18px] font-normal rounded-lg bg-[#1B46E0] text-white border border-[#323234] shadow-[0_4px_4px_0_rgba(0,0,0,0.15),inset_0_2px_4px_0_#5251c5] backdrop-blur-[20px] hover:backdrop-blur-[20px] hover:shadow-[inset_0_2px_4px_0_#5251c5] active:bg-[#1B46E0] active:backdrop-blur-[20px] active:shadow-[inset_0_2px_4px_0_#5251c5] flex items-center justify-center transition"
-          >
-            Invest
-          </button>
+          <ShimmerAnimation enabled={true}>
+            <button
+              onClick={() => openStep("optionsA")}
+              className="w-[192px] h-[56px] text-[18px] font-normal rounded-lg bg-[#1B46E0] text-white border border-[#323234] shadow-[0_4px_4px_0_rgba(0,0,0,0.15),inset_0_2px_4px_0_#5251c5] backdrop-blur-[20px] hover:backdrop-blur-[20px] hover:shadow-[inset_0_2px_4px_0_#5251c5] active:bg-[#1B46E0] active:backdrop-blur-[20px] active:shadow-[inset_0_2px_4px_0_#5251c5] flex items-center justify-center transition"
+            >
+              Invest
+            </button>
+          </ShimmerAnimation>
         </div>
       )}
     </div>

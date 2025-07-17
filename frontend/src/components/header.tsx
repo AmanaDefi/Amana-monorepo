@@ -8,7 +8,9 @@ import { useRef, useState, useEffect } from "react";
 import { NAV_LINKS } from "@/constants/navigation";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useAuthStore } from "@/store/authStore";
+import { useInitializationStore } from "@/store/initializationStore";
 import Button from "./common/Button";
+
 import ChainSwitcher from "./chainswitcher/ChainSwitcher";
 import ProfileIcon from "./svg/Profile";
 import ProfileDropdown from "./ProfileDropdown";
@@ -16,6 +18,7 @@ import BurgerMenuIcon from "./svg/BurgerMenu";
 import MobileMenuModal from "./modal/MobileMenuModal";
 import { useWallets } from "@privy-io/react-auth";
 import { CHAIN_ID } from "@/constants/chainConfig";
+import ButtonSkeleton from "./button/Skeleton";
 
 interface HeaderProps {
   activeSection?: string;
@@ -26,6 +29,8 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   const path = usePathname();
   const router = useRouter();
   const { wallets } = useWallets();
+  const { isReady } = useInitializationStore();
+
   const filteredWallets = wallets.filter(
     (wallet) => wallet.meta.id !== "app.phantom",
   );
@@ -68,19 +73,94 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
     setIsMenuOpened((prev) => !prev);
   };
 
+  const renderAuthButton = () => {
+    if (!isReady()) {
+      return <ButtonSkeleton variant="responsive" />;
+    }
+
+    if (!isConnected) {
+      return (
+        <Button variant="signIn" onClick={handleSignInClick}>
+          Sign in
+        </Button>
+      );
+    }
+
+    return (
+      <Button
+        ref={profileButtonRef}
+        variant="secondary"
+        onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+        className={`
+          transition-all duration-300 ease-in-out
+          lg:!w-[192px] lg:!h-[56px] lg:!px-[16px] lg:!py-[17px]
+          max-lg:!w-[96px] max-lg:!h-[40px] max-lg:!px-[12px] max-lg:!py-[10px]
+          relative z-50
+        `}
+      >
+        <div className="flex flex-row gap-2 leading-[18px] items-center transition-all duration-300">
+          <ProfileIcon width={18} height={18} className="flex-shrink-0" />
+          <div className="flex flex-col min-w-0">
+            <p className="text-white font-normal truncate transition-all duration-300 lg:text-[18px] max-lg:text-[14px]">
+              <span className="lg:hidden">
+                {walletAddress.slice(0, 4)}...{walletAddress.slice(-4)}
+              </span>
+              <span className="hidden lg:inline">
+                {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+              </span>
+            </p>
+          </div>
+        </div>
+      </Button>
+    );
+  };
+
+  const renderMobileAuthButton = () => {
+    if (!isReady()) {
+      return <ButtonSkeleton variant="mobile" />;
+    }
+
+    if (!isConnected) {
+      return (
+        <Button variant="signIn" onClick={handleSignInClick}>
+          Sign in
+        </Button>
+      );
+    }
+
+    return (
+      <Button
+        ref={profileButtonRef}
+        variant="secondary"
+        onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+        className={`
+          transition-all duration-300 ease-in-out
+          !w-[96px] !h-[40px] !px-[12px] !py-[10px]
+          relative z-50
+        `}
+      >
+        <div className="flex flex-row gap-1 leading-[18px] items-center transition-all duration-300">
+          <div className="flex flex-col min-w-0">
+            <p className="text-[14px] text-white font-normal truncate transition-all duration-300">
+              {walletAddress.slice(0, 4)}...{walletAddress.slice(-4)}
+            </p>
+          </div>
+        </div>
+      </Button>
+    );
+  };
+
   return (
     <>
       <header
-        className={`w-full flex items-center justify-between font-gotham relative z-50 h-[60px] md:h-[80px] ${
-          isConnected
-            ? "px-0 lg:px-11 mb-7 lg:mb-10 "
-            : "px-0 lg:pl-11 lg:pr-0  mb-0 lg:mb-10"
+        className={`w-full flex items-center justify-between font-gotham relative z-50 h-[60px] px-0 lg:px-11 transition-all duration-300 ease-in-out ${
+          isConnected ? " mb-7 lg:mb-10" : "mb-0 lg:mb-10"
         }`}
       >
         <div className="flex items-center gap-[41px] flex-1 relative z-50">
           <Link
             href="/"
-            className={`flex items-center ${!isConnected ? "block" : "lg:hidden"}`}
+            className={`flex items-center transition-all duration-300 ${!isConnected ? "block" : "lg:hidden"}`}
           >
             <AmanaLogo width={65} height={46} className="w-[65px] h-[46px]" />
           </Link>
@@ -89,7 +169,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
             {navLinks.map(({ label, href }) => (
               <span
                 key={href}
-                className={`cursor-pointer transition font-normal text-white text-[16px] border rounded-lg px-[14px] py-[10px] flex items-center justify-center relative z-50 ${
+                className={`cursor-pointer transition-all duration-300 font-normal text-white text-[16px] border rounded-lg px-[14px] py-[10px] flex items-center justify-center relative z-50 hover:border-[#1B46E0]/50 ${
                   path === href ? "border-[#1B46E0]" : "border-transparent"
                 }`}
                 onClick={() => router.push(href)}
@@ -107,74 +187,29 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
             </span>
           </div>
         )}
-        <div className="flex items-center gap-2 lg:gap-6 flex-1 justify-end relative z-50">
-          {activeAccount &&
-            activeAccount?.walletClientType !== "privy" &&
-            !isMenuOpened &&
-            activeChain?.id !== CHAIN_ID["solana"] && <ChainSwitcher />}
 
-          <div className="hidden lg:block">
-            {!isConnected ? (
-              <Button variant="signIn" onClick={handleSignInClick}>
-                Sign in
-              </Button>
-            ) : (
-              <Button
-                ref={profileButtonRef}
-                variant="secondary"
-                onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                className="py-4 !px-[31px] !h-[56px] relative z-50"
-              >
-                <div className="flex flex-row gap-2 leading-[18px] items-center">
-                  <ProfileIcon width={18} height={18} />
-                  <div className="flex flex-col">
-                    <p className="text-[18px] text-white font-normal">
-                      {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
-                    </p>
-                  </div>
-                </div>
-              </Button>
-            )}
+        <div className="flex items-center gap-2 lg:gap-6 flex-1 justify-end relative z-50">
+          <div className="transition-all duration-300 ease-in-out">
+            {activeAccount &&
+              activeAccount?.walletClientType !== "privy" &&
+              !isMenuOpened &&
+              activeChain?.id !== CHAIN_ID["solana"] && <ChainSwitcher />}
           </div>
 
-          <div className="lg:hidden flex flex-row items-center gap-2">
+          <div className="hidden lg:flex flex-shrink-0 transition-all duration-300 ease-in-out">
+            {renderAuthButton()}
+          </div>
+
+          {/* Mobile Section */}
+          <div className="lg:hidden flex flex-row items-center gap-2 flex-shrink-0">
             {(path === "/" || path === "/about") && (
-              <div className="lg:hidden flex">
-                {!isConnected ? (
-                  <Button variant="signIn" onClick={handleSignInClick}>
-                    Sign in
-                  </Button>
-                ) : (
-                  <Button
-                    ref={profileButtonRef}
-                    variant="secondary"
-                    onClick={() =>
-                      setIsProfileDropdownOpen(!isProfileDropdownOpen)
-                    }
-                    className="!px-4 !h-8 md:!h-10 relative z-50 !w-[142px] !md:w-[192px]"
-                  >
-                    <div className="flex flex-row gap-2 leading-[18px] items-center">
-                      <ProfileIcon width={18} height={18} />
-                      <div className="flex flex-col">
-                        <p className="text-base md:text-lg text-white font-normal">
-                          <span className="lg:hidden">
-                            {walletAddress.slice(0, 4)}...
-                            {walletAddress.slice(-4)}
-                          </span>
-                          <span className="hidden lg:inline">
-                            {walletAddress.slice(0, 6)}...
-                            {walletAddress.slice(-4)}
-                          </span>
-                        </p>
-                      </div>
-                    </div>
-                  </Button>
-                )}
+              <div className="flex transition-all duration-300 ease-in-out">
+                {renderMobileAuthButton()}
               </div>
             )}
             <button
               onClick={toggleMenu}
-              className="lg:hidden h-10 relative z-50"
+              className="lg:hidden h-10 relative z-50 transition-all duration-200 hover:scale-105 active:scale-95"
               aria-label="Toggle mobile menu"
             >
               <BurgerMenuIcon />
@@ -182,6 +217,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
           </div>
         </div>
       </header>
+
       <ProfileDropdown
         isOpen={isProfileDropdownOpen}
         onClose={() => setIsProfileDropdownOpen(false)}

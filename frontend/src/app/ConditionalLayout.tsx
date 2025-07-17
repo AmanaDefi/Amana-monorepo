@@ -10,6 +10,7 @@ import { getActiveSectionFromPathname } from "@/utils/getActiveSectionFromPathna
 import { usePathname } from "next/navigation";
 import React, { useState, useEffect } from "react";
 import AboutLine from "@/components/svg/about/AboutLine";
+import { motion } from "framer-motion";
 
 const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
   const { walletAddress } = useMultiChain();
@@ -107,17 +108,32 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
               />
             </div>
 
-            <div className={`flex-1 ${!isMobile ? "pl-[29px] pr-10" : "p-0"}`}>
+            <motion.div
+              animate={{
+                paddingLeft: !isMobile
+                  ? isCollapsed
+                    ? "15px"
+                    : "29px"
+                  : "0px",
+              }}
+              transition={{
+                duration: 0.5,
+                ease: [0.25, 0.1, 0.25, 1],
+              }}
+              className={`flex-1 ${!isMobile ? "pr-10" : "p-0"}`}
+            >
               {children}
-            </div>
+            </motion.div>
           </div>
           <Footer isConnected />
           <AppModals />
         </div>
       ) : (
-        <div className="flex flex-col flex-1 mx-auto w-full min-h-screen py-4 md:py-6 lg:py-10 px-4 md:px-[44px] lg:pr-10 lg:px-0 ">
+        <div className="flex flex-col flex-1 mx-auto w-full min-h-screen py-4 md:py-6 lg:py-10 px-4 md:px-[44px] lg:px-0 ">
           <Header activeSection={activeSection} />
-          <div className="flex-1 lg:ml-16 lg:pl-[44px]">{children}</div>
+          <div className="flex-1 lg:ml-16 lg:pl-[44px] pr-0 lg:pr-10">
+            {children}
+          </div>
           <div className="lg:ml-16">
             <Footer isConnected={false} />
             <AppModals />
