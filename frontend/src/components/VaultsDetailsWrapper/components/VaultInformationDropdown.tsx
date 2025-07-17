@@ -65,6 +65,14 @@ const VaultInformationContent: React.FC<VaultInformationContentProps> = ({
         </p>
       </div>
       <div>
+        <p className="text-white font-semibold text-sm md:text-base mb-2">
+          Vault Type
+        </p>
+        <p className="text-white/80 font-normal text-sm md:text-base">
+          {vaultData.type}
+        </p>
+      </div>
+      <div>
         <p className="text-white font-semibold  text-sm md:text-basemb-2">
           {vaultData.protocol.name}
         </p>

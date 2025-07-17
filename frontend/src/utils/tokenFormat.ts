@@ -21,6 +21,35 @@ export const formatTokenBalance = (
   return parseFloat(formatted).toString();
 };
 
+// Format token balance in USD terms
+export const formatTokenBalanceUSD = (
+  balance: string | number,
+  symbol: string,
+  tokenPrice: number = 0,
+): string => {
+  const num = Math.max(0, Number(balance));
+  
+  // If no price provided or price is 0, return the original format
+  if (!tokenPrice || tokenPrice === 0) {
+    return formatTokenBalance(balance, symbol);
+  }
+  
+  // Calculate USD value
+  const usdValue = num * tokenPrice;
+  
+  // For very small values, show "< $0.01"
+  if (usdValue > 0 && usdValue < 0.01) {
+    return "< $0.01";
+  }
+  
+  // Format as USD currency
+  return formatUSDAmount(usdValue, {
+    ensureNonNegative: true,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
+
 // Format USD value ensuring it's never negative
 export const formatUSDValue = (value: number): string => {
   return formatCurrency(Math.max(0, value));
