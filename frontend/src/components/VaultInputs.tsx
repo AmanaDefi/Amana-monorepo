@@ -722,7 +722,7 @@ export default function VaultInputs({
           cached, 
           inputAmountValue, 
           vaultData.id, 
-          inputToken.address, 
+          inputToken, 
           activeChain.id
         )) {
           

@@ -1063,7 +1063,7 @@ const executeDirectDeposit = async (
     cached,
     transactionAmount,
     vaultData.id,
-    inputToken.address,
+    inputToken,
     activeChain.id
   )) {
 
@@ -1166,7 +1166,7 @@ const executeCrossChainDeposit = async (
     cached,
     transactionAmount,
     vaultData.id,
-    inputToken.address,
+    inputToken,
     activeChain.id
   )) {
 
@@ -1384,7 +1384,7 @@ const executeSolanaDeposit = async (
     cached,
     transactionAmount,
     vaultData.id,
-    inputToken.address,
+    inputToken,
     activeChain.id
   )) {
 
