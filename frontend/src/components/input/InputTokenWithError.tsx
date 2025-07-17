@@ -180,8 +180,12 @@ export default function InputTokenWithError({
           </div>
         );
       }
-      // Hide shares number from UI display only - return empty span
-      return <span></span>;
+      // Show shares number in the pink box
+      return (
+        <span className="text-white text-2xl">
+          {outputAmount}
+        </span>
+      );
     }
 
     return (
@@ -265,7 +269,7 @@ export default function InputTokenWithError({
           >
             {shouldSwapValues ? (
               <p className="group-hover/max:text-white text-[#535E73]">
-                {renderMainValue()}
+                {conversionOutput.outputAmountInUSDFormatted || "$0.00"}
               </p>
             ) : (
               <p className="group-hover/max:text-white">{renderUSDValue()}</p>
@@ -283,9 +287,9 @@ export default function InputTokenWithError({
                 </div>
               ) : (
                 <span
-                  className={`text-white text-2xl ${conversionOutput.outputAmountInUSDFormatted && conversionOutput.outputAmountInUSDFormatted !== "0.00" ? "font-medium" : "font-normal"}`}
+                  className={`text-white text-2xl ${conversionOutput.outputAmountFormatted && conversionOutput.outputAmountFormatted !== "0.00" ? "font-medium" : "font-normal"}`}
                 >
-                  {conversionOutput.outputAmountInUSDFormatted || "0.00"}
+                  {conversionOutput.outputAmountFormatted || "0.00"}
                 </span>
               )
             ) : (
@@ -315,16 +319,29 @@ export default function InputTokenWithError({
             ) : (
               <div className="flex items-center flex-row gap-1 md:gap-2">
                 <div className="relative flex-none w-5 h-5 border border-white rounded-full bg-[#10B981]">
+                  {/* Log vaultData to check if it provides outputTokenSymbol */}
+                  {process.env.NODE_ENV === "development" && (
+                    <span style={{ display: "none" }}>
+                      {(() => {
+                        // eslint-disable-next-line no-console
+                        console.log("VaultData outputTokenSymbol:", vaultData.outputTokenSymbol, "Full vaultData:", vaultData);
+                        return null;
+                      })()}
+                    </span>
+                  )}
                   <TokenIcon
-                    token={selectedToken as Token}
-                    icon={selectedToken?.imgURL}
+                    token={isOutput ? { ...selectedToken, symbol: vaultData.outputTokenSymbol || selectedToken?.symbol || "", imgURL: vaultData.outputTokenImage || selectedToken?.imgURL || "" } as Token : selectedToken as Token}
+                    icon={isOutput ? vaultData.outputTokenImage || selectedToken?.imgURL : selectedToken?.imgURL}
                     imageSize="w-5 h-5"
                   />
                 </div>
                 <p className="font-normal text-base leading-none text-white ">
-                  {selectedToken?.symbol
-                    ? getOnlyTokenSymbol(selectedToken.symbol)
-                    : ""}
+                  {isOutput 
+                    ? getOnlyTokenSymbol(vaultData.outputTokenSymbol || selectedToken?.symbol || "")
+                    : selectedToken?.symbol
+                      ? getOnlyTokenSymbol(selectedToken.symbol)
+                      : ""
+                  }
                 </p>
               </div>
             )}
