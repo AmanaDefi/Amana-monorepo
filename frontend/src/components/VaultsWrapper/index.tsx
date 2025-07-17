@@ -140,7 +140,10 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  useResponsiveItemsPerPageByGrid(containerRef, cardRef);
+  const { isGridReady } = useResponsiveItemsPerPageByGrid(
+    containerRef,
+    cardRef,
+  );
 
   const vaultsList = useMemo(() => {
     if (isShownMyVaults) {
@@ -375,13 +378,10 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
       return (
         <div
           ref={containerRef}
-          className="grid gap-6 md:gap-4 grid-cols-[repeat(auto-fill,minmax(328px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(350px,1fr))]"
+          className="grid gap-6 md:gap-4 grid-cols-[repeat(auto-fill,minmax(328px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(350px,1fr))] transition-all duration-300 ease-in-out"
         >
           {paginatedVaults.map((vault, index) => (
-            <div
-              key={vault.id}
-              ref={index === 0 ? cardRef : undefined} 
-            >
+            <div key={vault.id} ref={index === 0 ? cardRef : undefined}>
               <VaultCard
                 vault={vault}
                 vaultAPYs={vaultAPYs}
