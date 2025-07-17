@@ -44,11 +44,21 @@ const Sidebar = ({
   return (
     <motion.div
       ref={sidebarRef}
-      initial={{ width: 302 }}
-      animate={{ width: isCollapsed ? 136 : 302 }}
+      initial={{
+        width: 302,
+        opacity: 0,
+        x: -50,
+        scale: 0.95,
+      }}
+      animate={{
+        width: isCollapsed ? 136 : 302,
+        opacity: 1,
+        x: 0,
+        scale: 1,
+      }}
       transition={{
-        duration: 0.5,
-        ease: [0.25, 0.1, 0.25, 1],
+        duration: 0.8,
+        ease: "easeInOut",
       }}
       className="min-h-[908px] rounded-3xl sidebar-shadow bg-[#0D1117] flex-col justify-between relative font-gotham overflow-hidden hidden lg:flex px-[29px] py-[54px] h-full"
       style={{
@@ -63,10 +73,13 @@ const Sidebar = ({
       <AnimatePresence>
         {!isCollapsed && (
           <motion.button
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{
+              duration: 0.4,
+              ease: "easeInOut",
+            }}
             onClick={toggleSidebar}
             className="absolute top-[54px] right-[29px] z-20 flex-shrink-0 p-1"
           >
@@ -81,10 +94,13 @@ const Sidebar = ({
         <AnimatePresence>
           {isCollapsed && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{
+                duration: 0.4,
+                ease: "easeInOut",
+              }}
               className="absolute z-10 top-[160px] right-3"
             >
               <button onClick={toggleSidebar}>
@@ -98,9 +114,9 @@ const Sidebar = ({
           <motion.div
             animate={{ opacity: isCollapsed ? 0 : 1 }}
             transition={{
-              duration: 0.3,
-              ease: "easeOut",
-              delay: isCollapsed ? 0 : 0.1,
+              duration: 0.5,
+              ease: "easeInOut",
+              delay: isCollapsed ? 0 : 0.2,
             }}
             className="text-[24px] font-bold text-white mb-8 whitespace-nowrap"
           >

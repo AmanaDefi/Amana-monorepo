@@ -117,8 +117,8 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
                   : "0px",
               }}
               transition={{
-                duration: 0.5,
-                ease: [0.25, 0.1, 0.25, 1],
+                duration: 0.8,
+                ease: "easeInOut",
               }}
               className={`flex-1 ${!isMobile ? "pr-10" : "p-0"}`}
             >
