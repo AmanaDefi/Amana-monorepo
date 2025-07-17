@@ -17,10 +17,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 const OptionsModalB = () => {
   const { step, closeAll, openStep, setError, successAuth } = useAuthStore();
   const { createWallet } = useCreateWallet();
-  const {
-    disconnect,
-    publicKey
-  } = useWallet();
+  const { disconnect, publicKey } = useWallet();
 
   const { initOAuth } = useLoginWithOAuth({
     onError: (e) => {

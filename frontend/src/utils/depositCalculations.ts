@@ -16,7 +16,7 @@ export interface DepositCalculationResult {
   inputAmount: bigint;
   outputAmount: bigint;
   sharesAmount: string; // Changed from bigint to string since getSharesFromVaultDeposit returns string
-  
+
   // Fee breakdown
   gasFee: {
     amount: bigint;
@@ -24,34 +24,34 @@ export interface DepositCalculationResult {
     amountInETH: string;
     needsDeduction: boolean;
   };
-  
+
   // Slippage breakdown
   swapSlippage: {
     amount: bigint;
     amountInUSD: string;
     percentage: number;
   };
-  
+
   depositSlippage: {
     amount: bigint;
     amountInUSD: string;
     percentage: number;
   };
-  
+
   // Total slippage (swap + deposit, excluding gas fee)
   totalSlippage: {
     amount: bigint;
     amountInUSD: string;
     percentage: number;
   };
-  
+
   // Total loss (includes gas fee + slippage)
   totalLoss: {
     amount: bigint;
     amountInUSD: string;
     percentage: number;
   };
-  
+
   // Conversion details
   amountAfterFee: bigint;
   amountForStrategy: bigint;
@@ -193,7 +193,7 @@ export const calculateGasFeeIfNeeded = async (
   // Get public client for the appropriate chain
   const chainToUse = isZetachain(activeChain?.id) ? activeChain : SUPPORTED_CHAINS[0];
   const publicClient = getPublicClient(chainToUse.id);
-  
+
   if (!publicClient) {
     throw new Error(`Failed to get public client for chain ${chainToUse.id}`);
   }
@@ -385,7 +385,7 @@ export const isCachedCalculationValid = (
   cached: any,
   inputAmount: bigint,
   vaultId: string,
-  inputTokenAddress: string,
+  inputToken: Token,
   activeChainId: number,
   maxAgeMs: number = 30000 // 30 seconds default
 ): cached is any => {
@@ -393,20 +393,20 @@ export const isCachedCalculationValid = (
     cacheMisses++;
     return false;
   }
-  
+
   // Check if basic parameters match
   if (cached.inputAmount !== inputAmount.toString() ||
-      cached.vaultId !== vaultId) {
+    cached.vaultId !== vaultId) {
     cacheMisses++;
     return false;
   }
-  
+
   // Check if cache is not too old
   if (Date.now() - cached.timestamp > maxAgeMs) {
     cacheMisses++;
     return false;
   }
-  
+
   cacheHits++;
   return true;
 };
@@ -429,7 +429,7 @@ export const calculateDepositOutput = async (
   convertUsdToEth: (usd: number, ethPrice: number) => number
 ): Promise<DepositCalculationResult> => {
   const actualInputToken = isZetachain(activeChain?.id) ? inputToken : inputToken?.ZRC20equivalent;
-  
+
   if (!actualInputToken) {
     throw new Error("Input token not found on Zetachain");
   }
@@ -453,11 +453,11 @@ export const calculateDepositOutput = async (
 
   // Step 2: Calculate amount available after gas fee deduction
   let amountAfterFee = inputAmount;
-  
+
   if (gasFeeResult.needsDeduction) {
     // Use gas fee already converted to input token terms
     amountAfterFee = inputAmount > gasFeeResult.gasFeeInInputToken ? inputAmount - gasFeeResult.gasFeeInInputToken : 0n;
-    
+
     console.log("Gas fee deduction:", {
       gasFeeInInputToken: gasFeeResult.gasFeeInInputToken.toString(),
       inputAmount: inputAmount.toString(),
@@ -472,7 +472,7 @@ export const calculateDepositOutput = async (
 
   if (actualInputToken.address.toLowerCase() !== vaultData.inputToken.address.toLowerCase()) {
     needsTokenSwap = true;
-    
+
     // A = input amount to go to strategy = getPathDataAndAmountOut(inputTokenZRC20, vaultAsset, amountAfterFee)
     const swapResult = await getPathDataAndAmountOut(
       amountAfterFee,
@@ -481,9 +481,9 @@ export const calculateDepositOutput = async (
       vaultData.id as Address,
       500
     );
-    
+
     amountForStrategy = swapResult.amountOut;
-    
+
 
     // B = original input amount converted to vault asset token type
     // Call getEquivalentInputAmount(vaultAsset, inputToken, amount) function on swapHelper on Zetachain
@@ -496,7 +496,7 @@ export const calculateDepositOutput = async (
           functionName: "getEquivalentInputAmount",
           args: [vaultData.inputToken.address as Address, actualInputToken.address as Address, amountAfterFee],
         });
-        
+
         // Swap slippage = B - A
         swapSlippage = equivalentInputAmount > amountForStrategy ? equivalentInputAmount - amountForStrategy : 0n;
       } catch (error) {
@@ -511,7 +511,7 @@ export const calculateDepositOutput = async (
   // C = call convertToShares(A) on strategy
   // D = call convertToAssets(C) on strategy
   const sharesAmount = await getSharesFromStrategyDeposit(amountForStrategy, vaultData, activeWallet);
-  
+
   // Convert shares back to assets using strategy contract
   const outputAmountBeforeSlippage = await getAssetsFromShares(parseUnits(sharesAmount, vaultData.inputToken.decimals), vaultData, activeWallet);
 
@@ -557,38 +557,38 @@ export const calculateDepositOutput = async (
     inputAmount,
     outputAmount,
     sharesAmount,
-    
+
     gasFee: {
       amount: gasFeeResult.gasFeeInInputToken,
       amountInUSD: gasFeeResult.gasFeeInUSD,
       amountInETH: gasFeeResult.gasFeeInETH,
       needsDeduction: gasFeeResult.needsDeduction,
     },
-    
+
     swapSlippage: {
       amount: swapSlippage,
       amountInUSD: formatCurrency(swapSlippageInUSD),
       percentage: inputAmountInUSD > 0 ? (swapSlippageInUSD / inputAmountInUSD) * 100 : 0,
     },
-    
+
     depositSlippage: {
       amount: depositSlippage,
       amountInUSD: formatCurrency(depositSlippageInUSD),
       percentage: inputAmountInUSD > 0 ? (depositSlippageInUSD / inputAmountInUSD) * 100 : 0,
     },
-    
+
     totalSlippage: {
       amount: swapSlippage + depositSlippage,
       amountInUSD: formatCurrency(totalSlippageInUSD),
       percentage: totalSlippagePercentage,
     },
-    
+
     totalLoss: {
       amount: inputAmount - outputAmount,
       amountInUSD: formatCurrency(totalLossInUSD),
       percentage: totalLossPercentage,
     },
-    
+
     amountAfterFee,
     amountForStrategy,
     needsTokenSwap,

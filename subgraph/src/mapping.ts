@@ -27,7 +27,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
   if (addr == "0x0f6514e3e4760efc8f34fc67a05c4987367af14e") {
     return {
       type: "Lending Pool",
-      name: "USDC Lend Pool",
+      name: "USDC",
       description: "Depositing USDC into the Zerolend USDC lending pool allows users to earn yield by supplying liquidity to borrowers in a decentralized market. The strategy benefits from algorithmic interest rate optimization, ensuring competitive returns while maintaining access to liquidity. Users can withdraw funds at any time, subject to pool utilization. Risks include smart contract vulnerabilities, potential borrower defaults leading to bad debt, and governance changes that may impact interest rates or collateral parameters.",
       imgURL: "/base.png",
       depositFeePaidFromGasTank: true,
@@ -57,7 +57,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
   if (addr == "0x5cd6e196ca1d85b8edfdf162d3a0c77268f42c69") {
     return {
       type: "Lending Pool",
-      name: "USDC Lend Pool",
+      name: "USDC",
       description: "Deploying USDC into the Fluid USDC Lend pool allows users to earn interest by supplying liquidity to borrowers. The strategy benefits from automated yield optimization and dynamic risk management while maintaining access to liquidity. Risks include smart contract vulnerabilities, borrower defaults leading to potential bad debt, and governance changes that may impact yield rates or collateral parameters.",
       imgURL: "/base.png",
       depositFeePaidFromGasTank: true,
@@ -87,7 +87,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
   if (addr == "0x622e956626cc6aba655e3d92a3629b04cb038e80") {
     return {
       type: "Lending Pool",
-      name: "USDT Lend Pool",
+      name: "USDT",
       description: " Supplying USDT to a Compound lending pool allows users to earn interest by providing liquidity to borrowers. The pool utilizes an algorithmic interest rate model to optimize capital efficiency while enabling seamless borrowing. Risks include smart contract vulnerabilities, fluctuating interest rates, potential liquidity shortages, and governance decisions that may impact collateral requirements or yield dynamics.",
       imgURL: "/polygon_logo.png",
       depositFeePaidFromGasTank: true,
@@ -117,7 +117,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
   if (addr == "0xe5fa0e4ba13d516908c5313b3375b7ede24bfe7a") {
     return {
       type: "Lending Pool",
-      name: "USDT Lend Pool",
+      name: "USDT",
       description: " Supplying USDT to an Aave lending pool enables users to earn interest while providing liquidity to borrowers. The pool features dynamic interest rates, overcollateralized loans, and risk management mechanisms such as liquidation thresholds and stable borrowing options. Risks include smart contract vulnerabilities, interest rate fluctuations, potential liquidation events, and governance updates that may affect collateral requirements or lending terms.",
       imgURL: "/bnb_logo.png",
       depositFeePaidFromGasTank: true,
@@ -303,7 +303,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       assetDecimals: 18,
       assetImgURL: "/usdt.png",
       assetPrice: BigDecimal.fromString("1.0"),
-      strategyNetwork: "BSC",
+      strategyNetwork: "BNB",
       strategyChainId: 56,
       protocolName: "Aegis",
       protocolImgURL: "/aegis.jpeg",
@@ -395,7 +395,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       strategyNetwork: "Ethereum",
       strategyChainId: 1,
       protocolName: "Noon Capital",
-      protocolImgURL: "noon_capital.svg",
+      protocolImgURL: "/noon_capital.svg",
       protocolDescription: "Noon Capital is the protocol behind USN and sUSN — stablecoins designed to generate consistent, crypto-native returns. While USN offers a liquid, dollar-pegged asset, sUSN is its yield-bearing counterpart, earning passive income through delta-neutral strategies like funding rate arbitrage and overcollateralized lending. Users can mint or swap into sUSN to earn without staking or lockups. The protocol emphasizes transparency, capital efficiency, and seamless DeFi integration. Risks include funding rate shifts, collateral volatility, and smart contract exposure.",
       networkDescription: "Ethereum Mainnet is a decentralized, secure blockchain that supports smart contracts and EVM-compatible dApps. It offers strong network security and robust decentralization but comes with higher gas fees and lower transaction throughput compared to some alternative chains.",
       riskLevel: 3,
