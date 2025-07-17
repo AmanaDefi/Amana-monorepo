@@ -252,3 +252,14 @@ body .page-container {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
+.vault-card {
+  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+.vault-card:hover {
+  transform: translateY(-2px) translateZ(0);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}

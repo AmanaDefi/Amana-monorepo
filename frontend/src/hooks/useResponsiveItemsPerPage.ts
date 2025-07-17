@@ -29,6 +29,7 @@ export const useResponsiveItemsPerPageByGrid = (
     const initialValue = getInitialItemsPerPage();
     setItemsPerPage(initialValue);
     lastCalculatedValue.current = initialValue;
+    console.log("Initial itemsPerPage set to:", initialValue);
   }, [setItemsPerPage]);
 
   useEffect(() => {
@@ -37,7 +38,7 @@ export const useResponsiveItemsPerPageByGrid = (
         clearTimeout(debounceTimer.current);
       }
 
-      const debounceDelay = 50;
+      const debounceDelay = isGridReady ? 200 : 50;
 
       debounceTimer.current = setTimeout(() => {
         if (window.innerWidth < 1280) {
@@ -110,12 +111,6 @@ export const useResponsiveItemsPerPageByGrid = (
 
     const setItemsPerPageIfDifferent = (newValue: number) => {
       if (newValue !== lastCalculatedValue.current) {
-        console.log(
-          "itemsPerPage changing from",
-          lastCalculatedValue.current,
-          "to",
-          newValue,
-        );
         setItemsPerPage(newValue);
         lastCalculatedValue.current = newValue;
 
@@ -149,7 +144,10 @@ export const useResponsiveItemsPerPageByGrid = (
 
     window.addEventListener("resize", () => {
       retryCount.current = 0;
-      update();
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+      debounceTimer.current = setTimeout(update, 200);
     });
 
     return () => {

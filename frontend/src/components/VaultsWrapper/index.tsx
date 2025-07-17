@@ -378,10 +378,22 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
       return (
         <div
           ref={containerRef}
-          className="grid gap-6 md:gap-4 grid-cols-[repeat(auto-fill,minmax(328px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(350px,1fr))] transition-all duration-300 ease-in-out"
+          className="grid gap-6 md:gap-4 grid-cols-[repeat(auto-fill,minmax(328px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(350px,1fr))] transition-all duration-700 ease-in-out"
+          style={{
+            transform: "translateZ(0)",
+            willChange: "transform",
+          }}
         >
           {paginatedVaults.map((vault, index) => (
-            <div key={vault.id} ref={index === 0 ? cardRef : undefined}>
+            <div
+              key={vault.id}
+              ref={index === 0 ? cardRef : undefined}
+              className="transition-all duration-500 ease-in-out transform"
+              style={{
+                transform: "translateZ(0)",
+                willChange: "transform, opacity",
+              }}
+            >
               <VaultCard
                 vault={vault}
                 vaultAPYs={vaultAPYs}
