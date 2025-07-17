@@ -136,12 +136,19 @@ contract AmanaConnectedChainVault is AmanaVaultBase {
                 txn.amount = amount;
                 txn.withdrawZRC20 = zrc20;
                 txn.isDeposit = true;
-                _depositComingFromConnectedChain();
+                emit Deposited(
+                    txn.receiver,
+                    txn.amount,
+                    0,
+                    lastProcessedNonce + 1
+                );
+                // _depositComingFromConnectedChain();
             } else if (txStatus == TX_WITHDRAW_INITIATED) {
                 txn.withdrawZRC20 = withdrawZRC20; // TODO why not just use zrc20 here, as with deposit?
                 txn.amount = withdrawAssetAmount;
                 txn.isDeposit = false;
-                _withdrawComingFromConnectedChain();
+                emit Withdrawn(txn.user, txn.amount, 0, lastProcessedNonce + 1);
+                // _withdrawComingFromConnectedChain();
             } else {
                 revert InvalidMessage();
             }
