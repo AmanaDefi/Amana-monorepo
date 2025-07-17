@@ -291,7 +291,6 @@ const executeZetaChainBitcoinDepositAndCall = async ({
     console.log("🚀 Inscription created:", {
       inscriptionSize: inscriptionData.inscriptionContent.length,
       commitTxReady: !!inscriptionData.commitTx,
-      revealTxReady: !!inscriptionData.revealTx
     });
 
     // Step 2: Execute commit transaction (creates the inscription)
@@ -305,12 +304,19 @@ const executeZetaChainBitcoinDepositAndCall = async ({
     console.log("⏳ Waiting for Bitcoin network confirmation (this may take 10-30 minutes)...");
     await waitForBitcoinConfirmation(commitResult.txid, 1); // Wait for 1 confirmation
 
-    // Step 4: Execute reveal transaction (sends BTC to TSS Gateway)
-    console.log("🚀 Step 4/4: Executing reveal transaction...");
+    // Step 4: Create and execute reveal transaction using the real commit txid
+    console.log("🚀 Step 4/4: Creating and executing reveal transaction...");
     console.log("🔐 Please sign the SECOND transaction in your Bitcoin wallet (Reveal Transaction)");
+    
+    const revealTx = await createRevealTransactionWithRealCommitTxId(
+      inscriptionData.commitTx,
+      commitResult.txid,
+      amount
+    );
+    
     const revealResult = await executeRevealTransaction(
       bitcoinWallet,
-      inscriptionData.revealTx,
+      revealTx,
       BITCOIN_TSS_GATEWAY,
       amount
     );
@@ -359,7 +365,6 @@ export const createZetaChainBitcoinInscription = async ({
 }): Promise<{
   inscriptionContent: string;
   commitTx: any;
-  revealTx: any;
 }> => {
   try {
     console.log("🚀 Creating ZetaChain Bitcoin inscription...");
@@ -396,7 +401,7 @@ export const createZetaChainBitcoinInscription = async ({
       fullInscriptionContent: ethers.hexlify(fullInscriptionContent)
     });
 
-    // Create inscription transactions (commit + reveal) using the real wallet
+    // Create only the commit transaction - reveal transaction will be created after commit is broadcasted
     const commitTx = await createCommitTransaction(Buffer.from(ethers.getBytes(fullInscriptionContent)), bitcoinWallet, amount);
     console.log("[DEBUG] CommitTx Buffers:", {
       controlBlock: commitTx?.controlBlock?.toString('hex'),
@@ -406,22 +411,10 @@ export const createZetaChainBitcoinInscription = async ({
       leafScript: commitTx?.leafScript?.toString('hex'),
       leafScriptLength: commitTx?.leafScript?.length
     });
-    const revealTx = await createRevealTransaction(Buffer.from(ethers.getBytes(fullInscriptionContent)), amount, commitTx);
-    console.log("[DEBUG] RevealTx Input:", {
-      commitData: {
-        controlBlock: commitTx?.controlBlock?.toString('hex'),
-        controlBlockLength: commitTx?.controlBlock?.length,
-        internalKey: commitTx?.internalKey?.toString('hex'),
-        internalKeyLength: commitTx?.internalKey?.length,
-        leafScript: commitTx?.leafScript?.toString('hex'),
-        leafScriptLength: commitTx?.leafScript?.length
-      }
-    });
 
     return {
       inscriptionContent: ethers.hexlify(fullInscriptionContent),
-      commitTx,
-      revealTx
+      commitTx
     };
 
   } catch (error: any) {
@@ -685,37 +678,42 @@ const createCommitTransaction = async (
   }
 };
 
+
+
 /**
- * Create real Bitcoin reveal transaction using Taproot
+ * Create reveal transaction using the real commit transaction ID
+ * This function is called after the commit transaction has been signed and broadcasted
  */
-const createRevealTransaction = async (
-  inscriptionContent: Buffer,
-  amount: bigint,
-  commitData?: {
+const createRevealTransactionWithRealCommitTxId = async (
+  commitData: {
     controlBlock: Buffer;
     internalKey: Buffer;
     leafScript: Buffer;
     psbt?: any;
-  }
+  },
+  commitTxId: string,
+  amount: bigint
 ): Promise<{
   psbt: any;
   commitTxId: string;
 }> => {
   const logger = BitcoinLogger.getInstance();
-  logger.log('TRACE', '[createRevealTransaction] Entered', { 
-    inscriptionContentLength: inscriptionContent.length,
+  logger.log('TRACE', '[createRevealTransactionWithRealCommitTxId] Entered', { 
+    commitTxId,
     amount: amount.toString(),
-    commitData: commitData ? {
+    commitData: {
       controlBlock: commitData.controlBlock?.toString('hex'),
       controlBlockLength: commitData.controlBlock?.length,
       internalKey: commitData.internalKey?.toString('hex'),
       internalKeyLength: commitData.internalKey?.length,
       leafScript: commitData.leafScript?.toString('hex'),
       leafScriptLength: commitData.leafScript?.length
-    } : undefined
+    }
   });
+  
   try {
-    logger.log('INFO', "🚀 [TxBuild] Creating real reveal transaction for inscription...");
+    logger.log('INFO', "🚀 [TxBuild] Creating reveal transaction with real commit txid...");
+    
     if (!commitData) throw new Error('Missing commitData for reveal transaction');
     if (!commitData.internalKey || commitData.internalKey.length !== 32) {
       logger.log('ERROR', '[RevealTx] Invalid internalKey', { internalKey: commitData.internalKey?.toString('hex'), length: commitData.internalKey?.length });
@@ -729,17 +727,20 @@ const createRevealTransaction = async (
       logger.log('ERROR', '[RevealTx] Invalid controlBlock', { controlBlock: commitData.controlBlock?.toString('hex'), length: commitData.controlBlock?.length });
       throw new Error('Invalid controlBlock for reveal transaction');
     }
-    // --- Use the real commit transaction output ---
-    // For now, assume output index 0 and get txid from the signed/broadcasted commit transaction
-    // In a real flow, you must pass the real commitTxId and output index from the commit broadcast result
-    // Here, we expect commitData.psbt to be the original PSBT, and the user will provide the txid after broadcast
-    // TODO: Pass the real commitTxId and output index from the commit transaction broadcast result
-    const commitTxId = commitData.psbt?.extractTransaction()?.getId?.() || commitData.psbt?.txid || undefined;
     if (!commitTxId) throw new Error('Missing commitTxId for reveal transaction');
+    
     const commitVout = 0; // Assumption: inscription output is always at index 0
-    // Get the value of the commit output (should match amount + revealFee + depositFee)
-    const commitOutputValue = commitData.psbt?.data?.outputs?.[0]?.value || undefined;
-    if (!commitOutputValue) throw new Error('Missing commit output value for reveal transaction');
+    
+    // Get the commit transaction details from the network to get the real output value
+    logger.log('INFO', '[RevealTx] Fetching commit transaction details from network...');
+    const commitTxDetails = await fetchBitcoinTransaction(commitTxId);
+    if (!commitTxDetails || !commitTxDetails.vout || !commitTxDetails.vout[commitVout]) {
+      throw new Error(`Failed to fetch commit transaction details for txid: ${commitTxId}`);
+    }
+    
+    const commitOutputValue = commitTxDetails.vout[commitVout].value;
+    logger.log('INFO', '[RevealTx] Commit output value:', commitOutputValue);
+    
     // Build the Taproot output script for the commit output
     const { output: commitScript } = bitcoin.payments.p2tr({
       internalPubkey: commitData.internalKey,
@@ -747,6 +748,7 @@ const createRevealTransaction = async (
       scriptTree: { output: commitData.leafScript },
     });
     if (!commitScript) throw new Error('Failed to build commitScript for reveal transaction');
+    
     // Build the reveal PSBT
     const psbt = new bitcoin.Psbt({ network: BITCOIN_NETWORK });
     psbt.addInput({
@@ -761,28 +763,54 @@ const createRevealTransaction = async (
       ],
       witnessUtxo: { script: commitScript, value: commitOutputValue },
     });
+    
     // Calculate the reveal fee and output value
     const { revealFee } = calculateRevealFee({
       controlBlock: commitData.controlBlock,
       internalKey: commitData.internalKey,
       leafScript: commitData.leafScript,
     }, BITCOIN_CONSTANTS.DEFAULT_REVEAL_FEE_RATE);
+    
     const outputValue = commitOutputValue - revealFee;
     if (outputValue < BITCOIN_CONSTANTS.DUST_THRESHOLD) {
       throw new Error(`Insufficient value in commit output (${commitOutputValue} sat) to cover reveal fee (${revealFee} sat) and maintain minimum output (${BITCOIN_CONSTANTS.DUST_THRESHOLD} sat)`);
     }
+    
     psbt.addOutput({ address: BITCOIN_TSS_GATEWAY, value: outputValue });
+    
     logger.log('INFO', '[TxBuild] Reveal PSBT created successfully', {
       commitTxId,
       outputValue,
       recipient: BITCOIN_TSS_GATEWAY
     });
+    
     return {
       psbt,
       commitTxId
     };
+    
   } catch (error: any) {
     logger.log('ERROR', `[TxBuild] Failed to create reveal transaction: ${error.message}`);
+    throw error;
+  }
+};
+
+/**
+ * Fetch Bitcoin transaction details from the network
+ */
+const fetchBitcoinTransaction = async (txid: string): Promise<any> => {
+  const logger = BitcoinLogger.getInstance();
+  try {
+    logger.log('INFO', `[Network] Fetching transaction: ${txid}`);
+    const response = await fetch(`${BITCOIN_API_BASE}/tx/${txid}`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch transaction: ${response.statusText}`);
+    }
+    const transaction = await response.json();
+    logger.log('INFO', `[Network] Transaction fetched successfully`);
+    return transaction;
+  } catch (error: any) {
+    logger.log('ERROR', `[Network] Failed to fetch transaction: ${error.message}`);
     throw error;
   }
 };
