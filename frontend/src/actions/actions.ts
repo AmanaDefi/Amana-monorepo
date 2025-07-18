@@ -1110,7 +1110,6 @@ const executeDirectDeposit = async (
     const receipt = await publicClient.waitForTransactionReceipt({
       hash: txHash,
     });
-    console.log("receipt:", receipt);
 
     return receipt;
   } else {
@@ -1198,23 +1197,23 @@ const executeCrossChainDeposit = async (
       swapPath = swapResult.encodedPath ?? "0x";
     }
   }
-
   // Calculate minSharesOut with slippage
   const sharesAmountBigInt = parseUnits(calculationResult.sharesAmount, vaultData.inputToken.decimals);
   const minSharesOut = (sharesAmountBigInt * BigInt(10000 - getCurrentSlippage() * 100)) / BigInt(10000);
-
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(
     activeAccount.address,
     activeChain,
   );
-
   const nonEvmAddress = "0x";
 
   let contract, approveTx, receipt, payload, revertOptions;
   const slippage = getCurrentSlippage();
   const slippageValue = (slippage * 100).toFixed(0);
-
+  if (!inputToken.ZRC20equivalent) {
+    console.error("ZRC20equivalent not found for input token");
+    return { transactionHash: null };
+  }
   payload = abiCoder.encode(
     [
       "address",
@@ -1227,7 +1226,7 @@ const executeCrossChainDeposit = async (
       "bytes32",
     ],
     [
-      inputToken.ZRC20equivalent, // this is withdrawZRC20 - we need this for the revert! (if cross chain invest fails!)
+      inputToken.ZRC20equivalent.address, // this is withdrawZRC20 - we need this for the revert! (if cross chain invest fails!)
       inputToken.address, // this is withdrawERC20
       0,
       minSharesOut,
@@ -1237,14 +1236,10 @@ const executeCrossChainDeposit = async (
       keccak256(toUtf8Bytes("DepositInitiated")) as `0x${string}`,
     ],
   ) as `0x${string}`;
-
   const revertMessage = abiCoder.encode(
     ["string", "bytes", "address"],
     ["_crossChainDepositFailed", nonEvmAddress, activeAccount.address],
   );
-
-  console.log("payload", payload);
-  console.log("revertMessage", revertMessage);
 
   // Prepare revertOptions
   revertOptions = [
@@ -1453,7 +1448,10 @@ const executeSolanaDeposit = async (
     revertMessage: Buffer.from("_crossChainDepositFailed", "utf8"), // revert_message (bytes)
     onRevertGasLimit: new (require("@coral-xyz/anchor").BN)(1000000), // on_revert_gas_limit (u64)
   };
-
+  if (inputToken.ZRC20equivalent === undefined) {
+    console.error("ZRC20equivalent not found for input token");
+    return { transactionHash: null };
+  }
   if (inputToken.isNative) {
     // Case 1: Native token (SOL)
     const args = {
@@ -1468,7 +1466,7 @@ const executeSolanaDeposit = async (
         "bytes32",
       ],
       values: [
-        inputToken.ZRC20equivalent,
+        inputToken.ZRC20equivalent.address,
         getSolanaEVMAddress(inputToken.address),
         0,
         minSharesOut,
@@ -1491,6 +1489,7 @@ const executeSolanaDeposit = async (
   } else {
     // Case 2: SPL token
     const evmAddress = getSolanaEVMAddress(inputToken.address);
+
     const args = {
       types: [
         "address",
@@ -1503,7 +1502,7 @@ const executeSolanaDeposit = async (
         "bytes32",
       ],
       values: [
-        inputToken.ZRC20equivalent,
+        inputToken.ZRC20equivalent.address,
         evmAddress,
         0,
         minSharesOut,

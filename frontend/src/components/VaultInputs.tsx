@@ -66,6 +66,7 @@ import {
   formatTokenBalance,
   formatUSDAmount,
   formatUSDValue,
+  formatShares
 } from "@/utils/tokenFormat";
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 import { zetachain } from "viem/chains";
