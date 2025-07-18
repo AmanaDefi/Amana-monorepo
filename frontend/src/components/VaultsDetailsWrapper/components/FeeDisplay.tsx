@@ -5,6 +5,7 @@ import { ConversionOutput } from "@/components/VaultInputs";
 import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
 import { InfoBlock } from "@/components/VaultsWrapper/components/InfoBlock.tsx";
 import { formatUSDAmount } from "@/utils/tokenFormat";
+import { BreathingValue } from "@/components/PendingDots";
 
 interface FeeDisplayProps {
   isDeposit: boolean;
@@ -12,18 +13,21 @@ interface FeeDisplayProps {
   conversionOutput: ConversionOutput;
   debouncedInputBalance: { value: bigint };
   performanceFee?: number;
+  isBreathing?: boolean;
 }
 
 interface ExpectedSlippageProps {
   conversionOutput: ConversionOutput;
   isVisible?: boolean;
   className?: string;
+  isBreathing?: boolean;
 }
 
 export const ExpectedSlippageBlock: React.FC<ExpectedSlippageProps> = ({
   conversionOutput,
   isVisible = true,
   className = "",
+  isBreathing = false,
 }) => {
   if (
     !isVisible ||
@@ -75,10 +79,15 @@ export const ExpectedSlippageBlock: React.FC<ExpectedSlippageProps> = ({
           </div>
         </InfoBlock>
       </span>
-      <span className="font-normal flex-row gap-1">
-        {conversionOutput.slippageActualValue.toFixed(2)}%{" "}
-        <span className="font-medium">({formattedUSDSlippage}) </span>
-      </span>
+      <BreathingValue
+        value={
+          <span className="font-normal flex-row gap-1">
+            {conversionOutput.slippageActualValue.toFixed(2)}%{" "}
+            <span className="font-medium">({formattedUSDSlippage})</span>
+          </span>
+        }
+        isBreathing={isBreathing}
+      />
     </div>
   );
 };
@@ -90,6 +99,7 @@ interface NetDepositBlockProps {
   isDeposit: boolean;
   isVisible?: boolean;
   className?: string;
+  isBreathing?: boolean;
 }
 
 export const NetDepositBlock: React.FC<NetDepositBlockProps> = ({
@@ -99,6 +109,7 @@ export const NetDepositBlock: React.FC<NetDepositBlockProps> = ({
   isDeposit,
   isVisible = true,
   className = "",
+  isBreathing = false,
 }) => {
   if (
     !isVisible ||
@@ -136,9 +147,11 @@ export const NetDepositBlock: React.FC<NetDepositBlockProps> = ({
           })()}
         </InfoBlock>
       </span>
-      <span className="font-bold">
-        {conversionOutput.netDepositToVaultUSD}
-      </span>
+      <BreathingValue
+        value={conversionOutput.netDepositToVaultUSD}
+        isBreathing={isBreathing}
+        className="font-bold"
+      />
     </div>
   );
 };
@@ -149,6 +162,7 @@ export default function FeeDisplay({
   conversionOutput,
   debouncedInputBalance,
   performanceFee = 0,
+  isBreathing = false,
 }: FeeDisplayProps): JSX.Element {
   const isEthereumVault = !vaultData.depositFeePaidFromGasTank;
 
@@ -203,13 +217,17 @@ export default function FeeDisplay({
                 </InfoBlock>
               )}
             </div>
-            <span className="font-bold">
-              {shouldShowDepositFee
-                ? conversionOutput.gasFeeInUSD
-                : shouldShowWithdrawalFee
-                  ? `$${performanceFee}`
-                  : "$0"}
-            </span>
+            <BreathingValue
+              value={
+                shouldShowDepositFee
+                  ? conversionOutput.gasFeeInUSD
+                  : shouldShowWithdrawalFee
+                    ? `$${performanceFee}`
+                    : "$0"
+              }
+              isBreathing={isBreathing}
+              className="font-bold"
+            />
           </span>
         </div>
       ) : null}

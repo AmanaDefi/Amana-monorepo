@@ -62,7 +62,7 @@ import FeeDisplay, {
 import APYChangeCard from "./VaultsDetailsWrapper/components/APYChangeCard";
 import { useWallets } from "@privy-io/react-auth";
 import { useTransactionStore } from "@/store/transactionStore";
-import { formatTokenBalance, formatUSDAmount, formatUSDValue } from "@/utils/tokenFormat";
+import { formatTokenBalance, formatUSDAmount, formatUSDValue, formatShares } from "@/utils/tokenFormat";
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 import { zetachain } from "viem/chains";
 import { useAPYStore } from "@/store/APYStore";
@@ -766,10 +766,7 @@ export default function VaultInputs({
 
         // Helper function to format and set conversion output
         const formatAndSetConversionOutput = (result: any) => {
-          const sharesAmountFormatted = formatTokenBalance(
-            result.sharesAmount,
-            vaultData.outputTokenSymbol || vaultData.symbol,
-          );
+          const sharesAmountFormatted = formatShares(result.sharesAmount);
 
           const outputAmountInUSD = (Number(result.outputAmount) / 10 ** vaultData.inputToken.decimals) * vaultTokenPrice;
 
@@ -1332,6 +1329,7 @@ export default function VaultInputs({
                 conversionOutput={conversionOutput}
                 debouncedInputBalance={debouncedInputBalance}
                 performanceFee={performanceFee}
+                isBreathing={loadingOutputToken}
               />
             </div>
             <ExpectedSlippageBlock
@@ -1339,6 +1337,7 @@ export default function VaultInputs({
               isVisible={
                 !!conversionOutput.slippageActualValue && !outputBoxErrorMessage
               }
+              isBreathing={loadingOutputToken}
             />
             <NetDepositBlock
               conversionOutput={conversionOutput}
@@ -1346,6 +1345,7 @@ export default function VaultInputs({
               debouncedInputBalance={debouncedInputBalance}
               isDeposit={isDeposit}
               isVisible={true}
+              isBreathing={loadingOutputToken}
             />
 
             <div className="mb-4">
