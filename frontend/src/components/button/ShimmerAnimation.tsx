@@ -25,7 +25,7 @@ export const ShimmerAnimation: React.FC<ShimmerAnimationProps> = ({
       whileHover={{ scale: shouldAnimate ? 1.02 : 1 }}
       whileTap={{ scale: shouldAnimate ? 0.98 : 1 }}
     >
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden w-full">
         {children}
 
         {shouldAnimate && (

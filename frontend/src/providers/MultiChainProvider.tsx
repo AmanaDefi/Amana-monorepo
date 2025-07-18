@@ -402,6 +402,39 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     [privyWallet, setBalance, step, activeChain],
   );
 
+  // IMPROVED: Better connection detection logic with initialization delay
+  useEffect(() => {
+    // Wait for hydration before starting initialization
+    if (!isHydrated) return;
+
+    if (publicKey) {
+      setWalletAddress(publicKey.toBase58());
+      setSelectedChain("solana");
+      if (step) {
+        setFundWalletAddress(publicKey.toBase58());
+      }
+    } else if (
+      privyWallet?.address &&
+      privyWallet?.meta?.id !== "app.phantom"
+    ) {
+      if (!step) {
+        debugLog("EVM wallet connected:", privyWallet?.address);
+        setWalletAddress(privyWallet?.address);
+        setSelectedChain("evm");
+        setIsModalOpen(false);
+      }
+    }
+  }, [
+    privyWallet,
+    publicKey,
+    getEvmBalance,
+    isHydrated,
+    selectedChain,
+    user,
+    step,
+    setFundWalletAddress,
+  ]);
+
   const switchToChain = useCallback(
     async (chain: Chain) => {
       try {

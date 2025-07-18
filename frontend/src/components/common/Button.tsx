@@ -126,7 +126,6 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     return (
-      <ShimmerAnimation enabled={enableAnimations} disabled={disabled}>
         <button
           ref={ref}
           disabled={disabled}
@@ -135,7 +134,6 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         >
           {children}
         </button>
-      </ShimmerAnimation>
     );
   },
 );

@@ -10,7 +10,7 @@ export default function Page() {
       <InvestBlock />
       <div className="flex-1 h-full flex flex-col w-full justify-between">
         <div className="flex-1 h-full w-full gap-5 mt-1 md:mt-6">
-          <Suspense fallback={<div>Loading...</div>}>
+          <Suspense>
             <VaultsContainer />
           </Suspense>
         </div>
