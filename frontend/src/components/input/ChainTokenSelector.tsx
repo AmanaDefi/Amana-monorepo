@@ -1,16 +1,22 @@
 "use client";
 
 import React from "react";
-import { Token } from "@/types/types";
+import { Token, VaultData } from "@/types/types";
 import { Chain } from "viem";
 import { getOnlyTokenSymbol } from "@/utils/utils";
+import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 
 interface ChainTokenSelectorProps {
   selectedToken?: Token;
   selectedChain?: Chain | null;
   className?: string;
-  onOpenModal?: () => void; 
+  onOpenModal?: () => void;
   isFromTopUp?: boolean;
+  onSelectToken?: (token: Token) => void;
+  onSelectChain?: (chain: Chain) => void;
+  onSelectChainAndToken?: (chain: Chain, token: Token) => void;
+  vaultData?: VaultData;
+  onClick?: () => void;
 }
 
 export default function ChainTokenSelector({
@@ -19,7 +25,25 @@ export default function ChainTokenSelector({
   className = "",
   onOpenModal,
   isFromTopUp = false,
+  onSelectToken,
+  onSelectChain,
+  onSelectChainAndToken,
+  vaultData,
+  onClick,
 }: ChainTokenSelectorProps) {
+  const chainTokenModalStore = useChainTokenModalStore();
+
+  const handleOpenModalLegacy = () => {
+    chainTokenModalStore.openModal(
+      selectedChain || null,
+      selectedToken ?? null,
+      onSelectChain,
+      onSelectChainAndToken,
+      vaultData,
+      false,
+    );
+  };
+
   const currentChain = selectedChain;
   const currentToken = selectedToken;
 
@@ -29,6 +53,15 @@ export default function ChainTokenSelector({
 
     if (onOpenModal) {
       onOpenModal();
+      return;
+    }
+    if (onSelectChainAndToken || onSelectChain) {
+      handleOpenModalLegacy();
+      return;
+    }
+
+    if (onClick) {
+      onClick();
     }
   };
 
