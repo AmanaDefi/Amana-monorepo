@@ -351,7 +351,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   };
 
   const renderVaultsContent = () => {
-    if (!isReady() || loading) {
+    if (loading) {
       return (
         <div className="flex justify-center items-center py-20 min-h-[400px]">
           <LoadingLogo />
@@ -364,20 +364,12 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
         <div
           ref={containerRef}
           className="grid gap-6 md:gap-4 grid-cols-[repeat(auto-fill,minmax(328px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(365px,1fr))] transition-all duration-700 ease-in-out"
-          style={{
-            transform: "translateZ(0)",
-            willChange: "transform",
-          }}
         >
           {paginatedVaults.map((vault, index) => (
             <div
               key={vault.id}
               ref={index === 0 ? cardRef : undefined}
               className="transition-all duration-500 ease-in-out transform"
-              style={{
-                transform: "translateZ(0)",
-                willChange: "transform, opacity",
-              }}
             >
               <VaultCard
                 vault={vault}
@@ -483,7 +475,6 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
           setIsShownMyVaults={setIsShownMyVaults}
         />
 
-        {isReady() && (
           <BreathingValue
             value={
               <div className="text-gray-400 mb-4 text-sm">
@@ -492,7 +483,6 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
             }
             isBreathing={loading}
           />
-        )}
       </div>
 
       <div className="flex-grow">
