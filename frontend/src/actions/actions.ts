@@ -37,12 +37,7 @@ import {
 } from "@/utils/utils";
 import { baseProvider, arbitrumProvider } from "../utils/providers";
 import { ZRC20_TOKENS_BY_ADDRESS } from "../constants/ZRC20TokensByAddress";
-import {
-  calculateGasFeeInVaultAsset,
-  convertGasFeeToInputToken,
-} from "../utils/gasFeeCalculations";
 import { calculateDepositOutput, isCachedCalculationValid } from "../utils/depositCalculations";
-
 // import { fetchEthPrice } from "@/utils/utils";
 
 import * as dotenv from "dotenv";

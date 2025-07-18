@@ -57,6 +57,7 @@ import ChainSelector from "./VaultsDetailsWrapper/components/ChainSelector";
 import SlippageSettingsBlock from "./VaultsDetailsWrapper/components/SlippageSettingsBlock";
 import FeeDisplay, {
   ExpectedSlippageBlock,
+  NetDepositBlock,
 } from "./VaultsDetailsWrapper/components/FeeDisplay";
 import APYChangeCard from "./VaultsDetailsWrapper/components/APYChangeCard";
 import { useWallets } from "@privy-io/react-auth";
@@ -773,6 +774,9 @@ export default function VaultInputs({
           const outputAmountInUSD = (Number(result.outputAmount) / 10 ** vaultData.inputToken.decimals) * vaultTokenPrice;
 
           if (inputAmountValue === debouncedInputBalance.value) {
+            // Calculate net deposit amount (after gas fee and swap slippage, but before deposit slippage)
+            const amountForStrategyInUSD = (Number(result.amountForStrategy) / 10 ** vaultData.inputToken.decimals) * vaultTokenPrice;
+            
             setConversionOutput({
               slippageActualValue: Number(result.totalSlippage.percentage.toFixed(2)),
               slippageAmountInUSDFormatted: result.totalSlippage.amountInUSD,
@@ -782,7 +786,7 @@ export default function VaultInputs({
               gasFeeInInputToken: result.gasFee.amount.toString(),
               gasFeeInUSD: result.gasFee.amountInUSD,
               gasFeeInETH: result.gasFee.amountInETH,
-              netDepositToVaultUSD: formatUSDValue(outputAmountInUSD),
+              netDepositToVaultUSD: formatUSDValue(amountForStrategyInUSD),
               inputAmountInUSDFormatted: formatUSDValue((Number(inputAmountValue) / 10 ** (inputToken?.decimals ?? 18)) * inputTokenPrice),
               swapSlippageUSD: result.swapSlippage.amountInUSD,
               depositSlippageUSD: result.depositSlippage.amountInUSD,
@@ -1335,6 +1339,13 @@ export default function VaultInputs({
               isVisible={
                 !!conversionOutput.slippageActualValue && !outputBoxErrorMessage
               }
+            />
+            <NetDepositBlock
+              conversionOutput={conversionOutput}
+              vaultData={vaultData}
+              debouncedInputBalance={debouncedInputBalance}
+              isDeposit={isDeposit}
+              isVisible={true}
             />
 
             <div className="mb-4">

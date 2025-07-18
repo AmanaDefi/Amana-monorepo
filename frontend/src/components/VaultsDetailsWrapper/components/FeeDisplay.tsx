@@ -83,6 +83,66 @@ export const ExpectedSlippageBlock: React.FC<ExpectedSlippageProps> = ({
   );
 };
 
+interface NetDepositBlockProps {
+  conversionOutput: ConversionOutput;
+  vaultData: VaultData;
+  debouncedInputBalance: { value: bigint };
+  isDeposit: boolean;
+  isVisible?: boolean;
+  className?: string;
+}
+
+export const NetDepositBlock: React.FC<NetDepositBlockProps> = ({
+  conversionOutput,
+  vaultData,
+  debouncedInputBalance,
+  isDeposit,
+  isVisible = true,
+  className = "",
+}) => {
+  if (
+    !isVisible ||
+    !isDeposit ||
+    vaultData.depositFeePaidFromGasTank ||
+    !conversionOutput.netDepositToVaultUSD ||
+    Number(debouncedInputBalance.value) <= 0 ||
+    parseFloat(conversionOutput.netDepositToVaultUSD.replace(/[^0-9.]/g, "") || "0") <= 0
+  ) {
+    return null;
+  }
+
+  return (
+    <div
+      className={`flex justify-between items-center py-1 text-white mb-4 text-[14px] md:text-base ${className}`}
+    >
+      <span className="mr-2 flex flex-row gap-1 items-center">
+        Net Deposit to Vault:
+        <InfoBlock isMiddle>
+          {(() => {
+            const inputUSD = parseFloat(
+              conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, "") || "0"
+            );
+            const gasFeeUSD = parseFloat(
+              conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, "") || "0"
+            );
+            const swapSlippageUSD = parseFloat(
+              conversionOutput.swapSlippageUSD?.replace(/[^0-9.]/g, "") || "0"
+            );
+            const netDepositUSD = parseFloat(
+              conversionOutput.netDepositToVaultUSD?.replace(/[^0-9.]/g, "") || "0"
+            );
+
+            return `Input amount (${formatUSDAmount(inputUSD)}) - Gas fee (${formatUSDAmount(gasFeeUSD)}) - Swap slippage (${formatUSDAmount(swapSlippageUSD)}) = Net deposit (${formatUSDAmount(netDepositUSD)})`;
+          })()}
+        </InfoBlock>
+      </span>
+      <span className="font-bold">
+        {conversionOutput.netDepositToVaultUSD}
+      </span>
+    </div>
+  );
+};
+
 export default function FeeDisplay({
   isDeposit,
   vaultData,
@@ -106,10 +166,6 @@ export default function FeeDisplay({
     Number(
       conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, ""),
     ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, ""));
-
-  const netDepositValue = parseFloat(
-    conversionOutput.netDepositToVaultUSD?.replace(/[^0-9.]/g, "") || "0",
-  );
 
   return (
     <div>
@@ -149,7 +205,7 @@ export default function FeeDisplay({
             </div>
             <span className="font-bold">
               {shouldShowDepositFee
-                ? `${conversionOutput.gasFeeInUSD}`
+                ? conversionOutput.gasFeeInUSD
                 : shouldShowWithdrawalFee
                   ? `$${performanceFee}`
                   : "$0"}
@@ -158,34 +214,7 @@ export default function FeeDisplay({
         </div>
       ) : null}
 
-      {isDeposit &&
-        !vaultData.depositFeePaidFromGasTank &&
-        conversionOutput.netDepositToVaultUSD &&
-        Number(debouncedInputBalance.value) > 0 &&
-        netDepositValue > 0 && (
-          <p className="text-white font-normal mt-4 text-start flex items-center text-[14px] md:text-base justify-between">
-            <span className="mr-2 flex flex-row gap-1 items-center">
-              Net Deposit to Vault: 
-            <InfoBlock isMiddle>
-              {(() => {
-                const inputUSD = parseFloat(
-                  conversionOutput.inputAmountInUSDFormatted?.replace(
-                    /[^0-9.]/g,
-                    "",
-                  ) || "0",
-                );
-                const netDepositUSD = netDepositValue;
-                const actualFeeUSD = inputUSD - netDepositUSD;
 
-                return `Input amount (${formatUSDAmount(inputUSD)}) - Gas fee (${formatUSDAmount(actualFeeUSD)}) = Net deposit (${formatUSDAmount(netDepositUSD)})`;
-              })()}
-            </InfoBlock>
-            </span>
-            <span className="font-bold">
-              {formatUSDAmount(netDepositValue)}
-            </span>
-          </p>
-        )}
     </div>
   );
 }

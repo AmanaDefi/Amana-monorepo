@@ -295,7 +295,7 @@ export const calculateGasFeeIfNeeded = async (
   }
 
   // Format gas fee in USD and ETH
-  const gasFeeInTokenUnits = Number(gasFeeInVaultAsset) / 10 ** vaultData.inputToken.decimals;
+  const gasFeeInTokenUnits = Number(formatUnits(gasFeeInVaultAsset, vaultData.inputToken.decimals));
   const gasFeeInUSDAmount = gasFeeInTokenUnits * vaultTokenPrice;
   const gasFeeInUSD = formatCurrency(gasFeeInUSDAmount);
   const ethAmount = convertUsdToEth(gasFeeInUSDAmount, ethPriceUsd);
@@ -513,16 +513,13 @@ export const calculateDepositOutput = async (
   const sharesAmount = await getSharesFromStrategyDeposit(amountForStrategy, vaultData, activeWallet);
 
   // Convert shares back to assets using strategy contract
-  const outputAmountBeforeSlippage = await getAssetsFromShares(parseUnits(sharesAmount, vaultData.inputToken.decimals), vaultData, activeWallet);
+  const outputAmount = await getAssetsFromShares(parseUnits(sharesAmount, vaultData.inputToken.decimals), vaultData, activeWallet);
 
   // Step 5: Calculate deposit slippage
   // Deposit slippage = A - D (amount going to strategy - final output amount)
-  const depositSlippage = amountForStrategy > outputAmountBeforeSlippage ? amountForStrategy - outputAmountBeforeSlippage : 0n;
+  const depositSlippage = amountForStrategy > outputAmount ? amountForStrategy - outputAmount : 0n;
 
-  // Step 6: Calculate final output amount after deducting slippage
-  const outputAmount = outputAmountBeforeSlippage - swapSlippage - depositSlippage;
-
-  // Step 7: Calculate USD values for formatting
+  // Step 6: Calculate USD values for formatting
   const inputAmountInUSD = (Number(inputAmount) / 10 ** (inputToken?.decimals ?? 18)) * inputTokenPrice;
   const gasFeeInUSD = parseFloat(gasFeeResult.gasFeeInUSD.replace(/[^0-9.]/g, "") || "0");
   const swapSlippageInUSD = (Number(swapSlippage) / 10 ** vaultData.inputToken.decimals) * vaultTokenPrice;
