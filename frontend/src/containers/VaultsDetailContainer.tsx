@@ -200,10 +200,9 @@ const VaultsDetailContainer: React.FC<{
 
   const handleChainSelect = useCallback(
     async (chain: Chain) => {
-      console.log("handleChainSelect", chain.id);
       await switchToChain(chain);
     },
-    [vaultID, switchToChain],
+    [switchToChain],
   );
 
   useEffect(() => {
@@ -404,8 +403,6 @@ const VaultsDetailContainer: React.FC<{
     finishedTransaction &&
     (Object.keys(lastTransactionStepFeedback).length > 0 ||
       Object.keys(transactionStepFeedback).length > 0);
-
-
   const currentTransactionInfo = isDeposit ? lastDepositInfo : lastWithdrawInfo;
 
   return vaultData ? (

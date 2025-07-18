@@ -14,7 +14,7 @@ Install the template using [thirdweb create](https://portal.thirdweb.com/cli/cre
 ```
 
 ## Environment Variables
-
+### Add ARGS and ENV to Dockerfile for correct build on Railway service.
 To run this project, you will need to add the following environment variables to your .env file:
 
 `CLIENT_ID`

@@ -3,9 +3,6 @@
 import ChainTokenSelector from "@/components/input/ChainTokenSelector";
 import InputNumber from "@/components/input/InputNumber";
 import WarningIcon from "@/components/svg/WarningIcon";
-import { DropdownList } from "@/components/VaultsWrapper/components/DropdownList";
-import { useTokenPriceBySymbol } from "@/hooks/hooks";
-import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import { Balance, Token } from "@/types/types";
 import { getPublicClient } from "@/utils/getPublicClient";
@@ -65,7 +62,6 @@ export const DepositInput = ({
             walletAddress,
             token.address,
             chain,
-            activeWallet,
           );
 
           balance = {
@@ -77,7 +73,7 @@ export const DepositInput = ({
         setTokenBalance(balance);
       }
     },
-    [walletAddress, chain, activeWallet],
+    [walletAddress, chain],
   );
 
   useEffect(() => {
