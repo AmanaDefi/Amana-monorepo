@@ -432,7 +432,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
 
   const handleWalletConnect = () => {
     setChain(selectedChainLocal);
-    if (activeChain?.id === zetachain.id) {
+    if (selectedChainLocal?.id === zetachain.id || !selectedChainLocal) {
       openStep(window?.innerWidth < 768 ? "mobileOptionsA" : "optionsA");
     } else {
       if (
