@@ -3,11 +3,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import { Modal } from "../base/Modal";
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
+import { useFundWalletStore } from "@/store/fundWalletStore";
 import {
   SUPPORTED_CHAINS,
   CHAIN_ICONS,
   APPROVED_TOKENS,
   CHAIN_ID,
+  solanaChain,
 } from "@/constants/chainConfig";
 import { Token, VaultData, Balance } from "@/types/types";
 import { Chain } from "viem";
@@ -280,6 +282,15 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
     setSelectedChainFromModal,
     setSelectedTokenFromModal,
   } = useChainTokenModalStore();
+
+  const {
+    step: fundWalletStep,
+    setStep: setFundWalletStep,
+    setChain: setFundWalletChain,
+    setCurrency: setFundWalletCurrency,
+    walletAddress: fundWalletAddress,
+  } = useFundWalletStore();
+
   const { publicKey } = useWallet();
   const { walletAddress, activeChain, selectedChain } = useMultiChain();
   const { wallets } = useWallets();
@@ -304,6 +315,9 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
       }
     >
   >(new Map());
+
+  const isTopUpModal = fundWalletStep === "selectChain";
+  const isModalOpen = isOpen || isTopUpModal;
 
   const [selectedChainLocal, setSelectedChainLocal] = useState<Chain | null>(
     selectedChainFromModal || null,
@@ -336,13 +350,23 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
   }, [selectedChainLocal?.id]);
 
   useEffect(() => {
-    if (isOpen) {
-      setSelectedChainLocal(selectedChainFromModal || SUPPORTED_CHAINS[0]);
-      setSelectedTokenLocal(selectedTokenFromModal || null);
+    if (isModalOpen) {
+      if (isTopUpModal) {
+        setSelectedChainLocal(null);
+        setSelectedTokenLocal(null);
+      } else {
+        setSelectedChainLocal(selectedChainFromModal || SUPPORTED_CHAINS[0]);
+        setSelectedTokenLocal(selectedTokenFromModal || null);
+      }
       setSearchQuery("");
       setTokenBalances(new Map());
     }
-  }, [isOpen, selectedChainFromModal, selectedTokenFromModal]);
+  }, [
+    isModalOpen,
+    isTopUpModal,
+    selectedChainFromModal,
+    selectedTokenFromModal,
+  ]);
 
   const handleBalanceUpdate = useCallback(
     (token: Token, balance: Balance, price: number, isLoading: boolean) => {
@@ -395,30 +419,50 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
 
   const handleTokenSelect = (token: Token) => {
     if (selectedChainLocal) {
-      setSelectedTokenLocal(token);
-      setSelectedTokenFromModal(token);
+      if (isTopUpModal) {
+        setFundWalletChain(selectedChainLocal);
+        setFundWalletCurrency(token);
+        if (
+          fundWalletAddress &&
+          activeAccount?.walletClientType !== "privy" &&
+          selectedChainLocal.name !== "Solana"
+        ) {
+          activeAccount.switchChain(selectedChainLocal.id);
+        }
 
-      if (onSelectChainAndTokenCallback) {
-        onSelectChainAndTokenCallback(selectedChainLocal, token);
-      } else if (onSelectChainCallback) {
-        onSelectChainCallback(selectedChainLocal);
+        const shouldGoToConfirm =
+          fundWalletAddress && activeAccount?.walletClientType !== "privy";
+        setFundWalletStep(shouldGoToConfirm ? "confirm" : "setValues");
+      } else {
+        setSelectedTokenLocal(token);
+        setSelectedTokenFromModal(token);
+
+        if (onSelectChainAndTokenCallback) {
+          onSelectChainAndTokenCallback(selectedChainLocal, token);
+        } else if (onSelectChainCallback) {
+          onSelectChainCallback(selectedChainLocal);
+        }
+        closeModal();
       }
-      closeModal();
     }
   };
 
   const handleChainOnlySelect = (chain: Chain) => {
-    setSelectedChainLocal(chain);
-    setSelectedChainFromModal(chain);
+    if (isTopUpModal) {
+      setSelectedChainLocal(chain);
+    } else {
+      setSelectedChainLocal(chain);
+      setSelectedChainFromModal(chain);
 
-    if (onSelectChainAndTokenCallback) {
-      setSelectedTokenLocal(null);
-      setSelectedTokenFromModal(null);
-    } else if (onSelectChainCallback) {
-      setSelectedTokenLocal(null);
-      setSelectedTokenFromModal(null);
-      onSelectChainCallback(chain);
-      closeModal();
+      if (onSelectChainAndTokenCallback) {
+        setSelectedTokenLocal(null);
+        setSelectedTokenFromModal(null);
+      } else if (onSelectChainCallback) {
+        setSelectedTokenLocal(null);
+        setSelectedTokenFromModal(null);
+        onSelectChainCallback(chain);
+        closeModal();
+      }
     }
   };
 
@@ -428,7 +472,15 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
     );
   };
 
-  const chainList = SUPPORTED_CHAINS;
+  const chainList = useMemo(() => {
+    if (isTopUpModal) {
+      const evmChains = SUPPORTED_CHAINS.filter(
+        (chain) => chain.id !== CHAIN_ID["solana"],
+      );
+      return [...evmChains, solanaChain];
+    }
+    return SUPPORTED_CHAINS;
+  }, [isTopUpModal]);
 
   const handleWalletConnect = () => {
     setChain(selectedChainLocal);
@@ -464,17 +516,27 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
     }
   }, [selectedChainLocal, publicKey, activeAccount]);
 
+  const handleModalClose = () => {
+    if (isTopUpModal) {
+      const shouldGoToConfirm =
+        fundWalletAddress && activeAccount?.walletClientType !== "privy";
+      setFundWalletStep(shouldGoToConfirm ? "confirm" : "setValues");
+    } else {
+      closeModal();
+    }
+  };
+
   return (
     <Modal
-      isOpen={isOpen}
-      onClose={closeModal}
+      isOpen={isModalOpen}
+      onClose={handleModalClose}
       paddingClass="p-[24px] md:pt-[50px] md:pl-[45px] md:pr-[36px] md:pb-[50px]"
       roundedClass="rounded-[24px]"
       maxWidth="w-full max-w-[328px] md:max-w-[760px]"
       minHeight="min-h-[600px] md:min-h-[714px]"
       customCloseButton={
         <motion.button
-          onClick={closeModal}
+          onClick={handleModalClose}
           className="absolute top-[20px] right-[16px] z-10 rounded-[8px] flex items-center justify-center w-10 h-10 hover:bg-gray-700 transition-colors"
           aria-label="Close"
           whileHover={{ scale: 1.1, rotate: 90 }}
@@ -590,7 +652,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
             transition={{ duration: 0.5, delay: 0.2 }}
           />
 
-          {onSelectChainAndTokenCallback ? (
+          {onSelectChainAndTokenCallback || isTopUpModal ? (
             <motion.div className="flex-1" variants={itemVariants}>
               {!selectedChainLocal ? (
                 <motion.div
@@ -606,7 +668,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
                     <p>Select a chain to see available tokens</p>
                   </motion.div>
                 </motion.div>
-              ) : !isWalletConnected ? (
+              ) : !isTopUpModal && !isWalletConnected ? (
                 <motion.div
                   className="flex flex-col items-center justify-center h-full py-8"
                   variants={itemVariants}

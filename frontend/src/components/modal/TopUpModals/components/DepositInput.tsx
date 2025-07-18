@@ -17,7 +17,7 @@ import {
   useEffect,
   useState,
 } from "react";
-import { Chain, formatEther } from "viem";
+import { formatEther } from "viem";
 
 export const DepositInput = ({
   setError,
@@ -35,7 +35,9 @@ export const DepositInput = ({
     activeConnector,
     walletAddress,
     setChain,
+    setStep, 
   } = useFundWalletStore();
+
   const [tokenBalance, setTokenBalance] = useState<Balance>(EMPTY_BALANCE);
   const { wallets } = useWallets();
   const filteredWallets = wallets.filter(
@@ -122,18 +124,10 @@ export const DepositInput = ({
     }
   };
 
-  const handleChainSelect = (chain: Chain) => {
-    setChain(chain);
-    if (!!walletAddress && activeWallet.walletClientType !== "privy") {
-      activeWallet.switchChain(chain.id);
-    }
+  const handleOpenChainsModal = () => {
+    setStep("selectChain");
   };
 
-  const onSelectChainAndToken = (chain: Chain, token: Token) => {
-    onTokenSelect(token);
-
-    handleChainSelect(chain);
-  };
   return (
     <div>
       <div className="relative flex w-full flex-col">
@@ -169,11 +163,9 @@ export const DepositInput = ({
               <ChainTokenSelector
                 selectedToken={currency}
                 selectedChain={chain}
-                onSelectToken={onTokenSelect}
                 className="justify-end flex min-w-[150px]"
-                onSelectChain={handleChainSelect}
-                onSelectChainAndToken={onSelectChainAndToken}
                 isFromTopUp={true}
+                onOpenModal={handleOpenChainsModal}
               />
             </div>
           </div>

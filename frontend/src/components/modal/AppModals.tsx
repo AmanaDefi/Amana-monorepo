@@ -21,6 +21,7 @@ import { SignUpModal } from "./smartWallet/SignUpModal";
 import { VerifyOtpModal } from "./smartWallet/VerifyOtpModal";
 import WelcomeModal from "./welcome/WelcomeModal";
 import { useFundWalletStore } from "@/store/fundWalletStore";
+import ChainsModal from "./chains/ChainsModal";
 
 export const AppModals = () => {
   const { step } = useAuthStore();
@@ -44,9 +45,9 @@ export const AppModals = () => {
       <Deposit />
       <ReceiveModal />
       <Send />
-      <TopUpChainsModal />
       <ConnectChosenChain />
       <FinishDeposit />
+      <ChainsModal />
       {(step === "allWallets" || fundWalletStep === "connectWallet") && (
         <AllWAllets />
       )}
