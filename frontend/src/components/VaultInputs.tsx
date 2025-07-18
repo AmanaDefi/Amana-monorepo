@@ -38,12 +38,8 @@ import { getPathDataAndAmountOut, getPerformanceFee } from "@/actions/actions";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 
-import {
-  calculateDepositOutput,
-  DepositCalculationResult,
-  isCachedCalculationValid,
-  getCacheStats,
-} from "@/utils/depositCalculations";
+import { calculateDepositOutput, DepositCalculationResult, isCachedCalculationValid, getCacheStats } from "@/utils/depositCalculations";
+
 import { trackEvent } from "@/utils/trackEvent";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -178,8 +174,7 @@ export default function VaultInputs({
     clearDepositCalculationCache,
   } = useTransactionStore();
 
-  const { selectedChainFromModal, setSelectedTokenFromModal } =
-    useChainTokenModalStore();
+  const { isOpen, setSelectedTokenFromModal, selectedTokenFromModal } = useChainTokenModalStore();
 
   const { setPreviousAPY, setCurrentAPY, setActiveTransactionVault } =
     useAPYStore();
@@ -243,6 +238,7 @@ export default function VaultInputs({
   const inputTokenPrice = useTokenPriceBySymbol(inputToken?.symbol);
   const vaultTokenPrice = useTokenPriceBySymbol(vaultData.inputToken?.symbol);
   const ethPriceUsd = useTokenPriceBySymbol("ETH");
+  const isSelectedTokenInput =selectedTokenFromModal && inputToken && selectedTokenFromModal?.address === inputToken?.address && selectedTokenFromModal?.symbol === inputToken?.symbol
 
   const vaultToken: Token = useMemo(() => {
     return {
@@ -259,6 +255,19 @@ export default function VaultInputs({
 
   useEffect(() => {
     const setTokenBasedOnChain = () => {
+      if (isOpen || isSelectedTokenInput) return;
+
+      if (!selectedChain) {
+        setInputToken(undefined);
+        if (onTokenSelect) {
+          onTokenSelect(undefined);
+        }
+        setSelectedTokenFromModal(null);
+        return;
+      }
+
+      const tokens = APPROVED_TOKENS[selectedChain.id] || [];
+
       if (
         selectedChain &&
         selectedChain.id === CHAIN_ID["zetachain"] &&
@@ -269,8 +278,7 @@ export default function VaultInputs({
           onTokenSelect(vaultData.inputToken);
         }
         setSelectedTokenFromModal(vaultData.inputToken);
-      } else if (selectedChain) {
-        const tokens = APPROVED_TOKENS[selectedChain.id] || [];
+      } else {
         const defaultToken =
           tokens.find((token) => token.symbol === "USDC") || tokens[0];
 
@@ -281,12 +289,6 @@ export default function VaultInputs({
           }
           setSelectedTokenFromModal(defaultToken);
         }
-      } else {
-        setInputToken(undefined);
-        if (onTokenSelect) {
-          onTokenSelect(undefined);
-        }
-        setSelectedTokenFromModal(null);
       }
     };
 
@@ -304,7 +306,14 @@ export default function VaultInputs({
     }
 
     setAllowInput(true);
-  }, [selectedChain, vaultData, onTokenSelect, setSelectedTokenFromModal]);
+  }, [
+    selectedChain,
+    vaultData,
+    onTokenSelect,
+    setSelectedTokenFromModal,
+    isOpen,
+    isSelectedTokenInput
+  ]);
 
   // Update inputTokenBalance state when useTokenBalance returns a new value
   const { balance: tokenBalance, fetchBalance } =
@@ -330,7 +339,6 @@ export default function VaultInputs({
   useEffect(() => {
     const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
     if (inputToken && selectChain && !isTxInProgress) {
-      fetchBalance();
       setInputBalance(EMPTY_BALANCE);
       setDisplayValue("0.00");
 
@@ -339,7 +347,7 @@ export default function VaultInputs({
         displayValue: "0.00",
       });
     }
-  }, [inputToken, selectChain, fetchBalance, vaultData.id]);
+  }, [inputToken, selectChain, vaultData.id]);
 
   // Trigger error message handling
   useEffect(() => {
@@ -389,7 +397,7 @@ export default function VaultInputs({
     inputToken,
     inputBalance,
     isDeposit,
-    vaultData.id,
+    vaultData,
     action,
     steps,
     inputTokenPrice,
@@ -397,6 +405,7 @@ export default function VaultInputs({
     conversionOutput.netDepositToVaultUSD,
     loadingOutputToken,
     userVaultBalance,
+    tokenBalance.formatted,
   ]);
 
   // Watch input balance and trigger steps config selection
@@ -884,7 +893,6 @@ export default function VaultInputs({
       vaultTokenPrice,
       ethPriceUsd,
       activeWallet,
-      selectedChain?.id,
       userSlippage,
     ],
   );

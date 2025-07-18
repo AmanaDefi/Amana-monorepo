@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import {
   VaultData,
-  VaultTotalAssets,
   VaultAPY,
   Token,
   Balance,
@@ -12,8 +11,7 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { formatTokenBalance, getOnlyTokenSymbol } from "@/utils/utils";
 import { APPROVED_TOKENS } from "@/constants/chainConfig";
-import PointsIcon from "@/components/svg/PointsIcon";
-import ResponsiveTooltip from "@/components/common/Tooltip";
+import { convertStringToBalance } from "@/utils/graphUtils";
 
 
 interface VaultStatsProps {
@@ -58,7 +56,7 @@ export default function VaultStats({
       setInputToken(selectedToken);
     }
     // Only auto-select if there's no token already selected or if we have a new vault/chain
-    else if (!inputToken || isNewVault || isChainChanged) {
+    else if (!selectedToken || isNewVault || isChainChanged) {
       const isZetaChain = activeChain?.id === 7000 || activeChain?.id === 7001;
 
       if (isZetaChain) {
