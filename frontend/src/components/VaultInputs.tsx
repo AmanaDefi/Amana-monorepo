@@ -729,7 +729,6 @@ export default function VaultInputs({
           activeChain.id
         )) {
           
-          console.log("Using cached deposit calculation result");
           
           // Log cache performance stats periodically
           const stats = getCacheStats();
@@ -1193,33 +1192,7 @@ export default function VaultInputs({
     setIsButtonDisabled,
     userVaultBalance,
   ]);
-  // 🧪 TESTING: Log final values being displayed
-  useEffect(() => {
-    if (inputToken && vaultTotalAssetinToken) {
-      console.log("=== FINAL UI VALUES ===");
-      console.log(`🎯 Mode: ${isDeposit ? "DEPOSIT" : "WITHDRAW"}`);
-      console.log(
-        `🪙 Input token: ${isDeposit ? inputToken?.symbol : vaultData.inputToken.symbol}`,
-      );
-      console.log(
-        `🪙 Output token: ${vaultData.inputToken.symbol} (underlying asset)`,
-      );
-      console.log(
-        `💰 Balance displayed: ${isDeposit ? tokenBalance.formatted : (vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0")}`,
-      );
-      console.log(
-        `📊 Balance type: ${isDeposit ? "wallet balance" : "maxWithdraw amount"}`,
-      );
-      console.log(`✅ Consistent UX: Both modes show underlying asset!`);
-      console.log("=====================");
-    }
-  }, [
-    isDeposit,
-    inputToken?.symbol,
-    vaultData.inputToken.symbol,
-    tokenBalance.formatted,
-    vaultTotalAssetinToken,
-  ]);
+
 
   const minReceived = useMemo(() => {
     if (!conversionOutput.outputAmountInUSDFormatted) return "0.0";

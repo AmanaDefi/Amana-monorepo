@@ -1082,21 +1082,10 @@ const executeDirectDeposit = async (
     );
   }
 
-  console.log("Unified calculation result for direct deposit:", {
-    inputAmount: calculationResult.inputAmount.toString(),
-    amountAfterFee: calculationResult.amountAfterFee.toString(),
-    amountForStrategy: calculationResult.amountForStrategy.toString(),
-    sharesAmount: calculationResult.sharesAmount.toString(),
-    needsGasFee: calculationResult.needsGasFee,
-    needsTokenSwap: calculationResult.needsTokenSwap,
-  });
-
   // Calculate minSharesOut with slippage
   const sharesAmountBigInt = parseUnits(calculationResult.sharesAmount, vaultData.inputToken.decimals);
   const minSharesOut = (sharesAmountBigInt * BigInt(10000 - getCurrentSlippage() * 100)) / BigInt(10000);
 
-  console.log("slippage", getCurrentSlippage());
-  console.log("minSharesOut", minSharesOut.toString());
 
   const walletClient = await getWalletClient(activeAccount);
   if (!walletClient) {

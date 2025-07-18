@@ -170,6 +170,7 @@ export const calculateGasFeeIfNeeded = async (
   inputToken: Token,
   activeChain: Chain,
   vaultTokenPrice: number,
+  inputTokenPrice: number,
   ethPriceUsd: number,
   formatCurrency: (amount: number) => string,
   convertUsdToEth: (usd: number, ethPrice: number) => number
@@ -216,12 +217,6 @@ export const calculateGasFeeIfNeeded = async (
   const gasZRC20 = result[0] as string;
   const gasFee = result[1] as bigint;
 
-  console.log("Raw gas fee calculation:", {
-    gasZRC20,
-    gasFee: gasFee.toString(),
-    vaultAsset: vaultData.inputToken.address,
-    gasLimitForWithdrawAndCall: gasLimitForWithdrawAndCall.toString()
-  });
 
   let gasFeeInVaultAsset = gasFee;
   let gasFeeInInputToken = gasFee;
@@ -229,41 +224,15 @@ export const calculateGasFeeIfNeeded = async (
   // Get the actual input token (ZRC20 equivalent for cross-chain)
   const actualInputToken = isZetachain(activeChain?.id) ? inputToken : inputToken?.ZRC20equivalent;
 
+
   // Convert gas fee to vault asset if tokens differ
-  if (gasZRC20 !== vaultData.inputToken.address) {
-    // Use getEquivalentInputAmount on swapHelper contract to convert gas fee to vault asset
-    const publicClient = getPublicClient(SUPPORTED_CHAINS[0].id);
-    if (publicClient) {
-      try {
-        gasFeeInVaultAsset = await publicClient.readContract({
-          address: SWAP_HELPER_ADDRESS as Address,
-          abi: [parseAbiItem("function getEquivalentInputAmount(address,address,uint256) view returns (uint256)")],
-          functionName: "getEquivalentInputAmount",
-          args: [
-            vaultData.inputToken.address as Address, // vaultAsset (output token)
-            gasZRC20 as Address,                     // input token (gas token)
-            gasFee                                   // input amount
-          ],
-        });
-        console.log("Gas fee conversion to vault asset successful:", {
-          gasZRC20,
-          gasFee: gasFee.toString(),
-          gasFeeInVaultAsset: gasFeeInVaultAsset.toString(),
-          vaultAsset: vaultData.inputToken.address
-        });
-      } catch (error) {
-        console.error("Error converting gas fee to vault asset:", error);
-        // Fallback to direct conversion if the function fails
-        gasFeeInVaultAsset = gasFee;
-      }
-    } else {
-      console.error("Failed to get public client for gas fee conversion to vault asset");
-      gasFeeInVaultAsset = gasFee;
-    }
+  if (gasZRC20.toLowerCase() !== vaultData.inputToken.address.toLowerCase()) {
+    gasFeeInVaultAsset = BigInt(Math.floor((Number(gasFee) / 10 ** (inputToken?.decimals ?? 18)) * inputTokenPrice * 10 ** vaultData.inputToken.decimals));
   }
 
+
   // Convert gas fee to input token terms if needed
-  if (actualInputToken && gasZRC20 !== actualInputToken.address) {
+  if (actualInputToken && gasZRC20.toLowerCase() !== actualInputToken.address.toLowerCase()) {
     const publicClient = getPublicClient(SUPPORTED_CHAINS[0].id);
     if (publicClient) {
       try {
@@ -277,12 +246,7 @@ export const calculateGasFeeIfNeeded = async (
             gasFee                               // input amount
           ],
         });
-        console.log("Gas fee conversion to input token successful:", {
-          gasZRC20,
-          gasFee: gasFee.toString(),
-          gasFeeInInputToken: gasFeeInInputToken.toString(),
-          inputToken: actualInputToken.address
-        });
+       
       } catch (error) {
         console.error("Error converting gas fee to input token:", error);
         // Fallback to direct conversion if the function fails
@@ -293,6 +257,7 @@ export const calculateGasFeeIfNeeded = async (
       gasFeeInInputToken = gasFee;
     }
   }
+
 
   // Format gas fee in USD and ETH
   const gasFeeInTokenUnits = Number(formatUnits(gasFeeInVaultAsset, vaultData.inputToken.decimals));
@@ -434,8 +399,7 @@ export const calculateDepositOutput = async (
     throw new Error("Input token not found on Zetachain");
   }
 
-  console.log("vaultData", vaultData);
-  console.log("strategy contract address", vaultData.protocol.strategyAddress);
+ 
 
 
   // Step 1: Calculate gas fee (conditional)
@@ -444,12 +408,12 @@ export const calculateDepositOutput = async (
     inputToken,
     activeChain,
     vaultTokenPrice,
+    inputTokenPrice,
     ethPriceUsd,
     formatCurrency,
     convertUsdToEth
   );
 
-  console.log("gasFeeResult", gasFeeResult);
 
   // Step 2: Calculate amount available after gas fee deduction
   let amountAfterFee = inputAmount;
@@ -458,11 +422,6 @@ export const calculateDepositOutput = async (
     // Use gas fee already converted to input token terms
     amountAfterFee = inputAmount > gasFeeResult.gasFeeInInputToken ? inputAmount - gasFeeResult.gasFeeInInputToken : 0n;
 
-    console.log("Gas fee deduction:", {
-      gasFeeInInputToken: gasFeeResult.gasFeeInInputToken.toString(),
-      inputAmount: inputAmount.toString(),
-      amountAfterFee: amountAfterFee.toString()
-    });
   }
 
   // Step 3: Handle token conversion and calculate swap slippage (conditional)
@@ -485,26 +444,9 @@ export const calculateDepositOutput = async (
     amountForStrategy = swapResult.amountOut;
 
 
-    // B = original input amount converted to vault asset token type
-    // Call getEquivalentInputAmount(vaultAsset, inputToken, amount) function on swapHelper on Zetachain
-    const publicClient = getPublicClient(SUPPORTED_CHAINS[0].id);
-    if (publicClient) {
-      try {
-        const equivalentInputAmount = await publicClient.readContract({
-          address: SWAP_HELPER_ADDRESS as Address,
-          abi: [parseAbiItem("function getEquivalentInputAmount(address,address,uint256) view returns (uint256)")],
-          functionName: "getEquivalentInputAmount",
-          args: [vaultData.inputToken.address as Address, actualInputToken.address as Address, amountAfterFee],
-        });
-
-        // Swap slippage = B - A
-        swapSlippage = equivalentInputAmount > amountForStrategy ? equivalentInputAmount - amountForStrategy : 0n;
-      } catch (error) {
-        console.error("Error getting equivalent input amount:", error);
-        // If function doesn't exist, use fallback calculation
-        swapSlippage = (amountAfterFee * 5n) / 1000n; // 0.5% slippage
-      }
-    }
+    const equivalentInputAmount = BigInt(Math.floor((Number(amountAfterFee) / 10 ** (inputToken?.decimals ?? 18)) * inputTokenPrice * 10 ** vaultData.inputToken.decimals));
+    
+    swapSlippage = equivalentInputAmount > amountForStrategy ? equivalentInputAmount - amountForStrategy : 0n;
   }
 
   // Step 4: Calculate shares and final output amount using strategy contract
