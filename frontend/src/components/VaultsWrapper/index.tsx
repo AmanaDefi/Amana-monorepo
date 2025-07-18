@@ -5,6 +5,7 @@ import {
   VaultTotalAssets,
   UserVaultBalance,
 } from "@/types/types";
+import { DEFAULT_SORT_CONFIG } from "@/constants";
 import LoadingLogo from "../LoadingLogo";
 import { VaultFilters } from "./components/VaultFilters";
 import { VaultCard } from "./components/VaultCard";
@@ -347,7 +348,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     setSearchTerm("");
     setChainFilter("");
     setProtocolFilter("");
-    handleSortChange("apy", "desc");
+    handleSortChange(DEFAULT_SORT_CONFIG.sortBy, DEFAULT_SORT_CONFIG.sortOrder);
   };
 
   const renderVaultsContent = () => {
@@ -468,6 +469,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
           setProtocolFilter={setProtocolFilter}
           sortBy={sortBy}
           setSortBy={handleSortByChange}
+          onSortChange={handleSortChange}
           clearAllFilters={clearAllFilters}
           setDisplayType={setDisplayType}
           displayType={displayType}

@@ -97,7 +97,7 @@ export type ConversionOutput = {
   finalConvertedAmountInUSDFormatted: string;
   outputAmountFormatted: string;
   outputAmountInUSDFormatted: string;
-  gasFeeInVaultAsset?: string;
+  gasFeeInInputToken?: string;
   gasFeeInUSD?: string;
   gasFeeInETH?: string;
   netDepositToVaultUSD?: string;
@@ -729,16 +729,14 @@ export default function VaultInputs({
         // Check cache first - look for existing calculation with same parameters
         const cached = useTransactionStore.getState().lastDepositCalculation;
 
-        if (
-          cached &&
-          isCachedCalculationValid(
-            cached,
-            inputAmountValue,
-            vaultData.id,
-            inputToken.address,
-            activeChain.id,
-          )
-        ) {
+        
+        if (cached && isCachedCalculationValid(
+          cached, 
+          inputAmountValue, 
+          vaultData.id, 
+          inputToken, 
+          activeChain.id
+        )) {
           console.log("Using cached deposit calculation result");
 
           // Log cache performance stats periodically
@@ -771,7 +769,7 @@ export default function VaultInputs({
                 formatUSDValue(outputAmountInUSD),
               outputAmountFormatted: sharesAmountFormatted,
               outputAmountInUSDFormatted: formatUSDValue(outputAmountInUSD),
-              gasFeeInVaultAsset: cachedResult.gasFee.amount.toString(),
+              gasFeeInInputToken: cachedResult.gasFee.amount.toString(),
               gasFeeInUSD: cachedResult.gasFee.amountInUSD,
               gasFeeInETH: cachedResult.gasFee.amountInETH,
               netDepositToVaultUSD: formatUSDValue(outputAmountInUSD),
@@ -841,7 +839,7 @@ export default function VaultInputs({
               formatUSDValue(outputAmountInUSD),
             outputAmountFormatted: sharesAmountFormatted,
             outputAmountInUSDFormatted: formatUSDValue(outputAmountInUSD),
-            gasFeeInVaultAsset: calculationResult.gasFee.amount.toString(),
+            gasFeeInInputToken: calculationResult.gasFee.amount.toString(),
             gasFeeInUSD: calculationResult.gasFee.amountInUSD,
             gasFeeInETH: calculationResult.gasFee.amountInETH,
             netDepositToVaultUSD: formatUSDValue(outputAmountInUSD),
@@ -1549,7 +1547,7 @@ export default function VaultInputs({
       {!(
         isDeposit &&
         !vaultData.depositFeePaidFromGasTank &&
-        conversionOutput.gasFeeInVaultAsset &&
+        conversionOutput.gasFeeInInputToken &&
         debouncedInputBalance.value > 0n &&
         Number(
           conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, ""),
