@@ -82,8 +82,6 @@ export default function InputTokenWithError({
 
   const isConnected = !!walletAddress;
 
-  console.log('vaultData for outputTokenSymbol', vaultData);
-
   const showTokenSelector = useMemo(() => {
     return (
       ((isDeposit && !isOutput) || (!isDeposit && isOutput)) &&
