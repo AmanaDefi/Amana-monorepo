@@ -16,14 +16,14 @@ interface FeeDisplayProps {
   isBreathing?: boolean;
 }
 
-interface ExpectedSlippageProps {
+interface SwapSlippageProps {
   conversionOutput: ConversionOutput;
   isVisible?: boolean;
   className?: string;
   isBreathing?: boolean;
 }
 
-export const ExpectedSlippageBlock: React.FC<ExpectedSlippageProps> = ({
+export const SwapSlippageBlock: React.FC<SwapSlippageProps> = ({
   conversionOutput,
   isVisible = true,
   className = "",
@@ -31,59 +31,35 @@ export const ExpectedSlippageBlock: React.FC<ExpectedSlippageProps> = ({
 }) => {
   if (
     !isVisible ||
-    conversionOutput.slippageActualValue === null ||
-    !conversionOutput.slippageAmountInUSDFormatted
+    !conversionOutput.swapSlippageUSD ||
+    conversionOutput.swapSlippagePercentage === undefined ||
+    conversionOutput.swapSlippagePercentage === 0
   ) {
     return null;
   }
 
-  const formattedUSDSlippage = conversionOutput.slippageAmountInUSDFormatted;
-
   return (
     <div
-      className={`flex justify-between items-center py-1 text-white mb-6 text-[14px] md:text-base ${className}`}
+      className={`flex justify-between items-center py-1 text-white mb-4 text-[14px] md:text-base ${className}`}
     >
       <span className="text-white flex items-center gap-1">
-        Expected slippage:
+        Swap Slippage:
         <InfoBlock>
           <ErrorInputIcon
             width={14}
             height={14}
             className="ml-1 cursor-pointer fill-[#1B46E0]"
           />
-          <div className="text-xs text-white mt-2 flex flex-col gap-1">
-            <div className="flex justify-between">
-              <span>Swap Slippage:</span> 
-              <span>
-              {conversionOutput.swapSlippagePercentage?.toFixed(2)}% ({conversionOutput.swapSlippageUSD})
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span>Deposit Slippage:</span> 
-              <span>
-              {conversionOutput.depositSlippagePercentage?.toFixed(2)}% ({conversionOutput.depositSlippageUSD})
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span>Total Slippage:</span> 
-              <span>
-              {conversionOutput.slippageActualValue?.toFixed(2)}% ({conversionOutput.slippageAmountInUSDFormatted})
-              </span>
-            </div>
-            {/* <div className="flex justify-between">
-              <span>Total Loss:</span> 
-              <span>
-              {conversionOutput.totalLossPercentage?.toFixed(2)}% ({conversionOutput.totalLossUSD})
-              </span>
-            </div> */}
+          <div className="text-xs text-white mt-2">
+            The difference between the expected and actual amount received when swapping your input token to the vault&apos;s asset. This occurs when your input token differs from the vault&apos;s asset token.
           </div>
         </InfoBlock>
       </span>
       <BreathingValue
         value={
           <span className="font-normal flex-row gap-1">
-            {conversionOutput.slippageActualValue.toFixed(2)}%{" "}
-            <span className="font-medium">({formattedUSDSlippage})</span>
+            {conversionOutput.swapSlippagePercentage.toFixed(2)}%{" "}
+            <span className="font-medium">({conversionOutput.swapSlippageUSD})</span>
           </span>
         }
         isBreathing={isBreathing}
@@ -91,6 +67,140 @@ export const ExpectedSlippageBlock: React.FC<ExpectedSlippageProps> = ({
     </div>
   );
 };
+
+interface DepositSlippageProps {
+  conversionOutput: ConversionOutput;
+  isVisible?: boolean;
+  className?: string;
+  isBreathing?: boolean;
+}
+
+export const DepositSlippageBlock: React.FC<DepositSlippageProps> = ({
+  conversionOutput,
+  isVisible = true,
+  className = "",
+  isBreathing = false,
+}) => {
+  const depositSlippageUSDValue = parseFloat(
+    conversionOutput.depositSlippageUSD?.replace(/[^0-9.]/g, "") || "0"
+  );
+
+  if (
+    !isVisible ||
+    !conversionOutput.depositSlippageUSD ||
+    conversionOutput.depositSlippagePercentage === undefined ||
+    conversionOutput.depositSlippagePercentage === 0 ||
+    depositSlippageUSDValue < 0.01 
+  ) {
+    return null;
+  }
+
+  return (
+    <div
+      className={`flex justify-between items-center py-1 text-white mb-4 text-[14px] md:text-base ${className}`}
+    >
+      <span className="text-white flex items-center gap-1">
+        Deposit Slippage:
+        <InfoBlock>
+          <ErrorInputIcon
+            width={14}
+            height={14}
+            className="ml-1 cursor-pointer fill-[#1B46E0]"
+          />
+          <div className="text-xs text-white mt-2">
+            The difference between the amount sent to the strategy and the final output amount. This occurs due to the strategy&apos;s share calculation and any fees charged by the underlying yield source.
+          </div>
+        </InfoBlock>
+      </span>
+      <BreathingValue
+        value={
+          <span className="font-normal flex-row gap-1">
+            {conversionOutput.depositSlippagePercentage.toFixed(2)}%{" "}
+            <span className="font-medium">({conversionOutput.depositSlippageUSD})</span>
+          </span>
+        }
+        isBreathing={isBreathing}
+      />
+    </div>
+  );
+};
+
+// Keep the old ExpectedSlippageBlock for backward compatibility but mark as deprecated
+// interface ExpectedSlippageProps {
+//   conversionOutput: ConversionOutput;
+//   isVisible?: boolean;
+//   className?: string;
+//   isBreathing?: boolean;
+// }
+
+// export const ExpectedSlippageBlock: React.FC<ExpectedSlippageProps> = ({
+//   conversionOutput,
+//   isVisible = true,
+//   className = "",
+//   isBreathing = false,
+// }) => {
+//   if (
+//     !isVisible ||
+//     conversionOutput.slippageActualValue === null ||
+//     !conversionOutput.slippageAmountInUSDFormatted
+//   ) {
+//     return null;
+//   }
+
+//   const formattedUSDSlippage = conversionOutput.slippageAmountInUSDFormatted;
+
+//   return (
+//     <div
+//       className={`flex justify-between items-center py-1 text-white mb-6 text-[14px] md:text-base ${className}`}
+//     >
+//       <span className="text-white flex items-center gap-1">
+//         Expected slippage:
+//         <InfoBlock>
+//           <ErrorInputIcon
+//             width={14}
+//             height={14}
+//             className="ml-1 cursor-pointer fill-[#1B46E0]"
+//           />
+//           <div className="text-xs text-white mt-2 flex flex-col gap-1">
+//             <div className="flex justify-between">
+//               <span>Swap Slippage:</span> 
+//               <span>
+//               {conversionOutput.swapSlippagePercentage?.toFixed(2)}% ({conversionOutput.swapSlippageUSD})
+//               </span>
+//             </div>
+//             <div className="flex justify-between">
+//               <span>Deposit Slippage:</span> 
+//               <span>
+//               {conversionOutput.depositSlippagePercentage?.toFixed(2)}% ({conversionOutput.depositSlippageUSD})
+//               </span>
+//             </div>
+//             <div className="flex justify-between">
+//               <span>Total Slippage:</span> 
+//               <span>
+//               {conversionOutput.slippageActualValue?.toFixed(2)}% ({conversionOutput.slippageAmountInUSDFormatted})
+//               </span>
+//             </div>
+//             {/* <div className="flex justify-between">
+//               <span>Total Loss:</span> 
+//               <span>
+//               {conversionOutput.totalLossPercentage?.toFixed(2)}% ({conversionOutput.totalLossUSD})
+//               </span>
+//             </div> */}
+//           </div>
+//         </InfoBlock>
+//       </span>
+//       <BreathingValue
+//         value={
+//           <span className="font-normal flex-row gap-1">
+//             {conversionOutput.slippageActualValue.toFixed(2)}%{" "}
+//             <span className="font-medium">({formattedUSDSlippage})</span>
+//           </span>
+//         }
+//         isBreathing={isBreathing}
+//       />
+//     </div>
+//   );
+// };
 
 interface NetDepositBlockProps {
   conversionOutput: ConversionOutput;

@@ -56,7 +56,8 @@ import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
 import ChainSelector from "./VaultsDetailsWrapper/components/ChainSelector";
 import SlippageSettingsBlock from "./VaultsDetailsWrapper/components/SlippageSettingsBlock";
 import FeeDisplay, {
-  ExpectedSlippageBlock,
+  SwapSlippageBlock,
+  DepositSlippageBlock,
   NetDepositBlock,
 } from "./VaultsDetailsWrapper/components/FeeDisplay";
 import APYChangeCard from "./VaultsDetailsWrapper/components/APYChangeCard";
@@ -223,10 +224,16 @@ export default function VaultInputs({
 
   const initialConversionOutput: ConversionOutput = useMemo(
     () => ({
-      slippageActualValue: null,
+      slippageActualValue: null, // Keep for backward compatibility
       finalConvertedAmountInUSDFormatted: "0.00",
       outputAmountFormatted: "0.00",
       outputAmountInUSDFormatted: "0.00",
+      swapSlippageUSD: undefined,
+      depositSlippageUSD: undefined,
+      totalLossUSD: undefined,
+      swapSlippagePercentage: undefined,
+      depositSlippagePercentage: undefined,
+      totalLossPercentage: undefined,
     }),
     [],
   );
@@ -853,11 +860,11 @@ export default function VaultInputs({
   const timeoutRef = useRef<NodeJS.Timeout>();
 
   const checkSlippageExceedingLimit = () => {
+    // Calculate total slippage (swap + deposit)
+    const totalSlippagePercentage = (conversionOutput.swapSlippagePercentage || 0) + (conversionOutput.depositSlippagePercentage || 0);
+    
     // If slippage is over 100%, hide the display completely
-    if (
-      conversionOutput.slippageActualValue !== null &&
-      conversionOutput.slippageActualValue > 100
-    ) {
+    if (totalSlippagePercentage > 100) {
       setIsSlippageExceedingLimit(false);
       setOutputBoxErrorMessage("");
       return;
@@ -865,8 +872,8 @@ export default function VaultInputs({
 
     if (
       userSlippage &&
-      conversionOutput.slippageActualValue !== null &&
-      userSlippage < conversionOutput.slippageActualValue &&
+      totalSlippagePercentage > 0 &&
+      userSlippage < totalSlippagePercentage &&
       !(
         isDeposit &&
         !vaultData.depositFeePaidFromGasTank &&
@@ -878,7 +885,7 @@ export default function VaultInputs({
     ) {
       setIsSlippageExceedingLimit(true);
       setOutputBoxErrorMessage(
-        `Slippage of ${conversionOutput.slippageActualValue}% exceeds your maximum slippage setting of ${userSlippage}%`,
+        `Total slippage of ${totalSlippagePercentage.toFixed(2)}% exceeds your maximum slippage setting of ${userSlippage}%`,
       );
     } else {
       setIsSlippageExceedingLimit(false);
@@ -1079,6 +1086,20 @@ export default function VaultInputs({
     clearDepositCalculationCache();
   }, [vaultData.id, inputToken?.address, activeChain?.id, userSlippage, clearDepositCalculationCache]);
 
+  // Check slippage limits when conversion output changes
+  useEffect(() => {
+    checkSlippageExceedingLimit();
+  }, [
+    conversionOutput.swapSlippagePercentage,
+    conversionOutput.depositSlippagePercentage,
+    userSlippage,
+    debouncedInputBalance.value,
+    conversionOutput.inputAmountInUSDFormatted,
+    conversionOutput.gasFeeInUSD,
+    isDeposit,
+    vaultData.depositFeePaidFromGasTank,
+  ]);
+
   // Create an adapter function for InputTokenWithError in Deposit mode
   const handleDepositTokenSelect = (token: Token) => {
     // Call the token selection handler for deposit
@@ -1110,7 +1131,7 @@ export default function VaultInputs({
         inputAmount: inputBalance.formatted,
         outputAmount: conversionOutput.outputAmountFormatted,
         outputAmountUSD: conversionOutput.outputAmountInUSDFormatted,
-        slippagePercent: conversionOutput.slippageActualValue,
+        slippagePercent: (conversionOutput.swapSlippagePercentage || 0) + (conversionOutput.depositSlippagePercentage || 0),
         inputToken: inputToken?.symbol,
         outputToken: isDeposit ? vaultData.symbol : inputToken?.symbol,
         vaultAddress: vaultData.id,
@@ -1208,6 +1229,8 @@ export default function VaultInputs({
     conversionOutput.inputAmountInUSDFormatted,
     conversionOutput.gasFeeInUSD,
     conversionOutput.outputAmountFormatted,
+    conversionOutput.swapSlippagePercentage,
+    conversionOutput.depositSlippagePercentage,
     isSlippageExceedingLimit,
     setIsButtonDisabled,
     userVaultBalance,
@@ -1315,7 +1338,7 @@ export default function VaultInputs({
               isOutput={false}
               captionText={!isDeposit ? "Output Amount" : ""}
             />
-            <div className="md:my-6">
+            <div className="my-4">
               <FeeDisplay
                 isDeposit={isDeposit}
                 vaultData={vaultData}
@@ -1325,10 +1348,10 @@ export default function VaultInputs({
                 isBreathing={loadingOutputToken}
               />
             </div>
-            <ExpectedSlippageBlock
+            <SwapSlippageBlock
               conversionOutput={conversionOutput}
               isVisible={
-                !!conversionOutput.slippageActualValue && !outputBoxErrorMessage
+                !!conversionOutput.swapSlippageUSD && !outputBoxErrorMessage
               }
               isBreathing={loadingOutputToken}
             />
@@ -1338,6 +1361,13 @@ export default function VaultInputs({
               debouncedInputBalance={debouncedInputBalance}
               isDeposit={isDeposit}
               isVisible={true}
+              isBreathing={loadingOutputToken}
+            />
+            <DepositSlippageBlock
+              conversionOutput={conversionOutput}
+              isVisible={
+                !!conversionOutput.depositSlippageUSD && !outputBoxErrorMessage
+              }
               isBreathing={loadingOutputToken}
             />
 
