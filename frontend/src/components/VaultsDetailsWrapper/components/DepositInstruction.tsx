@@ -243,6 +243,7 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
             case "completed":
               bgColor = "#1B46E0";
               textColor = "#FFFFFF";
+              isHighlighted = false;
               break;
             case "active":
               bgColor = "#535E73";
@@ -299,7 +300,7 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
               layout
             >
               <AnimatePresence>
-                {isHighlighted && (
+                {isHighlighted && stepState !== "completed" && (
                   <motion.div
                     className="absolute inset-0 -mx-4 -my-2 rounded-lg bg-gradient-to-r from-gray-500/10 via-gray-400/20 to-gray-500/10"
                     variants={highlightVariants}
@@ -315,7 +316,7 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
                   className="relative rounded-full w-11 h-11 flex items-center justify-center flex-shrink-0 transition-colors duration-300"
                   style={{ backgroundColor: bgColor }}
                   animate={
-                    isHighlighted
+                    isHighlighted && stepState !== "completed"
                       ? {
                           boxShadow: [
                             "0 0 0 0 rgba(62, 115, 196, 0)",
@@ -327,25 +328,26 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
                   }
                   transition={{ duration: 2, repeat: Infinity }}
                 >
-                  <AnimatePresence>
-                    {isHighlighted && (
-                      <motion.div
-                        className="absolute inset-0 rounded-full border-2 border-[#3E73C4]"
-                        initial={{ scale: 1, opacity: 0.5 }}
-                        animate={{
-                          scale: [1, 1.3, 1],
-                          opacity: [0.5, 0, 0.5],
-                        }}
-                        exit={{ scale: 1, opacity: 0 }}
-                        transition={{
-                          duration: 2,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                        }}
-                      />
-                    )}
-                  </AnimatePresence>
-
+                  {stepState !== "completed" && (
+                    <AnimatePresence>
+                      {isHighlighted && (
+                        <motion.div
+                          className="absolute inset-0 rounded-full border-2 border-[#3E73C4]"
+                          initial={{ scale: 1, opacity: 0.5 }}
+                          animate={{
+                            scale: [1, 1.3, 1],
+                            opacity: [0.5, 0, 0.5],
+                          }}
+                          exit={{ scale: 1, opacity: 0 }}
+                          transition={{
+                            duration: 2,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                          }}
+                        />
+                      )}
+                    </AnimatePresence>
+                  )}
                   {/* Always show the main step icon */}
                   <div>{getStepIcon(step)}</div>
 
