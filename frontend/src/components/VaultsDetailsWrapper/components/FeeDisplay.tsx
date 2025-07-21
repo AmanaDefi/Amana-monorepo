@@ -114,7 +114,7 @@ export default function FeeDisplay({
   return (
     <div>
       {isDepositTooLow && (
-        <div className="bg-red-900/30 border border-red-500 py-2 px-4 rounded-lg mb-4 text-[14px] md:text-base">
+        <div className="bg-red-900/30 border border-red-500 py-2 px-4 rounded-lg mb-4 text-[14px] md:text-base mt-2 md:mt-0">
           <p className="text-red-400 font-medium">
             Your deposit amount is too low to cover the deposit gas fee.
           </p>

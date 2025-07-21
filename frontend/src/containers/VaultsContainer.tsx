@@ -5,6 +5,7 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import VaultsGrid from "../components/VaultsWrapper";
 import { useVaultDataWithSearch } from "@/hooks/useVaultData";
 import { useLayoutStore } from "@/store/store";
+import { DEFAULT_SORT_CONFIG } from "@/constants";
 
 const VaultsContainer = () => {
   let isSearchError: boolean | undefined = false;
@@ -18,8 +19,8 @@ const VaultsContainer = () => {
   const [currentPage, setCurrentPage] = useState(
     initialPageParam > 0 ? initialPageParam : 1,
   );
-  const [sortBy, setSortBy] = useState("apy");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [sortBy, setSortBy] = useState<string>(DEFAULT_SORT_CONFIG.sortBy);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(DEFAULT_SORT_CONFIG.sortOrder);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [chainFilter, setChainFilter] = useState("");
