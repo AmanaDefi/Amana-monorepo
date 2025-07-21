@@ -133,7 +133,7 @@ export default function VaultInputs({
   APY7DValue,
 }: VaultInputsProps): JSX.Element {
   const priceContext = useTokenPrices();
-  const { gasZRC20, gasFee } = useVaultGasToken(vaultData);
+  const { gasZRC20, gasFee, gasZRC20Symbol } = useVaultGasToken(vaultData);
 
   const [inputToken, setInputToken] = useState<Token | undefined>(
     selectedToken,
@@ -776,7 +776,12 @@ export default function VaultInputs({
         } else {
           console.log("Cache miss - performing new deposit calculation");
           const inputTokenPrice = getTokenPrice(inputToken?.symbol, priceContext);
-          const gasTokenPrice = getTokenPrice(gasZRC20, priceContext);
+          if (!gasZRC20) {
+            console.error("Gas ZRC20 token is not defined");
+            return;
+          }
+          const gasTokenSymbol = ZRC20_TOKENS_BY_ADDRESS[gasZRC20]?.symbol ?? "Unknown";
+          const gasTokenPrice = getTokenPrice(gasTokenSymbol, priceContext);
           console.log("Input Token Price:", inputTokenPrice);
           // Use the unified calculation function
           calculationResult = await calculateDepositOutput(

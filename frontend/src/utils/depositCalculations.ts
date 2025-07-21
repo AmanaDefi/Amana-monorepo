@@ -7,7 +7,6 @@ import { getPublicClient } from "./getPublicClient";
 import { SUPPORTED_CHAINS } from "../constants/chainConfig";
 import { ConnectedWallet } from "@privy-io/react-auth";
 import { log } from "console";
-import { useTokenPriceBySymbol } from "../hooks/hooks";
 import { gas } from "codemelt-retro-api-sdk/functional/api/swap/native";
 
 const SWAP_HELPER_ADDRESS = process.env
@@ -173,7 +172,7 @@ export const calculateGasFeeIfNeeded = async (
   activeChain: Chain,
   vaultTokenPrice: number,
   inputTokenPrice: number,
-  ethPriceUsd: number,
+  gasTokenPrice: number,
   formatCurrency: (amount: number) => string,
   convertUsdToEth: (usd: number, ethPrice: number) => number
 ): Promise<GasFeeCalculationResult> => {
@@ -231,9 +230,9 @@ export const calculateGasFeeIfNeeded = async (
   if (gasZRC20.toLowerCase() !== vaultData.inputToken.address.toLowerCase()) {
     console.log("Converting gas fee to vault asset terms...");
     const gasTokenDecimals = ZRC20_TOKENS_BY_ADDRESS[gasZRC20]?.decimals ?? 18;
+    // const gasTokenSymbol = ZRC20_TOKENS_BY_ADDRESS[gasZRC20]?.symbol ?? "Unknown";
     console.log("Gas token decimals:", gasTokenDecimals);
-    const gasTokenPrice = getTokenPrice(gasZRC20);
-    gasFeeInVaultAsset = BigInt(Math.floor((Number(gasFee) / 10 ** gasTokenDecimals) * inputTokenPrice * 10 ** vaultData.inputToken.decimals));
+    gasFeeInVaultAsset = BigInt(Math.floor((Number(gasFee) / 10 ** gasTokenDecimals) * gasTokenPrice * 10 ** vaultData.inputToken.decimals));
   }
   console.log("Gas fee in vault asset:", gasFeeInVaultAsset.toString());
   // inputToken?.decimals ??
@@ -271,7 +270,7 @@ export const calculateGasFeeIfNeeded = async (
   const gasFeeInTokenUnits = Number(formatUnits(gasFeeInVaultAsset, vaultData.inputToken.decimals));
   const gasFeeInUSDAmount = gasFeeInTokenUnits * vaultTokenPrice;
   const gasFeeInUSD = formatCurrency(gasFeeInUSDAmount);
-  const ethAmount = convertUsdToEth(gasFeeInUSDAmount, ethPriceUsd);
+  const ethAmount = convertUsdToEth(gasFeeInUSDAmount, gasTokenPrice); // TODO - get ETH price from somewhere
   const gasFeeInETH = ethAmount.toFixed(5);
 
   console.log("Final gas fee calculation:", {
@@ -281,7 +280,7 @@ export const calculateGasFeeIfNeeded = async (
     gasFeeInUSD,
     gasFeeInETH,
     vaultTokenPrice,
-    ethPriceUsd
+    gasTokenPrice
   });
 
   return {
@@ -397,7 +396,7 @@ export const calculateDepositOutput = async (
   activeWallet: ConnectedWallet,
   vaultTokenPrice: number,
   inputTokenPrice: number,
-  ethPriceUsd: number,
+  gasTokenPrice: number,
   formatCurrency: (amount: number) => string,
   convertUsdToEth: (usd: number, ethPrice: number) => number
 ): Promise<DepositCalculationResult> => {
@@ -414,7 +413,7 @@ export const calculateDepositOutput = async (
     activeChain,
     vaultTokenPrice,
     inputTokenPrice,
-    ethPriceUsd,
+    gasTokenPrice,
     formatCurrency,
     convertUsdToEth
   );

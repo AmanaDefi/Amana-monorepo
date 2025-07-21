@@ -41,7 +41,7 @@ import { useTokenPrices } from "@/providers/TokenPriceProvider";
 import { ONE_MINUTE, USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
 import vaultAbi from "../../abis/moonwellVaultABI.json";
 import { Address, zeroAddress } from "viem";
-import { ConnectedWallet } from "@privy-io/react-auth";
+import { ConnectedWallet, SUPPORTED_CHAINS } from "@privy-io/react-auth";
 import { useUserSettingsStore } from "@/store/userSettingsStore";
 import { useUserPositionsFromGraph, useUserTransactionsFromGraph } from "./useVaultsGraph";
 import { useMultiChain } from "@/providers/MultiChainProvider";
@@ -849,8 +849,9 @@ export function useVaultGasToken(
       if (!vaultData?.id || !vaultData?.inputToken?.address) return;
 
       try {
-        const publicClient: PublicClient = getPublicClient(vaultData.protocol.chainId);
-
+        const publicClient: PublicClient = getPublicClient(7000);
+        console.log("Fetching gas token and fee for vault:", vaultData.id);
+        console.log("chainid:", SUPPORTED_CHAINS[0].id);
         // Step 1: fetch gasLimitForWithdrawAndCall from vault
         const gasLimit = await publicClient.readContract({
           address: vaultData.id as Address,
