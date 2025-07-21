@@ -170,6 +170,16 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     !shouldUseSubgraphNetworkFilter &&
     !shouldUseSubgraphProtocolFilter &&
     !shouldUseSubgraphSort;
+  
+  const mode = shouldUseSubgraphSearch
+    ? "Subgraph Search"
+    : shouldUseSubgraphNetworkFilter
+      ? "Subgraph Network Filter"
+      : shouldUseSubgraphProtocolFilter
+        ? "Subgraph Protocol Filter"
+        : shouldUseSubgraphSort
+          ? "Subgraph Sort"
+          : "Local";
 
   const filteredVaults = useMemo(() => {
     if (!shouldUseLocalFiltering) {
