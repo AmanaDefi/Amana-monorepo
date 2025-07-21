@@ -1,5 +1,6 @@
 import { Dispatch, FC, useEffect, useRef, useState } from "react";
 import { SetStateAction } from "jotai";
+import { DEFAULT_SORT_CONFIG } from "@/constants";
 
 import { VaultData } from "@/types/types";
 import { Dropdown } from "./Dropdown";
@@ -27,6 +28,7 @@ type Props = {
   sortBy: string;
   sortOrder: "asc" | "desc";
   setSortBy: Dispatch<SetStateAction<string>>;
+  onSortChange?: (sortBy: string, sortOrder: "asc" | "desc") => void;
   clearAllFilters: () => void;
   displayType: "cards" | "list";
   setDisplayType: Dispatch<SetStateAction<"cards" | "list">>;
@@ -45,6 +47,7 @@ export const VaultFilters: FC<Props> = ({
   protocolFilter,
   sortBy,
   setSortBy,
+  onSortChange,
   clearAllFilters,
   displayType,
   setDisplayType,
@@ -98,12 +101,26 @@ export const VaultFilters: FC<Props> = ({
   };
 
   const handleFilterClick = (filter: string) => {
+    if (filter === "") {
+      if (onSortChange) {
+        onSortChange(DEFAULT_SORT_CONFIG.sortBy, DEFAULT_SORT_CONFIG.sortOrder);
+      } else {
+        setSortBy(DEFAULT_SORT_CONFIG.sortBy);
+        setSortOrder(DEFAULT_SORT_CONFIG.sortOrder);
+      }
+      return;
+    }
+
     const normalizedFilter = filter.toLowerCase();
     if (sortBy.toLowerCase() === normalizedFilter) {
       toggleSortOrder();
     } else {
-      setSortBy(normalizedFilter);
-      setSortOrder("desc");
+      if (onSortChange) {
+        onSortChange(normalizedFilter, "desc");
+      } else {
+        setSortBy(normalizedFilter);
+        setSortOrder("desc");
+      }
     }
   };
 

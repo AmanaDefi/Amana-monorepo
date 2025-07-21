@@ -10,12 +10,14 @@ export const InfoBlock = ({
   isMiddle,
   customIcon,
   isLeft,
+  iconColor = "#1B46E0",
 }: {
   children: ReactNode;
   isRight?: boolean;
   isMiddle?: boolean;
   customIcon?: React.ReactNode;
   isLeft?: boolean;
+  iconColor?: string;
 }) => {
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -33,7 +35,7 @@ export const InfoBlock = ({
       onClick={handleClick}
       onTouchStart={handleTouchStart}
     >
-      {customIcon || <InfoIcon />}
+      {customIcon || <InfoIcon color={iconColor} />}
       <div
         className={classNames(
           "absolute bottom-10 -left-5 hidden group-hover:block transition-all z-[9999]",

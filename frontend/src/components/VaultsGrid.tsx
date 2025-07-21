@@ -121,28 +121,6 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">(externalSortOrder);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-  // Use useLayoutStore for adaptive page size
-  const itemsPerPage = useLayoutStore((state) => state.itemsPerPage);
-  const setItemsPerPage = useLayoutStore((state) => state.setItemsPerPage);
-
-  // Adaptive logic for VaultsGrid
-  useEffect(() => {
-    const updatePageSize = () => {
-      const width = window.innerWidth;
-      const newSize = width >= 1805 ? 8 : 6;
-      if (newSize !== itemsPerPage) {
-        setItemsPerPage(newSize);
-      }
-    };
-
-    updatePageSize();
-    window.addEventListener("resize", updatePageSize);
-
-    return () => {
-      window.removeEventListener("resize", updatePageSize);
-    };
-  }, [setItemsPerPage, itemsPerPage]);
-
   useEffect(() => {
     setSortBy(externalSortBy);
     setSortOrder(externalSortOrder);
