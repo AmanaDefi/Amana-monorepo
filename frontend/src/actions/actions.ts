@@ -62,6 +62,8 @@ import { showErrorToast } from "@/toasts";
 
 import { trackEvent } from "@/utils/trackEvent";
 import { RevertOptions } from "@/lib/solanaGateway/cli/lib/scripts";
+import { TokenPriceContextType } from "@/providers/TokenPriceProvider";
+import { getTokenPrice } from "@/hooks/useVaultData";
 
 const abiCoder = new AbiCoder();
 dotenv.config();
@@ -828,6 +830,7 @@ export const executeDeposit = async (
   activeChain: Chain,
   transactionAmount: bigint,
   setcrossChainTxId: Function,
+  priceContext: TokenPriceContextType
 ) => {
   if (activeChain?.id === CHAIN_ID.zetachain) {
     return executeDirectDeposit(
@@ -836,6 +839,7 @@ export const executeDeposit = async (
       activeAccount,
       activeChain,
       transactionAmount,
+      priceContext
     );
   } else if (activeChain?.id === CHAIN_ID.solana) {
     return executeSolanaDeposit(
@@ -846,6 +850,7 @@ export const executeDeposit = async (
       transactionAmount,
       setcrossChainTxId,
       activeAccount,
+      priceContext
     );
   } else {
     return executeCrossChainDeposit(
@@ -855,6 +860,7 @@ export const executeDeposit = async (
       activeChain,
       transactionAmount,
       setcrossChainTxId,
+      priceContext
     );
   }
 };
@@ -1044,6 +1050,7 @@ const executeDirectDeposit = async (
   activeAccount: ConnectedWallet,
   activeChain: Chain,
   transactionAmount: bigint,
+  priceContext: TokenPriceContextType,
 ) => {
   if (!activeAccount)
     throw new Error("no activeAccount found for perform deposit");
@@ -1066,7 +1073,12 @@ const executeDirectDeposit = async (
     calculationResult = cached!.result;
   } else {
     console.log("Cache miss - performing new calculation for direct deposit execution");
-
+    const vaultTokenPrice = getTokenPrice(vaultData.inputToken.symbol, priceContext);
+    const inputTokenPrice = getTokenPrice(inputToken.symbol, priceContext);
+    const gasTokenPrice = getTokenPrice(
+      "ETH", // TODO - get this from somewhere?
+      priceContext,
+    );
     // Use the unified calculation function
     calculationResult = await calculateDepositOutput(
       transactionAmount,
@@ -1074,9 +1086,9 @@ const executeDirectDeposit = async (
       inputToken,
       activeChain,
       activeAccount,
-      1, // vaultTokenPrice - not needed for execution
-      1, // inputTokenPrice - not needed for execution
-      1, // ethPriceUsd - not needed for execution
+      vaultTokenPrice, // vaultTokenPrice - not needed for execution
+      inputTokenPrice, // inputTokenPrice - not needed for execution
+      gasTokenPrice, // ethPriceUsd - not needed for execution
       (amount: number) => amount.toString(), // Simple formatter
       (usd: number, ethPrice: number) => usd / ethPrice // Simple converter
     );
@@ -1135,6 +1147,7 @@ const executeCrossChainDeposit = async (
   activeChain: Chain,
   transactionAmount: bigint,
   setcrossChainTxId: Function,
+  priceContext: TokenPriceContextType,
 ) => {
   const walletClient = await getWalletClient(activeAccount);
   if (!activeAccount || !walletClient) return { transactionHash: null };
@@ -1157,7 +1170,12 @@ const executeCrossChainDeposit = async (
     calculationResult = cached!.result;
   } else {
     console.log("Cache miss - performing new calculation for cross-chain deposit execution");
-
+    const vaultTokenPrice = getTokenPrice(vaultData.inputToken.symbol, priceContext);
+    const inputTokenPrice = getTokenPrice(inputToken.symbol, priceContext);
+    const gasTokenPrice = getTokenPrice(
+      "ETH", // TODO - get this from somewhere?
+      priceContext,
+    );
     // Use the unified calculation function
     calculationResult = await calculateDepositOutput(
       transactionAmount,
@@ -1165,9 +1183,9 @@ const executeCrossChainDeposit = async (
       inputToken,
       activeChain,
       activeAccount,
-      1, // vaultTokenPrice - not needed for execution
-      1, // inputTokenPrice - not needed for execution
-      1, // ethPriceUsd - not needed for execution
+      vaultTokenPrice, // vaultTokenPrice - not needed for execution
+      inputTokenPrice, // inputTokenPrice - not needed for execution
+      gasTokenPrice, // ethPriceUsd - not needed for execution
       (amount: number) => amount.toString(), // Simple formatter
       (usd: number, ethPrice: number) => usd / ethPrice // Simple converter
     );
@@ -1352,6 +1370,7 @@ const executeSolanaDeposit = async (
   transactionAmount: bigint,
   setcrossChainTxId: Function,
   activeWallet: ConnectedWallet,
+  priceContext: TokenPriceContextType,
 ) => {
   // Check cache first for existing calculation
 
@@ -1371,7 +1390,12 @@ const executeSolanaDeposit = async (
     calculationResult = cached!.result;
   } else {
     console.log("Cache miss - performing new calculation for Solana deposit execution");
-
+    const vaultTokenPrice = getTokenPrice(vaultData.inputToken.symbol, priceContext);
+    const inputTokenPrice = getTokenPrice(inputToken.symbol, priceContext);
+    const gasTokenPrice = getTokenPrice(
+      "ETH", // TODO - get this from somewhere?
+      priceContext,
+    );
     // Use the unified calculation function
     calculationResult = await calculateDepositOutput(
       transactionAmount,
@@ -1379,9 +1403,9 @@ const executeSolanaDeposit = async (
       inputToken,
       activeChain,
       activeWallet,
-      1, // vaultTokenPrice - not needed for execution
-      1, // inputTokenPrice - not needed for execution
-      1, // ethPriceUsd - not needed for execution
+      vaultTokenPrice, // vaultTokenPrice - not needed for execution
+      inputTokenPrice, // inputTokenPrice - not needed for execution
+      gasTokenPrice, // ethPriceUsd - not needed for execution
       (amount: number) => amount.toString(), // Simple formatter
       (usd: number, ethPrice: number) => usd / ethPrice // Simple converter
     );

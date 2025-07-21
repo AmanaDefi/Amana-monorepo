@@ -73,6 +73,9 @@ import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 import { zetachain } from "viem/chains";
 import { useAPYStore } from "@/store/APYStore";
 import { useMaxAmount } from "@/hooks/useMaxAmount";
+import { useTokenPrices} from "@/providers/TokenPriceProvider";
+import { getTokenPrice } from "@/hooks/useVaultData";
+import { useVaultGasToken } from "@/hooks/hooks";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -129,6 +132,9 @@ export default function VaultInputs({
   selectedChain,
   APY7DValue,
 }: VaultInputsProps): JSX.Element {
+  const priceContext = useTokenPrices();
+  const { gasZRC20, gasFee, gasZRC20Symbol } = useVaultGasToken(vaultData);
+
   const [inputToken, setInputToken] = useState<Token | undefined>(
     selectedToken,
   );
@@ -247,7 +253,8 @@ export default function VaultInputs({
 
   const inputTokenPrice = useTokenPriceBySymbol(inputToken?.symbol);
   const vaultTokenPrice = useTokenPriceBySymbol(vaultData.inputToken?.symbol);
-  const ethPriceUsd = useTokenPriceBySymbol("ETH");
+
+  const gasTokenPrice = useTokenPriceBySymbol("ETH");
   const isSelectedTokenInput =selectedTokenFromModal && inputToken && selectedTokenFromModal?.address === inputToken?.address && selectedTokenFromModal?.symbol === inputToken?.symbol
 
   const vaultToken: Token = useMemo(() => {
@@ -768,7 +775,14 @@ export default function VaultInputs({
           calculationResult = cached.result;
         } else {
           console.log("Cache miss - performing new deposit calculation");
-
+          const inputTokenPrice = getTokenPrice(inputToken?.symbol, priceContext);
+          if (!gasZRC20) {
+            console.error("Gas ZRC20 token is not defined");
+            return;
+          }
+          const gasTokenSymbol = ZRC20_TOKENS_BY_ADDRESS[gasZRC20]?.symbol ?? "Unknown";
+          const gasTokenPrice = getTokenPrice(gasTokenSymbol, priceContext);
+          console.log("Input Token Price:", inputTokenPrice);
           // Use the unified calculation function
           calculationResult = await calculateDepositOutput(
             inputAmountValue,
@@ -778,7 +792,7 @@ export default function VaultInputs({
             activeWallet,
             vaultTokenPrice,
             inputTokenPrice,
-            ethPriceUsd,
+            gasTokenPrice,
             formatUSDAmount,
             convertUsdToEth
           );
@@ -851,7 +865,7 @@ export default function VaultInputs({
       inputTokenPrice,
       vaultData,
       vaultTokenPrice,
-      ethPriceUsd,
+      gasTokenPrice,
       activeWallet,
       userSlippage,
     ],

@@ -41,7 +41,7 @@ import { useTokenPrices } from "@/providers/TokenPriceProvider";
 import { ONE_MINUTE, USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
 import vaultAbi from "../../abis/moonwellVaultABI.json";
 import { Address, zeroAddress } from "viem";
-import { ConnectedWallet } from "@privy-io/react-auth";
+import { ConnectedWallet, SUPPORTED_CHAINS } from "@privy-io/react-auth";
 import { useUserSettingsStore } from "@/store/userSettingsStore";
 import { useUserPositionsFromGraph, useUserTransactionsFromGraph } from "./useVaultsGraph";
 import { useMultiChain } from "@/providers/MultiChainProvider";
@@ -50,6 +50,9 @@ import { ethers, Interface } from "ethers";
 import { apiService } from "@/service";
 import { getVault30dAvgAPY, getVaultHistoricalAPY } from '@/utils/defillama';
 import { VAULT_TO_DEFILLAMA_POOL } from "@/constants/defillamaPoolMapping";
+import { parseAbiItem } from "viem";
+import { PublicClient } from "viem";
+import { getPublicClient } from "@/utils/getPublicClient";
 
 type CashedVaultData = {
   vaultId: string;
@@ -556,8 +559,8 @@ export const useUpdateAPYs = (
                 APY7d = await fetchAegisAPR();
               } else if (vault.protocol.name === "YieldFi") {
                 APY7d = await fetchYieldFiAPY();
-              } else if (vault.protocol.name === "Noon Capital") {       
-                APY7d = await fetchNoonCapitalAPY();       
+              } else if (vault.protocol.name === "Noon Capital") {
+                APY7d = await fetchNoonCapitalAPY();
               } else if (vault.protocol.name === "Compound") {
                 APY7d = await calculateCompoundAPY(
                   receiptTokenAddress as Address,
@@ -643,7 +646,7 @@ export const useUpdateAPYs = (
               }
 
               const realApy30d = await getVault30dAvgAPY(vault.id);
-             
+
               return {
                 vaultId: vault.id,
                 APY7d,
@@ -834,3 +837,65 @@ export const useUserPortfolioFromGraph = (userAddress?: string) => {
   };
 };
 
+export function useVaultGasToken(
+  vaultData?: VaultData
+): { gasZRC20?: string; gasFee?: bigint; gasZRC20Symbol?: string } {
+  const [gasZRC20, setGasZRC20] = useState<string | undefined>(undefined);
+  const [gasFee, setGasFee] = useState<bigint | undefined>(undefined);
+  const [gasZRC20Symbol, setGasZRC20Symbol] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    const fetchGasTokenAndFee = async () => {
+      if (!vaultData?.id || !vaultData?.inputToken?.address) return;
+
+      try {
+        const publicClient: PublicClient = getPublicClient(7000);
+        console.log("Fetching gas token and fee for vault:", vaultData.id);
+        console.log("chainid:", SUPPORTED_CHAINS[0].id);
+        // Step 1: fetch gasLimitForWithdrawAndCall from vault
+        const gasLimit = await publicClient.readContract({
+          address: vaultData.id as Address,
+          abi: [
+            parseAbiItem("function gasLimitForWithdrawAndCall() view returns (uint256)"),
+          ],
+          functionName: "gasLimitForWithdrawAndCall",
+        }) as bigint;
+
+        // Step 2: call withdrawGasFeeWithGasLimit on inputToken
+        const [tokenAddress, feeAmount] = await publicClient.readContract({
+          address: vaultData.inputToken.address as Address,
+          abi: [
+            parseAbiItem(
+              "function withdrawGasFeeWithGasLimit(uint256) view returns (address,uint256)"
+            ),
+          ],
+          functionName: "withdrawGasFeeWithGasLimit",
+          args: [gasLimit],
+        }) as [string, bigint];
+
+        setGasZRC20(tokenAddress);
+        setGasFee(feeAmount);
+
+        // Step 3: fetch the symbol of the gas token
+        const symbol = await publicClient.readContract({
+          address: tokenAddress as Address,
+          abi: [
+            parseAbiItem("function symbol() view returns (string)")
+          ],
+          functionName: "symbol",
+        }) as string;
+
+        setGasZRC20Symbol(symbol);
+      } catch (err) {
+        console.error("Error fetching gas token details:", err);
+        setGasZRC20(undefined);
+        setGasFee(undefined);
+        setGasZRC20Symbol(undefined);
+      }
+    };
+
+    fetchGasTokenAndFee();
+  }, [vaultData?.id, vaultData?.inputToken?.address, vaultData?.protocol.chainId]);
+
+  return { gasZRC20, gasFee, gasZRC20Symbol };
+}

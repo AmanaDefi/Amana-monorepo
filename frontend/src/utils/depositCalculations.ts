@@ -7,6 +7,7 @@ import { getPublicClient } from "./getPublicClient";
 import { SUPPORTED_CHAINS } from "../constants/chainConfig";
 import { ConnectedWallet } from "@privy-io/react-auth";
 import { log } from "console";
+import { gas } from "codemelt-retro-api-sdk/functional/api/swap/native";
 
 const SWAP_HELPER_ADDRESS = process.env
   .NEXT_PUBLIC_SWAPHELPER_ADDRESS as `0x${string}`;
@@ -171,7 +172,7 @@ export const calculateGasFeeIfNeeded = async (
   activeChain: Chain,
   vaultTokenPrice: number,
   inputTokenPrice: number,
-  ethPriceUsd: number,
+  gasTokenPrice: number,
   formatCurrency: (amount: number) => string,
   convertUsdToEth: (usd: number, ethPrice: number) => number
 ): Promise<GasFeeCalculationResult> => {
@@ -217,18 +218,24 @@ export const calculateGasFeeIfNeeded = async (
   const gasZRC20 = result[0] as string;
   const gasFee = result[1] as bigint;
 
-
+  console.log("GasFee:", gasFee.toString());
   let gasFeeInVaultAsset = gasFee;
   let gasFeeInInputToken = gasFee;
 
   // Get the actual input token (ZRC20 equivalent for cross-chain)
   const actualInputToken = isZetachain(activeChain?.id) ? inputToken : inputToken?.ZRC20equivalent;
-
+  console.log("inputTokenPrice:", inputTokenPrice);
 
   // Convert gas fee to vault asset if tokens differ
   if (gasZRC20.toLowerCase() !== vaultData.inputToken.address.toLowerCase()) {
-    gasFeeInVaultAsset = BigInt(Math.floor((Number(gasFee) / 10 ** (inputToken?.decimals ?? 18)) * inputTokenPrice * 10 ** vaultData.inputToken.decimals));
+    console.log("Converting gas fee to vault asset terms...");
+    const gasTokenDecimals = ZRC20_TOKENS_BY_ADDRESS[gasZRC20]?.decimals ?? 18;
+    // const gasTokenSymbol = ZRC20_TOKENS_BY_ADDRESS[gasZRC20]?.symbol ?? "Unknown";
+    console.log("Gas token decimals:", gasTokenDecimals);
+    gasFeeInVaultAsset = BigInt(Math.floor((Number(gasFee) / 10 ** gasTokenDecimals) * gasTokenPrice * 10 ** vaultData.inputToken.decimals));
   }
+  console.log("Gas fee in vault asset:", gasFeeInVaultAsset.toString());
+  // inputToken?.decimals ??
 
 
   // Convert gas fee to input token terms if needed
@@ -246,7 +253,7 @@ export const calculateGasFeeIfNeeded = async (
             gasFee                               // input amount
           ],
         });
-       
+
       } catch (error) {
         console.error("Error converting gas fee to input token:", error);
         // Fallback to direct conversion if the function fails
@@ -263,7 +270,7 @@ export const calculateGasFeeIfNeeded = async (
   const gasFeeInTokenUnits = Number(formatUnits(gasFeeInVaultAsset, vaultData.inputToken.decimals));
   const gasFeeInUSDAmount = gasFeeInTokenUnits * vaultTokenPrice;
   const gasFeeInUSD = formatCurrency(gasFeeInUSDAmount);
-  const ethAmount = convertUsdToEth(gasFeeInUSDAmount, ethPriceUsd);
+  const ethAmount = convertUsdToEth(gasFeeInUSDAmount, gasTokenPrice); // TODO - get ETH price from somewhere
   const gasFeeInETH = ethAmount.toFixed(5);
 
   console.log("Final gas fee calculation:", {
@@ -273,7 +280,7 @@ export const calculateGasFeeIfNeeded = async (
     gasFeeInUSD,
     gasFeeInETH,
     vaultTokenPrice,
-    ethPriceUsd
+    gasTokenPrice
   });
 
   return {
@@ -389,7 +396,7 @@ export const calculateDepositOutput = async (
   activeWallet: ConnectedWallet,
   vaultTokenPrice: number,
   inputTokenPrice: number,
-  ethPriceUsd: number,
+  gasTokenPrice: number,
   formatCurrency: (amount: number) => string,
   convertUsdToEth: (usd: number, ethPrice: number) => number
 ): Promise<DepositCalculationResult> => {
@@ -399,9 +406,6 @@ export const calculateDepositOutput = async (
     throw new Error("Input token not found on Zetachain");
   }
 
- 
-
-
   // Step 1: Calculate gas fee (conditional)
   const gasFeeResult = await calculateGasFeeIfNeeded(
     vaultData,
@@ -409,7 +413,7 @@ export const calculateDepositOutput = async (
     activeChain,
     vaultTokenPrice,
     inputTokenPrice,
-    ethPriceUsd,
+    gasTokenPrice,
     formatCurrency,
     convertUsdToEth
   );
@@ -443,9 +447,9 @@ export const calculateDepositOutput = async (
 
     amountForStrategy = swapResult.amountOut;
 
-
+    // const inputTokenPrice = useTokenPriceBySymbol(vault.inputToken.symbol);
     const equivalentInputAmount = BigInt(Math.floor((Number(amountAfterFee) / 10 ** (inputToken?.decimals ?? 18)) * inputTokenPrice * 10 ** vaultData.inputToken.decimals));
-    
+
     swapSlippage = equivalentInputAmount > amountForStrategy ? equivalentInputAmount - amountForStrategy : 0n;
   }
 
