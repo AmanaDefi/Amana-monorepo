@@ -75,7 +75,7 @@ import { useAPYStore } from "@/store/APYStore";
 import { useMaxAmount } from "@/hooks/useMaxAmount";
 import { useTokenPrices} from "@/providers/TokenPriceProvider";
 import { getTokenPrice } from "@/hooks/useVaultData";
-import { useVaultGasToken } from "@/hooks/hooks";
+import { getVaultGasTokenInfo } from "@/utils/getVaultGasTokenInfo";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -133,7 +133,23 @@ export default function VaultInputs({
   APY7DValue,
 }: VaultInputsProps): JSX.Element {
   const priceContext = useTokenPrices();
-  const { gasZRC20, gasFee, gasZRC20Symbol } = useVaultGasToken(vaultData);
+  const [gasTokenSymbol, setGasTokenSymbol] = useState<string>("ETH");
+  const [gasTokenPrice, setGasTokenPrice] = useState<number>(0);
+
+  useEffect(() => {
+    async function fetchGasTokenSymbol() {
+      if (!vaultData) return;
+      const { gasZRC20Symbol } = await getVaultGasTokenInfo(vaultData);
+      if (gasZRC20Symbol) {
+        setGasTokenSymbol(gasZRC20Symbol);
+        setGasTokenPrice(getTokenPrice(gasZRC20Symbol, priceContext));
+      } else {
+        setGasTokenSymbol("ETH");
+        setGasTokenPrice(getTokenPrice("ETH", priceContext));
+      }
+    }
+    fetchGasTokenSymbol();
+  }, [vaultData, priceContext]);
 
   const [inputToken, setInputToken] = useState<Token | undefined>(
     selectedToken,
@@ -254,7 +270,6 @@ export default function VaultInputs({
   const inputTokenPrice = useTokenPriceBySymbol(inputToken?.symbol);
   const vaultTokenPrice = useTokenPriceBySymbol(vaultData.inputToken?.symbol);
 
-  const gasTokenPrice = useTokenPriceBySymbol("ETH");
   const isSelectedTokenInput =selectedTokenFromModal && inputToken && selectedTokenFromModal?.address === inputToken?.address && selectedTokenFromModal?.symbol === inputToken?.symbol
 
   const vaultToken: Token = useMemo(() => {
@@ -776,13 +791,10 @@ export default function VaultInputs({
         } else {
           console.log("Cache miss - performing new deposit calculation");
           const inputTokenPrice = getTokenPrice(inputToken?.symbol, priceContext);
-          if (!gasZRC20) {
-            console.error("Gas ZRC20 token is not defined");
+          if (!inputTokenPrice) {
+            console.error("Input token price is not defined");
             return;
           }
-          const gasTokenSymbol = ZRC20_TOKENS_BY_ADDRESS[gasZRC20]?.symbol ?? "Unknown";
-          const gasTokenPrice = getTokenPrice(gasTokenSymbol, priceContext);
-          console.log("Input Token Price:", inputTokenPrice);
           // Use the unified calculation function
           calculationResult = await calculateDepositOutput(
             inputAmountValue,
@@ -794,7 +806,6 @@ export default function VaultInputs({
             inputTokenPrice,
             gasTokenPrice,
             formatUSDAmount,
-            convertUsdToEth
           );
 
           // Store result in cache for future use
@@ -865,9 +876,10 @@ export default function VaultInputs({
       inputTokenPrice,
       vaultData,
       vaultTokenPrice,
-      gasTokenPrice,
       activeWallet,
       userSlippage,
+      gasTokenPrice,
+      priceContext,
     ],
   );
 
