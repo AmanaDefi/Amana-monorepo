@@ -44,8 +44,8 @@ export interface DepositCalculationResult {
   };
 
   // Conversion details
+  amountAfterSwap: bigint;
   amountAfterFee: bigint;
-  amountForStrategy: bigint;
   needsTokenSwap: boolean;
   needsGasFee: boolean;
 }
@@ -215,12 +215,12 @@ export const calculateGasFeeIfNeeded = async (
     console.log("needs deduction:", true);
   }
   console.log("Gas fee in vault asset:", gasFeeInVaultAsset.toString());
-  
+
   // Format gas fee in USD and ETH
   const gasFeeInTokenUnits = Number(formatUnits(gasFeeInVaultAsset, vaultData.inputToken.decimals));
   const gasFeeInUSDAmount = gasFeeInTokenUnits * vaultTokenPrice;
   const gasFeeInUSD = formatCurrency(gasFeeInUSDAmount);
-  
+
   console.log("Final gas fee calculation:", {
     gasFeeInVaultAsset: gasFeeInVaultAsset.toString(),
     gasFeeInTokenUnits,
@@ -313,35 +313,38 @@ export const calculateDepositOutput = async (
   formatCurrency: (amount: number) => string
 ): Promise<DepositCalculationResult> => {
   // Step 1: Swap full input amount to vault asset (if needed)
-  let amountForStrategy = inputAmount;
+  let amountAfterSwap = inputAmount;
   let swapSlippage = 0n;
   let needsTokenSwap = false;
 
   console.log(
-    "[DepositCalc] Comparing inputToken.address:",
-    inputToken.address,
+    "[DepositCalc] Comparing inputToken.ZRC20equivalent.address:",
+    inputToken.ZRC20equivalent?.address,
     "with vaultData.inputToken.address:",
     vaultData.inputToken.address
   );
-  if (inputToken.address.toLowerCase() !== vaultData.inputToken.address.toLowerCase()) {
+  if (!inputToken.ZRC20equivalent) {
+    throw new Error("No ZRC20 equivalent found for input token");
+  }
+  if (inputToken.ZRC20equivalent?.address.toLowerCase() !== vaultData.inputToken.address.toLowerCase()) {
     needsTokenSwap = true;
     const swapResult = await getPathDataAndAmountOut(
       inputAmount,
-      inputToken,
+      inputToken.ZRC20equivalent,
       vaultData.inputToken,
       vaultData.id as Address,
       500
     );
     console.log("Needs Token Swap:", needsTokenSwap);
-    amountForStrategy = swapResult.amountOut;
+    amountAfterSwap = swapResult.amountOut;
     // Calculate swap slippage in vault asset
-    const equivalentInputAmount = BigInt(Math.floor((Number(inputAmount) / 10 ** (inputToken?.decimals ?? 18)) * inputTokenPrice * 10 ** vaultData.inputToken.decimals));
-    swapSlippage = equivalentInputAmount > amountForStrategy ? equivalentInputAmount - amountForStrategy : 0n;
+    const inputAmountInVaultAsset = BigInt(Math.floor((Number(inputAmount) / 10 ** (inputToken?.ZRC20equivalent.decimals ?? 18)) * inputTokenPrice * 10 ** vaultData.inputToken.decimals));
+    swapSlippage = inputAmountInVaultAsset > amountAfterSwap ? inputAmountInVaultAsset - amountAfterSwap : 0n;
     console.log("[DepositCalc] Swap Result:", swapResult);
   } else {
     console.log("No token swap needed, input token is vault asset");
   }
-  console.log("[DepositCalc] Amount For Strategy (after swap):", amountForStrategy.toString());
+  console.log("[DepositCalc] Amount after swap:", amountAfterSwap.toString());
   console.log("[DepositCalc] Swap Slippage:", swapSlippage.toString());
 
   // Step 2: Deduct gas fee (in vault asset)
@@ -354,10 +357,10 @@ export const calculateDepositOutput = async (
     gasTokenPrice,
     formatCurrency
   );
-  let amountAfterFee = amountForStrategy;
-  console.log("amountForStrategy for rohit:", amountAfterFee);
+  let amountAfterFee = amountAfterSwap;
+  console.log("amountAfterSwap for rohit:", amountAfterFee);
   if (gasFeeResult.needsDeduction) {
-    amountAfterFee = amountForStrategy > gasFeeResult.gasFeeInVaultAsset ? amountForStrategy - gasFeeResult.gasFeeInVaultAsset : 0n;
+    amountAfterFee = amountAfterSwap > gasFeeResult.gasFeeInVaultAsset ? amountAfterSwap - gasFeeResult.gasFeeInVaultAsset : 0n;
     console.log("amountAfterFee for rohit:", amountAfterFee);
   }
   console.log("[DepositCalc] Gas Fee Result:", gasFeeResult);
@@ -422,8 +425,8 @@ export const calculateDepositOutput = async (
       percentage: totalSlippagePercentage,
     },
 
+    amountAfterSwap,
     amountAfterFee,
-    amountForStrategy,
     needsTokenSwap,
     needsGasFee: gasFeeResult.needsDeduction,
   };

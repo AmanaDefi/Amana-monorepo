@@ -840,10 +840,8 @@ export default function VaultInputs({
               inputAmountInUSDFormatted: formatUSDValue((Number(inputAmountValue) / 10 ** (inputToken?.decimals ?? 18)) * inputTokenPrice),
               swapSlippageUSD: result.swapSlippage.amountInUSD,
               depositSlippageUSD: result.depositSlippage.amountInUSD,
-              totalLossUSD: result.totalLoss.amountInUSD,
               swapSlippagePercentage: result.swapSlippage.percentage,
               depositSlippagePercentage: result.depositSlippage.percentage,
-              totalLossPercentage: result.totalLoss.percentage,
             });
           }
         };
@@ -857,7 +855,6 @@ export default function VaultInputs({
           gasFee: calculationResult.gasFee.amount.toString(),
           swapSlippage: calculationResult.swapSlippage.amount.toString(),
           depositSlippage: calculationResult.depositSlippage.amount.toString(),
-          totalLoss: calculationResult.totalLoss.amount.toString(),
           needsTokenSwap: calculationResult.needsTokenSwap,
           needsGasFee: calculationResult.needsGasFee,
         });
