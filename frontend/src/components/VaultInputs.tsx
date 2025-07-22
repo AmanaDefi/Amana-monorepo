@@ -764,6 +764,27 @@ export default function VaultInputs({
       if (!inputToken || !activeChain) {
         return;
       }
+      // Early return if inputAmountValue is zero
+      if (inputAmountValue === 0n) {
+        setConversionOutput({
+          slippageActualValue: 0,
+          slippageAmountInUSDFormatted: formatUSDValue(0),
+          finalConvertedAmountInUSDFormatted: formatUSDValue(0),
+          outputAmountFormatted: "0",
+          outputAmountInUSDFormatted: formatUSDValue(0),
+          gasFeeInInputToken: "0",
+          gasFeeInUSD: formatUSDValue(0),
+          gasFeeInETH: formatUSDValue(0),
+          netDepositToVaultUSD: formatUSDValue(0),
+          inputAmountInUSDFormatted: formatUSDValue(0),
+          swapSlippageUSD: formatUSDValue(0),
+          depositSlippageUSD: formatUSDValue(0),
+          swapSlippagePercentage: 0,
+          depositSlippagePercentage: 0,
+        });
+        setLoadingOutputToken(false);
+        return;
+      }
 
       try {
         // Check cache first - look for existing calculation with same parameters
