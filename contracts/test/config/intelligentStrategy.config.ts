@@ -3,6 +3,11 @@
 import { ethers } from "hardhat";
 import { BigNumber } from "ethers";
 
+export interface ModuleConfig {
+  moduleContractName: string;
+  moduleParams: any[];
+}
+
 export interface IntelligentStrategyTestConfig {
   name: string;
   forkBlock: number;
@@ -11,8 +16,7 @@ export interface IntelligentStrategyTestConfig {
   inputTokenAddress: string;
   inputTokenStorageSlot: number;
   receiptTokenAddress: string;
-  moduleContractName: string;
-  moduleParams: any[];
+  moduleConfigs: ModuleConfig[]; // ⬅️ NEW
   depositAmount: BigNumber;
   withdrawAmount: BigNumber;
   minSharesOut: BigNumber;
@@ -22,17 +26,30 @@ export interface IntelligentStrategyTestConfig {
 
 export const intelligentStrategyConfigs: IntelligentStrategyTestConfig[] = [
   {
-    name: "Fluid USDC Strategy",
-    forkBlock: 14450000,
-    strategyChainId: 8453, // Base
+    name: "Fluid + Compound USDC Strategy",
+    forkBlock: 33196229,
+    strategyChainId: 8453,
     gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed",
-    inputTokenAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC on Base
+    inputTokenAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
     inputTokenStorageSlot: 9,
-    receiptTokenAddress: "0xf42f5795D9ac7e9D757dB633D693cD548Cfd9169", // Fluid pool vault
-    moduleContractName: "FluidStrategyModule",
-    moduleParams: [
-      "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // inputToken
-      "0xf42f5795D9ac7e9D757dB633D693cD548Cfd9169"  // Fluid vault
+    receiptTokenAddress: "0xf42f5795D9ac7e9D757dB633D693cD548Cfd9169", // irrelevant for intelligent strategy
+    moduleConfigs: [
+      {
+        moduleContractName: "FluidStrategyModule",
+        moduleParams: [
+          "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // inputToken
+          "0xf42f5795D9ac7e9D757dB633D693cD548Cfd9169"  // Fluid vault
+        ]
+      },
+      {
+        moduleContractName: "CompoundStrategyModule",
+        moduleParams: [
+          "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // inputToken
+          "0xb125E6687d4313864e53df431d5425969c15Eb2F", // receiptToken
+          "0x123964802e6ABabBE1Bc9547D72Ef1B69B00A6b1", // rewards contract
+          "0x9e1028F5F1D5eDE59748FFceE5532509976840E0"  // COMP token
+        ]
+      }
     ],
     depositAmount: ethers.utils.parseUnits("1000", 6),
     withdrawAmount: ethers.utils.parseUnits("1000", 6),

@@ -5,6 +5,7 @@ import "./ERC20StrategyParent_new.sol";
 import "../interfaces/IYieldModule.sol";
 import "./StrategyHelper.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "hardhat/console.sol"; // For debugging purposes
 
 contract ERC20IntelligentStrategy is ERC20StrategyParent {
     enum RebalanceAction {
@@ -82,16 +83,27 @@ contract ERC20IntelligentStrategy is ERC20StrategyParent {
                     instr.module,
                     depositAmount
                 );
+                console.log(
+                    "Depositing %s to module %s",
+                    depositAmount,
+                    instr.module
+                );
                 IYieldModule(instr.module).deposit(
                     instr.inputToken,
                     depositAmount
                 );
+                console.log(
+                    "Deposited %s to module %s",
+                    depositAmount,
+                    instr.module
+                );
             } else if (instr.action == RebalanceAction.Withdraw) {
+                require(instr.amount > 0, "Withdraw amount must be > 0");
                 uint256 received = IYieldModule(instr.module).withdraw(
                     instr.inputToken,
-                    instr.minOut
+                    instr.amount
                 );
-                // assume module transfers funds directly to strategy
+                require(received >= instr.minOut, "Insufficient withdrawal");
             } else {
                 revert("Invalid rebalance action");
             }

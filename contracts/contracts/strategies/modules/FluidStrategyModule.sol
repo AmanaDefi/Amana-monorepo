@@ -10,6 +10,7 @@ import "../../interfaces/IYieldModule.sol";
 import "../../interfaces/I4626Vault.sol";
 import "../../interfaces/IErrors.sol";
 import "../StrategyHelper.sol";
+import "hardhat/console.sol"; // For debugging purposes
 
 contract FluidStrategyModule is
     Initializable,
@@ -47,17 +48,27 @@ contract FluidStrategyModule is
             address(receiptToken),
             amount
         );
-
+        console.log("Depositing %s to receipt token", amount);
         receiptToken.deposit(amount, address(this));
     }
 
     function withdraw(
-        address,
-        uint256 minOut
+        address, // ignored
+        uint256 amount // amount to withdraw in underlying tokens
     ) external override returns (uint256 amountOut) {
-        uint256 shares = _estimateSharesForWithdrawal(minOut);
-        amountOut = receiptToken.redeem(shares, msg.sender, address(this));
-        require(amountOut >= minOut, "Too little out");
+        require(amount > 0, "Zero withdraw amount");
+
+        uint256 shares = _estimateSharesForWithdrawal(amount);
+        uint256 preBalance = inputToken.balanceOf(address(this));
+
+        // Redeem shares from the vault
+        receiptToken.redeem(shares, address(this), address(this));
+
+        amountOut = inputToken.balanceOf(address(this)) - preBalance;
+
+        require(amountOut >= amount, "Too little out");
+
+        inputToken.safeTransfer(msg.sender, amountOut);
     }
 
     function totalAssets() external view override returns (uint256) {

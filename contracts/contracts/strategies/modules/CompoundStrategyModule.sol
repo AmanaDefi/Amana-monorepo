@@ -66,15 +66,23 @@ contract CompoundStrategyModule is
     ) external override returns (uint256 amountOut) {
         _claimRewards();
 
-        uint256 shares = _estimateSharesForWithdrawal(minOut);
-        uint256 preBalance = inputToken.balanceOf(address(this));
+        uint256 maxAvailable = inputToken.balanceOf(address(this));
 
-        receiptToken.withdraw(address(inputToken), shares);
+        if (maxAvailable < minOut) {
+            uint256 shares = _estimateSharesForWithdrawal(
+                minOut - maxAvailable
+            );
+            uint256 preBalance = inputToken.balanceOf(address(this));
+            receiptToken.withdraw(address(inputToken), shares);
+            uint256 received = inputToken.balanceOf(address(this)) - preBalance;
+            amountOut = maxAvailable + received;
+        } else {
+            amountOut = minOut;
+        }
 
-        amountOut = inputToken.balanceOf(address(this)) - preBalance;
         require(amountOut >= minOut, "Too little out");
 
-        inputToken.safeTransfer(msg.sender, amountOut);
+        // NOTE: Strategy will handle transfers; do NOT send to msg.sender
     }
 
     function totalAssets() external view override returns (uint256) {
