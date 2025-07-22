@@ -568,6 +568,26 @@ export function getCurrentSlippage(): number {
   return settings.slippage.value;
 }
 
+export function getVaultSlippage(vaultId: string): number {
+  // Try Zustand first
+  try {
+    // Dynamically require to avoid circular deps in some build setups
+    const store = require("@/store/userSettingsStore");
+    const slippageSettings = store.useUserSettingsStore.getState().getSlippageForVault(vaultId);
+    return slippageSettings.value;
+  } catch (e) {
+    // fallback: try localStorage
+    try {
+      const settings = JSON.parse(localStorage.getItem("globalSettings") || "{}");
+      if (settings && settings.slippage && settings.slippage[vaultId]) {
+        return settings.slippage[vaultId].value;
+      }
+    } catch {}
+    // fallback default
+    return 0.5;
+  }
+}
+
 export function formatSlippageUSD(amount: number): string {
   if (Number.isNaN(amount)) {
     return "$0.00";
