@@ -1321,7 +1321,7 @@ function Interaction({
 
   const handleWalletConnect = () => {
     setChain(activeChain);
-    if (activeChain?.id === zetachain.id) {
+    if (activeChain?.id === zetachain.id || !activeChain) {
       openStep(isMobile ? "mobileOptionsA" : "optionsA");
     } else {
       if (

@@ -43,8 +43,7 @@ import {
   convertGraphVaultToVaultData,
   convertGraphVaultToTotalAssets,
 } from "@/utils/graphUtils";
-import { EXCLUDED_VAULTS } from "@/constants";
-import { getRawBlockTransactions } from "viem/zksync";
+import { EXCLUDED_VAULTS, DEFAULT_SORT_CONFIG } from "@/constants";
 import {
   useStableVaultsSortedFromGraph,
   useNonStableVaultsSortedFromGraph,
@@ -328,8 +327,8 @@ export const useVaultData = () => {
 export const useVaultDataPaginated = (
   page: number = 1,
   pageSize: number = 10,
-  sortBy: string = "tvl",
-  sortOrder: "asc" | "desc" = "desc",
+  sortBy: string = DEFAULT_SORT_CONFIG.sortBy,
+  sortOrder: "asc" | "desc" = DEFAULT_SORT_CONFIG.sortOrder,
 ) => {
   const { wallets } = useWallets();
   const filteredWallets = wallets.filter(
@@ -399,7 +398,7 @@ export const useVaultDataPaginated = (
       case "risk":
         return "riskLevel";
       default:
-        return "tvl";
+        return DEFAULT_SORT_CONFIG.sortBy === "apy" ? "apy7d" : "tvl";
     }
   }, [sortBy]);
 
@@ -680,8 +679,8 @@ export const useVaultDataWithSearch = (
   searchTerm: string = "",
   page: number = 1,
   pageSize: number = 10,
-  sortBy: string = "tvl",
-  sortOrder: "asc" | "desc" = "desc",
+  sortBy: string = DEFAULT_SORT_CONFIG.sortBy,
+  sortOrder: "asc" | "desc" = DEFAULT_SORT_CONFIG.sortOrder,
   networkFilter: string = "",
   protocolFilter: string = "",
 ) => {
@@ -755,7 +754,7 @@ export const useVaultDataWithSearch = (
       case "risk":
         return "riskLevel";
       default:
-        return "tvl";
+        return DEFAULT_SORT_CONFIG.sortBy === "apy" ? "apy7d" : "tvl";
     }
   }, [sortBy]);
 
@@ -1093,7 +1092,16 @@ export const useVaultDataWithSearch = (
       const hasAPY = shouldUseGraphAPY ? vaultAPYs.length >= 0 : true;
       const hasTVL = shouldUseGraphTVL ? vaultTotalAssets.length >= 0 : true;
 
-      return dataLoaded && hasAPY && hasTVL;
+      // When sorting by APY and not using graph APY, ensure APY calculations are complete
+      let apyCalculationsReady = true;
+      if (sortBy.toLowerCase() === "apy" && !shouldUseGraphAPY && vaults.length > 0) {
+        // Check if we have APY data for all vaults that need it
+        apyCalculationsReady = !vaults.some(
+          (v) => !vaultAPYs.find((a) => a.vaultId === v.id)
+        );
+      }
+
+      return dataLoaded && hasAPY && hasTVL && apyCalculationsReady;
     }
 
     // If not using subgraph - no vaults
@@ -1107,6 +1115,9 @@ export const useVaultDataWithSearch = (
     vaultAPYs.length,
     shouldUseGraphTVL,
     vaultTotalAssets.length,
+    sortBy,
+    vaults.length,
+    vaultAPYs,
   ]);
 
   // APY calculations (only if not using subgraph and there are vaults)

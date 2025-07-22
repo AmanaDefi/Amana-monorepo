@@ -10,7 +10,7 @@ import ConfirmDepositIcon from "../svg/instruction/ConfirmDepositIcon";
 import CrossChainTransferIcon from "../svg/instruction/CrossChainTransferIcon";
 import FinalConfirmationIcon from "../svg/instruction/FinalConfirmationIcon";
 import { useInstructionStepLogic } from "@/hooks/useInstructionStepLogic";
-import { hasNoErrors } from "@/utils/utils";
+import { hasNoErrors, parseTransactionMessage } from "@/utils/utils";
 
 interface MobileDepositInstructionProps {
   transactionStepFeedback?: TransactionStepMessages;
@@ -99,6 +99,9 @@ const MobileDepositInstruction: React.FC<MobileDepositInstructionProps> = (
     }
   }
 
+  const { textBeforeHash, hashValue } = parseTransactionMessage(
+    currentStepDescription,
+  );
   return (
     <div className="flex flex-col gap-[20px] bg-[#14171F] py-4 px-[14px] rounded-lg">
       <div>
@@ -169,9 +172,9 @@ const MobileDepositInstruction: React.FC<MobileDepositInstructionProps> = (
           )}
         </div>
 
-        <p className="text-sm break-all w-full font-normal tracking-[-0.06em] text-white">
-          {currentStepDescription}
-
+        <p className="text-sm break-words w-full font-normal tracking-[-0.06em] text-white">
+          <span>{textBeforeHash}</span>
+          {hashValue && <p className="!break-all">{hashValue}</p>}
         </p>
       </div>
     </div>

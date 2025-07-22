@@ -34,12 +34,10 @@ import {
 } from "@/utils/utils";
 import InteractionContainer from "./interactAPI";
 import { useSlippage, useTokenPriceBySymbol } from "@/hooks/hooks";
-import {
-  getPathDataAndAmountOut,
-  getPerformanceFee,
-} from "@/actions/actions";
+import { getPathDataAndAmountOut, getPerformanceFee } from "@/actions/actions";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
+
 import { calculateDepositOutput, DepositCalculationResult, isCachedCalculationValid, getCacheStats } from "@/utils/depositCalculations";
 
 import { trackEvent } from "@/utils/trackEvent";
@@ -73,6 +71,7 @@ import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 import { zetachain } from "viem/chains";
 import { useAPYStore } from "@/store/APYStore";
 import { useMaxAmount } from "@/hooks/useMaxAmount";
+import { InfoBlock } from "./VaultsWrapper/components/InfoBlock.tsx";
 import { useTokenPrices} from "@/providers/TokenPriceProvider";
 import { getTokenPrice } from "@/hooks/useVaultData";
 import { getVaultGasTokenInfo } from "@/utils/getVaultGasTokenInfo";
@@ -779,11 +778,11 @@ export default function VaultInputs({
           inputToken, 
           activeChain.id
         )) {
-          
-          
+
           // Log cache performance stats periodically
           const stats = getCacheStats();
-          if (stats.hits % 10 === 0) { // Log every 10th cache hit
+          if (stats.hits % 10 === 0) {
+            // Log every 10th cache hit
             console.log("Cache Performance:", stats);
           }
           
@@ -840,10 +839,8 @@ export default function VaultInputs({
               inputAmountInUSDFormatted: formatUSDValue((Number(inputAmountValue) / 10 ** (inputToken?.decimals ?? 18)) * inputTokenPrice),
               swapSlippageUSD: result.swapSlippage.amountInUSD,
               depositSlippageUSD: result.depositSlippage.amountInUSD,
-              totalLossUSD: result.totalLoss.amountInUSD,
               swapSlippagePercentage: result.swapSlippage.percentage,
               depositSlippagePercentage: result.depositSlippage.percentage,
-              totalLossPercentage: result.totalLoss.percentage,
             });
           }
         };
@@ -857,11 +854,9 @@ export default function VaultInputs({
           gasFee: calculationResult.gasFee.amount.toString(),
           swapSlippage: calculationResult.swapSlippage.amount.toString(),
           depositSlippage: calculationResult.depositSlippage.amount.toString(),
-          totalLoss: calculationResult.totalLoss.amount.toString(),
           needsTokenSwap: calculationResult.needsTokenSwap,
           needsGasFee: calculationResult.needsGasFee,
         });
-
       } catch (error) {
         console.error("Error in deposit calculation:", error);
         setOutputBoxErrorMessage("Error calculating deposit output");
@@ -1278,19 +1273,16 @@ export default function VaultInputs({
 
   return (
     <>
-      {/* Add prominent message about gas fees for Ethereum vaults */}
-      {isDeposit && !vaultData.depositFeePaidFromGasTank && (
-        <div className="bg-yellow-900/30 border border-yellow-500 py-3 px-4 rounded-lg mb-5 text-xs md:text-base">
-          <p className="text-yellow-400 flex items-center">
-            <span className="font-normal">
-              For Ethereum Vaults, Ethereum gas fees are deducted directly from
-              your deposit amount and are not covered by Amana.
-            </span>
-          </p>
-        </div>
-      )}
-      <div className="mb-4 md:mb-6">
-        <div className="relative">
+      <div className="mb-4 md:mb-0">
+        <div className="relative flex items-center">
+          {isDeposit && !vaultData.depositFeePaidFromGasTank && (
+            <div className="absolute top-4">
+              <InfoBlock iconColor="#FFC700">
+                💡 For Ethereum Vaults, Ethereum gas fees are deducted directly
+                from your deposit amount and are not covered by Amana.
+              </InfoBlock>
+            </div>
+          )}
           <TabSelector
             availableTabs={["Invest", "Withdraw"]}
             activeTab={isDeposit ? "Invest" : "Withdraw"}
@@ -1306,7 +1298,15 @@ export default function VaultInputs({
           </div>
         </div>
 
-        <div className="flex md:hidden mt-4 justify-end">
+        <div className="flex flex-row relative md:hidden mt-4 justify-end">
+          {isDeposit && !vaultData.depositFeePaidFromGasTank && (
+            <div className="absolute top-1 right-8">
+              <InfoBlock iconColor="#FFC700" isRight>
+                💡 For Ethereum Vaults, Ethereum gas fees are deducted directly
+                from your deposit amount and are not covered by Amana.
+              </InfoBlock>
+            </div>
+          )}
           <SlippageSettingsBlock
             setInputBalance={setInputBalance}
             vaultId={vaultData.id}
@@ -1324,8 +1324,8 @@ export default function VaultInputs({
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="mb-4">
-              {onSelectChain && vaultId && isDeposit && (
+            {onSelectChain && vaultId && isDeposit && (
+              <div className="mb-4">
                 <ChainSelector
                   selectedChain={selectedChain}
                   onSelectChain={onSelectChain}
@@ -1333,8 +1333,8 @@ export default function VaultInputs({
                   vaultData={vaultData}
                   onSelectChainAndToken={handleSelectChainAngToken}
                 />
-              )}
-            </div>
+              </div>
+            )}
 
             <InputTokenWithError
               onSelectChain={onSelectChain}
@@ -1445,8 +1445,8 @@ export default function VaultInputs({
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="mb-4">
-              {onSelectChain && vaultId && isDeposit && (
+            {onSelectChain && vaultId && isDeposit && (
+              <div className="mb-4">
                 <ChainSelector
                   selectedChain={selectedChain}
                   onSelectChain={onSelectChain}
@@ -1454,8 +1454,9 @@ export default function VaultInputs({
                   vaultId={vaultId}
                   vaultData={vaultData}
                 />
-              )}
-            </div>
+              </div>
+            )}
+
             <InputTokenWithError
               onSelectChain={onSelectChain}
               onSelectChainAndToken={handleSelectChainAngToken}
