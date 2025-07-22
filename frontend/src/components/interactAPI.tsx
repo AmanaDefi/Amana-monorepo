@@ -46,6 +46,7 @@ import { ConnectedWallet } from "@privy-io/react-auth";
 import { useAuthStore } from "@/store/authStore";
 import { zetachain } from "viem/chains";
 import { useMultiChain } from "@/providers/MultiChainProvider";
+import { useTokenPrices, TokenPriceContextType} from "@/providers/TokenPriceProvider";
 
 function isHex(value: string): value is `0x${string}` {
   return typeof value === "string" && value.startsWith("0x");
@@ -64,6 +65,7 @@ const handleDepositTransaction = async (
   setInputBalance: Function,
   setLastEventTxHash: Function,
   setFailedOnConfirmation: (value: boolean) => void,
+  priceContext: TokenPriceContextType,
 ) => {
   if (!activeAccount) return;
   console.log("=== DEPOSIT TRANSACTION START ===");
@@ -85,6 +87,7 @@ const handleDepositTransaction = async (
         activeChain,
         depositAmount,
         setcrossChainTxId,
+        priceContext
       );
     if (
       !receipt ||
@@ -972,6 +975,7 @@ function Interaction({
   const { selectedChain, activeEvmWallet: activeAccount } = useMultiChain();
   const [isMobile, setIsMobile] = useState(false);
   const { setIsFailedOnCOnfirmation } = useTransactionStore();
+  const priceContext = useTokenPrices();
 
   useEffect(() => {
     const checkIsMobile = () => {
@@ -1250,7 +1254,10 @@ function Interaction({
         description,
       );
     }
-
+    if (!priceContext) {
+      console.error("Price context is not available");
+      return;
+    }
     const success = await handleInteraction(
       vaultData,
       inputBalance,
@@ -1265,6 +1272,7 @@ function Interaction({
       setInputBalance,
       setLastEventTxHash,
       setIsFailedOnCOnfirmation,
+      priceContext,
     )();
 
     await interactionPostHook(!!success, !currenAction);
@@ -1509,6 +1517,7 @@ function Interaction({
     setInputBalance: Function,
     setLastEventTxHash: Function,
     setFailedOnConfirmation: (value: boolean) => void,
+    priceContext: TokenPriceContextType,
   ) {
     switch (action) {
       case Action.depositApprove:
@@ -1544,6 +1553,7 @@ function Interaction({
             setInputBalance,
             setLastEventTxHash,
             setFailedOnConfirmation,
+            priceContext
           );
           return result;
         };

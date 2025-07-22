@@ -9,6 +9,7 @@ import {
   UserVaultBalance
 } from '@/types/types';
 import { formatNumberWithSuffix, getOnlyTokenSymbol, formatBalance, formatTokenBalance } from '@/utils/utils';
+import { formatTokenBalanceUSD } from '@/utils/tokenFormat';
 import LoadingLogo from './LoadingLogo';
 import { useMultiChain } from '@/providers/MultiChainProvider';
 import { useTokenPriceBySymbol } from '@/hooks/hooks';
@@ -518,7 +519,6 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
               {/* Card Content */}
               <div className="p-4">
                 <div className="flex md:flex-row flex-col gap-2 justify-between">
-                  {/* Lending Pool with Logo (was Protocol) */}
                   <div className="flex items-center gap-3 mb-3 p-2 rounded-md">
                     <Image
                       src={vault.inputToken.imgURL}
@@ -529,9 +529,6 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                       sizes="36px"
                     />
                     <div>
-                      <span className="text-gray-400 text-xs">
-                        Lending Pool
-                      </span>
                       <p className="text-white font-medium">{vault.name}</p>
                     </div>
                   </div>
@@ -625,14 +622,14 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                       <div className="flex justify-around text-[16px] mb-1">
                         <span className="text-gray-400">Your Deposits:</span>
                         <span className="text-white font-medium">
-                          {formatTokenBalance(
+                          {formatTokenBalanceUSD(
                             userVaultBalances.find(
                               (balance: UserVaultBalance) =>
                                 balance.vaultId === vault.id,
                             )?.balance || 0,
                             vault.inputToken.symbol,
-                          )}{" "}
-                          {vault.inputToken.symbol}
+                            getTokenPrice(vault.inputToken.symbol),
+                          )}
                         </span>
                       </div>
                     </div>

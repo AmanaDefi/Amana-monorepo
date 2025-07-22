@@ -263,6 +263,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
     };
   }
 
+  // YieldFi vyUSD Vault -> Ethereum
   if (addr == "0xcf18fc631e05ba7dcbcadcd212176c381256faa8") {
     return {
       type: "Yield-Bearing Stablecoin",
@@ -292,6 +293,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
     };
   }
 
+  // Aegis YUSD Vault -> BNB
   if (addr == "0x4cb4dfc521a5c44817a1fda79fb7eafaf6f1952e") {
     return {
       type: "Yield-Bearing Stablecoin",
@@ -381,6 +383,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
     };
   }
 
+  // Noon Capital sUSN Vault -> Ethereum
   if (addr == "0x8426929d568b1cbc281f5787556f84c5b101399d") {
     return {
       type: "Yield-Bearing Stablecoin",

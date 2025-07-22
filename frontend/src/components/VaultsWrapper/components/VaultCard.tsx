@@ -9,6 +9,8 @@ import {
   VaultTotalAssets,
 } from "@/types/types";
 import { formatTokenBalance } from "@/utils/utils";
+import { formatTokenBalanceUSD } from "@/utils/tokenFormat";
+import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { VaultCardInfoBlock } from "./VaultCardInfoBlock";
 import { calculateRiskLevel } from "..";
 import InfoIcon from "@/components/svg/InfoIcon";
@@ -93,6 +95,9 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
       vaultId: vault.id,
     });
 
+    // Get token price for USD conversion
+    const tokenPrice = useTokenPriceBySymbol(vault.inputToken.symbol);
+
     const handleVaultClick = (vaultId: string) => {
       router.push(`/vaults/${vaultId}`);
     };
@@ -170,9 +175,6 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                   <p className="text-white font-[600] md:text-lg leading-5 -tracking-1 whitespace-nowrap">
                     {vault.name.replace("Pool", "").replace("Lend", "")}
                   </p>
-                  <p className="text-white text-sm leading-4 whitespace-nowrap overflow-hidden text-ellipsis flex-shrink min-w-0">
-                    Lend Pool
-                  </p>
                 </div>
                 <p className="text-white leading-4 truncate text-xs md:text-sm">
                   on {vault.protocol.name}
@@ -203,10 +205,10 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                     Your Deposit:
                   </span>
                   <span className="text-blue-digits font-bold text-lg md:text-xl leading-5">
-                    $
-                    {formatTokenBalance(
+                    {formatTokenBalanceUSD(
                       userBalance?.balance || 0,
                       vault.inputToken.symbol,
+                      tokenPrice,
                     )}
                   </span>
                 </div>

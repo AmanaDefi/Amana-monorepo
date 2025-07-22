@@ -49,7 +49,9 @@ import {
 import ChainSelector from "./VaultsDetailsWrapper/components/ChainSelector";
 import SlippageSettingsBlock from "./VaultsDetailsWrapper/components/SlippageSettingsBlock";
 import FeeDisplay, {
-  ExpectedSlippageBlock,
+  SwapSlippageBlock,
+  DepositSlippageBlock,
+  NetDepositBlock,
 } from "./VaultsDetailsWrapper/components/FeeDisplay";
 import APYChangeCard from "./VaultsDetailsWrapper/components/APYChangeCard";
 import { useTransactionStore } from "@/store/transactionStore";
@@ -57,11 +59,15 @@ import {
   formatTokenBalance,
   formatUSDAmount,
   formatUSDValue,
+  formatShares
 } from "@/utils/tokenFormat";
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 import { useAPYStore } from "@/store/APYStore";
 import { useMaxAmount } from "@/hooks/useMaxAmount";
 import { InfoBlock } from "./VaultsWrapper/components/InfoBlock.tsx";
+import { useTokenPrices} from "@/providers/TokenPriceProvider";
+import { getTokenPrice } from "@/hooks/useVaultData";
+import { getVaultGasTokenInfo } from "@/utils/getVaultGasTokenInfo";
 
 export interface VaultInputsProps {
   vaultData: VaultData;
@@ -118,6 +124,25 @@ export default function VaultInputs({
   selectedChain,
   APY7DValue,
 }: VaultInputsProps): JSX.Element {
+  const priceContext = useTokenPrices();
+  const [gasTokenSymbol, setGasTokenSymbol] = useState<string>("ETH");
+  const [gasTokenPrice, setGasTokenPrice] = useState<number>(0);
+
+  useEffect(() => {
+    async function fetchGasTokenSymbol() {
+      if (!vaultData) return;
+      const { gasZRC20Symbol } = await getVaultGasTokenInfo(vaultData);
+      if (gasZRC20Symbol) {
+        setGasTokenSymbol(gasZRC20Symbol);
+        setGasTokenPrice(getTokenPrice(gasZRC20Symbol, priceContext));
+      } else {
+        setGasTokenSymbol("ETH");
+        setGasTokenPrice(getTokenPrice("ETH", priceContext));
+      }
+    }
+    fetchGasTokenSymbol();
+  }, [vaultData, priceContext]);
+
   const [inputToken, setInputToken] = useState<Token | undefined>(
     selectedToken,
   );
@@ -210,10 +235,16 @@ export default function VaultInputs({
 
   const initialConversionOutput: ConversionOutput = useMemo(
     () => ({
-      slippageActualValue: null,
+      slippageActualValue: null, // Keep for backward compatibility
       finalConvertedAmountInUSDFormatted: "0.00",
       outputAmountFormatted: "0.00",
       outputAmountInUSDFormatted: "0.00",
+      swapSlippageUSD: undefined,
+      depositSlippageUSD: undefined,
+      totalLossUSD: undefined,
+      swapSlippagePercentage: undefined,
+      depositSlippagePercentage: undefined,
+      totalLossPercentage: undefined,
     }),
     [],
   );
@@ -225,7 +256,7 @@ export default function VaultInputs({
 
   const inputTokenPrice = useTokenPriceBySymbol(inputToken?.symbol);
   const vaultTokenPrice = useTokenPriceBySymbol(vaultData.inputToken?.symbol);
-  const ethPriceUsd = useTokenPriceBySymbol("ETH");
+
   const isSelectedTokenInput =selectedTokenFromModal && inputToken && selectedTokenFromModal?.address === inputToken?.address && selectedTokenFromModal?.symbol === inputToken?.symbol
 
   const vaultToken: Token = useMemo(() => {
@@ -725,7 +756,8 @@ export default function VaultInputs({
       try {
         // Check cache first - look for existing calculation with same parameters
         const cached = useTransactionStore.getState().lastDepositCalculation;
-
+        
+        let calculationResult;
         
         if (cached && isCachedCalculationValid(
           cached, 
@@ -734,7 +766,6 @@ export default function VaultInputs({
           inputToken, 
           activeChain.id
         )) {
-          console.log("Using cached deposit calculation result");
 
           // Log cache performance stats periodically
           const stats = getCacheStats();
@@ -742,118 +773,68 @@ export default function VaultInputs({
             // Log every 10th cache hit
             console.log("Cache Performance:", stats);
           }
-
-          // Use cached result for display
-          const cachedResult = cached.result;
-          const sharesAmountFormatted = formatTokenBalance(
-            cachedResult.sharesAmount,
-            vaultData.symbol,
+          
+          calculationResult = cached.result;
+        } else {
+          console.log("Cache miss - performing new deposit calculation");
+          const inputTokenPrice = getTokenPrice(inputToken?.symbol, priceContext);
+          if (!inputTokenPrice) {
+            console.error("Input token price is not defined");
+            return;
+          }
+          // Use the unified calculation function
+          calculationResult = await calculateDepositOutput(
+            inputAmountValue,
+            vaultData,
+            inputToken,
+            activeChain,
+            activeWallet,
+            vaultTokenPrice,
+            inputTokenPrice,
+            gasTokenPrice,
+            formatUSDAmount,
           );
 
-          const outputAmountInUSD =
-            (Number(cachedResult.outputAmount) /
-              10 ** vaultData.inputToken.decimals) *
-            vaultTokenPrice;
-
-          if (inputAmountValue === debouncedInputBalance.value) {
-            setConversionOutput({
-              slippageActualValue: Number(
-                cachedResult.totalSlippage.percentage.toFixed(2),
-              ),
-              slippageAmountInUSDFormatted:
-                cachedResult.totalSlippage.amountInUSD,
-              finalConvertedAmountInUSDFormatted:
-                formatUSDValue(outputAmountInUSD),
-              outputAmountFormatted: sharesAmountFormatted,
-              outputAmountInUSDFormatted: formatUSDValue(outputAmountInUSD),
-              gasFeeInInputToken: cachedResult.gasFee.amount.toString(),
-              gasFeeInUSD: cachedResult.gasFee.amountInUSD,
-              gasFeeInETH: cachedResult.gasFee.amountInETH,
-              netDepositToVaultUSD: formatUSDValue(outputAmountInUSD),
-              inputAmountInUSDFormatted: formatUSDValue(
-                (Number(inputAmountValue) /
-                  10 ** (inputToken?.decimals ?? 18)) *
-                  inputTokenPrice,
-              ),
-              // New detailed breakdown fields
-              swapSlippageUSD: cachedResult.swapSlippage.amountInUSD,
-              depositSlippageUSD: cachedResult.depositSlippage.amountInUSD,
-              totalLossUSD: cachedResult.totalLoss.amountInUSD,
-              swapSlippagePercentage: cachedResult.swapSlippage.percentage,
-              depositSlippagePercentage:
-                cachedResult.depositSlippage.percentage,
-              totalLossPercentage: cachedResult.totalLoss.percentage,
-            });
-          }
-
-          setLoadingOutputToken(false);
-          return;
-        }
-
-        console.log("Cache miss - performing new deposit calculation");
-
-        // Use the unified calculation function
-        const calculationResult = await calculateDepositOutput(
-          inputAmountValue,
-          vaultData,
-          inputToken,
-          activeChain,
-          activeWallet,
-          vaultTokenPrice,
-          inputTokenPrice,
-          ethPriceUsd,
-          formatUSDAmount,
-          convertUsdToEth,
-        );
-
-        // Store result in cache for future use
-        useTransactionStore.getState().setLastDepositCalculation({
-          inputAmount: inputAmountValue.toString(),
-          vaultId: vaultData.id,
-          result: calculationResult,
-          timestamp: Date.now(),
-        });
-
-        // Format the output for display
-        const sharesAmountFormatted = formatTokenBalance(
-          calculationResult.sharesAmount,
-          vaultData.symbol,
-        );
-
-        const outputAmountInUSD =
-          (Number(calculationResult.outputAmount) /
-            10 ** vaultData.inputToken.decimals) *
-          vaultTokenPrice;
-
-        if (inputAmountValue === debouncedInputBalance.value) {
-          setConversionOutput({
-            slippageActualValue: Number(
-              calculationResult.totalSlippage.percentage.toFixed(2),
-            ),
-            slippageAmountInUSDFormatted:
-              calculationResult.totalSlippage.amountInUSD,
-            finalConvertedAmountInUSDFormatted:
-              formatUSDValue(outputAmountInUSD),
-            outputAmountFormatted: sharesAmountFormatted,
-            outputAmountInUSDFormatted: formatUSDValue(outputAmountInUSD),
-            gasFeeInInputToken: calculationResult.gasFee.amount.toString(),
-            gasFeeInUSD: calculationResult.gasFee.amountInUSD,
-            gasFeeInETH: calculationResult.gasFee.amountInETH,
-            netDepositToVaultUSD: formatUSDValue(outputAmountInUSD),
-            inputAmountInUSDFormatted: formatUSDValue(
-              (Number(inputAmountValue) / 10 ** (inputToken?.decimals ?? 18)) *
-                inputTokenPrice,
-            ),
-            // New detailed breakdown fields
-            swapSlippageUSD: calculationResult.swapSlippage.amountInUSD,
-            depositSlippageUSD: calculationResult.depositSlippage.amountInUSD,
-            totalLossUSD: calculationResult.totalLoss.amountInUSD,
-            swapSlippagePercentage: calculationResult.swapSlippage.percentage,
-            depositSlippagePercentage:
-              calculationResult.depositSlippage.percentage,
-            totalLossPercentage: calculationResult.totalLoss.percentage,
+          // Store result in cache for future use
+          useTransactionStore.getState().setLastDepositCalculation({
+            inputAmount: inputAmountValue.toString(),
+            vaultId: vaultData.id,
+            result: calculationResult,
+            timestamp: Date.now()
           });
         }
+
+        // Helper function to format and set conversion output
+        const formatAndSetConversionOutput = (result: any) => {
+          const sharesAmountFormatted = formatShares(result.sharesAmount);
+
+          const outputAmountInUSD = (Number(result.outputAmount) / 10 ** vaultData.inputToken.decimals) * vaultTokenPrice;
+
+          if (inputAmountValue === debouncedInputBalance.value) {
+            // Calculate net deposit amount (after gas fee and swap slippage, but before deposit slippage)
+            const amountForStrategyInUSD = (Number(result.amountForStrategy) / 10 ** vaultData.inputToken.decimals) * vaultTokenPrice;
+            
+            setConversionOutput({
+              slippageActualValue: Number(result.totalSlippage.percentage.toFixed(2)),
+              slippageAmountInUSDFormatted: result.totalSlippage.amountInUSD,
+              finalConvertedAmountInUSDFormatted: formatUSDValue(outputAmountInUSD),
+              outputAmountFormatted: sharesAmountFormatted, 
+              outputAmountInUSDFormatted: formatUSDValue(outputAmountInUSD),
+              gasFeeInInputToken: result.gasFee.amount.toString(),
+              gasFeeInUSD: result.gasFee.amountInUSD,
+              gasFeeInETH: result.gasFee.amountInETH,
+              netDepositToVaultUSD: formatUSDValue(amountForStrategyInUSD),
+              inputAmountInUSDFormatted: formatUSDValue((Number(inputAmountValue) / 10 ** (inputToken?.decimals ?? 18)) * inputTokenPrice),
+              swapSlippageUSD: result.swapSlippage.amountInUSD,
+              depositSlippageUSD: result.depositSlippage.amountInUSD,
+              swapSlippagePercentage: result.swapSlippage.percentage,
+              depositSlippagePercentage: result.depositSlippage.percentage,
+            });
+          }
+        };
+
+        // Use the helper function for both cached and new results
+        formatAndSetConversionOutput(calculationResult);
 
         console.log("Unified Deposit Calculation Result:", {
           inputAmount: calculationResult.inputAmount.toString(),
@@ -861,7 +842,6 @@ export default function VaultInputs({
           gasFee: calculationResult.gasFee.amount.toString(),
           swapSlippage: calculationResult.swapSlippage.amount.toString(),
           depositSlippage: calculationResult.depositSlippage.amount.toString(),
-          totalLoss: calculationResult.totalLoss.amount.toString(),
           needsTokenSwap: calculationResult.needsTokenSwap,
           needsGasFee: calculationResult.needsGasFee,
         });
@@ -879,20 +859,21 @@ export default function VaultInputs({
       inputTokenPrice,
       vaultData,
       vaultTokenPrice,
-      ethPriceUsd,
       activeWallet,
       userSlippage,
+      gasTokenPrice,
+      priceContext,
     ],
   );
 
   const timeoutRef = useRef<NodeJS.Timeout>();
 
   const checkSlippageExceedingLimit = () => {
+    // Calculate total slippage (swap + deposit)
+    const totalSlippagePercentage = (conversionOutput.swapSlippagePercentage || 0) + (conversionOutput.depositSlippagePercentage || 0);
+    
     // If slippage is over 100%, hide the display completely
-    if (
-      conversionOutput.slippageActualValue !== null &&
-      conversionOutput.slippageActualValue > 100
-    ) {
+    if (totalSlippagePercentage > 100) {
       setIsSlippageExceedingLimit(false);
       setOutputBoxErrorMessage("");
       return;
@@ -900,8 +881,8 @@ export default function VaultInputs({
 
     if (
       userSlippage &&
-      conversionOutput.slippageActualValue !== null &&
-      userSlippage < conversionOutput.slippageActualValue &&
+      totalSlippagePercentage > 0 &&
+      userSlippage < totalSlippagePercentage &&
       !(
         isDeposit &&
         !vaultData.depositFeePaidFromGasTank &&
@@ -913,7 +894,7 @@ export default function VaultInputs({
     ) {
       setIsSlippageExceedingLimit(true);
       setOutputBoxErrorMessage(
-        `Slippage of ${conversionOutput.slippageActualValue}% exceeds your maximum slippage setting of ${userSlippage}%`,
+        `Total slippage of ${totalSlippagePercentage.toFixed(2)}% exceeds your maximum slippage setting of ${userSlippage}%`,
       );
     } else {
       setIsSlippageExceedingLimit(false);
@@ -1112,12 +1093,20 @@ export default function VaultInputs({
   // Clear cache when important parameters change
   useEffect(() => {
     clearDepositCalculationCache();
+  }, [vaultData.id, inputToken?.address, activeChain?.id, userSlippage, clearDepositCalculationCache]);
+
+  // Check slippage limits when conversion output changes
+  useEffect(() => {
+    checkSlippageExceedingLimit();
   }, [
-    vaultData.id,
-    inputToken?.address,
-    activeChain?.id,
+    conversionOutput.swapSlippagePercentage,
+    conversionOutput.depositSlippagePercentage,
     userSlippage,
-    clearDepositCalculationCache,
+    debouncedInputBalance.value,
+    conversionOutput.inputAmountInUSDFormatted,
+    conversionOutput.gasFeeInUSD,
+    isDeposit,
+    vaultData.depositFeePaidFromGasTank,
   ]);
 
   // Create an adapter function for InputTokenWithError in Deposit mode
@@ -1151,7 +1140,7 @@ export default function VaultInputs({
         inputAmount: inputBalance.formatted,
         outputAmount: conversionOutput.outputAmountFormatted,
         outputAmountUSD: conversionOutput.outputAmountInUSDFormatted,
-        slippagePercent: conversionOutput.slippageActualValue,
+        slippagePercent: (conversionOutput.swapSlippagePercentage || 0) + (conversionOutput.depositSlippagePercentage || 0),
         inputToken: inputToken?.symbol,
         outputToken: isDeposit ? vaultData.symbol : inputToken?.symbol,
         vaultAddress: vaultData.id,
@@ -1249,37 +1238,13 @@ export default function VaultInputs({
     conversionOutput.inputAmountInUSDFormatted,
     conversionOutput.gasFeeInUSD,
     conversionOutput.outputAmountFormatted,
+    conversionOutput.swapSlippagePercentage,
+    conversionOutput.depositSlippagePercentage,
     isSlippageExceedingLimit,
     setIsButtonDisabled,
     userVaultBalance,
   ]);
-  // 🧪 TESTING: Log final values being displayed
-  useEffect(() => {
-    if (inputToken && vaultTotalAssetinToken) {
-      console.log("=== FINAL UI VALUES ===");
-      console.log(`🎯 Mode: ${isDeposit ? "DEPOSIT" : "WITHDRAW"}`);
-      console.log(
-        `🪙 Input token: ${isDeposit ? inputToken?.symbol : vaultData.inputToken.symbol}`,
-      );
-      console.log(
-        `🪙 Output token: ${vaultData.inputToken.symbol} (underlying asset)`,
-      );
-      console.log(
-        `💰 Balance displayed: ${isDeposit ? tokenBalance.formatted : (vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0")}`,
-      );
-      console.log(
-        `📊 Balance type: ${isDeposit ? "wallet balance" : "maxWithdraw amount"}`,
-      );
-      console.log(`✅ Consistent UX: Both modes show underlying asset!`);
-      console.log("=====================");
-    }
-  }, [
-    isDeposit,
-    inputToken?.symbol,
-    vaultData.inputToken.symbol,
-    tokenBalance.formatted,
-    vaultTotalAssetinToken,
-  ]);
+
 
   const minReceived = useMemo(() => {
     if (!conversionOutput.outputAmountInUSDFormatted) return "0.0";
@@ -1387,20 +1352,37 @@ export default function VaultInputs({
               isOutput={false}
               captionText={!isDeposit ? "Output Amount" : ""}
             />
-            <div className="md:my-6">
+            <div className="my-4">
               <FeeDisplay
                 isDeposit={isDeposit}
                 vaultData={vaultData}
                 conversionOutput={conversionOutput}
                 debouncedInputBalance={debouncedInputBalance}
                 performanceFee={performanceFee}
+                isBreathing={loadingOutputToken}
               />
             </div>
-            <ExpectedSlippageBlock
+            <SwapSlippageBlock
               conversionOutput={conversionOutput}
               isVisible={
-                !!conversionOutput.slippageActualValue && !outputBoxErrorMessage
+                !!conversionOutput.swapSlippageUSD && !outputBoxErrorMessage
               }
+              isBreathing={loadingOutputToken}
+            />
+            <NetDepositBlock
+              conversionOutput={conversionOutput}
+              vaultData={vaultData}
+              debouncedInputBalance={debouncedInputBalance}
+              isDeposit={isDeposit}
+              isVisible={true}
+              isBreathing={loadingOutputToken}
+            />
+            <DepositSlippageBlock
+              conversionOutput={conversionOutput}
+              isVisible={
+                !!conversionOutput.depositSlippageUSD && !outputBoxErrorMessage
+              }
+              isBreathing={loadingOutputToken}
             />
 
             <div className="mb-4">

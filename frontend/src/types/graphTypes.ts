@@ -12,6 +12,8 @@ export interface GraphVault {
   assetImgURL?: string;
   assetPrice?: string; // BigDecimal in schema 
   decimals: number; // Int! in schema
+  outputTokenSymbol?: string; // Output token symbol from subgraph
+  outputTokenImage?: string; // Output token image from subgraph
   strategy?: string; // Bytes in schema
   strategyNetwork?: string;
   strategyChainId?: number; // Int in schema
