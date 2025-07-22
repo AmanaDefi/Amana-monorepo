@@ -113,16 +113,13 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     resetInitialization,
   } = useInitializationStore();
 
-  const { isConnected, connector: activeConnector } = useAccount();
+  const { isConnected, connector: activeConnector, isConnecting } = useAccount();
+
+  console.log({isConnected}, isConnecting)
 
   const { wallets } = useWallets();
   const filteredWallets = useMemo(() => {
     return wallets.filter((wallet) => {
-      // const isDisconnected = localStorage.getItem(`wagmi.${wallet.meta.id}.disconnected`);
-      // if (isDisconnected === 'true') {
-      //   return false;
-      // }
-
       console.log(
         isConnected,
         activeConnector?.id,
