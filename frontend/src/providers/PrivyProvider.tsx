@@ -52,10 +52,6 @@ export default function CustomPrivyProvider({ children }: PropsWithChildren) {
   const wagmiConfig = createConfig({
     ssr: true,
     connectors: providers,
-    storage: createStorage({
-      storage: localStorage,
-      key: "wagmi.store",
-    }),
     chains: [
       zetachain,
       bsc,
