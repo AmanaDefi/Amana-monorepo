@@ -356,15 +356,32 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
   const getTokensForChain = useCallback(
     (chain: Chain): Token[] => {
       const currentVaultData = vaultDataForModal || propVaultData;
+      if (isTopUpModal) {
+        const allTokens = APPROVED_TOKENS[chain.id] || [];
 
+        if (chain.id === 7000 || chain.id === 7001) {
+          const tokenAddresses = [
+            "0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891", // ETH.ETH
+            "0x0cbe0dF132a6c6B4a2974Fa1b7Fb953CF0Cc798a", // USDC.ETH
+            "0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7", // USDT.ETH
+          ];
+
+          return allTokens.filter((token) =>
+            tokenAddresses.includes(token.address),
+          );
+        }
+
+        return allTokens;
+      }
       if (chain.id === 7000 || chain.id === 7001) {
         return currentVaultData?.inputToken
           ? [currentVaultData.inputToken]
           : [];
       }
+
       return APPROVED_TOKENS[chain.id] || [];
     },
-    [vaultDataForModal, propVaultData],
+    [vaultDataForModal, propVaultData, isTopUpModal],
   );
 
   const availableTokens = useMemo(() => {
@@ -537,9 +554,8 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
 
   const handleWalletConnect = () => {
     setChain(selectedChainLocal);
-    if (selectedChainLocal?.id === zetachain.id || !selectedChainLocal) {
-      openStep(window?.innerWidth < 768 ? "mobileOptionsA" : "optionsA");
-    } else {
+
+    const handleChainSwitching = () => {
       if (
         (selectedChain === "solana" &&
           activeChain?.id !== CHAIN_ID["solana"]) ||
@@ -547,18 +563,27 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
       ) {
         if (selectedChain === "evm" && activeAccount?.address) {
           const confirmResult = confirm("Your EVM wallet will be disconnected");
-          if (!confirmResult) return;
+          if (!confirmResult) return false;
         } else if (selectedChain === "solana") {
           const confirmResult = confirm(
             "Your Solana wallet will be disconnected",
           );
-          if (!confirmResult) return;
+          if (!confirmResult) return false;
         }
       }
+      return true;
+    };
+
+    if (
+      isTopUpModal ||
+      (selectedChainLocal?.id !== zetachain.id && selectedChainLocal)
+    ) {
+      if (!handleChainSwitching()) return;
       openStep("connectInChosenChain");
+    } else {
+      openStep(window?.innerWidth < 768 ? "mobileOptionsA" : "optionsA");
     }
   };
-
   const isWalletConnected = useMemo(() => {
     if (!selectedChainLocal) return false;
     if (isTopUpModal) {
