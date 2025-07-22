@@ -18,11 +18,15 @@ const DEFAULT_BALANCE: Balance = { value: 0n, formatted: "0" };
 export const useMultichainTokenBalanceForModal = (
   token: Token | undefined,
   targetChain: Chain | undefined,
+  customWalletAddress?: string,
 ) => {
   const currentToken = useMemo(() => token, [token]);
   const currentChain = useMemo(() => targetChain, [targetChain]);
 
-  const { walletAddress, selectedChain } = useMultiChain();
+  const { walletAddress: defaultWalletAddress, selectedChain } =
+    useMultiChain();
+  
+  const walletAddress = customWalletAddress || defaultWalletAddress;
 
   const { balance: solanaBalance, refetch: refetchSolBalance } =
     useSolanaBalance();
@@ -61,9 +65,7 @@ export const useMultichainTokenBalanceForModal = (
             const { getPublicClient } = await import("@/utils/getPublicClient");
             const { formatEther } = await import("viem");
 
-            const publicClient = getPublicClient(
-              currentChain.id,
-            );
+            const publicClient = getPublicClient(currentChain.id);
 
             if (publicClient) {
               const nativeBalance = await publicClient.getBalance({

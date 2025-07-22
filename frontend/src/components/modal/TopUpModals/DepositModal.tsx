@@ -98,13 +98,21 @@ export const Deposit = () => {
     if (isExternalWalletConnected && chain && currency) {
       return !depositAmount || !!error;
     }
+    
 
     return false;
   })();
 
+
   const handleConfirm = async () => {
-    if (!chain || !currency || !depositAmount || !!error || !smartWalletAddress)
+    if (
+      !chain ||
+      !currency ||
+      !depositAmount ||
+      !!error || !smartWalletAddress 
+    ) {
       return;
+    }
     try {
       setTxError(false);
       setLoading(true);

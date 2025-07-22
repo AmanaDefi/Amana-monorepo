@@ -111,10 +111,12 @@ const TokenBalanceItem = React.memo(
     onClick,
     onBalanceUpdate,
     index,
+    isTopUpModal,
   }: {
     token: Token;
     selectedChain: Chain;
     isSelected: boolean;
+    isTopUpModal?: boolean;
     onClick: () => void;
     onBalanceUpdate: (
       token: Token,
@@ -125,10 +127,34 @@ const TokenBalanceItem = React.memo(
     refreshTrigger?: number;
     index: number;
   }) => {
+    const { publicKey } = useWallet();
+    const { wallets } = useWallets();
+    const filteredWallets = wallets.filter(
+      (wallet) => wallet.meta.id !== "app.phantom",
+    );
+    const activeAccount = filteredWallets[0];
+
+    const walletAddressForBalance = isTopUpModal
+      ? selectedChain.name === "Solana"
+        ? publicKey?.toString()
+        : activeAccount?.address
+      : undefined;
+
     const { balance, isLoading } = useMultichainTokenBalanceForModal(
       token,
       selectedChain,
+      walletAddressForBalance,
     );
+
+    console.log("TokenBalanceItem debug:", {
+      tokenSymbol: token.symbol,
+      chainName: selectedChain.name,
+      balance: balance?.formatted,
+      isLoading,
+      isTopUpModal,
+      walletAddressForBalance,
+    });
+
     const price = useTokenPriceBySymbol(token.symbol) || 0;
 
     useEffect(() => {
@@ -289,6 +315,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
     setChain: setFundWalletChain,
     setCurrency: setFundWalletCurrency,
     walletAddress: fundWalletAddress,
+    setWalletAddress,
   } = useFundWalletStore();
 
   const { publicKey } = useWallet();
@@ -366,6 +393,32 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
     isTopUpModal,
     selectedChainFromModal,
     selectedTokenFromModal,
+  ]);
+
+  useEffect(() => {
+    if (isTopUpModal && selectedChainLocal) {
+      let walletAddr = null;
+
+      if (selectedChainLocal.name === "Solana" && publicKey) {
+        walletAddr = publicKey.toString();
+      } else if (
+        selectedChainLocal.name !== "Solana" &&
+        activeAccount?.address &&
+        activeAccount.walletClientType !== "privy"
+      ) {
+        walletAddr = activeAccount.address;
+      }
+
+      if (walletAddr) {
+        setWalletAddress(walletAddr);
+      }
+    }
+  }, [
+    isTopUpModal,
+    selectedChainLocal,
+    publicKey,
+    activeAccount,
+    setWalletAddress,
   ]);
 
   const handleBalanceUpdate = useCallback(
@@ -756,6 +809,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
                               onClick={() => handleTokenSelect(token)}
                               onBalanceUpdate={handleBalanceUpdate}
                               index={index}
+                              isTopUpModal={isTopUpModal}
                             />
                           ))}
                         </motion.div>
