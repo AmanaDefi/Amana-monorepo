@@ -16,7 +16,7 @@ import {
 } from "@/hooks/useInstructionStepLogic";
 import Link from "next/link";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/solid";
-import { hasNoErrors } from "@/utils/utils";
+import { hasNoErrors, parseTransactionMessage } from "@/utils/utils";
 
 interface DepositInstructionProps {
   transactionStepFeedback?: TransactionStepMessages;
@@ -291,6 +291,15 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
             );
           }
 
+          const fullDescription =
+            step === DepositStep.SELECT_TOKEN ||
+            step === DepositStep.CONFIRM_DEPOSIT
+              ? getStepDescription(step, isDeposit)
+              : stepStatus?.description || getStepDescription(step, isDeposit);
+
+          const { textBeforeHash, hashValue } =
+            parseTransactionMessage(fullDescription);
+
           return (
             <motion.div
               key={`step-${step}`}
@@ -379,11 +388,8 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
                     }
                     transition={{ duration: 2, repeat: Infinity }}
                   >
-                    {step === DepositStep.SELECT_TOKEN ||
-                    step === DepositStep.CONFIRM_DEPOSIT
-                      ? getStepDescription(step, isDeposit)
-                      : stepStatus?.description ||
-                        getStepDescription(step, isDeposit)}
+                    <span>{textBeforeHash}</span>
+                    {hashValue && <p className="!break-all">{hashValue}</p>}
                   </motion.p>
                 </div>
                 <AnimatePresence>
