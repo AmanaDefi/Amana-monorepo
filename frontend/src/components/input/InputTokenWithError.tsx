@@ -216,7 +216,7 @@ export default function InputTokenWithError({
           {captionText}
         </p>
       )}
-      <div className="relative flex w-full flex-col">
+      <div className="relative flex w-full flex-col mb-2">
         <div
           style={{
             boxShadow: "0 2px 6px 0 rgba(0, 0, 0, 0.25)",

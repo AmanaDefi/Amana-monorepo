@@ -29,11 +29,16 @@ export const SwapSlippageBlock: React.FC<SwapSlippageProps> = ({
   className = "",
   isBreathing = false,
 }) => {
+  const swapSlippageUSDValue = parseFloat(
+    conversionOutput.swapSlippageUSD?.replace(/[^0-9.]/g, "") || "0"
+  );
+
   if (
     !isVisible ||
     !conversionOutput.swapSlippageUSD ||
     conversionOutput.swapSlippagePercentage === undefined ||
-    conversionOutput.swapSlippagePercentage === 0
+    conversionOutput.swapSlippagePercentage === 0 ||
+    swapSlippageUSDValue < 0.01
   ) {
     return null;
   }
@@ -90,7 +95,7 @@ export const DepositSlippageBlock: React.FC<DepositSlippageProps> = ({
     !conversionOutput.depositSlippageUSD ||
     conversionOutput.depositSlippagePercentage === undefined ||
     conversionOutput.depositSlippagePercentage === 0 ||
-    depositSlippageUSDValue < 0.01 
+    depositSlippageUSDValue < 0.01
   ) {
     return null;
   }

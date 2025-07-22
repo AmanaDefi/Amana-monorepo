@@ -312,6 +312,39 @@ export const calculateDepositOutput = async (
   gasTokenPrice: number,
   formatCurrency: (amount: number) => string
 ): Promise<DepositCalculationResult> => {
+  // Early return if inputAmount is zero
+  if (inputAmount === 0n) {
+    return {
+      inputAmount: 0n,
+      outputAmount: 0n,
+      sharesAmount: "0",
+      gasFee: {
+        amount: 0n,
+        amountInUSD: formatCurrency(0),
+        needsDeduction: false,
+      },
+      swapSlippage: {
+        amount: 0n,
+        amountInUSD: formatCurrency(0),
+        percentage: 0,
+      },
+      depositSlippage: {
+        amount: 0n,
+        amountInUSD: formatCurrency(0),
+        percentage: 0,
+      },
+      totalSlippage: {
+        amount: 0n,
+        amountInUSD: formatCurrency(0),
+        percentage: 0,
+      },
+      amountAfterSwap: 0n,
+      amountAfterFee: 0n,
+      needsTokenSwap: false,
+      needsGasFee: false,
+    };
+  }
+
   // Step 1: Swap full input amount to vault asset (if needed)
   let amountAfterSwap = inputAmount;
   let swapSlippage = 0n;
