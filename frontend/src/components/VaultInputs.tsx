@@ -34,11 +34,19 @@ import {
 } from "@/utils/utils";
 import InteractionContainer from "./interactAPI";
 import { useSlippage, useTokenPriceBySymbol } from "@/hooks/hooks";
-import { getPathDataAndAmountOut, getPerformanceFee } from "@/actions/actions";
+import {
+  getPathDataAndAmountOut,
+  getPerformanceFee,
+} from "@/actions/actions";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 
-import { calculateDepositOutput, DepositCalculationResult, isCachedCalculationValid, getCacheStats } from "@/utils/depositCalculations";
+import {
+  calculateDepositOutput,
+  DepositCalculationResult,
+  isCachedCalculationValid,
+  getCacheStats,
+} from "@/utils/depositCalculations";
 
 import { trackEvent } from "@/utils/trackEvent";
 
@@ -65,14 +73,14 @@ import {
   formatTokenBalance,
   formatUSDAmount,
   formatUSDValue,
-  formatShares
+  formatShares,
 } from "@/utils/tokenFormat";
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 import { zetachain } from "viem/chains";
 import { useAPYStore } from "@/store/APYStore";
 import { useMaxAmount } from "@/hooks/useMaxAmount";
 import { InfoBlock } from "./VaultsWrapper/components/InfoBlock.tsx";
-import { useTokenPrices} from "@/providers/TokenPriceProvider";
+import { useTokenPrices } from "@/providers/TokenPriceProvider";
 import { getTokenPrice } from "@/hooks/useVaultData";
 import { getVaultGasTokenInfo } from "@/utils/getVaultGasTokenInfo";
 
@@ -199,7 +207,8 @@ export default function VaultInputs({
     clearDepositCalculationCache,
   } = useTransactionStore();
 
-  const { isOpen, setSelectedTokenFromModal, selectedTokenFromModal } = useChainTokenModalStore();
+  const { isOpen, setSelectedTokenFromModal, selectedTokenFromModal } =
+    useChainTokenModalStore();
 
   const { setPreviousAPY, setCurrentAPY, setActiveTransactionVault } =
     useAPYStore();
@@ -269,7 +278,11 @@ export default function VaultInputs({
   const inputTokenPrice = useTokenPriceBySymbol(inputToken?.symbol);
   const vaultTokenPrice = useTokenPriceBySymbol(vaultData.inputToken?.symbol);
 
-  const isSelectedTokenInput =selectedTokenFromModal && inputToken && selectedTokenFromModal?.address === inputToken?.address && selectedTokenFromModal?.symbol === inputToken?.symbol
+  const isSelectedTokenInput =
+    selectedTokenFromModal &&
+    inputToken &&
+    selectedTokenFromModal?.address === inputToken?.address &&
+    selectedTokenFromModal?.symbol === inputToken?.symbol;
 
   const vaultToken: Token = useMemo(() => {
     return {
@@ -343,7 +356,7 @@ export default function VaultInputs({
     onTokenSelect,
     setSelectedTokenFromModal,
     isOpen,
-    isSelectedTokenInput
+    isSelectedTokenInput,
   ]);
 
   // Update inputTokenBalance state when useTokenBalance returns a new value
@@ -664,6 +677,8 @@ export default function VaultInputs({
     setInputBalance,
     setDisplayValue,
     handleChangeInput,
+    walletAddress,
+    vaultTokenDecimals: vaultData.inputToken.decimals
   });
 
   const tokenList = useMemo(() => {
@@ -768,28 +783,33 @@ export default function VaultInputs({
       try {
         // Check cache first - look for existing calculation with same parameters
         const cached = useTransactionStore.getState().lastDepositCalculation;
-        
-        let calculationResult;
-        
-        if (cached && isCachedCalculationValid(
-          cached, 
-          inputAmountValue, 
-          vaultData.id, 
-          inputToken, 
-          activeChain.id
-        )) {
 
+        let calculationResult;
+
+        if (
+          cached &&
+          isCachedCalculationValid(
+            cached,
+            inputAmountValue,
+            vaultData.id,
+            inputToken,
+            activeChain.id,
+          )
+        ) {
           // Log cache performance stats periodically
           const stats = getCacheStats();
           if (stats.hits % 10 === 0) {
             // Log every 10th cache hit
             console.log("Cache Performance:", stats);
           }
-          
+
           calculationResult = cached.result;
         } else {
           console.log("Cache miss - performing new deposit calculation");
-          const inputTokenPrice = getTokenPrice(inputToken?.symbol, priceContext);
+          const inputTokenPrice = getTokenPrice(
+            inputToken?.symbol,
+            priceContext,
+          );
           if (!inputTokenPrice) {
             console.error("Input token price is not defined");
             return;
@@ -812,7 +832,7 @@ export default function VaultInputs({
             inputAmount: inputAmountValue.toString(),
             vaultId: vaultData.id,
             result: calculationResult,
-            timestamp: Date.now()
+            timestamp: Date.now(),
           });
         }
 
@@ -820,23 +840,36 @@ export default function VaultInputs({
         const formatAndSetConversionOutput = (result: any) => {
           const sharesAmountFormatted = formatShares(result.sharesAmount);
 
-          const outputAmountInUSD = (Number(result.outputAmount) / 10 ** vaultData.inputToken.decimals) * vaultTokenPrice;
+          const outputAmountInUSD =
+            (Number(result.outputAmount) /
+              10 ** vaultData.inputToken.decimals) *
+            vaultTokenPrice;
 
           if (inputAmountValue === debouncedInputBalance.value) {
             // Calculate net deposit amount (after gas fee and swap slippage, but before deposit slippage)
-            const amountForStrategyInUSD = (Number(result.amountForStrategy) / 10 ** vaultData.inputToken.decimals) * vaultTokenPrice;
-            
+            const amountForStrategyInUSD =
+              (Number(result.amountForStrategy) /
+                10 ** vaultData.inputToken.decimals) *
+              vaultTokenPrice;
+
             setConversionOutput({
-              slippageActualValue: Number(result.totalSlippage.percentage.toFixed(2)),
+              slippageActualValue: Number(
+                result.totalSlippage.percentage.toFixed(2),
+              ),
               slippageAmountInUSDFormatted: result.totalSlippage.amountInUSD,
-              finalConvertedAmountInUSDFormatted: formatUSDValue(outputAmountInUSD),
-              outputAmountFormatted: sharesAmountFormatted, 
+              finalConvertedAmountInUSDFormatted:
+                formatUSDValue(outputAmountInUSD),
+              outputAmountFormatted: sharesAmountFormatted,
               outputAmountInUSDFormatted: formatUSDValue(outputAmountInUSD),
               gasFeeInInputToken: result.gasFee.amount.toString(),
               gasFeeInUSD: result.gasFee.amountInUSD,
               gasFeeInETH: result.gasFee.amountInETH,
               netDepositToVaultUSD: formatUSDValue(amountForStrategyInUSD),
-              inputAmountInUSDFormatted: formatUSDValue((Number(inputAmountValue) / 10 ** (inputToken?.decimals ?? 18)) * inputTokenPrice),
+              inputAmountInUSDFormatted: formatUSDValue(
+                (Number(inputAmountValue) /
+                  10 ** (inputToken?.decimals ?? 18)) *
+                  inputTokenPrice,
+              ),
               swapSlippageUSD: result.swapSlippage.amountInUSD,
               depositSlippageUSD: result.depositSlippage.amountInUSD,
               swapSlippagePercentage: result.swapSlippage.percentage,
@@ -882,8 +915,10 @@ export default function VaultInputs({
 
   const checkSlippageExceedingLimit = () => {
     // Calculate total slippage (swap + deposit)
-    const totalSlippagePercentage = (conversionOutput.swapSlippagePercentage || 0) + (conversionOutput.depositSlippagePercentage || 0);
-    
+    const totalSlippagePercentage =
+      (conversionOutput.swapSlippagePercentage || 0) +
+      (conversionOutput.depositSlippagePercentage || 0);
+
     // If slippage is over 100%, hide the display completely
     if (totalSlippagePercentage > 100) {
       setIsSlippageExceedingLimit(false);
@@ -1105,7 +1140,13 @@ export default function VaultInputs({
   // Clear cache when important parameters change
   useEffect(() => {
     clearDepositCalculationCache();
-  }, [vaultData.id, inputToken?.address, activeChain?.id, userSlippage, clearDepositCalculationCache]);
+  }, [
+    vaultData.id,
+    inputToken?.address,
+    activeChain?.id,
+    userSlippage,
+    clearDepositCalculationCache,
+  ]);
 
   // Check slippage limits when conversion output changes
   useEffect(() => {
@@ -1152,7 +1193,9 @@ export default function VaultInputs({
         inputAmount: inputBalance.formatted,
         outputAmount: conversionOutput.outputAmountFormatted,
         outputAmountUSD: conversionOutput.outputAmountInUSDFormatted,
-        slippagePercent: (conversionOutput.swapSlippagePercentage || 0) + (conversionOutput.depositSlippagePercentage || 0),
+        slippagePercent:
+          (conversionOutput.swapSlippagePercentage || 0) +
+          (conversionOutput.depositSlippagePercentage || 0),
         inputToken: inputToken?.symbol,
         outputToken: isDeposit ? vaultData.symbol : inputToken?.symbol,
         vaultAddress: vaultData.id,
@@ -1167,96 +1210,6 @@ export default function VaultInputs({
     isDeposit,
     vaultData,
   ]);
-
-  const isButtonDisabled = useMemo(() => {
-    if (
-      !inputBalance.formatted ||
-      inputBalance.formatted === "0" ||
-      inputBalance.formatted === "0.00" ||
-      Number(inputBalance.formatted) <= 0
-    ) {
-      setIsButtonDisabled(true);
-      return true;
-    }
-
-    if (loadingOutputToken) {
-      setIsButtonDisabled(true);
-      return true;
-    }
-
-    if (errorMessage || outputBoxErrorMessage) {
-      setIsButtonDisabled(true);
-      return true;
-    }
-
-    if (isDeposit) {
-      if (Number(inputBalance.value) > Number(tokenBalance.value)) {
-        setIsButtonDisabled(true);
-        return true;
-      }
-    } else {
-      const maxWithdrawAmount = userVaultBalance?.formatted || "0";
-      if (Number(inputBalance.formatted) > Number(maxWithdrawAmount)) {
-        setIsButtonDisabled(true);
-        return true;
-      }
-    }
-
-    if (
-      isDeposit &&
-      !vaultData.depositFeePaidFromGasTank &&
-      debouncedInputBalance.value > 0n &&
-      Number(
-        conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, ""),
-      ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, ""))
-    ) {
-      setIsButtonDisabled(true);
-      return true;
-    }
-    if (
-      inputBalance.value > 0n &&
-      conversionOutput.outputAmountFormatted &&
-      Number(conversionOutput.outputAmountFormatted) === 0 &&
-      !(
-        isDeposit &&
-        !vaultData.depositFeePaidFromGasTank &&
-        debouncedInputBalance.value > 0n &&
-        Number(
-          conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, "") ??
-            0,
-        ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, "") ?? 0)
-      )
-    ) {
-      setIsButtonDisabled(true);
-      return true;
-    }
-
-    if (isSlippageExceedingLimit) {
-      setIsButtonDisabled(true);
-      return true;
-    }
-    setIsButtonDisabled(false);
-    return false;
-  }, [
-    inputBalance.formatted,
-    inputBalance.value,
-    loadingOutputToken,
-    errorMessage,
-    outputBoxErrorMessage,
-    isDeposit,
-    tokenBalance.value,
-    vaultData.depositFeePaidFromGasTank,
-    debouncedInputBalance.value,
-    conversionOutput.inputAmountInUSDFormatted,
-    conversionOutput.gasFeeInUSD,
-    conversionOutput.outputAmountFormatted,
-    conversionOutput.swapSlippagePercentage,
-    conversionOutput.depositSlippagePercentage,
-    isSlippageExceedingLimit,
-    setIsButtonDisabled,
-    userVaultBalance,
-  ]);
-
 
   const minReceived = useMemo(() => {
     if (!conversionOutput.outputAmountInUSDFormatted) return "0.0";

@@ -15,10 +15,6 @@ import {
   fetchAegisAPR,
   fetchYieldFiAPY,
   fetchNoonCapitalAPY,
-
-  fetchTotalAssets,
-  fetchUserVaultMaxWithdraw,
-  fetchUserVaultBalance,
 } from "@/actions/actions";
 
 import {
