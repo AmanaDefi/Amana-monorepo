@@ -6,7 +6,7 @@ import ConnectWallet from "../shared/ConnectWallet";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import PopularOptions from "../shared/PopularOptions";
 import ModalButton from "../shared/ModalButton";
-import { Connector, useConnect } from "wagmi";
+import { Connector, useConnect, useDisconnect } from "wagmi";
 
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import { showInfoToast } from "@/toasts";
@@ -47,6 +47,7 @@ const AllWAllets = () => {
   const { connectSolana, activeEvmWallet: activeAccount } = useMultiChain();
 
   const { logout } = usePrivy();
+  const { disconnectAsync } = useDisconnect();
 
   const {
     wallets: solanaAdapters,
@@ -80,7 +81,9 @@ const AllWAllets = () => {
   });
 
   const handleExternalWalletConnect = async (connector: Connector) => {
-    if (isConnectingWallet) return;
+    if (isConnectingWallet) {
+      await disconnectAsync();
+    }
     if (
       activeAccount?.walletClientType === "privy" &&
       fundWalletStep !== "connectWallet"
@@ -96,7 +99,7 @@ const AllWAllets = () => {
     if (connected) {
       disconnect();
     }
-    
+
     setActiveConnector(connector);
     localStorage.setItem("connectorId", connector.id);
     connect(
@@ -112,6 +115,7 @@ const AllWAllets = () => {
           if (error.name === "ConnectorAlreadyConnectedError") {
             connector.disconnect();
             localStorage.removeItem("connectorId");
+            disconnectAsync({ connector });
 
             setActiveConnector(null);
             showInfoToast("Please try to connect wallet again");
@@ -132,9 +136,9 @@ const AllWAllets = () => {
   const solanaConnectors = solanaAdapters
     .filter((adapter) => {
       if (
-        (adapter.adapter.name.toLowerCase() === "metamask" &&
-          !(adapter.adapter as WalletAdapter & { wallet?: { client?: any } })
-            ?.wallet?.client)
+        adapter.adapter.name.toLowerCase() === "metamask" &&
+        !(adapter.adapter as WalletAdapter & { wallet?: { client?: any } })
+          ?.wallet?.client
       ) {
         return false;
       }
@@ -177,8 +181,10 @@ const AllWAllets = () => {
     : true;
 
   const filteredEvmConnectors = connectors.filter(
-    (con) => con.id !== "app.phantom" && con.name.toLowerCase() !== 'injected',
+    (con) => con.id !== "app.phantom" && con.name.toLowerCase() !== "injected",
   );
+
+  console.log(filteredEvmConnectors);
 
   return (
     <Modal
