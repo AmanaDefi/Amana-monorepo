@@ -247,13 +247,8 @@ export const Send = () => {
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const { walletAddress, activeChain, switchToChain, balance } =
+  const { walletAddress, activeChain, switchToChain, balance, activeEvmWallet: activePrivyEVMWallet } =
     useMultiChain();
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const activePrivyEVMWallet = filteredWallets[0];
   const { connected: solanaConnected } = useWallet();
 
   const [tokenBalances, setTokenBalances] = useState<

@@ -82,11 +82,6 @@ const VaultsDetailContainer: React.FC<{
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
   const initialIsDeposit = tabParam !== "withdraw";
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const user = filteredWallets[0];
   const wallet = useWallet();
 
   const [loading, setLoading] = useState<boolean>(true);
@@ -135,7 +130,7 @@ const VaultsDetailContainer: React.FC<{
     isFailedOnConfirmation,
   } = useTransactionStore();
 
-  const { switchToChain, walletAddress, activeChain, selectedChain } =
+  const { switchToChain, walletAddress, activeChain, activeEvmWallet: user } =
     useMultiChain();
 
   const vaultIdStr = Array.isArray(vaultID) ? vaultID[0] : vaultID;

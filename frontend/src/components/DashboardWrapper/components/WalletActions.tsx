@@ -3,9 +3,9 @@ import Button from "@/components/common/Button";
 import ReceiveIcon from "@/components/svg/ReceiveIcon";
 import SaveIcon from "@/components/svg/SaveIcon";
 import TopUpIcon from "@/components/svg/TopUpIcon";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useAuthStore } from "@/store/authStore";
 import { useFundWalletStore } from "@/store/fundWalletStore";
-import { useWallets } from "@privy-io/react-auth";
 import React from "react";
 
 const WalletActions = () => {
@@ -13,11 +13,7 @@ const WalletActions = () => {
      useAuthStore();
 
   const { setStep } = useFundWalletStore();
-  const {wallets} = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const user = filteredWallets[0];
+  const { activeEvmWallet: user} = useMultiChain();
 
   const handleSend = () => {
     openStep("send")

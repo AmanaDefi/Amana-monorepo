@@ -3,6 +3,7 @@
 import ChainTokenSelector from "@/components/input/ChainTokenSelector";
 import InputNumber from "@/components/input/InputNumber";
 import WarningIcon from "@/components/svg/WarningIcon";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import { Balance, Token } from "@/types/types";
 import { getPublicClient } from "@/utils/getPublicClient";
@@ -37,11 +38,7 @@ export const DepositInput = ({
     setChain,
   } = useFundWalletStore();
   const [tokenBalance, setTokenBalance] = useState<Balance>(EMPTY_BALANCE);
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const activeWallet = filteredWallets[0];
+  const { activeEvmWallet: activeWallet } = useMultiChain();
 
   const fetchTokenBalance = useCallback(
     async (token: Token) => {

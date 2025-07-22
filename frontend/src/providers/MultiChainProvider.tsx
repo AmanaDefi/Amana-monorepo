@@ -20,7 +20,7 @@ import { Chain, formatEther } from "viem";
 import { getPublicClient } from "@/utils/getPublicClient";
 import { usePathname, useRouter } from "next/navigation";
 import { useConnect } from "wagmi";
-import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { ConnectedWallet, usePrivy, useWallets } from "@privy-io/react-auth";
 import { zetachain } from "viem/chains";
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import { useAuthStore } from "@/store/authStore";
@@ -59,6 +59,7 @@ interface MultiChainContextType {
   switchToChain: (chain: Chain) => Promise<void>;
   refetchBalance: (address: string) => Promise<Balance | undefined>;
   evmDisconnect: () => Promise<void>;
+  activeEvmWallet :ConnectedWallet
 }
 
 const MultiChainContext = createContext<MultiChainContextType | undefined>(
@@ -114,8 +115,10 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     (wallet) => wallet.meta.id !== "app.phantom",
   );
   const { user } = usePrivy();
-  const privyWallet = filteredWallets[0];
+  const privyWallet = wallets[0];
   const [activeChain, setActiveChain] = useState<Chain | null>(null);
+
+  console.log(wallets[0]);
 
   const initializationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -591,6 +594,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         switchToChain,
         refetchBalance: getEvmBalance,
         evmDisconnect: evmDisconnect,
+        activeEvmWallet: privyWallet
       }}
     >
       {children}

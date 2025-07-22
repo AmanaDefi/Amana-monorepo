@@ -37,13 +37,8 @@ export const Deposit = () => {
   } = useFundWalletStore();
 
   const [error, setError] = useState("");
-  const { walletAddress: smartWalletAddress } = useMultiChain();
+  const { walletAddress: smartWalletAddress, activeEvmWallet: activeWallet } = useMultiChain();
 
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const activeWallet = filteredWallets[0];
   const walletContext = useWallet();
   const [loading, setLoading] = useState(false);
   const [txError, setTxError] = useState(false);

@@ -12,14 +12,13 @@ import { useFundWalletStore } from "@/store/fundWalletStore";
 import { showInfoToast } from "@/toasts";
 
 import { ConnectorIcon } from "./components/ConnectorIcon";
-import { CHAIN_ID, chainConfigs } from "@/constants/chainConfig";
+import { CHAIN_ID } from "@/constants/chainConfig";
 import { useEffect, useState } from "react";
-import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { usePrivy } from "@privy-io/react-auth";
 import { useWallet } from "@solana/wallet-adapter-react";
 import {
   Adapter,
   WalletAdapter,
-  WalletAdapterNetwork,
   WalletReadyState,
 } from "@solana/wallet-adapter-base";
 import { useMultiChain } from "@/providers/MultiChainProvider";
@@ -45,14 +44,9 @@ const AllWAllets = () => {
     setWalletAddress,
     chain,
   } = useFundWalletStore();
-  const { connectSolana } = useMultiChain();
+  const { connectSolana, activeEvmWallet: activeAccount } = useMultiChain();
 
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
   const { logout } = usePrivy();
-  const activeAccount = filteredWallets[0];
 
   const {
     wallets: solanaAdapters,

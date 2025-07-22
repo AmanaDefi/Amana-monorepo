@@ -16,7 +16,6 @@ import ProfileIcon from "./svg/Profile";
 import ProfileDropdown from "./ProfileDropdown";
 import BurgerMenuIcon from "./svg/BurgerMenu";
 import MobileMenuModal from "./modal/MobileMenuModal";
-import { useWallets } from "@privy-io/react-auth";
 import { CHAIN_ID } from "@/constants/chainConfig";
 import ButtonSkeleton from "./button/Skeleton";
 
@@ -28,14 +27,9 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   const path = usePathname();
   const router = useRouter();
-  const { wallets } = useWallets();
   const { isReady } = useInitializationStore();
 
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const activeAccount = filteredWallets[0];
-  const { walletAddress, activeChain } = useMultiChain();
+  const { walletAddress, activeChain, activeEvmWallet: activeAccount } = useMultiChain();
   const isConnected = !!walletAddress;
   const [isMenuOpened, setIsMenuOpened] = useState(false);
   const [isMobile, setIsMobile] = useState(false);

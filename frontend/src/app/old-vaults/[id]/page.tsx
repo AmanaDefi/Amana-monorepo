@@ -1,23 +1,20 @@
 "use client";
 
-import React, { useEffect, Suspense } from "react";
+import React, { Suspense } from "react";
 import VaultsDetailContainer from "@/containers/VaultsDetailContainer";
 import { useParams } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { useWallets } from "@privy-io/react-auth";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 
 function Index({ }) {
-    const {wallets} = useWallets();
-    const filteredWallets = wallets.filter(
-        (wallet) => wallet.meta.id !== "app.phantom",
-      );
-    const privyUser = filteredWallets[0];
+    const {activeEvmWallet} = useMultiChain();
+
     const { id } = useParams();
     const wallet = useWallet();
 
     return (
         <>
-            {(privyUser || wallet) && (
+            {(activeEvmWallet || wallet) && (
                 <div className="flex-1 flex flex-col w-full justify-between py-20 pl-6">
                     <div className="flex-1">
                         <Suspense fallback={<div>Loading...</div>}>

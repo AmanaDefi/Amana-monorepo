@@ -11,7 +11,6 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import { Chain } from "viem";
 import clsx from "clsx";
 import { BreathingValue, MiniSpinner } from "../PendingDots";
-import { useWallets } from "@privy-io/react-auth";
 
 export type InputTokenWithErrorProps = {
   errorMessage?: string;
@@ -72,15 +71,8 @@ export default function InputTokenWithError({
   ...props
 }: InputTokenWithErrorProps): JSX.Element {
   const selectedTokenPrice = useTokenPriceBySymbol(selectedToken?.symbol);
-  const { walletAddress } = useMultiChain();
+  const { activeEvmWallet: activeAccount } = useMultiChain();
   const [isInputFocused, setIsInputFocused] = useState(false);
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const activeAccount = filteredWallets[0];
-
-  const isConnected = !!walletAddress;
 
   const showTokenSelector = useMemo(() => {
     return (
