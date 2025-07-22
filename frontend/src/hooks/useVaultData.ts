@@ -54,12 +54,12 @@ import { useTokenPrices } from "@/providers/TokenPriceProvider";
 import { getOnlyTokenSymbol } from "@/utils/utils";
 
 // Universal token price lookup helper
-const getTokenPrice = (symbol: string, priceContext: any): number => {
+export const getTokenPrice = (symbol: string, priceContext: any): number => {
   if (!priceContext || !symbol) return 0;
-  
+
   // For stablecoins, return 1 USD
   if (isStablecoin(symbol)) return 1;
-  
+
   const normalizedSymbol = symbol.includes('(') ?
     symbol.replace(/\s*\((.*?)\)\s*/, '.$1') : symbol;
 
@@ -184,7 +184,7 @@ export const useVaultData = () => {
 
   // Token prices from context for universal price lookup
   const priceContextMain = useTokenPrices();
-  
+
   // Legacy token prices for APY calculations (memoized)
   const rawCrvTokenPrice = useTokenPriceBySymbol("CRV");
   const rawCvxTokenPrice = useTokenPriceBySymbol("CVX");
@@ -428,9 +428,9 @@ export const useVaultDataPaginated = (
     isLoading: subgraphLoading,
     error: subgraphError,
   } = useVaultsPaginatedFromGraph(
-    isTVLSort ? 0 : effectiveFirst, 
-    isTVLSort ? 0 : effectiveSkip, 
-    graphSortBy, 
+    isTVLSort ? 0 : effectiveFirst,
+    isTVLSort ? 0 : effectiveSkip,
+    graphSortBy,
     sortOrder
   );
 
@@ -439,7 +439,7 @@ export const useVaultDataPaginated = (
 
   // Token prices from context for universal price lookup
   const priceContext = useTokenPrices();
-  
+
   // Legacy token prices for APY calculations (memoized)
   const rawCrvTokenPrice = useTokenPriceBySymbol("CRV");
   const rawCvxTokenPrice = useTokenPriceBySymbol("CVX");
@@ -1053,7 +1053,7 @@ export const useVaultDataWithSearch = (
 
   // Token prices from context for universal price lookup
   const priceContextWS = useTokenPrices();
-  
+
   // Legacy token prices for calculations and USD normalization
   const rawCrvTokenPriceWS = useTokenPriceBySymbol("CRV");
   const rawCvxTokenPriceWS = useTokenPriceBySymbol("CVX");
@@ -1227,7 +1227,7 @@ export const useVaultDataWithSearch = (
 
     const stableArr = stableVaultsData2?.vaults || [];
     const nonStableArr = nonStableVaultsData2?.vaults || [];
-    
+
     return mergeSortedVaultsByTVL(stableArr, nonStableArr, tokenPrices, sortOrder);
   }, [shouldUseCustomTVLSort, stableVaultsData2, nonStableVaultsData2, tokenPrices, sortOrder]);
 
@@ -1263,15 +1263,15 @@ export const useVaultDataWithSearch = (
     if (!isTVLSort || shouldUseCustomTVLSort) return undefined;
     if (!subgraphData?.vaults) return undefined;
 
-    const withUSD = subgraphData.vaults.map((v: any) => ({ 
-      v, 
-      usd: convertVaultToUSD(v, tokenPrices) 
+    const withUSD = subgraphData.vaults.map((v: any) => ({
+      v,
+      usd: convertVaultToUSD(v, tokenPrices)
     }));
-    
+
     withUSD.sort((a, b) =>
       sortOrder === "asc" ? a.usd - b.usd : b.usd - a.usd,
     );
-    
+
     return withUSD.map((item) => item.v);
   }, [isTVLSort, shouldUseCustomTVLSort, subgraphData, sortOrder, tokenPrices]);
 
@@ -1388,8 +1388,8 @@ const convertVaultToUSD = (vault: any, tokenPrices: any): number => {
 };
 
 const mergeSortedVaultsByTVL = (
-  stableVaults: any[], 
-  nonStableVaults: any[], 
+  stableVaults: any[],
+  nonStableVaults: any[],
   tokenPrices: any,
   sortOrder: "asc" | "desc" = "desc"
 ): any[] => {
@@ -1399,7 +1399,7 @@ const mergeSortedVaultsByTVL = (
 
   const result: any[] = [];
   let i = 0, j = 0;
-  const compareFunc = sortOrder === "desc" 
+  const compareFunc = sortOrder === "desc"
     ? (a: number, b: number) => a >= b
     : (a: number, b: number) => a <= b;
 
@@ -1427,7 +1427,7 @@ const createTotalAssetsFromVaults = (vaults: any[]): VaultTotalAssets[] => {
 };
 
 const mergeVaultTotalAssets = (
-  prevAssets: VaultTotalAssets[], 
+  prevAssets: VaultTotalAssets[],
   newAssets: VaultTotalAssets[]
 ): VaultTotalAssets[] => {
   const existingIds = new Set(newAssets.map(a => a.vaultId));
@@ -1450,7 +1450,7 @@ const useTVLSorting = (
     isLoading: stableLoading,
     error: stableError,
   } = useStableVaultsSortedFromGraph();
-  
+
   const {
     data: nonStableVaultsData,
     isLoading: nonStableLoading,

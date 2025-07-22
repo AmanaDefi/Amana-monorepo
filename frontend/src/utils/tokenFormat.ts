@@ -21,9 +21,38 @@ export const formatTokenBalance = (
   return parseFloat(formatted).toString();
 };
 
+// Format token balance in USD terms
+export const formatTokenBalanceUSD = (
+  balance: string | number,
+  symbol: string,
+  tokenPrice: number = 0,
+): string => {
+  const num = Math.max(0, Number(balance));
+  
+  // If no price provided or price is 0, return the original format
+  if (!tokenPrice || tokenPrice === 0) {
+    return formatTokenBalance(balance, symbol);
+  }
+  
+  // Calculate USD value
+  const usdValue = num * tokenPrice;
+  
+  // For very small values, show "< $0.01"
+  if (usdValue > 0 && usdValue < 0.01) {
+    return "< $0.01";
+  }
+  
+  // Format as USD currency
+  return formatUSDAmount(usdValue, {
+    ensureNonNegative: true,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
+
 // Format USD value ensuring it's never negative
 export const formatUSDValue = (value: number): string => {
-  return formatCurrency(Math.max(0, value));
+  return formatUSDAmount(Math.max(0, value));
 };
 
 export const shouldShowInputLoader = (
@@ -64,4 +93,33 @@ export const formatUSDAmount = (
     minimumFractionDigits,
     maximumFractionDigits,
   }).format(processedValue);
+};
+
+/**
+ * Formats share amounts intelligently based on their format
+ * - If shares < 1: already human-readable, just format precision
+ * - If shares > 100000000000: assumes 18 decimal receipt token (like ETH)
+ * - Otherwise: assumes 6 decimal receipt token (like USDC)
+ */
+export const formatShares = (sharesValue: string): string => {
+
+  const sharesNumber = parseFloat(sharesValue);
+  
+  if (sharesNumber < 1) {
+    const result = sharesNumber.toFixed(6).replace(/\.?0+$/, '');
+    return result;
+  }
+  
+  if (sharesNumber >= 1 && sharesNumber < 100) {
+    const result = sharesNumber.toFixed(6).replace(/\.?0+$/, '');
+    return result;
+  }
+
+  const scalingFactor = sharesNumber > 100000000000 ? Math.pow(10, 12) : Math.pow(10, 6);
+  
+  const formattedShares = sharesNumber / scalingFactor;
+  
+  const result = formattedShares.toFixed(6).replace(/\.?0+$/, '');
+  
+  return result;
 };
