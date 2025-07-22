@@ -84,7 +84,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const { publicKey, disconnect, connected } = useWallet();
   const [balance, setBalance] = useState({ value: 0n, formatted: "0" });
   const { connectors } = useConnect();
-  const {disconnectAsync} = useDisconnect();
+  const { disconnectAsync } = useDisconnect();
 
   const {
     step,
@@ -93,6 +93,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   } = useFundWalletStore();
   const { successAuth } = useAuthStore();
   const isConnectedRef = useRef(connected);
+  const { isConnected } = useAccount();
 
   const router = useRouter();
   const path = usePathname();
@@ -113,38 +114,21 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     resetInitialization,
   } = useInitializationStore();
 
-  const { isConnected, connector: activeConnector, isConnecting } = useAccount();
-
-  console.log({isConnected}, isConnecting)
-
   const { wallets } = useWallets();
   const filteredWallets = useMemo(() => {
     return wallets.filter((wallet) => {
-      console.log(
-        isConnected,
-        activeConnector?.id,
-        activeConnector,
-        wallet.meta.id,
-        wallet.walletClientType,
+      const isDisconnected = localStorage.getItem(
+        `wagmi.${wallet.meta.id}.disconnected`,
       );
-      if (
-        isConnected &&
-        activeConnector?.id !== wallet.meta.id &&
-        !activeConnector?.rdns?.includes(wallet.meta.id) &&
-              !(activeConnector?.id == "walletConnect" &&
-                wallet.connectorType.includes("wallet_connect")) &&
-        wallet.walletClientType !== "privy"
-      ) {
-        return false;
-      }
+      console.log(isDisconnected, wallet.meta.id, wallet.walletClientType);
 
-      if (!isConnected && wallet.walletClientType !== "privy") {
+      if (isDisconnected === "true" && wallet.walletClientType !== "privy") {
         return false;
       }
 
       return true;
     });
-  }, [isConnected, activeConnector, wallets]);
+  }, [wallets, isConnected]);
   const { user } = usePrivy();
   const privyWallet = filteredWallets[0];
   const [activeChain, setActiveChain] = useState<Chain | null>(null);
@@ -178,7 +162,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
           );
 
           if (connector) {
-            await disconnectAsync({connector})
+            await disconnectAsync({ connector });
             await connector.disconnect();
             wallet.disconnect();
           }
