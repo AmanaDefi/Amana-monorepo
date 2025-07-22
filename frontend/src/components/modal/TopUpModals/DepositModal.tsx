@@ -11,7 +11,7 @@ import { DepositInput } from "./components/DepositInput";
 import ZetaChainLogo from "@public/logo/zetachain.svg";
 import { AppButton } from "@/components/button/AppButton";
 import { showSuccessToast } from "@/toasts";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import { Token } from "@/types/types";
 import { useWallets } from "@privy-io/react-auth";
@@ -80,8 +80,27 @@ export const Deposit = () => {
     }
   }, [step]);
 
-  const isButtonDisabled =
-    (!chain || !currency || !depositAmount || !!error) && step === "confirm";
+  const isExternalWalletConnected = useMemo(() => {
+    if (!chain) return false;
+
+    if (chain.name === "Solana") {
+      return !!walletContext.publicKey;
+    } else {
+      return !!activeWallet && activeWallet.walletClientType !== "privy";
+    }
+  }, [chain, walletContext.publicKey, activeWallet]);
+
+  const isButtonDisabled = (() => {
+    if (step === "confirm") {
+      return !chain || !currency || !depositAmount || !!error;
+    }
+
+    if (isExternalWalletConnected && chain && currency) {
+      return !depositAmount || !!error;
+    }
+
+    return false;
+  })();
 
   const handleConfirm = async () => {
     if (!chain || !currency || !depositAmount || !!error || !smartWalletAddress)
@@ -115,6 +134,8 @@ export const Deposit = () => {
   const handlePressButton = () => {
     if (step === "confirm") {
       handleConfirm();
+    } else if (isExternalWalletConnected && chain && currency) {
+      setStep("confirm");
     } else {
       handleConnectWallet();
     }
@@ -183,7 +204,8 @@ export const Deposit = () => {
               >
                 {loading
                   ? "Pending..."
-                  : step === "confirm"
+                  : step === "confirm" ||
+                      (isExternalWalletConnected && chain && currency)
                     ? "Confirm"
                     : "Connect Wallet"}
               </AppButton>

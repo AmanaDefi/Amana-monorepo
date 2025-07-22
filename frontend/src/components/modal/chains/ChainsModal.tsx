@@ -508,13 +508,19 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
 
   const isWalletConnected = useMemo(() => {
     if (!selectedChainLocal) return false;
-
+    if (isTopUpModal) {
+      if (selectedChainLocal.name === "Solana") {
+        return !!publicKey;
+      } else {
+        return !!activeAccount && activeAccount.walletClientType !== "privy";
+      }
+    }
     if (selectedChainLocal.name === "Solana") {
       return !!publicKey;
     } else {
       return !!activeAccount;
     }
-  }, [selectedChainLocal, publicKey, activeAccount]);
+  }, [selectedChainLocal, publicKey, activeAccount, isTopUpModal]);
 
   const handleModalClose = () => {
     if (isTopUpModal) {
@@ -668,7 +674,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
                     <p>Select a chain to see available tokens</p>
                   </motion.div>
                 </motion.div>
-              ) : !isTopUpModal && !isWalletConnected ? (
+              ) : !isWalletConnected ? (
                 <motion.div
                   className="flex flex-col items-center justify-center h-full py-8"
                   variants={itemVariants}
