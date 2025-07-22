@@ -244,6 +244,7 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
               bgColor = "#1B46E0";
               textColor = "#FFFFFF";
               isHighlighted = false;
+              showLoader = false;
               break;
             case "active":
               bgColor = "#535E73";
@@ -299,33 +300,24 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
               animate={stepState}
               layout
             >
-              <AnimatePresence>
-                {isHighlighted && stepState !== "completed" && (
-                  <motion.div
-                    className="absolute inset-0 -mx-4 -my-2 rounded-lg bg-gradient-to-r from-gray-500/10 via-gray-400/20 to-gray-500/10"
-                    variants={highlightVariants}
-                    initial="hidden"
-                    animate="visible"
-                    exit="hidden"
-                  />
-                )}
-              </AnimatePresence>
+              {stepState !== "completed" && (
+                <AnimatePresence>
+                  {isHighlighted && (
+                    <motion.div
+                      className="absolute inset-0 -mx-4 -my-2 rounded-lg bg-gradient-to-r from-gray-500/10 via-gray-400/20 to-gray-500/10"
+                      variants={highlightVariants}
+                      initial="hidden"
+                      animate="visible"
+                      exit="hidden"
+                    />
+                  )}
+                </AnimatePresence>
+              )}
 
               <div className="relative flex flex-row gap-4 items-center z-10">
                 <motion.div
                   className="relative rounded-full w-11 h-11 flex items-center justify-center flex-shrink-0 transition-colors duration-300"
                   style={{ backgroundColor: bgColor }}
-                  animate={
-                    isHighlighted && stepState !== "completed"
-                      ? {
-                          boxShadow: [
-                            "0 0 0 0 rgba(62, 115, 196, 0)",
-                            "0 0 0 4px rgba(62, 115, 196, 0.2)",
-                            "0 0 0 0 rgba(62, 115, 196, 0)",
-                          ],
-                        }
-                      : {}
-                  }
                   transition={{ duration: 2, repeat: Infinity }}
                 >
                   {stepState !== "completed" && (

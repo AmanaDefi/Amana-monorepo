@@ -135,15 +135,18 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       filteredWallets.forEach(async (wallet) => {
         try {
           console.log(wallet.meta.id, connectors);
-          await connectors
-            ?.find(
-              (con) =>
-                con.id === wallet.meta.id ||
-                con?.rdns?.includes(wallet.meta.id) ||
-                (con.id === "walletConnect" &&
-                  wallet.connectorType.includes("wallet_connect")),
-            )
-            ?.disconnect();
+          const connector = connectors?.find(
+            (con) =>
+              con.id === wallet.meta.id ||
+              con?.rdns?.includes(wallet.meta.id) ||
+              (con.id === "walletConnect" &&
+                wallet.connectorType.includes("wallet_connect")),
+          );
+
+          if (connector) {
+            await connector.disconnect();
+            wallet.disconnect();
+          }
         } catch (e) {
           console.log(e);
         }
