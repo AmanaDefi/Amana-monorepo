@@ -8,6 +8,7 @@ import "./ERC20StrategyParent.sol";
 
 import "../interfaces/ISwapHelper.sol";
 import "../interfaces/I4626Vault.sol";
+import "../interfaces/IUSNMinimal.sol";
 
 contract NoonERC20Strategy is ERC20StrategyParent {
     using SafeERC20 for IERC20;
@@ -49,27 +50,35 @@ contract NoonERC20Strategy is ERC20StrategyParent {
     ) internal override {
         require(amount > 0, "Deposit amount must be greater than zero");
 
-        // approveOrIncreaseAllowance(inputToken, receiptTokenAddress, amount);
+        IUSNMinimal usnToken = IUSNMinimal(USN_ADDRESS);
+        approveOrIncreaseAllowance(inputToken, USN_ADDRESS, amount);
 
-        // uint256 amountOut = I4626Vault(receiptTokenAddress).deposit(
-        //     amount,
-        //     address(this)
-        // );
-        SafeERC20.safeTransfer(IERC20(inputToken), address(swapHelper), amount);
+        usnToken.mint(address(this), amount);
+        approveOrIncreaseAllowance(usnToken, receiptTokenAddress, amount);
 
-        // Swap input token to receipt token (sUSN) via Uni v4
-        uint256 amountOut = ISwapHelper(swapHelper)
-            .swapViaUniV3SpecificIntermediateTokens(
-                address(inputToken),
-                USDT_ADDRESS, // USDT as intermediate token
-                USN_ADDRESS, // USN as intermediate token
-                amount,
-                receiptTokenAddress,
-                10000,
-                address(this),
-                9999,
-                "0x"
-            );
+        uint256 amountOut = I4626Vault(receiptTokenAddress).deposit(
+            amount,
+            address(this)
+        );
+        // mint USN
+
+        // stake USN
+
+        // SafeERC20.safeTransfer(IERC20(inputToken), address(swapHelper), amount);
+
+        // // Swap input token to receipt token (sUSN) via Uni v4
+        // uint256 amountOut = ISwapHelper(swapHelper)
+        //     .swapViaUniV3SpecificIntermediateTokens(
+        //         address(inputToken),
+        //         USDT_ADDRESS, // USDT as intermediate token
+        //         USN_ADDRESS, // USN as intermediate token
+        //         amount,
+        //         receiptTokenAddress,
+        //         10000,
+        //         address(this),
+        //         9999,
+        //         "0x"
+        //     );
         require(amountOut >= minAmountOut, "Insufficient output amount");
     }
 
