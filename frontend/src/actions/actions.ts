@@ -1197,7 +1197,7 @@ const executeCrossChainDeposit = async (
   console.log("Unified calculation result for cross-chain deposit:", {
     inputAmount: calculationResult.inputAmount.toString(),
     amountAfterFee: calculationResult.amountAfterFee.toString(),
-    amountForStrategy: calculationResult.amountForStrategy.toString(),
+    amountAfterSwap: calculationResult.amountAfterSwap.toString(),
     sharesAmount: calculationResult.sharesAmount.toString(),
     needsGasFee: calculationResult.needsGasFee,
     needsTokenSwap: calculationResult.needsTokenSwap,
@@ -1395,12 +1395,12 @@ const executeSolanaDeposit = async (
     console.log("Cache miss - performing new calculation for Solana deposit execution");
     const vaultTokenPrice = getTokenPrice(vaultData.inputToken.symbol, priceContext);
     const inputTokenPrice = getTokenPrice(inputToken.symbol, priceContext);
-   // Dynamically fetch gas token info
-   const { gasZRC20Symbol } = await getVaultGasTokenInfo(vaultData);
-   const gasTokenSymbol = gasZRC20Symbol || "ETH"; // fallback to ETH if not found
-   console.log("[CrossChainDeposit] gasTokenSymbol:", gasTokenSymbol);
-   const gasTokenPrice = getTokenPrice(gasTokenSymbol, priceContext);
-   console.log("[CrossChainDeposit] gasTokenPrice:", gasTokenPrice);
+    // Dynamically fetch gas token info
+    const { gasZRC20Symbol } = await getVaultGasTokenInfo(vaultData);
+    const gasTokenSymbol = gasZRC20Symbol || "ETH"; // fallback to ETH if not found
+    console.log("[CrossChainDeposit] gasTokenSymbol:", gasTokenSymbol);
+    const gasTokenPrice = getTokenPrice(gasTokenSymbol, priceContext);
+    console.log("[CrossChainDeposit] gasTokenPrice:", gasTokenPrice);
     // Use the unified calculation function
     calculationResult = await calculateDepositOutput(
       transactionAmount,
@@ -1418,7 +1418,7 @@ const executeSolanaDeposit = async (
   console.log("Unified calculation result for Solana deposit:", {
     inputAmount: calculationResult.inputAmount.toString(),
     amountAfterFee: calculationResult.amountAfterFee.toString(),
-    amountForStrategy: calculationResult.amountForStrategy.toString(),
+    amountAfterSwap: calculationResult.amountAfterSwap.toString(),
     sharesAmount: calculationResult.sharesAmount.toString(),
     needsGasFee: calculationResult.needsGasFee,
     needsTokenSwap: calculationResult.needsTokenSwap,
