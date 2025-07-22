@@ -521,6 +521,55 @@ const VaultsDetailContainer: React.FC<{
 
       <VaultHeaderInfo vaultData={vaultData} />
 
+      {/* Mobile Vault Header */}
+      <div className="md:hidden flex w-full flex-row items-center mt-4 mb-4">
+        <div className="flex items-center gap-3 max-w-full flex-wrap flex-1">
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Image
+                src={vaultData.imgURL ?? ""}
+                alt={vaultData.protocol.network}
+                width={24}
+                height={24}
+                className="w-6 h-6 rounded-full"
+                sizes="24px"
+              />
+            </div>
+            <h2 className="font-bold text-white text-sm">{vaultData.protocol.network}</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Image
+                src={vaultData.protocol.imgURL}
+                alt={vaultData.protocol.name}
+                width={24}
+                height={24}
+                className="w-6 h-6 rounded-full"
+                sizes="24px"
+              />
+            </div>
+            <h2 className="font-bold text-white text-sm">{vaultData.protocol.name}</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Image
+                src={vaultData.inputToken.imgURL}
+                alt={vaultData.name}
+                width={24}
+                height={24}
+                className="w-6 h-6 rounded-full"
+                sizes="24px"
+              />
+            </div>
+            <h2 className="font-bold text-white text-sm">{vaultData.name}</h2>
+            <h2 className="font-bold text-white py-1 ">
+            {vaultData.type}
+          </h2>
+          </div>
+          
+        </div>
+      </div>
+
       {walletAddress && isDeposit && (
         <div className="block lg:hidden mt-6 lg:mt-0">
           <VaultStats

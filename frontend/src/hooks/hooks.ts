@@ -41,7 +41,7 @@ import { useTokenPrices } from "@/providers/TokenPriceProvider";
 import { ONE_MINUTE, USER_SETTINGS_LOCAL_STORAGE_KEY } from "@/constants";
 import vaultAbi from "../../abis/moonwellVaultABI.json";
 import { Address, zeroAddress } from "viem";
-import { ConnectedWallet } from "@privy-io/react-auth";
+import { ConnectedWallet, SUPPORTED_CHAINS } from "@privy-io/react-auth";
 import { useUserSettingsStore } from "@/store/userSettingsStore";
 import { useUserPositionsFromGraph, useUserTransactionsFromGraph } from "./useVaultsGraph";
 import { useMultiChain } from "@/providers/MultiChainProvider";
@@ -50,6 +50,9 @@ import { ethers, Interface } from "ethers";
 import { apiService } from "@/service";
 import { getVault30dAvgAPY, getVaultHistoricalAPY } from '@/utils/defillama';
 import { VAULT_TO_DEFILLAMA_POOL } from "@/constants/defillamaPoolMapping";
+import { parseAbiItem } from "viem";
+import { PublicClient } from "viem";
+import { getPublicClient } from "@/utils/getPublicClient";
 
 type CashedVaultData = {
   vaultId: string;
@@ -556,8 +559,8 @@ export const useUpdateAPYs = (
                 APY7d = await fetchAegisAPR();
               } else if (vault.protocol.name === "YieldFi") {
                 APY7d = await fetchYieldFiAPY();
-              } else if (vault.protocol.name === "Noon Capital") {       
-                APY7d = await fetchNoonCapitalAPY();       
+              } else if (vault.protocol.name === "Noon Capital") {
+                APY7d = await fetchNoonCapitalAPY();
               } else if (vault.protocol.name === "Compound") {
                 APY7d = await calculateCompoundAPY(
                   receiptTokenAddress as Address,
@@ -643,7 +646,7 @@ export const useUpdateAPYs = (
               }
 
               const realApy30d = await getVault30dAvgAPY(vault.id);
-             
+
               return {
                 vaultId: vault.id,
                 APY7d,
@@ -833,4 +836,3 @@ export const useUserPortfolioFromGraph = (userAddress?: string) => {
     error
   };
 };
-

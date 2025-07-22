@@ -13,7 +13,7 @@ type TokenPriceByIdResult = {
     [priceId: string]: number;
 };
 
-type TokenPriceContextType = {
+export type TokenPriceContextType = {
     prices: TokenPriceData;
     loading: boolean;
     error: string | null;
