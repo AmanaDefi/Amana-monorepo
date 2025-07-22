@@ -334,10 +334,13 @@ export const calculateDepositOutput = async (
     );
     console.log("Needs Token Swap:", needsTokenSwap);
     amountForStrategy = swapResult.amountOut;
+    console.log("amountForStrategy in swap results:", amountForStrategy);
     // Calculate swap slippage in vault asset
     const equivalentInputAmount = BigInt(Math.floor((Number(inputAmount) / 10 ** (inputToken?.decimals ?? 18)) * inputTokenPrice * 10 ** vaultData.inputToken.decimals));
+    console.log("equivalentInputAmount in swap results:", equivalentInputAmount);
     swapSlippage = equivalentInputAmount > amountForStrategy ? equivalentInputAmount - amountForStrategy : 0n;
     console.log("[DepositCalc] Swap Result:", swapResult);
+    console.log("swapSlippage in swap results:", swapSlippage);
   } else {
     console.log("No token swap needed, input token is vault asset");
   }
@@ -355,10 +358,10 @@ export const calculateDepositOutput = async (
     formatCurrency
   );
   let amountAfterFee = amountForStrategy;
-  console.log("amountForStrategy for rohit:", amountAfterFee);
+  console.log("amountForStrategy in gas fee results:", amountAfterFee);
   if (gasFeeResult.needsDeduction) {
     amountAfterFee = amountForStrategy > gasFeeResult.gasFeeInVaultAsset ? amountForStrategy - gasFeeResult.gasFeeInVaultAsset : 0n;
-    console.log("amountAfterFee for rohit:", amountAfterFee);
+    console.log("amountAfterFee in gas fee results:", amountAfterFee);
   }
   console.log("[DepositCalc] Gas Fee Result:", gasFeeResult);
   console.log("[DepositCalc] Amount After Fee (after gas deduction):", amountAfterFee);
@@ -393,6 +396,21 @@ export const calculateDepositOutput = async (
     outputAmountInUSD
   });
 
+  // Debug logging
+  console.log("=== DEPOSIT CALCULATION DEBUG ===");
+  console.log("Input Token:", inputToken.symbol, "Decimals:", inputToken.decimals);
+  console.log("Vault Token:", vaultData.inputToken.symbol, "Decimals:", vaultData.inputToken.decimals);
+  console.log("Input Amount:", inputAmount.toString(), "($" + inputAmountInUSD.toFixed(2) + ")");
+  console.log("Amount After Fee:", amountAfterFee.toString());
+  console.log("Amount For Strategy (A):", amountForStrategy.toString());
+  console.log("Shares (C):", sharesAmount);
+  console.log("Output Amount (D):", outputAmount.toString(), "($" + outputAmountInUSD.toFixed(2) + ")");
+  console.log("Gas Fee:", gasFeeResult.gasFeeInVaultAsset.toString(), "($" + gasFeeInUSD + ")");
+  console.log("Swap Slippage (B-A):", swapSlippage.toString(), "($" + swapSlippageInUSD.toFixed(2) + ")");
+  console.log("Deposit Slippage (A-D):", depositSlippage.toString(), "($" + depositSlippageInUSD.toFixed(2) + ")");
+  console.log("Needs Token Swap:", needsTokenSwap);
+  console.log("Needs Gas Fee:", gasFeeResult.needsDeduction);
+  console.log("==================================");
   return {
     inputAmount,
     outputAmount, // in assets
