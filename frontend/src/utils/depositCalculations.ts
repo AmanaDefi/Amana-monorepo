@@ -203,32 +203,18 @@ export const calculateGasFeeIfNeeded = async (
   const gasZRC20 = result[0] as string;
   const gasFee = result[1] as bigint;
 
-  console.log("GasFee:", gasFee.toString());
   let gasFeeInVaultAsset = gasFee;
 
   // Convert gas fee to vault asset if tokens differ
   if (gasZRC20.toLowerCase() !== vaultData.inputToken.address.toLowerCase()) {
-    console.log("Converting gas fee to vault asset terms...");
     const gasTokenDecimals = ZRC20_TOKENS_BY_ADDRESS[gasZRC20]?.decimals ?? 18;
-    console.log("Gas token decimals:", gasTokenDecimals);
     gasFeeInVaultAsset = BigInt(Math.floor((Number(gasFee) / 10 ** gasTokenDecimals) * gasTokenPrice * 10 ** vaultData.inputToken.decimals));
-    console.log("needs deduction:", true);
   }
-  console.log("Gas fee in vault asset:", gasFeeInVaultAsset.toString());
 
   // Format gas fee in USD and ETH
   const gasFeeInTokenUnits = Number(formatUnits(gasFeeInVaultAsset, vaultData.inputToken.decimals));
   const gasFeeInUSDAmount = gasFeeInTokenUnits * vaultTokenPrice;
   const gasFeeInUSD = formatCurrency(gasFeeInUSDAmount);
-
-  console.log("Final gas fee calculation:", {
-    gasFeeInVaultAsset: gasFeeInVaultAsset.toString(),
-    gasFeeInTokenUnits,
-    gasFeeInUSDAmount,
-    gasFeeInUSD,
-    vaultTokenPrice,
-    gasTokenPrice
-  });
 
   return {
     gasFeeInVaultAsset,
@@ -350,12 +336,6 @@ export const calculateDepositOutput = async (
   let swapSlippage = 0n;
   let needsTokenSwap = false;
 
-  console.log(
-    "[DepositCalc] Comparing inputToken.ZRC20equivalent.address:",
-    inputToken.ZRC20equivalent?.address,
-    "with vaultData.inputToken.address:",
-    vaultData.inputToken.address
-  );
   if (!inputToken.ZRC20equivalent) {
     throw new Error("No ZRC20 equivalent found for input token");
   }
@@ -368,18 +348,11 @@ export const calculateDepositOutput = async (
       vaultData.id as Address,
       500
     );
-    console.log("Needs Token Swap:", needsTokenSwap);
     amountAfterSwap = swapResult.amountOut;
     // Calculate swap slippage in vault asset
     const inputAmountInVaultAsset = BigInt(Math.floor((Number(inputAmount) / 10 ** (inputToken?.ZRC20equivalent.decimals ?? 18)) * inputTokenPrice * 10 ** vaultData.inputToken.decimals));
     swapSlippage = inputAmountInVaultAsset > amountAfterSwap ? inputAmountInVaultAsset - amountAfterSwap : 0n;
-    console.log("[DepositCalc] Swap Result:", swapResult);
-    console.log("swapSlippage in swap results:", swapSlippage);
-  } else {
-    console.log("No token swap needed, input token is vault asset");
   }
-  console.log("[DepositCalc] Amount after swap:", amountAfterSwap.toString());
-  console.log("[DepositCalc] Swap Slippage:", swapSlippage.toString());
 
   // Step 2: Deduct gas fee (in vault asset)
   const gasFeeResult = await calculateGasFeeIfNeeded(
@@ -392,23 +365,16 @@ export const calculateDepositOutput = async (
     formatCurrency
   );
   let amountAfterFee = amountAfterSwap;
-  console.log("amountAfterSwap for rohit:", amountAfterFee);
   if (gasFeeResult.needsDeduction) {
     amountAfterFee = amountAfterSwap > gasFeeResult.gasFeeInVaultAsset ? amountAfterSwap - gasFeeResult.gasFeeInVaultAsset : 0n;
-    console.log("amountAfterFee for rohit:", amountAfterFee);
   }
-  console.log("[DepositCalc] Gas Fee Result:", gasFeeResult);
-  console.log("[DepositCalc] Amount After Fee (after gas deduction):", amountAfterFee);
 
   // Step 3: Calculate shares and output amount
   const sharesAmount = await getSharesFromStrategyDeposit(amountAfterFee, vaultData, activeWallet);
-  console.log("[DepositCalc] Shares Amount:", sharesAmount);
   const outputAmount = await getAssetsFromShares(parseUnits(sharesAmount, vaultData.inputToken.decimals), vaultData, activeWallet);
-  console.log("[DepositCalc] Output Amount (in assets):", outputAmount);
 
   // Step 4: Calculate deposit slippage (in vault asset)
   const depositSlippage = amountAfterFee > outputAmount ? amountAfterFee - outputAmount : 0n;
-  console.log("[DepositCalc] Deposit Slippage:", depositSlippage);
 
   // Step 5: USD conversions (at the end)
   const inputAmountInUSD = (Number(inputAmount) / 10 ** (inputToken?.decimals ?? 18)) * inputTokenPrice;
@@ -421,30 +387,6 @@ export const calculateDepositOutput = async (
   const totalSlippageInUSD = swapSlippageInUSD + depositSlippageInUSD;
   const totalSlippagePercentage = inputAmountInUSD > 0 ? (totalSlippageInUSD / inputAmountInUSD) * 100 : 0;
 
-  // Debug log for USD values
-  console.log("[DepositCalc] USD Values:", {
-    inputAmountInUSD,
-    gasFeeInUSD,
-    swapSlippageInUSD,
-    depositSlippageInUSD,
-    outputAmountInUSD
-  });
-
-  // Debug logging
-  console.log("=== DEPOSIT CALCULATION DEBUG ===");
-  console.log("Input Token:", inputToken.symbol, "Decimals:", inputToken.decimals);
-  console.log("Vault Token:", vaultData.inputToken.symbol, "Decimals:", vaultData.inputToken.decimals);
-  console.log("Input Amount:", inputAmount.toString(), "($" + inputAmountInUSD.toFixed(2) + ")");
-  console.log("Amount After Fee:", amountAfterFee.toString());
-  console.log("Amount For Strategy (A):", amountAfterSwap.toString());
-  console.log("Shares (C):", sharesAmount);
-  console.log("Output Amount (D):", outputAmount.toString(), "($" + outputAmountInUSD.toFixed(2) + ")");
-  console.log("Gas Fee:", gasFeeResult.gasFeeInVaultAsset.toString(), "($" + gasFeeInUSD + ")");
-  console.log("Swap Slippage (B-A):", swapSlippage.toString(), "($" + swapSlippageInUSD.toFixed(2) + ")");
-  console.log("Deposit Slippage (A-D):", depositSlippage.toString(), "($" + depositSlippageInUSD.toFixed(2) + ")");
-  console.log("Needs Token Swap:", needsTokenSwap);
-  console.log("Needs Gas Fee:", gasFeeResult.needsDeduction);
-  console.log("==================================");
   return {
     inputAmount,
     outputAmount, // in assets

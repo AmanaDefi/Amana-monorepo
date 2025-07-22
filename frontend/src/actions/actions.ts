@@ -34,6 +34,7 @@ import {
   getCurrentSlippage,
   isZetachain,
   getSolanaEVMAddress,
+  getVaultSlippage,
 } from "@/utils/utils";
 import { baseProvider, arbitrumProvider } from "../utils/providers";
 import { ZRC20_TOKENS_BY_ADDRESS } from "../constants/ZRC20TokensByAddress";
@@ -909,11 +910,9 @@ export const Approvedeposit = async (
 ) => {
   const walletClient = await getWalletClient(activeAccount);
   if (!walletClient || !activeAccount?.address) {
-    console.log("No wallet client or active account found");
     return false;
   }
 
-  console.log("Executing DepositApprove");
   try {
     let spender = EVM_GATEWAY_ADDRESSES[activeChain?.id];
     if (activeChain?.id === 7000 || activeChain?.id === 7001) {
@@ -980,7 +979,7 @@ const getPathDataAndMinSharesOut = async (
   }
   let assetsConversionAmount: bigint = transactionAmount;
   let swapPath: `0x${string}` = "0x";
-
+  const slippage = getVaultSlippage(vaultData.id);
   if (
     inputTokenZeta.address.toLowerCase() !==
     vaultData.inputToken.address.toLowerCase()
@@ -990,7 +989,7 @@ const getPathDataAndMinSharesOut = async (
       inputTokenZeta,
       vaultData.inputToken,
       vaultData.id as Address,
-      getCurrentSlippage() * 100,
+      slippage * 100,
     );
     swapPath = encodedPath ?? "0x";
     assetsConversionAmount = amountOut;
@@ -1008,7 +1007,7 @@ const getPathDataAndMinSharesOut = async (
   });
 
   const minSharesOut =
-    (sharesOutForUnderlying * BigInt(10000 - getCurrentSlippage() * 100)) /
+    (sharesOutForUnderlying * BigInt(10000 - slippage * 100)) /
     BigInt(10000);
 
   return {
@@ -1022,7 +1021,8 @@ const getPathDataAndMinAmountOut = async (
   outputToken: Token,
   transactionAmount: bigint,
 ) => {
-  const slippageBps = Number(getCurrentSlippage() * 100); // e.g. 0.5% → 50 BPS
+  const slippage = getVaultSlippage(vaultData.id);
+  const slippageBps = Number(slippage * 100); // e.g. 0.5% → 50 BPS
   const minAmountOut =
     (transactionAmount * BigInt(10000 - Number(slippageBps))) / BigInt(10000);
 
@@ -1056,8 +1056,6 @@ const executeDirectDeposit = async (
   if (!activeAccount)
     throw new Error("no activeAccount found for perform deposit");
 
-  // Check cache first for existing calculation
-
   const cached = useTransactionStore.getState().lastDepositCalculation;
 
   let calculationResult;
@@ -1076,29 +1074,28 @@ const executeDirectDeposit = async (
     console.log("Cache miss - performing new calculation for direct deposit execution");
     const vaultTokenPrice = getTokenPrice(vaultData.inputToken.symbol, priceContext);
     const inputTokenPrice = getTokenPrice(inputToken.symbol, priceContext);
-    // Dynamically fetch gas token info
+
     const { gasZRC20Symbol } = await getVaultGasTokenInfo(vaultData);
-    const gasTokenSymbol = gasZRC20Symbol || "ETH"; // fallback to ETH if not found
-    console.log("gasTokenSymbol:", gasTokenSymbol);
+    const gasTokenSymbol = gasZRC20Symbol || "ETH";
     const gasTokenPrice = getTokenPrice(gasTokenSymbol, priceContext);
-    console.log("gasTokenPrice:", gasTokenPrice);
-    // Use the unified calculation function
+
     calculationResult = await calculateDepositOutput(
       transactionAmount,
       vaultData,
       inputToken,
       activeChain,
       activeAccount,
-      vaultTokenPrice, // vaultTokenPrice - not needed for execution
-      inputTokenPrice, // inputTokenPrice - not needed for execution
-      gasTokenPrice, // correct gas token price
-      (amount: number) => amount.toString() // Simple formatter
+      vaultTokenPrice,
+      inputTokenPrice,
+      gasTokenPrice,
+      (amount: number) => amount.toString()
     );
   }
 
   // Calculate minSharesOut with slippage
+  const slippage = getVaultSlippage(vaultData.id);
   const sharesAmountBigInt = parseUnits(calculationResult.sharesAmount, vaultData.inputToken.decimals);
-  const minSharesOut = (sharesAmountBigInt * BigInt(10000 - getCurrentSlippage() * 100)) / BigInt(10000);
+  const minSharesOut = (sharesAmountBigInt * BigInt(10000 - slippage * 100)) / BigInt(10000);
 
 
   const walletClient = await getWalletClient(activeAccount);
@@ -1154,8 +1151,6 @@ const executeCrossChainDeposit = async (
   const walletClient = await getWalletClient(activeAccount);
   if (!activeAccount || !walletClient) return { transactionHash: null };
 
-  // Check cache first for existing calculation
-
   const cached = useTransactionStore.getState().lastDepositCalculation;
 
   let calculationResult;
@@ -1177,9 +1172,7 @@ const executeCrossChainDeposit = async (
     // Dynamically fetch gas token info
     const { gasZRC20Symbol } = await getVaultGasTokenInfo(vaultData);
     const gasTokenSymbol = gasZRC20Symbol || "ETH"; // fallback to ETH if not found
-    console.log("[CrossChainDeposit] gasTokenSymbol:", gasTokenSymbol);
     const gasTokenPrice = getTokenPrice("ETH", priceContext);
-    console.log("[CrossChainDeposit] gasTokenPrice:", gasTokenPrice);
     // Use the unified calculation function
     calculationResult = await calculateDepositOutput(
       transactionAmount,
@@ -1193,16 +1186,6 @@ const executeCrossChainDeposit = async (
       (amount: number) => amount.toString() // Simple formatter
     );
   }
-
-  console.log("Unified calculation result for cross-chain deposit:", {
-    inputAmount: calculationResult.inputAmount.toString(),
-    amountAfterFee: calculationResult.amountAfterFee.toString(),
-    amountAfterSwap: calculationResult.amountAfterSwap.toString(),
-    sharesAmount: calculationResult.sharesAmount.toString(),
-    needsGasFee: calculationResult.needsGasFee,
-    needsTokenSwap: calculationResult.needsTokenSwap,
-  });
-
   // Get swap path if needed
   let swapPath: `0x${string}` = "0x";
   if (calculationResult.needsTokenSwap) {
@@ -1213,14 +1196,14 @@ const executeCrossChainDeposit = async (
         actualInputToken,
         vaultData.inputToken,
         vaultData.id as Address,
-        getCurrentSlippage() * 100,
+        getVaultSlippage(vaultData.id) * 100,
       );
       swapPath = swapResult.encodedPath ?? "0x";
     }
   }
   // Calculate minSharesOut with slippage
   const sharesAmountBigInt = parseUnits(calculationResult.sharesAmount, vaultData.inputToken.decimals);
-  const minSharesOut = (sharesAmountBigInt * BigInt(10000 - getCurrentSlippage() * 100)) / BigInt(10000);
+  const minSharesOut = (sharesAmountBigInt * BigInt(10000 - getVaultSlippage(vaultData.id) * 100)) / BigInt(10000);
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(
     activeAccount.address,
@@ -1229,7 +1212,7 @@ const executeCrossChainDeposit = async (
   const nonEvmAddress = "0x";
 
   let contract, approveTx, receipt, payload, revertOptions;
-  const slippage = getCurrentSlippage();
+  const slippage = getVaultSlippage(vaultData.id);
   const slippageValue = (slippage * 100).toFixed(0);
   if (!inputToken.ZRC20equivalent) {
     console.error("ZRC20equivalent not found for input token");
@@ -1282,9 +1265,7 @@ const executeCrossChainDeposit = async (
   });
   // Case 1: Native token (ETH, BNB, etc.)
   if (inputToken.isNative) {
-    console.log("Native token deposit detected");
 
-    // console.log("depositTx", depositTx);
     const txHash = await walletClient.sendTransaction({
       account: activeAccount.address,
       data,
@@ -1293,28 +1274,19 @@ const executeCrossChainDeposit = async (
       to: EVM_GATEWAY_ADDRESSES[activeChain?.id],
     });
 
-    console.log("txHash:", txHash);
 
     const publicClient = getPublicClient(activeChain?.id);
     if (publicClient) {
       const receipt = await publicClient.waitForTransactionReceipt({
         hash: txHash,
       });
-      console.log("receipt:", receipt);
 
       return receipt;
     }
-    console.log("Deposit executed");
-    // setcrossChainTxId(transactionId);
-    //console.log("Deposit executed");
-    console.log("receipt", receipt);
     return { transactionHash: txHash };
   } else {
-    console.log("ERC20 token deposit detected");
-
     // Step 1: Deposit ERC20 tokens through the Gateway contract
     if (!walletClient?.chain) {
-      console.log("failed to get chain from WalletClient.");
       return { transactionHash: null };
     }
     updateLocalStorageObject(vaultData.id, { crossChainTxId: transactionId });
@@ -1338,7 +1310,7 @@ const executeCrossChainDeposit = async (
         account: activeAccount.address,
       });
 
-      console.log("depositAndCall txHash:", txHash);
+     
 
       const publicClient = getPublicClient(activeChain?.id);
       if (!publicClient) {
@@ -1398,9 +1370,7 @@ const executeSolanaDeposit = async (
     // Dynamically fetch gas token info
     const { gasZRC20Symbol } = await getVaultGasTokenInfo(vaultData);
     const gasTokenSymbol = gasZRC20Symbol || "ETH"; // fallback to ETH if not found
-    console.log("[CrossChainDeposit] gasTokenSymbol:", gasTokenSymbol);
     const gasTokenPrice = getTokenPrice(gasTokenSymbol, priceContext);
-    console.log("[CrossChainDeposit] gasTokenPrice:", gasTokenPrice);
     // Use the unified calculation function
     calculationResult = await calculateDepositOutput(
       transactionAmount,
@@ -1415,15 +1385,6 @@ const executeSolanaDeposit = async (
     );
   }
 
-  console.log("Unified calculation result for Solana deposit:", {
-    inputAmount: calculationResult.inputAmount.toString(),
-    amountAfterFee: calculationResult.amountAfterFee.toString(),
-    amountAfterSwap: calculationResult.amountAfterSwap.toString(),
-    sharesAmount: calculationResult.sharesAmount.toString(),
-    needsGasFee: calculationResult.needsGasFee,
-    needsTokenSwap: calculationResult.needsTokenSwap,
-  });
-
   // Get swap path if needed
   let swapPath: `0x${string}` = "0x";
   if (calculationResult.needsTokenSwap) {
@@ -1434,7 +1395,7 @@ const executeSolanaDeposit = async (
         actualInputToken,
         vaultData.inputToken,
         vaultData.id as Address,
-        getCurrentSlippage() * 100,
+        getVaultSlippage(vaultData.id) * 100,
       );
       swapPath = swapResult.encodedPath ?? "0x";
     }
@@ -1442,13 +1403,13 @@ const executeSolanaDeposit = async (
 
   // Calculate minSharesOut with slippage
   const sharesAmountBigInt = parseUnits(calculationResult.sharesAmount, vaultData.inputToken.decimals);
-  const minSharesOut = (sharesAmountBigInt * BigInt(10000 - getCurrentSlippage() * 100)) / BigInt(10000);
+  const minSharesOut = (sharesAmountBigInt * BigInt(10000 - getVaultSlippage(vaultData.id) * 100)) / BigInt(10000);
   const walletAddress = walletContext.publicKey!.toBase58();
 
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(walletAddress, activeChain);
 
-  const slippage = getCurrentSlippage();
+  const slippage = getVaultSlippage(vaultData.id);
   const slippageValue = (slippage * 100).toFixed(0);
   const wallet = {
     publicKey: walletContext.publicKey,
@@ -1567,14 +1528,12 @@ const executeDirectWalletTopup = async (
 ) => {
   const walletClient = await getWalletClient(activeAccount);
   if (!walletClient || !activeAccount?.address) {
-    console.log("No wallet client or active account found");
     return { transactionHash: null };
   }
 
   try {
     const publicClient = getPublicClient(activeChain?.id);
     if (!publicClient) {
-      console.log("No public client found");
       return { transactionHash: null };
     }
 
@@ -1664,7 +1623,6 @@ const executeSolanaWalletTopup = async (
   setcrossChainTxId?: Function,
 ) => {
   if (!walletContext?.publicKey) {
-    console.log("No Solana wallet context found");
     return { transactionHash: null };
   }
 
@@ -1736,7 +1694,6 @@ const executeCrossChainWalletTopup = async (
 ) => {
   const walletClient = await getWalletClient(activeAccount);
   if (!activeAccount || !walletClient) {
-    console.log("No wallet client or active account found");
     return { transactionHash: null };
   }
 
@@ -1978,7 +1935,6 @@ export const executeWithdrawal = async (
       withdrawAssetAmount,
     );
   } else if (activeChain?.id == CHAIN_ID.solana) {
-    console.log("Solana withdrawal detected");
     return executeSolanaWithdrawal(
       vaultData,
       walletContext,
@@ -2252,11 +2208,7 @@ export const fetchUserVaultMaxWithdraw = async (
   vaultAddress: Address,
   activeWallet: ConnectedWallet,
 ) => {
-  console.log("🔍 Calling fetchUserVaultMaxWithdraw:", {
-    userAddress,
-    vaultAddress,
-    decimals,
-  });
+
 
   const publicClient = getPublicClient(SUPPORTED_CHAINS[0].id);
   if (!publicClient) throw new Error("failed to get publicClient");

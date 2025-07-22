@@ -17,17 +17,13 @@ import { Chain } from "viem";
 import {
   APPROVED_TOKENS,
   CHAIN_ID,
-  chainConfigs,
   chainsWithCustomRpcs,
-  SUPPORTED_CHAINS,
 } from "@/constants/chainConfig";
 import {
   formatCurrency,
-  getCurrentSlippage,
   getVaultErrorMessage,
   isZetachain,
   selectActions,
-  convertUsdToEth,
   bigIntReviver,
   bigIntReplacer,
   formatSlippageUSD,
