@@ -27,7 +27,7 @@ export const intelligentStrategyConfigs: IntelligentStrategyTestConfig[] = [
     strategyChainId: 8453, // Base
     gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed",
     inputTokenAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC on Base
-    inputTokenStorageSlot: 0,
+    inputTokenStorageSlot: 9,
     receiptTokenAddress: "0xf42f5795D9ac7e9D757dB633D693cD548Cfd9169", // Fluid pool vault
     moduleContractName: "FluidStrategyModule",
     moduleParams: [

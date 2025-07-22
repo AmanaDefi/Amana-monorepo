@@ -12,6 +12,8 @@ export interface IntelligentStrategyTestContext {
   module: any;
   config: IntelligentStrategyTestConfig;
 }
+const AMANA_VAULT_ADDRESS = "0x1234567890abcdef1234567890abcdef12345678"; // Replace with actual AMANA vault address
+const WITHDRAW_HELPER_ADDRESS = "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"; // Replace with actual withdraw helper address
 
 export async function deployIntelligentStrategyFixture(
   config: IntelligentStrategyTestConfig
@@ -29,7 +31,11 @@ export async function deployIntelligentStrategyFixture(
 
   const [owner] = await ethers.getSigners();
   const gatewaySigner = await ethers.getSigner(config.gatewayAddress);
-
+  const fundAmount = ethers.utils.parseEther("1234");
+  await network.provider.request({
+    method: "hardhat_setBalance",
+    params: [config.gatewayAddress, fundAmount.toHexString()]
+  });
   const inputToken = await ethers.getContractAt("IERC20", config.inputTokenAddress, gatewaySigner);
 
   const ModuleFactory = await ethers.getContractFactory(config.moduleContractName);
@@ -40,9 +46,18 @@ export async function deployIntelligentStrategyFixture(
   await module.deployed();
 
   const StrategyFactory = await ethers.getContractFactory("ERC20IntelligentStrategy");
-  const strategy = await upgrades.deployProxy(StrategyFactory, {
+  const strategy = await upgrades.deployProxy(StrategyFactory, [
+    config.name,
+    config.gatewayAddress,
+    AMANA_VAULT_ADDRESS,
+    WITHDRAW_HELPER_ADDRESS,
+    config.inputTokenAddress,
+    config.receiptTokenAddress
+  ], {
     initializer: "initialize"
   });
+
+
   await strategy.deployed();
 
   return { owner, gatewaySigner, strategy, inputToken, module, config };

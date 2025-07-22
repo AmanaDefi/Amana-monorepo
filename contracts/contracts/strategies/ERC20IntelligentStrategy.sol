@@ -31,6 +31,25 @@ contract ERC20IntelligentStrategy is ERC20StrategyParent {
 
     event RebalanceExecuted(RebalanceInstruction instruction);
 
+    function initialize(
+        string memory _name,
+        address _gateway,
+        address _amanaVault,
+        address _withdrawHelper,
+        address _inputToken,
+        address _receiptToken
+    ) public initializer {
+        __UUPSUpgradeable_init();
+        __StrategyParent_init(
+            _name,
+            _amanaVault,
+            _gateway,
+            _withdrawHelper,
+            _inputToken,
+            _receiptToken
+        );
+    }
+
     function getAllocations()
         external
         view
