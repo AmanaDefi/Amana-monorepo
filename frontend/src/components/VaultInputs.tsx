@@ -420,10 +420,7 @@ export default function VaultInputs({
           ),
         );
       }
-    } else if (loadingOutputToken) {
-      // Clear error message while loading
-      setErrorMessage("");
-    }
+    } 
   }, [
     inputToken,
     inputBalance,
@@ -434,7 +431,7 @@ export default function VaultInputs({
     inputTokenPrice,
     vaultTokenPrice,
     conversionOutput.netDepositToVaultUSD,
-    loadingOutputToken,
+    loadingOutputToken, // still depend on this for recalculation, but don't clear error
     userVaultBalance,
     tokenBalance.formatted,
   ]);
@@ -1385,6 +1382,13 @@ export default function VaultInputs({
               isOutput={false}
               captionText={!isDeposit ? "Output Amount" : ""}
             />
+            <SwapSlippageBlock
+              conversionOutput={conversionOutput}
+              isVisible={
+                !!conversionOutput.swapSlippageUSD && !outputBoxErrorMessage
+              }
+              isBreathing={loadingOutputToken}
+            />
             <div className="my-4">
               <FeeDisplay
                 isDeposit={isDeposit}
@@ -1395,13 +1399,6 @@ export default function VaultInputs({
                 isBreathing={loadingOutputToken}
               />
             </div>
-            <SwapSlippageBlock
-              conversionOutput={conversionOutput}
-              isVisible={
-                !!conversionOutput.swapSlippageUSD && !outputBoxErrorMessage
-              }
-              isBreathing={loadingOutputToken}
-            />
             <NetDepositBlock
               conversionOutput={conversionOutput}
               vaultData={vaultData}
