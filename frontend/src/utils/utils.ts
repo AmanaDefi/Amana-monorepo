@@ -24,6 +24,7 @@ import SolanaConnectionSingleton from "./solanaSingleton";
 import { erc20Abi, getContract, formatUnits } from "viem";
 import { getPublicClient } from "./getPublicClient";
 import { ConnectedWallet } from "@privy-io/react-auth";
+import { getSlippageForVault } from "@/store/userSettingsStore";
 
 export const formatTotalAssets = (
   totalAssets: string,
@@ -563,30 +564,30 @@ export function getStoredSettings(): UserSettings {
   }
 }
 
-export function getCurrentSlippage(): number {
-  const settings = getStoredSettings();
-  return settings.slippage.value;
+export function getCurrentSlippage(vaultId: string): number {
+  const settings = getSlippageForVault(vaultId);
+  return settings.value;
 }
 
-export function getVaultSlippage(vaultId: string): number {
-  // Try Zustand first
-  try {
-    // Dynamically require to avoid circular deps in some build setups
-    const store = require("@/store/userSettingsStore");
-    const slippageSettings = store.useUserSettingsStore.getState().getSlippageForVault(vaultId);
-    return slippageSettings.value;
-  } catch (e) {
-    // fallback: try localStorage
-    try {
-      const settings = JSON.parse(localStorage.getItem("globalSettings") || "{}");
-      if (settings && settings.slippage && settings.slippage[vaultId]) {
-        return settings.slippage[vaultId].value;
-      }
-    } catch {}
-    // fallback default
-    return 0.5;
-  }
-}
+// export function getVaultSlippage(vaultId: string): number {
+//   // Try Zustand first
+//   try {
+//     // Dynamically require to avoid circular deps in some build setups
+//     const store = require("@/store/userSettingsStore");
+//     const slippageSettings = store.useUserSettingsStore.getState().getSlippageForVault(vaultId);
+//     return slippageSettings.value;
+//   } catch (e) {
+//     // fallback: try localStorage
+//     try {
+//       const settings = JSON.parse(localStorage.getItem("globalSettings") || "{}");
+//       if (settings && settings.slippage && settings.slippage[vaultId]) {
+//         return settings.slippage[vaultId].value;
+//       }
+//     } catch {}
+//     // fallback default
+//     return 0.5;
+//   }
+// }
 
 export function formatSlippageUSD(amount: number): string {
   if (Number.isNaN(amount)) {
@@ -983,12 +984,13 @@ export function hasNoErrors(messages: TransactionStepMessages): boolean {
 }
 
 export const parseTransactionMessage = (message: string) => {
-  const fullHashInParenthesesRegex = /(?<=\(hash:\s*)(0x[0-9a-fA-F]{64})(?=\)$)/;
-  const fullHashAtEndRegex = /(0x[0-9a-fA-F]{64})\s*$/; 
+  const fullHashInParenthesesRegex =
+    /(?<=\(hash:\s*)(0x[0-9a-fA-F]{64})(?=\)$)/;
+  const fullHashAtEndRegex = /(0x[0-9a-fA-F]{64})\s*$/;
 
   const addressRegex = /(0x[0-9a-fA-F]{40})\s*$/;
 
-  const shortHashRegex = /(0x[0-9a-fA-F]{1,39})\b\s*$/; 
+  const shortHashRegex = /(0x[0-9a-fA-F]{1,39})\b\s*$/;
 
   let hashValue = null;
   let textBeforeHash = message;
@@ -996,17 +998,17 @@ export const parseTransactionMessage = (message: string) => {
   let match = message.match(fullHashInParenthesesRegex);
   if (match) {
     hashValue = `${match[1]})`;
-    textBeforeHash = message.replace(match[0], '').replace(')', ""); 
+    textBeforeHash = message.replace(match[0], "").replace(")", "");
     return { textBeforeHash, hashValue };
   }
 
   match = message.match(fullHashAtEndRegex);
   if (match) {
     hashValue = match[1];
-    textBeforeHash = message.substring(0, match.index).trim(); 
+    textBeforeHash = message.substring(0, match.index).trim();
     return { textBeforeHash, hashValue };
   }
-  
+
   match = message.match(addressRegex);
   if (match) {
     hashValue = match[1];

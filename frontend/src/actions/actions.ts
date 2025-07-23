@@ -36,7 +36,6 @@ import {
   getCurrentSlippage,
   isZetachain,
   getSolanaEVMAddress,
-  getVaultSlippage,
 } from "@/utils/utils";
 import { baseProvider, arbitrumProvider } from "../utils/providers";
 import { ZRC20_TOKENS_BY_ADDRESS } from "../constants/ZRC20TokensByAddress";
@@ -44,7 +43,6 @@ import {
   calculateDepositOutput,
   isCachedCalculationValid,
 } from "../utils/depositCalculations";
-// import { fetchEthPrice } from "@/utils/utils";
 
 import * as dotenv from "dotenv";
 import { Token, VaultData } from "@/types/types";
@@ -984,7 +982,6 @@ const getPathDataAndMinSharesOut = async (
   }
   let assetsConversionAmount: bigint = transactionAmount;
   let swapPath: `0x${string}` = "0x";
-  const slippage = getVaultSlippage(vaultData.id);
   if (
     inputTokenZeta.address.toLowerCase() !==
     vaultData.inputToken.address.toLowerCase()
@@ -994,7 +991,7 @@ const getPathDataAndMinSharesOut = async (
       inputTokenZeta,
       vaultData.inputToken,
       vaultData.id as Address,
-      slippage * 100,
+      getCurrentSlippage(vaultData.id) * 100,
     );
     swapPath = encodedPath ?? "0x";
     assetsConversionAmount = amountOut;
@@ -1012,7 +1009,7 @@ const getPathDataAndMinSharesOut = async (
   });
 
   const minSharesOut =
-    (sharesOutForUnderlying * BigInt(10000 - slippage * 100)) /
+    (sharesOutForUnderlying * BigInt(10000 - getCurrentSlippage(vaultData.id) * 100)) /
     BigInt(10000);
 
   return {
@@ -1026,8 +1023,7 @@ const getPathDataAndMinAmountOut = async (
   outputToken: Token,
   transactionAmount: bigint,
 ) => {
-  const slippage = getVaultSlippage(vaultData.id);
-  const slippageBps = Number(slippage * 100); // e.g. 0.5% → 50 BPS
+  const slippageBps = Number(getCurrentSlippage(vaultData.id) * 100); // e.g. 0.5% → 50 BPS
   const minAmountOut =
     (transactionAmount * BigInt(10000 - Number(slippageBps))) / BigInt(10000);
 
@@ -1104,10 +1100,13 @@ const executeDirectDeposit = async (
   }
 
   // Calculate minSharesOut with slippage
-  const slippage = getVaultSlippage(vaultData.id);
-  const sharesAmountBigInt = parseUnits(calculationResult.sharesAmount, vaultData.inputToken.decimals);
-  const minSharesOut = (sharesAmountBigInt * BigInt(10000 - slippage * 100)) / BigInt(10000);
-
+  const sharesAmountBigInt = parseUnits(
+    calculationResult.sharesAmount,
+    vaultData.inputToken.decimals,
+  );
+  const minSharesOut =
+    (sharesAmountBigInt * BigInt(10000 - getCurrentSlippage(vaultData.id) * 100)) /
+    BigInt(10000);
 
   const walletClient = await getWalletClient(activeAccount);
   if (!walletClient) {
@@ -1217,15 +1216,19 @@ const executeCrossChainDeposit = async (
         actualInputToken,
         vaultData.inputToken,
         vaultData.id as Address,
-        getVaultSlippage(vaultData.id) * 100,
+        getCurrentSlippage(vaultData.id) * 100,
       );
       swapPath = swapResult.encodedPath ?? "0x";
     }
   }
   // Calculate minSharesOut with slippage
-  const slippage = getVaultSlippage(vaultData.id);
-  const sharesAmountBigInt = parseUnits(calculationResult.sharesAmount, vaultData.inputToken.decimals);
-  const minSharesOut = (sharesAmountBigInt * BigInt(10000 - slippage * 100)) / BigInt(10000);
+  const sharesAmountBigInt = parseUnits(
+    calculationResult.sharesAmount,
+    vaultData.inputToken.decimals,
+  );
+  const minSharesOut =
+    (sharesAmountBigInt * BigInt(10000 - getCurrentSlippage(vaultData.id) * 100)) /
+    BigInt(10000);
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(
     activeAccount.address,
@@ -1234,6 +1237,7 @@ const executeCrossChainDeposit = async (
   const nonEvmAddress = "0x";
 
   let contract, approveTx, receipt, payload, revertOptions;
+  const slippage = getCurrentSlippage(vaultData.id);
   const slippageValue = (slippage * 100).toFixed(0);
   if (!inputToken.ZRC20equivalent) {
     console.error("ZRC20equivalent not found for input token");
@@ -1424,21 +1428,26 @@ const executeSolanaDeposit = async (
         actualInputToken,
         vaultData.inputToken,
         vaultData.id as Address,
-        getVaultSlippage(vaultData.id) * 100,
+        getCurrentSlippage(vaultData.id) * 100,
       );
       swapPath = swapResult.encodedPath ?? "0x";
     }
   }
 
   // Calculate minSharesOut with slippage
-  const slippage = getVaultSlippage(vaultData.id);
-  const sharesAmountBigInt = parseUnits(calculationResult.sharesAmount, vaultData.inputToken.decimals);
-  const minSharesOut = (sharesAmountBigInt * BigInt(10000 - slippage * 100)) / BigInt(10000);
+  const sharesAmountBigInt = parseUnits(
+    calculationResult.sharesAmount,
+    vaultData.inputToken.decimals,
+  );
+  const minSharesOut =
+    (sharesAmountBigInt * BigInt(10000 - getCurrentSlippage(vaultData.id) * 100)) /
+    BigInt(10000);
   const walletAddress = walletContext.publicKey!.toBase58();
 
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(walletAddress, activeChain);
 
+  const slippage = getCurrentSlippage(vaultData.id);
   const slippageValue = (slippage * 100).toFixed(0);
   const wallet = {
     publicKey: walletContext.publicKey,
@@ -1887,7 +1896,7 @@ export const executeSolanaWithdrawal = async (
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(walletAddress, activeChain);
 
-  const slippage = getCurrentSlippage();
+  const slippage = getCurrentSlippage(vaultData.id);
   const slippageValue = (slippage * 100).toFixed(0);
 
   const wallet = {
@@ -2065,7 +2074,7 @@ const executeCrossChainWithdrawal = async (
     activeChain,
   );
 
-  const slippage = getCurrentSlippage();
+  const slippage = getCurrentSlippage(vaultData.id);
   const nonEvmAddress = "0x";
   const slippageValue = (slippage * 100).toFixed(0);
   const payload = encodeAbiParameters(

@@ -42,7 +42,7 @@ import { Address, Chain } from "viem";
 import { getPublicClient } from "@/utils/getPublicClient";
 import Button from "./common/Button";
 import { useTransactionStore } from "@/store/transactionStore";
-import { ConnectedWallet, useWallets } from "@privy-io/react-auth";
+import { ConnectedWallet } from "@privy-io/react-auth";
 import { useAuthStore } from "@/store/authStore";
 import { zetachain } from "viem/chains";
 import { useMultiChain } from "@/providers/MultiChainProvider";
@@ -969,15 +969,10 @@ function Interaction({
   hideStepsDisplay?: boolean;
   outputAmountFormatted: string;
 }): JSX.Element {
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const activeAccount = filteredWallets[0];
   const walletContext = useWallet();
   const prevLebel = useRef(label);
   const { openStep, setChain } = useAuthStore();
-  const { selectedChain } = useMultiChain();
+  const { selectedChain, activeEvmWallet: activeAccount } = useMultiChain();
   const [isMobile, setIsMobile] = useState(false);
   const { setIsFailedOnCOnfirmation } = useTransactionStore();
   const priceContext = useTokenPrices();

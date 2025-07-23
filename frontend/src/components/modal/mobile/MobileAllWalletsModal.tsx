@@ -49,12 +49,8 @@ const MobileAllWallets = () => {
     return () => window?.removeEventListener("resize", checkIsMobile);
   }, []);
 
-  const { walletAddress, connectSolana, activeChain } = useMultiChain();
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const activeAccount = filteredWallets[0];
+  const { walletAddress, connectSolana, activeChain, activeEvmWallet: activeAccount } = useMultiChain();
+
   const { logout } = usePrivy();
 
   const {

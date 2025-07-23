@@ -31,6 +31,7 @@ import {
 import InteractionContainer from "./interactAPI";
 import { useSlippage, useTokenPriceBySymbol } from "@/hooks/hooks";
 import {
+  fetchUserVaultMaxWithdraw,
   getPathDataAndAmountOut,
   getPerformanceFee,
 } from "@/actions/actions";
@@ -53,8 +54,6 @@ import {
   getLocalStorageObject,
   updateLocalStorageObject,
 } from "@/utils/localStorageUtils";
-import { getPublicClient } from "@/utils/getPublicClient";
-import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
 import ChainSelector from "./VaultsDetailsWrapper/components/ChainSelector";
 import SlippageSettingsBlock from "./VaultsDetailsWrapper/components/SlippageSettingsBlock";
 import FeeDisplay, {
@@ -63,7 +62,6 @@ import FeeDisplay, {
   NetDepositBlock,
 } from "./VaultsDetailsWrapper/components/FeeDisplay";
 import APYChangeCard from "./VaultsDetailsWrapper/components/APYChangeCard";
-import { useWallets } from "@privy-io/react-auth";
 import { useTransactionStore } from "@/store/transactionStore";
 import {
   formatTokenBalance,
@@ -72,7 +70,6 @@ import {
   formatShares,
 } from "@/utils/tokenFormat";
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
-import { zetachain } from "viem/chains";
 import { useAPYStore } from "@/store/APYStore";
 import { useMaxAmount } from "@/hooks/useMaxAmount";
 import { InfoBlock } from "./VaultsWrapper/components/InfoBlock.tsx";
@@ -168,11 +165,12 @@ export default function VaultInputs({
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [allowInput, setAllowInput] = useState<boolean>(false);
   const [label, setLabel] = useState(isDeposit ? "Invest" : "Withdraw");
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const activeWallet = filteredWallets[0];
+  const {
+    walletAddress,
+    activeChain,
+    activeEvmWallet: activeWallet,
+  } = useMultiChain();
+
   const selectChain = useMemo(() => selectedChain, [selectedChain]);
 
   const { slippageValue: userSlippage } = useSlippage(vaultId);
@@ -268,8 +266,6 @@ export default function VaultInputs({
   const [conversionOutput, setConversionOutput] = useState<ConversionOutput>(
     initialConversionOutput,
   );
-
-  const { walletAddress, activeChain } = useMultiChain();
 
   const inputTokenPrice = useTokenPriceBySymbol(inputToken?.symbol);
   const vaultTokenPrice = useTokenPriceBySymbol(vaultData.inputToken?.symbol);
@@ -448,6 +444,104 @@ export default function VaultInputs({
     loadingOutputToken, // still depend on this for recalculation, but don't clear error
     userVaultBalance,
     tokenBalance.formatted,
+  ]);
+
+  const isButtonDisabled = useMemo(async () => {
+    if (
+      !inputBalance.formatted ||
+      inputBalance.formatted === "0" ||
+      inputBalance.formatted === "0.00" ||
+      Number(inputBalance.formatted) <= 0
+    ) {
+      setIsButtonDisabled(true);
+      return true;
+    }
+
+    if (loadingOutputToken) {
+      setIsButtonDisabled(true);
+      return true;
+    }
+
+    if (errorMessage || outputBoxErrorMessage) {
+      setIsButtonDisabled(true);
+      return true;
+    }
+
+    if (isDeposit) {
+      if (Number(inputBalance.value) > Number(tokenBalance.value)) {
+        setIsButtonDisabled(true);
+        return true;
+      }
+    } else {
+      if (!walletAddress) {
+        setIsButtonDisabled(true);
+        return true;
+      }
+      const maxWithdrawAmount = await fetchUserVaultMaxWithdraw(
+        vaultData.inputToken.decimals,
+        walletAddress,
+        vaultData.id,
+      );
+      if (Number(inputBalance.formatted) > Number(maxWithdrawAmount)) {
+        setIsButtonDisabled(true);
+        return true;
+      }
+    }
+
+    if (
+      isDeposit &&
+      !vaultData.depositFeePaidFromGasTank &&
+      debouncedInputBalance.value > 0n &&
+      Number(
+        conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, ""),
+      ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, ""))
+    ) {
+      setIsButtonDisabled(true);
+      return true;
+    }
+    if (
+      inputBalance.value > 0n &&
+      conversionOutput.outputAmountFormatted &&
+      Number(conversionOutput.outputAmountFormatted) === 0 &&
+      !(
+        isDeposit &&
+        !vaultData.depositFeePaidFromGasTank &&
+        debouncedInputBalance.value > 0n &&
+        Number(
+          conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, "") ??
+            0,
+        ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, "") ?? 0)
+      )
+    ) {
+      setIsButtonDisabled(true);
+      return true;
+    }
+
+    if (isSlippageExceedingLimit) {
+      setIsButtonDisabled(true);
+      return true;
+    }
+    setIsButtonDisabled(false);
+    return false;
+  }, [
+    inputBalance.formatted,
+    inputBalance.value,
+    loadingOutputToken,
+    errorMessage,
+    outputBoxErrorMessage,
+    isDeposit,
+    tokenBalance.value,
+    vaultData.depositFeePaidFromGasTank,
+    debouncedInputBalance.value,
+    conversionOutput.inputAmountInUSDFormatted,
+    conversionOutput.gasFeeInUSD,
+    conversionOutput.outputAmountFormatted,
+    isSlippageExceedingLimit,
+    setIsButtonDisabled,
+    userVaultBalance,
+    walletAddress,
+    vaultData.id,
+    vaultData.inputToken.decimals,
   ]);
 
   // Watch input balance and trigger steps config selection
@@ -680,7 +774,7 @@ export default function VaultInputs({
     setDisplayValue,
     handleChangeInput,
     walletAddress,
-    vaultTokenDecimals: vaultData.inputToken.decimals
+    vaultTokenDecimals: vaultData.inputToken.decimals,
   });
 
   const tokenList = useMemo(() => {

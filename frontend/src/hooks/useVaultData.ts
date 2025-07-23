@@ -96,12 +96,7 @@ export const useVaultData = () => {
     VaultTotalAssetsinToken[]
   >([]);
 
-  const { walletAddress } = useMultiChain();
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const wallet = filteredWallets[0];
+  const { walletAddress, activeEvmWallet: wallet } = useMultiChain();
 
   const stableSetVaultAPYs = useCallback((vaultAPYs: VaultAPY[]) => {
     setVaultAPYs(vaultAPYs);
@@ -330,11 +325,6 @@ export const useVaultDataPaginated = (
   sortBy: string = DEFAULT_SORT_CONFIG.sortBy,
   sortOrder: "asc" | "desc" = DEFAULT_SORT_CONFIG.sortOrder,
 ) => {
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const wallet = filteredWallets[0];
   const [loading, setLoading] = useState<boolean>(true);
   const [vaultAPYs, setVaultAPYs] = useState<VaultAPY[]>([]);
   const [userVaultBalances, setUserVaultBalances] = useState<
@@ -347,7 +337,7 @@ export const useVaultDataPaginated = (
     VaultTotalAssetsinToken[]
   >([]);
 
-  const { walletAddress } = useMultiChain();
+  const { walletAddress, activeEvmWallet: wallet } = useMultiChain();
 
   // Stable callback functions
   const stableSetVaultAPYs = useCallback((vaultAPYs: VaultAPY[]) => {
@@ -684,11 +674,6 @@ export const useVaultDataWithSearch = (
   networkFilter: string = "",
   protocolFilter: string = "",
 ) => {
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const wallet = filteredWallets[0];
   const [loading, setLoading] = useState<boolean>(true);
   const [vaultAPYs, setVaultAPYs] = useState<VaultAPY[]>([]);
   const [userVaultBalances, setUserVaultBalances] = useState<
@@ -702,7 +687,7 @@ export const useVaultDataWithSearch = (
   >([]);
   const [timedOut, setTimedOut] = useState(false);
 
-  const { walletAddress } = useMultiChain();
+  const { walletAddress, activeEvmWallet: wallet } = useMultiChain();
 
   // Stable callback functions
   const stableSetVaultAPYs = useCallback((vaultAPYs: VaultAPY[]) => {

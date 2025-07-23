@@ -12,19 +12,14 @@ import {
 } from "@/constants/chainConfig";
 import Image from "next/image";
 import { Chain } from "viem";
-import { useWallets } from "@privy-io/react-auth";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 
 export const TopUpChainsModal = () => {
   const { step, setStep, setChain, setCurrency, walletAddress } =
     useFundWalletStore();
   const [searchQuery, setSearchQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const activeWallet = filteredWallets[0];
+  const { activeEvmWallet: activeWallet } = useMultiChain();
 
   const handleClose = () => {
     if (!!walletAddress && activeWallet.walletClientType !== "privy") {
