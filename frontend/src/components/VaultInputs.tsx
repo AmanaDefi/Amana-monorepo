@@ -28,6 +28,7 @@ import {
   bigIntReviver,
   bigIntReplacer,
   formatSlippageUSD,
+  useDebounce,
 } from "@/utils/utils";
 import InteractionContainer from "./interactAPI";
 import { useSlippage, useTokenPriceBySymbol } from "@/hooks/hooks";
@@ -155,7 +156,8 @@ export default function VaultInputs({
   const [inputToken, setInputToken] = useState<Token | undefined>(
     selectedToken,
   );
-  const [inputBalance, setInputBalance] = useState<Balance>(EMPTY_BALANCE);
+  const [inputBalance, setCurrentInputBalance] =
+    useState<Balance>(EMPTY_BALANCE);
   const [displayValue, setDisplayValue] = useState<string>("0.00");
   const [debouncedInputBalance, setDebouncedInputBalance] =
     useState<Balance>(EMPTY_BALANCE);
@@ -207,6 +209,16 @@ export default function VaultInputs({
 
   const { setPreviousAPY, setCurrentAPY, setActiveTransactionVault } =
     useAPYStore();
+
+  const setDebouncedBalance = useDebounce(setDebouncedInputBalance, 500);
+
+  const setInputBalance = useCallback(
+    (bal: Balance) => {
+      setCurrentInputBalance(bal);
+      setDebouncedBalance(bal);
+    },
+    [setCurrentInputBalance, setDebouncedBalance],
+  );
 
   useEffect(() => {
     async function handlePerformanceFee() {
@@ -537,7 +549,6 @@ export default function VaultInputs({
     conversionOutput.outputAmountFormatted,
     isSlippageExceedingLimit,
     setIsButtonDisabled,
-    userVaultBalance,
     walletAddress,
     vaultData.id,
     vaultData.inputToken.decimals,
@@ -652,16 +663,6 @@ export default function VaultInputs({
     }
   };
 
-  // const switchTokens = async () => {
-  //   const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
-  //   if (isTxInProgress) return;
-  //   // Get the opposite tab of what's currently in the URL
-  //   const newTab = isDeposit ? "withdraw" : "invest";
-
-  //   // Update URL - React will handle state update via the useEffect
-  //   handleTabChange(newTab);
-  // };
-
   const handleChangeInput = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       if (!inputToken) return;
@@ -756,7 +757,7 @@ export default function VaultInputs({
         displayValue: inputAmt,
       });
     },
-    [inputToken, inputTokenPrice, isDeposit, vaultToken.decimals, vaultData.id],
+    [inputToken, inputTokenPrice, isDeposit, vaultToken.decimals, vaultData.id, setInputBalance],
   );
 
   const { handleMaxClick } = useMaxAmount({
@@ -989,7 +990,6 @@ export default function VaultInputs({
       setLoadingOutputToken(false);
     },
     [
-      activeChain?.id,
       debouncedInputBalance.value,
       inputToken,
       inputTokenPrice,
@@ -999,6 +999,7 @@ export default function VaultInputs({
       userSlippage,
       gasTokenPrice,
       priceContext,
+      activeChain,
     ],
   );
 
@@ -1024,7 +1025,7 @@ export default function VaultInputs({
       !(
         isDeposit &&
         !vaultData.depositFeePaidFromGasTank &&
-        debouncedInputBalance.value > 0n &&
+        inputBalance.value > 0n &&
         Number(
           conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, ""),
         ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, ""))
@@ -1137,7 +1138,6 @@ export default function VaultInputs({
       setInputBalance(EMPTY_BALANCE);
       setDisplayValue("0.00");
       setConversionOutput(initialConversionOutput);
-      setDebouncedInputBalance(EMPTY_BALANCE);
       setOutputBoxErrorMessage("");
       setIsSlippageExceedingLimit(false);
 
@@ -1184,20 +1184,9 @@ export default function VaultInputs({
     }
     if (!inputBalance.formatted || Number(inputBalance.formatted) <= 0) {
       setConversionOutput(initialConversionOutput);
-      setDebouncedInputBalance(inputBalance);
       setLoadingOutputToken(false);
       return;
     }
-
-    timeoutRef.current = setTimeout(() => {
-      setDebouncedInputBalance(inputBalance);
-    }, 500);
-
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
   }, [inputBalance, initialConversionOutput]);
 
   useEffect(() => {
@@ -1399,7 +1388,7 @@ export default function VaultInputs({
               }
               errorMessage={errorMessage}
               tokenList={isDeposit ? tokenList : []}
-              disabled={false}
+              disabled={loadingOutputToken}
               isDeposit={isDeposit}
               loadingOutputToken={loadingOutputToken}
               conversionOutput={conversionOutput}
@@ -1413,7 +1402,7 @@ export default function VaultInputs({
                 isDeposit={isDeposit}
                 vaultData={vaultData}
                 conversionOutput={conversionOutput}
-                debouncedInputBalance={debouncedInputBalance}
+                debouncedInputBalance={inputBalance}
                 performanceFee={performanceFee}
                 isBreathing={loadingOutputToken}
               />
@@ -1428,7 +1417,7 @@ export default function VaultInputs({
             <NetDepositBlock
               conversionOutput={conversionOutput}
               vaultData={vaultData}
-              debouncedInputBalance={debouncedInputBalance}
+              debouncedInputBalance={inputBalance}
               isDeposit={isDeposit}
               isVisible={true}
               isBreathing={loadingOutputToken}
@@ -1473,7 +1462,7 @@ export default function VaultInputs({
               }
               errorMessage={!errorMessage ? outputBoxErrorMessage : ""}
               tokenList={isDeposit ? [] : tokenList}
-              disabled={false}
+              disabled={loadingOutputToken}
               isDeposit={isDeposit}
               isOutput={true}
               loadingOutputToken={loadingOutputToken}
@@ -1520,7 +1509,7 @@ export default function VaultInputs({
               }
               errorMessage={errorMessage}
               tokenList={isDeposit ? tokenList : []}
-              disabled={false}
+              disabled={loadingOutputToken}
               isDeposit={isDeposit}
               loadingOutputToken={loadingOutputToken}
               conversionOutput={conversionOutput}
@@ -1561,7 +1550,7 @@ export default function VaultInputs({
               }
               errorMessage={!errorMessage ? outputBoxErrorMessage : ""}
               tokenList={isDeposit ? [] : tokenList}
-              disabled={false}
+              disabled={loadingOutputToken}
               isDeposit={isDeposit}
               isOutput={true}
               loadingOutputToken={loadingOutputToken}
@@ -1582,7 +1571,7 @@ export default function VaultInputs({
         isDeposit &&
         !vaultData.depositFeePaidFromGasTank &&
         conversionOutput.gasFeeInInputToken &&
-        debouncedInputBalance.value > 0n &&
+        inputBalance.value > 0n &&
         Number(
           conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, ""),
         ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, ""))

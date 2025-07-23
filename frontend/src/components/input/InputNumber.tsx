@@ -10,7 +10,7 @@ export type InputNumberProps = {
 
 export default function InputNumber({
   value,
-  onChange,
+  onChange: currentOnChange,
   onFocus,
   onBlur,
   className,
@@ -18,7 +18,7 @@ export default function InputNumber({
 }: InputNumberProps): JSX.Element {
   const { inputRef, displayValue, handlers } = useNumberInput({
     value,
-    onChange,
+    onChange: currentOnChange,
     onFocus,
     onBlur,
   });
@@ -29,7 +29,7 @@ export default function InputNumber({
     if (newAmount !== "" && !newAmount) {
       return;
     } else {
-      onChange(e);
+      currentOnChange(e);
     }
   };
 

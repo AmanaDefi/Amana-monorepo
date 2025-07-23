@@ -62,7 +62,6 @@ export default function InputTokenWithError({
   setInputBalance,
   selectedChain,
   showFeeDisplay = false,
-  debouncedInputBalance,
   performanceFee,
   value,
   onChange,

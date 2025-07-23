@@ -25,6 +25,7 @@ import { erc20Abi, getContract, formatUnits } from "viem";
 import { getPublicClient } from "./getPublicClient";
 import { ConnectedWallet } from "@privy-io/react-auth";
 import { getSlippageForVault } from "@/store/userSettingsStore";
+import { useRef } from "react";
 
 export const formatTotalAssets = (
   totalAssets: string,
@@ -885,6 +886,9 @@ export function bigIntReviver(key: string, value: any) {
 }
 
 export const checkAmount = (amountString: string, amount: string) => {
+  if (amountString === "") {
+    return "";
+  }
   if (!/^([0-9,]*|[0-9]*\.[0-9,]*)$/g.test(amountString.replace(",", "."))) {
     return null;
   } else if (
@@ -1004,4 +1008,18 @@ export const parseTransactionMessage = (message: string) => {
   }
 
   return { textBeforeHash: message, hashValue: null };
+};
+
+export const useDebounce = (func: Function, delay: number) => {
+  const timer = useRef<NodeJS.Timeout | null>(null);
+
+  return (...args: any[]) => {
+    if (timer.current) {
+      clearTimeout(timer.current);
+    }
+
+    timer.current = setTimeout(() => {
+      func(...args);
+    }, delay);
+  };
 };

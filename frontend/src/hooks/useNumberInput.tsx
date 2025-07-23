@@ -67,15 +67,16 @@ export function useNumberInput({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.currentTarget.value;
     const newAmount = checkAmount(inputValue, value);
+    if (newAmount === "") {
+      onChange(e);
+      setInternalValue(newAmount);
+      return;
+    }
 
     if (!newAmount && newAmount !== "") return;
 
     if (isFocused) {
       setInternalValue(newAmount);
-
-      if (newAmount === "" || newAmount === "0.") {
-        return;
-      }
 
       if (!isNaN(Number(newAmount)) && newAmount !== "") {
         onChange(e);
