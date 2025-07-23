@@ -384,6 +384,15 @@ export default function VaultInputs({
   // Trigger error message handling
   useEffect(() => {
     const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
+
+     if (
+       (!inputBalance.formatted || Number(inputBalance.formatted) <= 0) &&
+       !isTxInProgress
+     ) {
+       setErrorMessage("");
+       return;
+     }
+      
     if (inputToken && userVaultBalance && !isTxInProgress) {
       if (isDeposit) {
         // For Ethereum vaults, use net deposit amount for validation
