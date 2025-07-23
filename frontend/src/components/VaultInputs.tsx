@@ -398,64 +398,55 @@ export default function VaultInputs({
     }
   }, [inputToken, selectChain, vaultData.id]);
 
-  // Trigger error message handling
-  useEffect(() => {
-    const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
-    if (inputToken && userVaultBalance && !isTxInProgress) {
-      if (isDeposit) {
-        // For Ethereum vaults, use net deposit amount for validation
-        // For other vaults, use input amount
-        const amountToValidate = !vaultData.depositFeePaidFromGasTank
-          ? conversionOutput.netDepositToVaultUSD?.replace(/[^0-9.]/g, "") ||
-            inputBalance.formatted
-          : inputBalance.formatted;
+useEffect(() => {
+  const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
 
-        const priceToUse = !vaultData.depositFeePaidFromGasTank
-          ? 1 // netDepositToVaultUSD is already in USD
-          : inputTokenPrice;
+  if (!inputToken || isTxInProgress) {
+    return;
+  }
 
-        setErrorMessage(
-          getVaultErrorMessage(
-            amountToValidate,
-            tokenBalance.formatted,
-            steps,
-            vaultData,
-            priceToUse,
-            isDeposit,
-          ),
-        );
-      } else {
-        const availableBalanceForWithdrawal = userVaultBalance.formatted || "0";
+  if (loadingOutputToken) {
+    setErrorMessage("");
+    return;
+  }
 
-        setErrorMessage(
-          getVaultErrorMessage(
-            inputBalance.formatted,
-            availableBalanceForWithdrawal,
-            steps,
-            vaultData,
-            vaultTokenPrice,
-            isDeposit,
-          ),
-        );
-      }
-    } else if (loadingOutputToken) {
-      // Clear error message while loading
-      setErrorMessage("");
-    }
-  }, [
-    inputToken,
-    inputBalance,
-    isDeposit,
-    vaultData,
-    action,
-    steps,
-    inputTokenPrice,
-    vaultTokenPrice,
-    conversionOutput.netDepositToVaultUSD,
-    loadingOutputToken,
-    userVaultBalance,
-    tokenBalance.formatted,
-  ]);
+  if (isDeposit) {
+    setErrorMessage(
+      getVaultErrorMessage(
+        inputBalance.formatted, 
+        tokenBalance.formatted, 
+        steps,
+        vaultData,
+        inputTokenPrice,
+        isDeposit,
+      ),
+    );
+  } else {
+    const availableBalanceForWithdrawal = userVaultBalance?.formatted || "0";
+
+    setErrorMessage(
+      getVaultErrorMessage(
+        inputBalance.formatted,
+        availableBalanceForWithdrawal,
+        steps,
+        vaultData,
+        vaultTokenPrice,
+        isDeposit,
+      ),
+    );
+  }
+}, [
+  inputToken,
+  inputBalance.formatted,
+  isDeposit,
+  vaultData,
+  steps,
+  inputTokenPrice,
+  vaultTokenPrice,
+  loadingOutputToken,
+  userVaultBalance?.formatted,
+  tokenBalance.formatted,
+]);
 
   const isButtonDisabled = useMemo(async () => {
     if (
@@ -796,6 +787,19 @@ export default function VaultInputs({
     async (inputAmountValue: bigint) => {
       // 🔄 NEW LOGIC: Input is now in underlying asset terms, not shares
       // So we don't need to convert from shares to assets - the input IS the asset amount
+      if (!isDeposit) {
+        const availableBalance = userVaultBalance?.formatted || "0";
+        const inputFormatted = (
+          Number(inputAmountValue) /
+          10 ** vaultData.inputToken.decimals
+        ).toString();
+
+        if (Number(inputFormatted) > Number(availableBalance)) {
+          setLoadingOutputToken(false);
+          return;
+        }
+      }
+
       let assetsAmount = inputAmountValue;
 
       const actualInputToken = isZetachain(activeChain?.id as number)
@@ -863,11 +867,17 @@ export default function VaultInputs({
       vaultTokenPrice,
       inputToken,
       userSlippage,
+      userVaultBalance?.formatted,
     ],
   );
 
   const getDepositOutputAmount = useCallback(
     async (inputAmountValue: bigint) => {
+      if (isDeposit && Number(inputAmountValue) > Number(tokenBalance.value)) {
+        setLoadingOutputToken(false);
+        return;
+      }
+
       if (!inputToken || !activeChain) {
         return;
       }
@@ -1000,6 +1010,7 @@ export default function VaultInputs({
       gasTokenPrice,
       priceContext,
       activeChain,
+      tokenBalance.value,
     ],
   );
 
