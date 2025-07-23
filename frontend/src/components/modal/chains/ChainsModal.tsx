@@ -146,15 +146,6 @@ const TokenBalanceItem = React.memo(
       walletAddressForBalance,
     );
 
-    console.log("TokenBalanceItem debug:", {
-      tokenSymbol: token.symbol,
-      chainName: selectedChain.name,
-      balance: balance?.formatted,
-      isLoading,
-      isTopUpModal,
-      walletAddressForBalance,
-    });
-
     const price = useTokenPriceBySymbol(token.symbol) || 0;
 
     useEffect(() => {
@@ -344,7 +335,6 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
   >(new Map());
 
   const isTopUpModal = fundWalletStep === "selectChain";
-  console.log(isTopUpModal);
   const isModalOpen = isOpen || isTopUpModal;
 
   const [selectedChainLocal, setSelectedChainLocal] = useState<Chain | null>(
@@ -416,7 +406,6 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
   useEffect(() => {
     if (isTopUpModal && selectedChainLocal) {
       let walletAddr = null;
-
       if (selectedChainLocal.name === "Solana" && publicKey) {
         walletAddr = publicKey.toString();
       } else if (
@@ -585,21 +574,21 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
       openStep(window?.innerWidth < 768 ? "mobileOptionsA" : "optionsA");
     }
   };
-  const isWalletConnected = useMemo(() => {
-    if (!selectedChainLocal) return false;
+const isWalletConnected = useMemo(() => {
+  if (!selectedChainLocal) return false;
+
+  const isSolana = selectedChainLocal.name === "Solana";
+
+  if (isSolana) {
+    return !!publicKey;
+  } else {
+    // EVM chains
     if (isTopUpModal) {
-      if (selectedChainLocal.name === "Solana") {
-        return !!publicKey;
-      } else {
-        return !!activeAccount && activeAccount.walletClientType !== "privy";
-      }
+      return !!activeAccount && activeAccount.walletClientType !== "privy";
     }
-    if (selectedChainLocal.name === "Solana") {
-      return !!publicKey;
-    } else {
-      return !!activeAccount;
-    }
-  }, [selectedChainLocal, publicKey, activeAccount, isTopUpModal]);
+    return !!activeAccount;
+  }
+}, [selectedChainLocal, publicKey, activeAccount, isTopUpModal]);
 
   const handleModalClose = () => {
     if (isTopUpModal) {

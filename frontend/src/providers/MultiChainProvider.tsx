@@ -119,6 +119,8 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
 
   const initializationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  const lastPathProcessedRef = useRef<string | null>(null);
+
   debugLog("Provider initialized with hydration-safe state:", {
     selectedChain,
     walletAddress,
@@ -213,7 +215,17 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     } else if (!connected) {
       isConnectedRef.current = false;
     }
-  }, [connected, step, publicKey]);
+  }, [
+    connected,
+    step,
+    publicKey,
+    setFundWalletAddress,
+    setStep,
+    setWalletAddress,
+    setSelectedChain,
+    setActiveChain,
+    successAuth,
+  ]);
 
   useEffect(() => {
     if (
@@ -474,7 +486,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
               // Keep track of our own checking
               let checkAttempts = 0;
               const maxAttempts = 100; // 10 seconds at 100ms intervals
-
+              
               const checkChain = setInterval(() => {
                 checkAttempts++;
                 if (latestChainRef.current === chain.id.toString()) {
@@ -506,54 +518,76 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   );
 
   useEffect(() => {
-    const isVaultAddressPath = /^\/vaults\/0x[0-9a-fA-F]{40}$/;
-
-    if (!isVaultAddressPath.test(path) && selectedChainFromModal) {
-      setSelectedChainFromModal(null);
-      setSelectedTokenFromModal(null);
-    }
-    if (
-      !isVaultAddressPath.test(path) &&
-      privyWallet?.walletClientType === "privy" &&
-      activeChain?.id !== zetachain.id
-    ) {
-      setActiveChain(zetachain);
-      latestChainRef.current = zetachain.id.toString();
+    if (lastPathProcessedRef.current === path) {
+      return;
     }
 
-    if (
-      !isVaultAddressPath.test(path) &&
-      privyWallet?.address &&
-      privyWallet?.walletClientType !== "privy" &&
-      activeChain?.id === CHAIN_ID["solana"] &&
-      privyWallet?.meta?.id !== "app.phantom"
-    ) {
-      switchToChain(zetachain);
-      latestChainRef.current = zetachain.id.toString();
-    }
-    if (
-      !isVaultAddressPath.test(path) &&
-      publicKey &&
-      activeChain?.id !== CHAIN_ID["solana"]
-    ) {
-      switchToChain(chainConfigs[CHAIN_ID.solana]);
-      latestChainRef.current = CHAIN_ID["solana"].toString();
-    }
+    const timeoutId = setTimeout(() => {
+      lastPathProcessedRef.current = path;
 
-    if (privyWallet?.meta?.id === "app.phantom") {
-      switchToChain(
-        chainConfigs[Number(privyWallet?.chainId?.split(":")[1] ?? 1)],
-      );
-    }
+      const isVaultAddressPath = /^\/vaults\/0x[0-9a-fA-F]{40}$/;
+
+      if (!isVaultAddressPath.test(path) && selectedChainFromModal) {
+        setSelectedChainFromModal(null);
+        setSelectedTokenFromModal(null);
+      }
+
+      if (
+        !isVaultAddressPath.test(path) &&
+        privyWallet?.walletClientType === "privy" &&
+        activeChain?.id !== zetachain.id
+      ) {
+        setActiveChain(zetachain);
+        latestChainRef.current = zetachain.id.toString();
+      }
+
+      if (
+        !isVaultAddressPath.test(path) &&
+        privyWallet?.address &&
+        privyWallet?.walletClientType !== "privy" &&
+        activeChain?.id === CHAIN_ID["solana"] &&
+        privyWallet?.meta?.id !== "app.phantom"
+      ) {
+        switchToChain(zetachain);
+        latestChainRef.current = zetachain.id.toString();
+      }
+
+      if (
+        !isVaultAddressPath.test(path) &&
+        publicKey &&
+        activeChain?.id !== CHAIN_ID["solana"]
+      ) {
+        switchToChain(chainConfigs[CHAIN_ID.solana]);
+        latestChainRef.current = CHAIN_ID["solana"].toString();
+      }
+
+      if (privyWallet?.meta?.id === "app.phantom") {
+        switchToChain(
+          chainConfigs[Number(privyWallet?.chainId?.split(":")[1] ?? 1)],
+        );
+      }
+
+      setTimeout(() => {
+        lastPathProcessedRef.current = null;
+      }, 1000);
+    }, 50);
+
+    return () => clearTimeout(timeoutId);
   }, [
     path,
-    activeChain,
-    privyWallet,
-    publicKey,
+    // activeChain,
+    // privyWallet,
+    // publicKey,
     selectedChainFromModal,
     switchToChain,
     setSelectedChainFromModal,
     setSelectedTokenFromModal,
+    privyWallet?.walletClientType,
+    privyWallet?.address,
+    privyWallet?.meta?.id,
+    privyWallet?.chainId,
+    activeChain?.id,
+    publicKey?.toBase58(),
   ]);
 
   useEffect(() => {
