@@ -312,20 +312,40 @@ export default function InputTokenWithError({
             ) : (
               <div className="flex items-center flex-row gap-1 md:gap-2">
                 <div className="relative flex-none w-5 h-5 border border-white rounded-full bg-[#10B981]">
-               
                   <TokenIcon
-                    token={isOutput ? { ...selectedToken, symbol: vaultData.outputTokenSymbol || selectedToken?.symbol || "", imgURL: vaultData.outputTokenImage || selectedToken?.imgURL || "" } as Token : selectedToken as Token}
-                    icon={isOutput ? vaultData.outputTokenImage || selectedToken?.imgURL : selectedToken?.imgURL}
+                    token={
+                      isOutput
+                        ? ({
+                            ...selectedToken,
+                            symbol:
+                              vaultData.outputTokenSymbol ||
+                              selectedToken?.symbol ||
+                              "",
+                            imgURL:
+                              vaultData.outputTokenImage ||
+                              selectedToken?.imgURL ||
+                              "",
+                          } as Token)
+                        : (selectedToken as Token)
+                    }
+                    icon={
+                      isOutput
+                        ? vaultData.outputTokenImage || selectedToken?.imgURL
+                        : selectedToken?.imgURL
+                    }
                     imageSize="w-5 h-5"
                   />
                 </div>
                 <p className="font-normal text-base leading-none text-white ">
-                  {isOutput 
-                    ? getOnlyTokenSymbol(vaultData.outputTokenSymbol || selectedToken?.symbol || "")
+                  {isOutput
+                    ? getOnlyTokenSymbol(
+                        vaultData.outputTokenSymbol ||
+                          selectedToken?.symbol ||
+                          "",
+                      )
                     : selectedToken?.symbol
                       ? getOnlyTokenSymbol(selectedToken.symbol)
-                      : ""
-                  }
+                      : ""}
                 </p>
               </div>
             )}
@@ -333,12 +353,7 @@ export default function InputTokenWithError({
         </div>
 
         {errorMessage && (
-          <p
-            className={`${
-              !isOutput &&
-              "absolute bottom-0 left-0 translate-y-full lg:translate-y-full"
-            } pt-0.5 lg:pt-1 text-red-500 leading-6`}
-          >
+          <p className="mt-2 pt-1 text-red-500 text-sm md:text-base leading-6">
             {errorMessage}
           </p>
         )}

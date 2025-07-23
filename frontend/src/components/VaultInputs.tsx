@@ -398,64 +398,55 @@ export default function VaultInputs({
     }
   }, [inputToken, selectChain, vaultData.id]);
 
-  // Trigger error message handling
-  useEffect(() => {
-    const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
-    if (inputToken && userVaultBalance && !isTxInProgress) {
-      if (isDeposit) {
-        // For Ethereum vaults, use net deposit amount for validation
-        // For other vaults, use input amount
-        const amountToValidate = !vaultData.depositFeePaidFromGasTank
-          ? conversionOutput.netDepositToVaultUSD?.replace(/[^0-9.]/g, "") ||
-            inputBalance.formatted
-          : inputBalance.formatted;
+useEffect(() => {
+  const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
 
-        const priceToUse = !vaultData.depositFeePaidFromGasTank
-          ? 1 // netDepositToVaultUSD is already in USD
-          : inputTokenPrice;
+  if (!inputToken || isTxInProgress) {
+    return;
+  }
 
-        setErrorMessage(
-          getVaultErrorMessage(
-            amountToValidate,
-            tokenBalance.formatted,
-            steps,
-            vaultData,
-            priceToUse,
-            isDeposit,
-          ),
-        );
-      } else {
-        const availableBalanceForWithdrawal = userVaultBalance.formatted || "0";
+  if (loadingOutputToken) {
+    setErrorMessage("");
+    return;
+  }
 
-        setErrorMessage(
-          getVaultErrorMessage(
-            inputBalance.formatted,
-            availableBalanceForWithdrawal,
-            steps,
-            vaultData,
-            vaultTokenPrice,
-            isDeposit,
-          ),
-        );
-      }
-    } else if (loadingOutputToken) {
-      // Clear error message while loading
-      setErrorMessage("");
-    }
-  }, [
-    inputToken,
-    inputBalance,
-    isDeposit,
-    vaultData,
-    action,
-    steps,
-    inputTokenPrice,
-    vaultTokenPrice,
-    conversionOutput.netDepositToVaultUSD,
-    loadingOutputToken,
-    userVaultBalance,
-    tokenBalance.formatted,
-  ]);
+  if (isDeposit) {
+    setErrorMessage(
+      getVaultErrorMessage(
+        inputBalance.formatted, 
+        tokenBalance.formatted, 
+        steps,
+        vaultData,
+        inputTokenPrice,
+        isDeposit,
+      ),
+    );
+  } else {
+    const availableBalanceForWithdrawal = userVaultBalance?.formatted || "0";
+
+    setErrorMessage(
+      getVaultErrorMessage(
+        inputBalance.formatted,
+        availableBalanceForWithdrawal,
+        steps,
+        vaultData,
+        vaultTokenPrice,
+        isDeposit,
+      ),
+    );
+  }
+}, [
+  inputToken,
+  inputBalance.formatted,
+  isDeposit,
+  vaultData,
+  steps,
+  inputTokenPrice,
+  vaultTokenPrice,
+  loadingOutputToken,
+  userVaultBalance?.formatted,
+  tokenBalance.formatted,
+]);
 
   const isButtonDisabled = useMemo(async () => {
     if (
