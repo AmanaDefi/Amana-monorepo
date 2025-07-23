@@ -316,21 +316,22 @@ export const calculateDepositOutput = async (
   let amountAfterSwap = inputAmount;
   let swapSlippage = 0n;
   let needsTokenSwap = false;
-
+  let zcInputToken = inputToken;
+  if (activeChain.id !== 7000) {
+    zcInputToken = inputToken.ZRC20equivalent || inputToken;
+  }
   console.log(
     "[DepositCalc] Comparing inputToken.ZRC20equivalent.address:",
-    inputToken.ZRC20equivalent?.address,
+    zcInputToken.address,
     "with vaultData.inputToken.address:",
     vaultData.inputToken.address
   );
-  if (!inputToken.ZRC20equivalent) {
-    throw new Error("No ZRC20 equivalent found for input token");
-  }
-  if (inputToken.ZRC20equivalent?.address.toLowerCase() !== vaultData.inputToken.address.toLowerCase()) {
+
+  if (zcInputToken?.address.toLowerCase() !== vaultData.inputToken.address.toLowerCase()) {
     needsTokenSwap = true;
     const swapResult = await getPathDataAndAmountOut(
       inputAmount,
-      inputToken.ZRC20equivalent,
+      zcInputToken,
       vaultData.inputToken,
       vaultData.id as Address,
       500
@@ -338,7 +339,7 @@ export const calculateDepositOutput = async (
     console.log("Needs Token Swap:", needsTokenSwap);
     amountAfterSwap = swapResult.amountOut;
     // Calculate swap slippage in vault asset
-    const inputAmountInVaultAsset = BigInt(Math.floor((Number(inputAmount) / 10 ** (inputToken?.ZRC20equivalent.decimals ?? 18)) * inputTokenPrice * 10 ** vaultData.inputToken.decimals));
+    const inputAmountInVaultAsset = BigInt(Math.floor((Number(inputAmount) / 10 ** (zcInputToken.decimals ?? 18)) * inputTokenPrice * 10 ** vaultData.inputToken.decimals));
     swapSlippage = inputAmountInVaultAsset > amountAfterSwap ? inputAmountInVaultAsset - amountAfterSwap : 0n;
     console.log("[DepositCalc] Swap Result:", swapResult);
   } else {
