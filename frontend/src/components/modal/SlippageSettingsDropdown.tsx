@@ -13,6 +13,8 @@ import CloseModalIcon from "../svg/CloseModalIcon";
 import AutoDropdownIcon from "../svg/AutoDropdownIcon";
 import { DEFAULT_SETTINGS } from "@/types/types";
 
+const presetValues = [0.1, 0.5, 1.0];
+
 export default function SlippageSettingsDropdown({
   setInputBalance,
   vaultId,
@@ -26,8 +28,6 @@ export default function SlippageSettingsDropdown({
   const [customInputValue, setCustomInputValue] = useState("");
   const [showCustomInput, setShowCustomInput] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const presetValues = [0.1, 0.5, 1.0];
 
   useEffect(() => {
     if (CheckTheTxIsInProgress(vaultId)) return;
