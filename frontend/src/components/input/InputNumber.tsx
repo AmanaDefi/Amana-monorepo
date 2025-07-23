@@ -23,6 +23,8 @@ export default function InputNumber({
     onBlur,
   });
 
+  console.log(value, displayValue, 'displayValue')
+
   const handleAmount = (e: React.ChangeEvent<HTMLInputElement>) => {
     const amountString = e.target.value;
     const newAmount = checkAmount(amountString, value);
@@ -47,7 +49,7 @@ export default function InputNumber({
       type="text"
       pattern="^[0-9]*[.,]?[0-9]*$"
       spellCheck="false"
-      value={displayValue}
+      value={value}
       {...handlers}
     />
   );
