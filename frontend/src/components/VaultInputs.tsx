@@ -787,6 +787,19 @@ useEffect(() => {
     async (inputAmountValue: bigint) => {
       // 🔄 NEW LOGIC: Input is now in underlying asset terms, not shares
       // So we don't need to convert from shares to assets - the input IS the asset amount
+      if (!isDeposit) {
+        const availableBalance = userVaultBalance?.formatted || "0";
+        const inputFormatted = (
+          Number(inputAmountValue) /
+          10 ** vaultData.inputToken.decimals
+        ).toString();
+
+        if (Number(inputFormatted) > Number(availableBalance)) {
+          setLoadingOutputToken(false);
+          return;
+        }
+      }
+
       let assetsAmount = inputAmountValue;
 
       const actualInputToken = isZetachain(activeChain?.id as number)
@@ -854,11 +867,17 @@ useEffect(() => {
       vaultTokenPrice,
       inputToken,
       userSlippage,
+      userVaultBalance?.formatted,
     ],
   );
 
   const getDepositOutputAmount = useCallback(
     async (inputAmountValue: bigint) => {
+      if (isDeposit && Number(inputAmountValue) > Number(tokenBalance.value)) {
+        setLoadingOutputToken(false);
+        return;
+      }
+
       if (!inputToken || !activeChain) {
         return;
       }
@@ -991,6 +1010,7 @@ useEffect(() => {
       gasTokenPrice,
       priceContext,
       activeChain,
+      tokenBalance.value,
     ],
   );
 
