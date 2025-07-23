@@ -270,6 +270,9 @@ export function useTokenPriceBySymbol(symbol: string | undefined) {
       return 0;
     }
 
+    // MOCK: Force ETH.ETH price to 0 for testing
+    if (symbol === "ETH.ETH") return 0;
+
     const normalizedSymbol = symbol.includes('(') ?
       symbol.replace(/\s*\((.*?)\)\s*/, '.$1') : symbol;
 

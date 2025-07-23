@@ -392,6 +392,11 @@ export default function VaultInputs({
   // Trigger error message handling
   useEffect(() => {
     const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
+    // Fallback for missing input token price
+    if (isDeposit && (inputToken && (inputTokenPrice === 0 || inputTokenPrice === undefined))) {
+      setErrorMessage("Token price unavailable. Please try again later or select a different token.");
+      return;
+    }
     if (inputToken && userVaultBalance && !isTxInProgress) {
       if (isDeposit) {
         // For Ethereum vaults, use net deposit amount for validation
@@ -564,8 +569,12 @@ export default function VaultInputs({
   //   handleTabChange(newTab);
   // };
 
-  const handleChangeInput = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChangeInput =
+    useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+      if (isDeposit && (inputTokenPrice === 0 || inputTokenPrice === undefined)) {
+        setErrorMessage("Token price unavailable. Please try again later or select a different token.");
+        return;
+      }
       if (!inputToken) return;
       const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
       if (isTxInProgress) return;

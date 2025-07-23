@@ -345,8 +345,8 @@ export default function InputTokenWithError({
           <p
             className={`${
               !isOutput &&
-              "absolute bottom-0 left-0 translate-y-full lg:translate-y-full"
-            } pt-0.5 lg:pt-1 text-red-500 leading-6`}
+              "static bottom-0 left-0 "
+            } pt-0.5 lg:pt-1 text-red-500 leading-6 `}
           >
             {errorMessage}
           </p>
