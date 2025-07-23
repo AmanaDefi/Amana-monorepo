@@ -834,7 +834,6 @@ export default function VaultInputs({
             priceContext,
           );
           if (!inputTokenPrice) {
-            console.error("Input token price is not defined");
             return;
           }
           // Use the unified calculation function
