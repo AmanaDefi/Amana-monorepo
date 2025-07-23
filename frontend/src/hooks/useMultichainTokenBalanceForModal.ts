@@ -25,7 +25,7 @@ export const useMultichainTokenBalanceForModal = (
 
   const { walletAddress: defaultWalletAddress, selectedChain } =
     useMultiChain();
-  
+
   const walletAddress = customWalletAddress || defaultWalletAddress;
 
   const { balance: solanaBalance, refetch: refetchSolBalance } =
@@ -44,9 +44,10 @@ export const useMultichainTokenBalanceForModal = (
     if (selectedChain === "solana") {
       setBalance(solanaBalance);
     }
-  }, [solanaBalance, selectedChain]);
+  }, [selectedChain, solanaBalance.formatted]);
 
   const internalFetchBalance = useCallback(async () => {
+    console.log('internalFetchBalance')
     // Early validation
     if (!currentToken || !walletAddress || !currentChain?.id) {
       setBalance(DEFAULT_BALANCE);
@@ -180,6 +181,7 @@ export const useMultichainTokenBalanceForModal = (
   ]);
 
   useEffect(() => {
+    console.log('set balance use effect')
     const currentChainId = currentChain?.id;
     const hasChainSwitched =
       prevChainIdRef.current !== undefined &&
@@ -200,6 +202,7 @@ export const useMultichainTokenBalanceForModal = (
   }, [currentToken, walletAddress, currentChain, internalFetchBalance]);
 
   const manualRefetchBalance = useCallback(() => {
+    console.log('manualRefetchBalance')
     if (currentToken && walletAddress && currentChain?.id) {
       retryCountRef.current = 0;
       internalFetchBalance();

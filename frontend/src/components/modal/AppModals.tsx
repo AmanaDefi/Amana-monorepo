@@ -44,10 +44,10 @@ export const AppModals = () => {
       <ChooseBuyWith />
       <Deposit />
       <ReceiveModal />
-      <Send />
       <ConnectChosenChain />
       <FinishDeposit />
-      <ChainsModal />
+      {step === "send" && <Send />}
+
       {(step === "allWallets" || fundWalletStep === "connectWallet") && (
         <AllWAllets />
       )}

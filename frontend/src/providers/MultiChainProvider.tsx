@@ -154,6 +154,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   }, [connectors, filteredWallets]);
 
   const evmDisconnect = useCallback(async () => {
+    console.log("evm disconnect");
     try {
       await disconnectConnectors();
     } finally {
@@ -179,11 +180,15 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   // Connect Solana Wallet
   const connectSolana = async () => {
     try {
-      if (privyWallet?.address && !step) {
+      if (
+        privyWallet?.address &&
+        privyWallet.walletClientType !== "privy" &&
+        !step
+      ) {
         debugLog("Disconnecting EVM wallet before Solana connection");
         await evmDisconnect();
+        setSelectedChain("solana");
       }
-      setSelectedChain("solana");
     } catch (error) {
       console.error("Solana connection error:", error);
     }
@@ -194,7 +199,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       // connectSolana();
       isConnectedRef.current = true;
 
-      if (step === "connectWallet") {
+      if (step) {
         localStorage.removeItem("connectorId");
         setFundWalletAddress(publicKey.toBase58());
         return setStep("confirm");
@@ -257,13 +262,13 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
             chainConfigs[Number(privyWallet?.chainId?.split(":")[1] ?? 1)],
           );
         }
-      }
 
-      if (connected) {
-        disconnect().catch((err) => {
-          console.error("error disconnect Solana:", err);
-        });
-        disconnectConnectors();
+        if (connected) {
+          disconnect().catch((err) => {
+            console.error("error disconnect Solana:", err);
+          });
+          disconnectConnectors();
+        }
       }
     } else if (!privyWallet?.address && !connected) {
       setWalletAddress(null);
@@ -276,7 +281,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     step,
     disconnectConnectors,
     filteredWallets,
-    activeChain?.id,
+    activeChain,
   ]);
 
   useEffect(() => {
@@ -405,38 +410,36 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     [privyWallet, setBalance, step, activeChain],
   );
 
-  // IMPROVED: Better connection detection logic with initialization delay
-  useEffect(() => {
-    // Wait for hydration before starting initialization
-    if (!isHydrated) return;
+  // // IMPROVED: Better connection detection logic with initialization delay
+  // useEffect(() => {
+  //   // Wait for hydration before starting initialization
+  //   if (!isHydrated) return;
 
-    if (publicKey) {
-      setWalletAddress(publicKey.toBase58());
-      setSelectedChain("solana");
-      if (step) {
-        setFundWalletAddress(publicKey.toBase58());
-      }
-    } else if (
-      privyWallet?.address &&
-      privyWallet?.meta?.id !== "app.phantom"
-    ) {
-      if (!step) {
-        debugLog("EVM wallet connected:", privyWallet?.address);
-        setWalletAddress(privyWallet?.address);
-        setSelectedChain("evm");
-        setIsModalOpen(false);
-      }
-    }
-  }, [
-    privyWallet,
-    publicKey,
-    getEvmBalance,
-    isHydrated,
-    selectedChain,
-    user,
-    step,
-    setFundWalletAddress,
-  ]);
+  //   if (publicKey) {
+  //     if (!step) {
+  //       setWalletAddress(publicKey.toBase58());
+  //       setSelectedChain("solana");
+  //     } else {
+  //       setFundWalletAddress(publicKey.toBase58());
+  //     }
+  //   } else if (
+  //     privyWallet?.address &&
+  //     privyWallet?.meta?.id !== "app.phantom"
+  //   ) {
+  //     if (!step) {
+  //       debugLog("EVM wallet connected:", privyWallet?.address);
+  //       setWalletAddress(privyWallet?.address);
+  //       setSelectedChain("evm");
+  //       setIsModalOpen(false);
+  //     }
+  //   }
+  // }, [
+  //   privyWallet,
+  //   publicKey,
+  //   isHydrated,
+  //   step,
+  //   setFundWalletAddress,
+  // ]);
 
   const switchToChain = useCallback(
     async (chain: Chain) => {

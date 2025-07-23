@@ -344,6 +344,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
   >(new Map());
 
   const isTopUpModal = fundWalletStep === "selectChain";
+  console.log(isTopUpModal);
   const isModalOpen = isOpen || isTopUpModal;
 
   const [selectedChainLocal, setSelectedChainLocal] = useState<Chain | null>(

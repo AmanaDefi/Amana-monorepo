@@ -82,7 +82,7 @@ export const TopUpChainsModal = () => {
   );
   return (
     <Modal
-      isOpen={step === "selectChain"}
+      isOpen={false}
       onClose={handleClose}
       paddingClass="px-[21px] pt-5 pb-6 flex min-h-[490px] max-h-[528px] w-full"
       roundedClass="rounded-[16px]"

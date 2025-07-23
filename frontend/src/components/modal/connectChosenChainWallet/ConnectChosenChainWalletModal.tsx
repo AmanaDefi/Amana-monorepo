@@ -48,7 +48,8 @@ const ConnectChosenChain = () => {
   } = useWallet();
 
   const fundWalletConnect = () => {
-    setStep("confirm");
+    setStep("selectChain");
+    closeAll();
   };
 
   const {
@@ -58,9 +59,10 @@ const ConnectChosenChain = () => {
   } = useConnect({
     mutation: {
       onSuccess: async (result) => {
-        if (fundWalletStep === "reconnectChain") {
+        if (fundWalletStep) {
           setWalletAddress(result.accounts[0]);
           localStorage.removeItem("connectorId");
+          closeAll();
           return fundWalletConnect();
         }
         return successAuth(null, activeAccount || undefined, true);
@@ -72,7 +74,8 @@ const ConnectChosenChain = () => {
     if (isConnectingWallet) return;
     if (
       activeAccount?.walletClientType === "privy" &&
-      fundWalletStep !== "connectWallet"
+      fundWalletStep !== "connectWallet" &&
+      !fundWalletStep
     ) {
       const confirmResult = confirm(
         "You smart wallet account will be disconnected",
@@ -111,8 +114,8 @@ const ConnectChosenChain = () => {
   };
 
   const handleClose = () => {
-    if (fundWalletStep === "connectWallet") {
-      setStep("setValues");
+    if (fundWalletStep) {
+      fundWalletConnect();
     } else {
       closeAll();
     }
@@ -121,9 +124,9 @@ const ConnectChosenChain = () => {
   const solanaConnectors = solanaAdapters
     .filter((adapter) => {
       if (
-        (adapter.adapter.name.toLowerCase() === "metamask" &&
-          !(adapter.adapter as WalletAdapter & { wallet?: { client?: any } })
-            ?.wallet?.client)
+        adapter.adapter.name.toLowerCase() === "metamask" &&
+        !(adapter.adapter as WalletAdapter & { wallet?: { client?: any } })
+          ?.wallet?.client
       ) {
         return false;
       }
