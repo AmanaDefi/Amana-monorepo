@@ -8,6 +8,7 @@ import CopyTextButton from "@/components/common/CopyTextButton";
 import { useWallets } from "@privy-io/react-auth";
 import { ZERO_ACCOUNT } from "@/constants";
 import Image from "next/image";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 
 interface TopUsersProps {
   users: LeaderboardUserData[];
@@ -52,11 +53,8 @@ const userRowVariants = {
 };
 
 export default function TopUsers({ users, searchTerm }: TopUsersProps) {
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const currentUserAccount = filteredWallets[0] || ZERO_ACCOUNT;
+  const { activeEvmWallet } = useMultiChain();
+  const currentUserAccount = activeEvmWallet || ZERO_ACCOUNT;
 
   const getRankBadge = (rank: number) => {
     switch (rank) {

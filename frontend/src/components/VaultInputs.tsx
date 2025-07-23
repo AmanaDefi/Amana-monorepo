@@ -17,13 +17,10 @@ import { Chain } from "viem";
 import {
   APPROVED_TOKENS,
   CHAIN_ID,
-  chainConfigs,
   chainsWithCustomRpcs,
-  SUPPORTED_CHAINS,
 } from "@/constants/chainConfig";
 import {
   formatCurrency,
-  getCurrentSlippage,
   getVaultErrorMessage,
   isZetachain,
   selectActions,
@@ -57,8 +54,6 @@ import {
   getLocalStorageObject,
   updateLocalStorageObject,
 } from "@/utils/localStorageUtils";
-import { getPublicClient } from "@/utils/getPublicClient";
-import { ZRC20_TOKENS_BY_ADDRESS } from "@/constants/ZRC20TokensByAddress";
 import ChainSelector from "./VaultsDetailsWrapper/components/ChainSelector";
 import SlippageSettingsBlock from "./VaultsDetailsWrapper/components/SlippageSettingsBlock";
 import FeeDisplay, {
@@ -67,7 +62,6 @@ import FeeDisplay, {
   NetDepositBlock,
 } from "./VaultsDetailsWrapper/components/FeeDisplay";
 import APYChangeCard from "./VaultsDetailsWrapper/components/APYChangeCard";
-import { useWallets } from "@privy-io/react-auth";
 import { useTransactionStore } from "@/store/transactionStore";
 import {
   formatTokenBalance,
@@ -76,7 +70,6 @@ import {
   formatShares,
 } from "@/utils/tokenFormat";
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
-import { zetachain } from "viem/chains";
 import { useAPYStore } from "@/store/APYStore";
 import { useMaxAmount } from "@/hooks/useMaxAmount";
 import { InfoBlock } from "./VaultsWrapper/components/InfoBlock.tsx";
@@ -172,11 +165,8 @@ export default function VaultInputs({
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [allowInput, setAllowInput] = useState<boolean>(false);
   const [label, setLabel] = useState(isDeposit ? "Invest" : "Withdraw");
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const activeWallet = filteredWallets[0];
+  const { walletAddress, activeChain, activeEvmWallet: activeWallet } = useMultiChain();
+
   const selectChain = useMemo(() => selectedChain, [selectedChain]);
 
   const { slippageValue: userSlippage } = useSlippage(vaultId);
@@ -272,8 +262,6 @@ export default function VaultInputs({
   const [conversionOutput, setConversionOutput] = useState<ConversionOutput>(
     initialConversionOutput,
   );
-
-  const { walletAddress, activeChain } = useMultiChain();
 
   const inputTokenPrice = useTokenPriceBySymbol(inputToken?.symbol);
   const vaultTokenPrice = useTokenPriceBySymbol(vaultData.inputToken?.symbol);

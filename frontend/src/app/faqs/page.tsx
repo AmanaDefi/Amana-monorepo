@@ -2,25 +2,23 @@
 import React, { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useWallets, usePrivy } from "@privy-io/react-auth";
+import { usePrivy } from "@privy-io/react-auth";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 
 export default function FAQ() {
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
+  const {activeEvmWallet} = useMultiChain();
+
   const { ready } = usePrivy();
-  const user = filteredWallets[0];
   const router = useRouter();
   useEffect(() => {
-    if (!user && !ready) {
+    if (!activeEvmWallet && !ready) {
       router.push("/");
     }
-  }, [user, ready, router]);
+  }, [activeEvmWallet, ready, router]);
 
   return (
     <>
-      <p>Active Account: {user ? user?.address : "No active account"}</p>
+      <p>Active Account: {activeEvmWallet ? activeEvmWallet?.address : "No active account"}</p>
       <p className="text-2xl text-zinc-600 mt-4">Coming Soon</p>
       <Link href="/" className="mt-4 text-blue-500 hover:underline">
         Take me back to Amana

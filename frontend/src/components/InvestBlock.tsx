@@ -6,18 +6,12 @@ import Button from "./common/Button";
 import { useAuthStore } from "@/store/authStore";
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { useWallets } from "@privy-io/react-auth";
 import { ShimmerAnimation } from "./button/ShimmerAnimation";
 
 const InvestBlock = () => {
-  const { walletAddress } = useMultiChain();
+  const { walletAddress, activeEvmWallet: user } = useMultiChain();
   const { openStep } = useAuthStore();
   const { setStep } = useFundWalletStore();
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const user = filteredWallets[0];
 
   const handleFundWallet = () => {
     if (user?.walletClientType !== "privy") {
