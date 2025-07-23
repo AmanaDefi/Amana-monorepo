@@ -995,7 +995,7 @@ const getPathDataAndMinSharesOut = async (
       inputTokenZeta,
       vaultData.inputToken,
       vaultData.id as Address,
-      getCurrentSlippage() * 100,
+      getCurrentSlippage(vaultData.id) * 100,
     );
     swapPath = encodedPath ?? "0x";
     assetsConversionAmount = amountOut;
@@ -1013,7 +1013,7 @@ const getPathDataAndMinSharesOut = async (
   });
 
   const minSharesOut =
-    (sharesOutForUnderlying * BigInt(10000 - getCurrentSlippage() * 100)) /
+    (sharesOutForUnderlying * BigInt(10000 - getCurrentSlippage(vaultData.id) * 100)) /
     BigInt(10000);
 
   return {
@@ -1027,7 +1027,7 @@ const getPathDataAndMinAmountOut = async (
   outputToken: Token,
   transactionAmount: bigint,
 ) => {
-  const slippageBps = Number(getCurrentSlippage() * 100); // e.g. 0.5% → 50 BPS
+  const slippageBps = Number(getCurrentSlippage(vaultData.id) * 100); // e.g. 0.5% → 50 BPS
   const minAmountOut =
     (transactionAmount * BigInt(10000 - Number(slippageBps))) / BigInt(10000);
 
@@ -1113,7 +1113,7 @@ const executeDirectDeposit = async (
     vaultData.inputToken.decimals,
   );
   const minSharesOut =
-    (sharesAmountBigInt * BigInt(10000 - getCurrentSlippage() * 100)) /
+    (sharesAmountBigInt * BigInt(10000 - getCurrentSlippage(vaultData.id) * 100)) /
     BigInt(10000);
 
   const walletClient = await getWalletClient(activeAccount);
@@ -1238,7 +1238,7 @@ const executeCrossChainDeposit = async (
         actualInputToken,
         vaultData.inputToken,
         vaultData.id as Address,
-        getCurrentSlippage() * 100,
+        getCurrentSlippage(vaultData.id) * 100,
       );
       swapPath = swapResult.encodedPath ?? "0x";
     }
@@ -1249,7 +1249,7 @@ const executeCrossChainDeposit = async (
     vaultData.inputToken.decimals,
   );
   const minSharesOut =
-    (sharesAmountBigInt * BigInt(10000 - getCurrentSlippage() * 100)) /
+    (sharesAmountBigInt * BigInt(10000 - getCurrentSlippage(vaultData.id) * 100)) /
     BigInt(10000);
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(
@@ -1259,7 +1259,7 @@ const executeCrossChainDeposit = async (
   const nonEvmAddress = "0x";
 
   let contract, approveTx, receipt, payload, revertOptions;
-  const slippage = getCurrentSlippage();
+  const slippage = getCurrentSlippage(vaultData.id);
   const slippageValue = (slippage * 100).toFixed(0);
   if (!inputToken.ZRC20equivalent) {
     console.error("ZRC20equivalent not found for input token");
@@ -1472,7 +1472,7 @@ const executeSolanaDeposit = async (
         actualInputToken,
         vaultData.inputToken,
         vaultData.id as Address,
-        getCurrentSlippage() * 100,
+        getCurrentSlippage(vaultData.id) * 100,
       );
       swapPath = swapResult.encodedPath ?? "0x";
     }
@@ -1484,14 +1484,14 @@ const executeSolanaDeposit = async (
     vaultData.inputToken.decimals,
   );
   const minSharesOut =
-    (sharesAmountBigInt * BigInt(10000 - getCurrentSlippage() * 100)) /
+    (sharesAmountBigInt * BigInt(10000 - getCurrentSlippage(vaultData.id) * 100)) /
     BigInt(10000);
   const walletAddress = walletContext.publicKey!.toBase58();
 
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(walletAddress, activeChain);
 
-  const slippage = getCurrentSlippage();
+  const slippage = getCurrentSlippage(vaultData.id);
   const slippageValue = (slippage * 100).toFixed(0);
   const wallet = {
     publicKey: walletContext.publicKey,
@@ -1944,7 +1944,7 @@ export const executeSolanaWithdrawal = async (
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(walletAddress, activeChain);
 
-  const slippage = getCurrentSlippage();
+  const slippage = getCurrentSlippage(vaultData.id);
   const slippageValue = (slippage * 100).toFixed(0);
 
   const wallet = {
@@ -2123,7 +2123,7 @@ const executeCrossChainWithdrawal = async (
     activeChain,
   );
 
-  const slippage = getCurrentSlippage();
+  const slippage = getCurrentSlippage(vaultData.id);
   const nonEvmAddress = "0x";
   const slippageValue = (slippage * 100).toFixed(0);
   const payload = encodeAbiParameters(

@@ -32,6 +32,7 @@ import {
 import InteractionContainer from "./interactAPI";
 import { useSlippage, useTokenPriceBySymbol } from "@/hooks/hooks";
 import {
+  fetchUserVaultMaxWithdraw,
   getPathDataAndAmountOut,
   getPerformanceFee,
 } from "@/actions/actions";
@@ -165,7 +166,11 @@ export default function VaultInputs({
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [allowInput, setAllowInput] = useState<boolean>(false);
   const [label, setLabel] = useState(isDeposit ? "Invest" : "Withdraw");
-  const { walletAddress, activeChain, activeEvmWallet: activeWallet } = useMultiChain();
+  const {
+    walletAddress,
+    activeChain,
+    activeEvmWallet: activeWallet,
+  } = useMultiChain();
 
   const selectChain = useMemo(() => selectedChain, [selectedChain]);
 
@@ -440,6 +445,104 @@ export default function VaultInputs({
     tokenBalance.formatted,
   ]);
 
+  const isButtonDisabled = useMemo(async () => {
+    if (
+      !inputBalance.formatted ||
+      inputBalance.formatted === "0" ||
+      inputBalance.formatted === "0.00" ||
+      Number(inputBalance.formatted) <= 0
+    ) {
+      setIsButtonDisabled(true);
+      return true;
+    }
+
+    if (loadingOutputToken) {
+      setIsButtonDisabled(true);
+      return true;
+    }
+
+    if (errorMessage || outputBoxErrorMessage) {
+      setIsButtonDisabled(true);
+      return true;
+    }
+
+    if (isDeposit) {
+      if (Number(inputBalance.value) > Number(tokenBalance.value)) {
+        setIsButtonDisabled(true);
+        return true;
+      }
+    } else {
+      if (!walletAddress) {
+        setIsButtonDisabled(true);
+        return true;
+      }
+      const maxWithdrawAmount = await fetchUserVaultMaxWithdraw(
+        vaultData.inputToken.decimals,
+        walletAddress,
+        vaultData.id,
+      );
+      if (Number(inputBalance.formatted) > Number(maxWithdrawAmount)) {
+        setIsButtonDisabled(true);
+        return true;
+      }
+    }
+
+    if (
+      isDeposit &&
+      !vaultData.depositFeePaidFromGasTank &&
+      debouncedInputBalance.value > 0n &&
+      Number(
+        conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, ""),
+      ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, ""))
+    ) {
+      setIsButtonDisabled(true);
+      return true;
+    }
+    if (
+      inputBalance.value > 0n &&
+      conversionOutput.outputAmountFormatted &&
+      Number(conversionOutput.outputAmountFormatted) === 0 &&
+      !(
+        isDeposit &&
+        !vaultData.depositFeePaidFromGasTank &&
+        debouncedInputBalance.value > 0n &&
+        Number(
+          conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, "") ??
+            0,
+        ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, "") ?? 0)
+      )
+    ) {
+      setIsButtonDisabled(true);
+      return true;
+    }
+
+    if (isSlippageExceedingLimit) {
+      setIsButtonDisabled(true);
+      return true;
+    }
+    setIsButtonDisabled(false);
+    return false;
+  }, [
+    inputBalance.formatted,
+    inputBalance.value,
+    loadingOutputToken,
+    errorMessage,
+    outputBoxErrorMessage,
+    isDeposit,
+    tokenBalance.value,
+    vaultData.depositFeePaidFromGasTank,
+    debouncedInputBalance.value,
+    conversionOutput.inputAmountInUSDFormatted,
+    conversionOutput.gasFeeInUSD,
+    conversionOutput.outputAmountFormatted,
+    isSlippageExceedingLimit,
+    setIsButtonDisabled,
+    userVaultBalance,
+    walletAddress,
+    vaultData.id,
+    vaultData.inputToken.decimals,
+  ]);
+
   // Watch input balance and trigger steps config selection
   useEffect(() => {
     const fetchData = async () => {
@@ -666,7 +769,7 @@ export default function VaultInputs({
     setDisplayValue,
     handleChangeInput,
     walletAddress,
-    vaultTokenDecimals: vaultData.inputToken.decimals
+    vaultTokenDecimals: vaultData.inputToken.decimals,
   });
 
   const tokenList = useMemo(() => {
