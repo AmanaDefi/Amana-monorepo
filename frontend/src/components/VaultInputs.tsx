@@ -421,10 +421,7 @@ export default function VaultInputs({
           ),
         );
       }
-    } else if (loadingOutputToken) {
-      // Clear error message while loading
-      setErrorMessage("");
-    }
+    } 
   }, [
     inputToken,
     inputBalance,
@@ -435,7 +432,6 @@ export default function VaultInputs({
     inputTokenPrice,
     vaultTokenPrice,
     conversionOutput.netDepositToVaultUSD,
-    loadingOutputToken,
     userVaultBalance,
     tokenBalance.formatted,
   ]);
@@ -688,6 +684,99 @@ export default function VaultInputs({
     return tokens;
   }, [selectedChain?.id, vaultData.inputToken]);
 
+  const checkSlippageExceedingLimit = useCallback(() => {
+    // Calculate total slippage (swap + deposit)
+    const totalSlippagePercentage =
+      (conversionOutput.swapSlippagePercentage || 0) +
+      (conversionOutput.depositSlippagePercentage || 0);
+
+    // If slippage is over 100%, hide the display completely
+    if (totalSlippagePercentage > 100) {
+      setIsSlippageExceedingLimit(false);
+      setOutputBoxErrorMessage("");
+      return;
+    }
+
+    if (
+      userSlippage &&
+      totalSlippagePercentage > 0 &&
+      userSlippage < totalSlippagePercentage &&
+      !(
+        isDeposit &&
+        !vaultData.depositFeePaidFromGasTank &&
+        debouncedInputBalance.value > 0n &&
+        Number(
+          conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, ""),
+        ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, ""))
+      )
+    ) {
+      setIsSlippageExceedingLimit(true);
+      setOutputBoxErrorMessage(
+        `Total slippage of ${totalSlippagePercentage.toFixed(2)}% exceeds your maximum slippage setting of ${userSlippage}%`,
+      );
+    } else {
+      setIsSlippageExceedingLimit(false);
+      setOutputBoxErrorMessage("");
+    }
+  }, [
+    conversionOutput.swapSlippagePercentage,
+    conversionOutput.depositSlippagePercentage,
+    userSlippage,
+    isDeposit,
+    vaultData.depositFeePaidFromGasTank,
+    debouncedInputBalance.value,
+    conversionOutput.inputAmountInUSDFormatted,
+    conversionOutput.gasFeeInUSD,
+  ]);
+  // Ensure immediately change the conversion to 0 if user input is not valid
+  useEffect(() => {
+    if (
+      !debouncedInputBalance.formatted ||
+      Number(debouncedInputBalance.formatted) <= 0
+    ) {
+      setConversionOutput(initialConversionOutput);
+      setIsSlippageExceedingLimit(false);
+      setOutputBoxErrorMessage("");
+      return;
+    }
+
+    const isGasFeeSpecialCase =
+      isDeposit &&
+      !vaultData.depositFeePaidFromGasTank &&
+      debouncedInputBalance.value > 0n &&
+      Number(
+        conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, "") ??
+          0,
+      ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, "") ?? 0);
+    if (
+      debouncedInputBalance.value > 0n &&
+      Number(conversionOutput.outputAmountFormatted) === 0 &&
+      !isGasFeeSpecialCase &&
+      !loadingOutputToken &&
+      conversionOutput.outputAmountFormatted !== "0.00"
+    ) {
+      console.log("Swap route not found - setting error message", {
+        debouncedInputBalance: debouncedInputBalance.value.toString(),
+        outputAmount: conversionOutput.outputAmountFormatted,
+        isDeposit,
+        isGasFeeSpecialCase,
+        loadingOutputToken,
+      });
+      setOutputBoxErrorMessage("Swap route not found");
+    } else if (!loadingOutputToken) {
+      setOutputBoxErrorMessage("");
+    }
+  }, [
+    conversionOutput.outputAmountFormatted,
+    conversionOutput.inputAmountInUSDFormatted,
+    conversionOutput.gasFeeInUSD,
+    debouncedInputBalance,
+    initialConversionOutput,
+    isDeposit,
+    loadingOutputToken,
+    vaultData.depositFeePaidFromGasTank,
+  ]);
+
   const getWithdrawOutputAmount = useCallback(
     async (inputAmountValue: bigint) => {
       // 🔄 NEW LOGIC: Input is now in underlying asset terms, not shares
@@ -750,6 +839,10 @@ export default function VaultInputs({
         });
       }
       setLoadingOutputToken(false);
+
+      setTimeout(() => {
+        checkSlippageExceedingLimit();
+      }, 0);
     },
     [
       activeChain?.id,
@@ -759,6 +852,7 @@ export default function VaultInputs({
       vaultTokenPrice,
       inputToken,
       userSlippage,
+      checkSlippageExceedingLimit,
     ],
   );
 
@@ -878,6 +972,12 @@ export default function VaultInputs({
           needsTokenSwap: calculationResult.needsTokenSwap,
           needsGasFee: calculationResult.needsGasFee,
         });
+
+        setLoadingOutputToken(false);
+
+        setTimeout(() => {
+          checkSlippageExceedingLimit();
+        }, 0);
       } catch (error) {
         console.error("Error in deposit calculation:", error);
         setOutputBoxErrorMessage("Error calculating deposit output");
@@ -896,99 +996,11 @@ export default function VaultInputs({
       userSlippage,
       gasTokenPrice,
       priceContext,
+      checkSlippageExceedingLimit,
     ],
   );
 
   const timeoutRef = useRef<NodeJS.Timeout>();
-
-  const checkSlippageExceedingLimit = () => {
-    // Calculate total slippage (swap + deposit)
-    const totalSlippagePercentage =
-      (conversionOutput.swapSlippagePercentage || 0) +
-      (conversionOutput.depositSlippagePercentage || 0);
-
-    // If slippage is over 100%, hide the display completely
-    if (totalSlippagePercentage > 100) {
-      setIsSlippageExceedingLimit(false);
-      setOutputBoxErrorMessage("");
-      return;
-    }
-
-    if (
-      userSlippage &&
-      totalSlippagePercentage > 0 &&
-      userSlippage < totalSlippagePercentage &&
-      !(
-        isDeposit &&
-        !vaultData.depositFeePaidFromGasTank &&
-        debouncedInputBalance.value > 0n &&
-        Number(
-          conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, ""),
-        ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, ""))
-      )
-    ) {
-      setIsSlippageExceedingLimit(true);
-      setOutputBoxErrorMessage(
-        `Total slippage of ${totalSlippagePercentage.toFixed(2)}% exceeds your maximum slippage setting of ${userSlippage}%`,
-      );
-    } else {
-      setIsSlippageExceedingLimit(false);
-      setOutputBoxErrorMessage("");
-    }
-  };
-
-  // Ensure immediately change the conversion to 0 if user input is not valid
-  useEffect(() => {
-    if (loadingOutputToken) {
-      setOutputBoxErrorMessage("");
-      return;
-    }
-    if (
-      !debouncedInputBalance.formatted ||
-      Number(debouncedInputBalance.formatted) <= 0
-    ) {
-      setConversionOutput(initialConversionOutput);
-      setIsSlippageExceedingLimit(false);
-      setOutputBoxErrorMessage("");
-      return;
-    }
-
-    const isGasFeeSpecialCase =
-      isDeposit &&
-      !vaultData.depositFeePaidFromGasTank &&
-      debouncedInputBalance.value > 0n &&
-      Number(
-        conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, "") ??
-          0,
-      ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, "") ?? 0);
-    if (
-      debouncedInputBalance.value > 0n &&
-      Number(conversionOutput.outputAmountFormatted) === 0 &&
-      !isGasFeeSpecialCase &&
-      !loadingOutputToken &&
-      conversionOutput.outputAmountFormatted !== "0.00"
-    ) {
-      console.log("Swap route not found - setting error message", {
-        debouncedInputBalance: debouncedInputBalance.value.toString(),
-        outputAmount: conversionOutput.outputAmountFormatted,
-        isDeposit,
-        isGasFeeSpecialCase,
-        loadingOutputToken,
-      });
-      setOutputBoxErrorMessage("Swap route not found");
-    } else if (!loadingOutputToken) {
-      setOutputBoxErrorMessage("");
-    }
-  }, [
-    conversionOutput.outputAmountFormatted,
-    conversionOutput.inputAmountInUSDFormatted,
-    conversionOutput.gasFeeInUSD,
-    debouncedInputBalance,
-    initialConversionOutput,
-    isDeposit,
-    loadingOutputToken,
-    vaultData.depositFeePaidFromGasTank,
-  ]);
 
   useEffect(() => {
     if (vaultData?.id && APY7DValue && Number(inputBalance.formatted) > 0) {
