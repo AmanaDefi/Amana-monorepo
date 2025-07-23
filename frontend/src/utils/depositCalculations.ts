@@ -390,6 +390,18 @@ export const calculateDepositOutput = async (
   const outputAmountInUSD = (Number(outputAmount) / 10 ** vaultData.inputToken.decimals) * vaultTokenPrice;
   const gasFeeInUSD = parseFloat(gasFeeResult.gasFeeInUSD.replace(/[^0-9.]/g, "") || "0");
 
+  console.log("inputToken decimals", inputToken?.decimals);
+  console.log("vaultData.inputToken decimals", vaultData.inputToken.decimals);
+  console.log("vaultTokenPrice", vaultTokenPrice);
+  console.log("inputTokenPrice", inputTokenPrice);
+  console.log("gasTokenPrice", gasTokenPrice);
+  console.log("inputAmountInUSD", inputAmountInUSD);
+  console.log("swapSlippageInUSD", swapSlippageInUSD);
+  console.log("depositSlippageInUSD", depositSlippageInUSD);
+  console.log("outputAmountInUSD", outputAmountInUSD);
+  console.log("gasFeeInUSD", gasFeeInUSD);
+
+
   // Step 6: Total slippage (swap + deposit)
   const totalSlippageInUSD = swapSlippageInUSD + depositSlippageInUSD;
   const totalSlippagePercentage = inputAmountInUSD > 0 ? (totalSlippageInUSD / inputAmountInUSD) * 100 : 0;

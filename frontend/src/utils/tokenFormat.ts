@@ -96,30 +96,47 @@ export const formatUSDAmount = (
 };
 
 /**
- * Formats share amounts intelligently based on their format
- * - If shares < 1: already human-readable, just format precision
- * - If shares > 100000000000: assumes 18 decimal receipt token (like ETH)
- * - Otherwise: assumes 6 decimal receipt token (like USDC)
+ * Formats share amounts intelligently based on magnitude and value patterns
+ * @param sharesValue - The raw shares value
+ * @param vaultTokenDecimals - The decimals of the vault token (optional, for context)
  */
-export const formatShares = (sharesValue: string): string => {
-
+export const formatShares = (sharesValue: string, vaultTokenDecimals?: number): string => {   
   const sharesNumber = parseFloat(sharesValue);
-  
+   
+  // Case 1: Very small decimals (< 1) - already human-readable
   if (sharesNumber < 1) {
     const result = sharesNumber.toFixed(6).replace(/\.?0+$/, '');
     return result;
   }
-  
-  if (sharesNumber >= 1 && sharesNumber < 100) {
+   
+  // Case 2: Medium range (1-10000) - likely already human-readable
+  // This covers: 18→18 decimals, 6→6 decimals
+  if (sharesNumber >= 1 && sharesNumber < 1000000) {
     const result = sharesNumber.toFixed(6).replace(/\.?0+$/, '');
     return result;
   }
 
-  const scalingFactor = sharesNumber > 100000000000 ? Math.pow(10, 12) : Math.pow(10, 6);
+  // Case 3: Very large numbers - need scaling
+  // Use vaultTokenDecimals if provided, otherwise fall back to magnitude-based scaling
+  let scalingFactor;
   
+  if (vaultTokenDecimals !== undefined) {
+    // Use vault token decimals for accurate scaling
+    scalingFactor = Math.pow(10, vaultTokenDecimals);
+  } else {
+    // Fallback to magnitude-based scaling
+    if (sharesNumber > 1000000000000000) {
+      // Extremely large numbers (> 10^15) - scale by 10^12
+      scalingFactor = Math.pow(10, 12);
+    } else {
+      // Large numbers (> 10^9) - scale by 10^12
+      scalingFactor = Math.pow(10, 12);
+    }
+  } 
+
   const formattedShares = sharesNumber / scalingFactor;
   
   const result = formattedShares.toFixed(6).replace(/\.?0+$/, '');
-  
+   
   return result;
 };

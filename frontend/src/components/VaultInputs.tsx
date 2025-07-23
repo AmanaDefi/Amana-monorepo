@@ -954,7 +954,7 @@ export default function VaultInputs({
 
         // Helper function to format and set conversion output
         const formatAndSetConversionOutput = (result: any) => {
-          const sharesAmountFormatted = formatShares(result.sharesAmount);
+          const sharesAmountFormatted = formatShares(result.outputAmount, vaultData.inputToken.decimals);
 
           const outputAmountInUSD =
             (Number(result.outputAmount) /
