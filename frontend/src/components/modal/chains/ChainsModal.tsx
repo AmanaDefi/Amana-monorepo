@@ -386,24 +386,31 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
     setTokenBalances(new Map());
   }, [selectedChainLocal?.id]);
 
-  useEffect(() => {
-    if (isModalOpen) {
-      if (isTopUpModal) {
-        setSelectedChainLocal(null);
-        setSelectedTokenLocal(null);
+useEffect(() => {
+  if (isModalOpen) {
+    if (isTopUpModal) {
+      const { chain: fundWalletChain, currency: fundWalletCurrency } =
+        useFundWalletStore.getState();
+
+      if (fundWalletChain) {
+        setSelectedChainLocal(fundWalletChain);
       } else {
-        setSelectedChainLocal(selectedChainFromModal || SUPPORTED_CHAINS[0]);
-        setSelectedTokenLocal(selectedTokenFromModal || null);
+        setSelectedChainLocal(null);
       }
-      setSearchQuery("");
-      setTokenBalances(new Map());
+
+      if (fundWalletCurrency) {
+        setSelectedTokenLocal(fundWalletCurrency);
+      } else {
+        setSelectedTokenLocal(null);
+      }
+    } else {
+      setSelectedChainLocal(selectedChainFromModal || SUPPORTED_CHAINS[0]);
+      setSelectedTokenLocal(selectedTokenFromModal || null);
     }
-  }, [
-    isModalOpen,
-    isTopUpModal,
-    selectedChainFromModal,
-    selectedTokenFromModal,
-  ]);
+    setSearchQuery("");
+    setTokenBalances(new Map());
+  }
+}, [isModalOpen, isTopUpModal, selectedChainFromModal, selectedTokenFromModal]);
 
   useEffect(() => {
     if (isTopUpModal && selectedChainLocal) {
