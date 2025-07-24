@@ -39,8 +39,11 @@ export const useMaxAmount = ({
     if (!inputToken || isTxInProgress || !walletAddress) return;
 
     if (isDeposit) {
-      setInputBalance(tokenBalance);
-      setDisplayValue(tokenBalance.formatted);
+      handleChangeInput({
+        currentTarget: { value: tokenBalance.formatted },
+      } as React.ChangeEvent<HTMLInputElement>);
+      // setInputBalance(tokenBalance);
+      // setDisplayValue(tokenBalance.formatted);
 
       updateLocalStorageObject(vaultId, {
         inputBal: JSON.stringify(tokenBalance, bigIntReplacer),
@@ -57,15 +60,13 @@ export const useMaxAmount = ({
       handleChangeInput({
         currentTarget: { value: maxValue },
       } as React.ChangeEvent<HTMLInputElement>);
+
     }
   }, [
     inputToken,
     tokenBalance,
     isDeposit,
     vaultId,
-    vaultTotalAssetinToken,
-    setInputBalance,
-    setDisplayValue,
     handleChangeInput,
     walletAddress,
     vaultTokenDecimals

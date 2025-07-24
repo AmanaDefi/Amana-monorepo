@@ -10,7 +10,7 @@ export type InputNumberProps = {
 
 export default function InputNumber({
   value,
-  onChange,
+  onChange: currentOnChange,
   onFocus,
   onBlur,
   className,
@@ -18,10 +18,12 @@ export default function InputNumber({
 }: InputNumberProps): JSX.Element {
   const { inputRef, displayValue, handlers } = useNumberInput({
     value,
-    onChange,
+    onChange: currentOnChange,
     onFocus,
     onBlur,
   });
+
+  console.log(value, displayValue, 'displayValue')
 
   const handleAmount = (e: React.ChangeEvent<HTMLInputElement>) => {
     const amountString = e.target.value;
@@ -29,7 +31,7 @@ export default function InputNumber({
     if (newAmount !== "" && !newAmount) {
       return;
     } else {
-      onChange(e);
+      currentOnChange(e);
     }
   };
 
@@ -47,7 +49,7 @@ export default function InputNumber({
       type="text"
       pattern="^[0-9]*[.,]?[0-9]*$"
       spellCheck="false"
-      value={displayValue}
+      value={value}
       {...handlers}
     />
   );
