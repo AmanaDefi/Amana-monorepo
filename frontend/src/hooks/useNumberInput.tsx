@@ -42,6 +42,9 @@ export function useNumberInput({
 
     if (isZeroValue(value)) {
       setInternalValue("");
+      onChange({
+        currentTarget: { value: "" },
+      } as React.ChangeEvent<HTMLInputElement>);
     } else {
       setInternalValue(value);
     }

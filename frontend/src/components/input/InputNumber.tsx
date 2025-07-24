@@ -16,24 +16,12 @@ export default function InputNumber({
   className,
   ...props
 }: InputNumberProps): JSX.Element {
-  const { inputRef, displayValue, handlers } = useNumberInput({
+  const { inputRef, handlers } = useNumberInput({
     value,
     onChange: currentOnChange,
     onFocus,
     onBlur,
   });
-
-  console.log(value, displayValue, 'displayValue')
-
-  const handleAmount = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const amountString = e.target.value;
-    const newAmount = checkAmount(amountString, value);
-    if (newAmount !== "" && !newAmount) {
-      return;
-    } else {
-      currentOnChange(e);
-    }
-  };
 
   return (
     <input
