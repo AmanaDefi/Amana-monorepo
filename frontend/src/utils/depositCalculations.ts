@@ -357,19 +357,13 @@ export const calculateDepositOutput = async (
       500
     );
     amountAfterSwap = swapResult.amountOut;
-    console.log("amountAfterSwap", amountAfterSwap);
     // Calculate swap slippage in vault asset
-    console.log("zcInputToken decimals", zcInputToken.decimals);
     let inputAmountInVaultAsset: bigint;
-    console.log("zcInputToken symbol", zcInputToken.symbol);
     if (isStablecoin(zcInputToken.symbol)) {
-      console.log("Stablecoin detected, using vaultTokenPrice for slippage calculation");
       inputAmountInVaultAsset = BigInt(Math.floor((Number(inputAmount) / 10 ** (zcInputToken.decimals ?? 18)) / vaultTokenPrice * 10 ** vaultData.inputToken.decimals));
     } else {
-      console.log("Non-stablecoin detected, using vaultTokenPrice for slippage calculation");
       inputAmountInVaultAsset = BigInt(Math.floor((Number(inputAmount) / 10 ** (zcInputToken.decimals ?? 18)) * inputTokenPrice * 10 ** vaultData.inputToken.decimals));
     }
-    console.log("inputAmountInVaultAsset", inputAmountInVaultAsset);
     swapSlippage = inputAmountInVaultAsset > amountAfterSwap ? inputAmountInVaultAsset - amountAfterSwap : 0n;
   }
 
@@ -453,7 +447,3 @@ export const calculateDepositOutput = async (
     needsGasFee: gasFeeResult.needsDeduction,
   };
 };
-
-// const isStablecoin = (token: Token): boolean => {
-//   return token.symbol === "USDC" || token.symbol === "USDT" || token.symbol === "USDC.ETH" || token.symbol === "USDT.ETH";
-// };
