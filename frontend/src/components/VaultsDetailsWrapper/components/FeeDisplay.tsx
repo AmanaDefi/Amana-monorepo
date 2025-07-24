@@ -296,6 +296,14 @@ export default function FeeDisplay({
       conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, ""),
     ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, ""));
 
+  // Calculate deposit fee percentage
+  let depositFeePercentage = 0;
+  const inputAmountUSD = Number(conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, ""));
+  const gasFeeUSD = Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, ""));
+  if (inputAmountUSD > 0 && gasFeeUSD > 0) {
+    depositFeePercentage = (gasFeeUSD / inputAmountUSD) * 100;
+  }
+
   return (
     <div>
       {isDepositTooLow && (
@@ -335,7 +343,7 @@ export default function FeeDisplay({
             <BreathingValue
               value={
                 shouldShowDepositFee
-                  ? conversionOutput.gasFeeInUSD
+                  ? `${depositFeePercentage.toFixed(2)}% (${conversionOutput.gasFeeInUSD})`
                   : shouldShowWithdrawalFee
                     ? `$${performanceFee}`
                     : "$0"

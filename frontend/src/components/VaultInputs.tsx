@@ -1437,7 +1437,7 @@ if (isDeposit && (inputToken && (inputTokenPrice === 0 || inputTokenPrice === un
             <SwapSlippageBlock
               conversionOutput={conversionOutput}
               isVisible={
-                !!conversionOutput.swapSlippageUSD && !outputBoxErrorMessage
+                !!conversionOutput.swapSlippageUSD
               }
               isBreathing={loadingOutputToken}
             />
@@ -1462,7 +1462,7 @@ if (isDeposit && (inputToken && (inputTokenPrice === 0 || inputTokenPrice === un
             <DepositSlippageBlock
               conversionOutput={conversionOutput}
               isVisible={
-                !!conversionOutput.depositSlippageUSD && !outputBoxErrorMessage
+                !!conversionOutput.depositSlippageUSD
               }
               isBreathing={loadingOutputToken}
             />
