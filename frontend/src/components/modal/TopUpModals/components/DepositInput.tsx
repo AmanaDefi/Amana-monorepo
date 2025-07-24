@@ -5,19 +5,12 @@ import InputNumber from "@/components/input/InputNumber";
 import WarningIcon from "@/components/svg/WarningIcon";
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import { Balance, Token } from "@/types/types";
-import { getPublicClient } from "@/utils/getPublicClient";
-import { EMPTY_BALANCE } from "@/utils/helpers";
-import { format, getERC20TokenBalance } from "@/utils/utils";
 import { useWallets } from "@privy-io/react-auth";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { useMultichainTokenBalanceForModal } from "@/hooks/useMultichainTokenBalanceForModal";
 import clsx from "clsx";
-import {
-  Dispatch,
-  SetStateAction,
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
-import { formatEther } from "viem";
+import { Dispatch, SetStateAction, useEffect, useMemo } from "react";
+import { MiniSpinner } from "@/components/PendingDots";
 
 export const DepositInput = ({
   setError,
@@ -32,63 +25,45 @@ export const DepositInput = ({
     setDepositAmount,
     depositAmount,
     currency,
-    activeConnector,
     walletAddress,
-    setChain,
-    setStep, 
+    setStep,
   } = useFundWalletStore();
 
-  const [tokenBalance, setTokenBalance] = useState<Balance>(EMPTY_BALANCE);
+  const { publicKey } = useWallet();
   const { wallets } = useWallets();
   const filteredWallets = wallets.filter(
     (wallet) => wallet.meta.id !== "app.phantom",
   );
   const activeWallet = filteredWallets[0];
 
-  const fetchTokenBalance = useCallback(
-    async (token: Token) => {
-      if (walletAddress && token && chain) {
-        let balance = EMPTY_BALANCE;
-        if (token.isNative) {
-          const publicClient = getPublicClient(chain.id);
-          if (!publicClient) return;
+  const walletAddressForBalance = useMemo(() => {
+    let result;
+    if (!chain) {
+      result = walletAddress;
+    } else if (chain.name === "Solana") {
+      result = publicKey?.toString() || walletAddress;
+    } else {
+      result =
+        activeWallet?.address && activeWallet.walletClientType !== "privy"
+          ? activeWallet.address
+          : walletAddress;
+    }
 
-          const balanceInEth = await publicClient.getBalance({
-            address: walletAddress,
-          });
+    return result;
+  }, [chain, publicKey, activeWallet, walletAddress]);
 
-          const formattedBalance = formatEther(balanceInEth);
-          balance = { formatted: formattedBalance, value: balanceInEth };
-        } else {
-          const { balance: ercBalance, decimals } = await getERC20TokenBalance(
-            walletAddress,
-            token.address,
-            chain,
-          );
-
-          balance = {
-            value: ercBalance,
-            formatted: format(ercBalance, decimals),
-          };
-        }
-
-        setTokenBalance(balance);
-      }
-    },
-    [walletAddress, chain],
-  );
+  const { balance: tokenBalance, isLoading } =
+    useMultichainTokenBalanceForModal(currency, chain, walletAddressForBalance);
 
   useEffect(() => {
-    setTokenBalance(EMPTY_BALANCE);
     setError("");
     setDepositAmount("");
   }, [chain, setDepositAmount, setError]);
 
   useEffect(() => {
-    if (walletAddress && currency) {
-      fetchTokenBalance(currency);
-    }
-  }, [walletAddress, currency, fetchTokenBalance]);
+    setError("");
+    setDepositAmount("");
+  }, [currency, setError, setDepositAmount]);
 
   const onTokenSelect = (token: Token) => {
     setCurrency(token);
@@ -96,9 +71,8 @@ export const DepositInput = ({
   };
 
   const onMaxClick = () => {
-    if (tokenBalance) {
+    if (tokenBalance && tokenBalance.formatted) {
       const formattedAmount = Number(tokenBalance.formatted).toFixed(7);
-
       const cleanAmount = parseFloat(formattedAmount).toString();
       setDepositAmount(cleanAmount);
       setError("");
@@ -110,7 +84,7 @@ export const DepositInput = ({
     if (
       e.currentTarget.value &&
       tokenBalance &&
-      !!walletAddress &&
+      !!walletAddressForBalance &&
       chain &&
       currency
     ) {
@@ -142,22 +116,24 @@ export const DepositInput = ({
         >
           <div className="flex items-center justify-between text-xs md:text-sm text-[#535E73] relative">
             <span>You send (min 0.0015)</span>
-            {!!activeConnector && (
-              <button
-                onClick={onMaxClick}
-                className="text-[#3E73C4] hover:underline font-normal absolute left-[65%]"
-              >
-                MAX
-              </button>
-            )}
+            <button
+              onClick={onMaxClick}
+              className="text-[#3E73C4] hover:underline font-normal absolute left-[65%]"
+            >
+              MAX
+            </button>
             <p className="group-hover/max:text-white">
-              {Number(tokenBalance?.formatted ?? "").toFixed(4)}
+              {isLoading ? (
+                <MiniSpinner size={12} color="#1B46E0" />
+              ) : (
+                Number(tokenBalance?.formatted ?? "").toFixed(4)
+              )}
             </p>
           </div>
 
           <div className="flex items-center mt-1">
             <span className="text-white text-2xl">
-              {<InputNumber value={depositAmount} onChange={handleSetAmount} />}
+              <InputNumber value={depositAmount} onChange={handleSetAmount} />
             </span>
             <div className="flex flex-center">
               <ChainTokenSelector
