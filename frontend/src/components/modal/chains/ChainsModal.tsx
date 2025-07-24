@@ -188,6 +188,8 @@ const TokenBalanceItem = React.memo(
       return `$${balanceUSD.toFixed(2)}`;
     }, [balanceUSD, balance]);
 
+
+
     return (
       <motion.div
         variants={itemVariants}

@@ -12,7 +12,7 @@ import { showInfoToast } from "@/toasts";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { useWallet } from "@solana/wallet-adapter-react";
 import {
-  Adapter, 
+  Adapter,
   WalletAdapter,
   WalletReadyState,
 } from "@solana/wallet-adapter-base";
@@ -41,11 +41,11 @@ const ConnectChosenChain = () => {
   const activeAccount = filteredWallets[0];
 
   const {
-    wallets: solanaAdapters, 
+    wallets: solanaAdapters,
     select,
     disconnect,
     connected,
-    wallet, 
+    wallet,
   } = useWallet();
 
   const solanaWalletAdapter: Adapter | null = wallet
@@ -54,7 +54,6 @@ const ConnectChosenChain = () => {
 
   const fundWalletConnect = () => {
     setStep("selectChain");
-    closeAll();
   };
 
   const {
@@ -104,14 +103,13 @@ const ConnectChosenChain = () => {
           console.log(error);
 
           if (error.name === "ConnectorAlreadyConnectedError") {
-            connector.disconnect(); 
+            connector.disconnect();
             localStorage.removeItem("connectorId");
 
             setActiveConnector(null);
             showInfoToast("Please try to connect wallet again");
           } else {
-          
-            setActiveConnector(null); 
+            setActiveConnector(null);
             showInfoToast(
               `EVM connection failed: ${error.message || "Unknown error"}`,
             );
@@ -135,7 +133,7 @@ const ConnectChosenChain = () => {
       (chosenChain || activeChain)?.id !== CHAIN_ID["solana"]) ||
     (chosenChain || activeChain)?.id !== CHAIN_ID["solana"];
 
-  const solanaConnectors = solanaAdapters 
+  const solanaConnectors = solanaAdapters
     .filter((adapter) => {
       if (
         adapter.adapter.name.toLowerCase() === "metamask" &&
@@ -148,50 +146,51 @@ const ConnectChosenChain = () => {
     })
     .map((adapter) => adapter.adapter);
 
-  const handleSolanaConnect = async (connector: Adapter) => {
-    setActiveConnector(connector);
-    try {
-      await connectSolana(); 
-      select(connector.name);
-    } catch (error) {
-      console.error("Error during Solana wallet selection preparation:", error);
-      setActiveConnector(null); 
-    }
-  };
-
- useEffect(() => {
-   const shouldAutoConnect =
-     (step === "connectInChosenChain" || fundWalletStep === "reconnectChain") &&
-     !shouldShowEvnWallets &&
-     solanaWalletAdapter &&
-     !connected;
-
-   if (!shouldAutoConnect) return;
-
-   const timeoutId = setTimeout(async () => {
-     try {
-       if (solanaWalletAdapter && !connected) {
-         await solanaWalletAdapter.connect();
-       }
-     } catch (error: any) {
-       console.error("Error connecting Solana wallet after selection:", error);
-       setActiveConnector(null);
-     }
-   }, 50);
-
-   return () => clearTimeout(timeoutId);
- }, [
-   solanaWalletAdapter,
-   connected,
-   step,
-   fundWalletStep,
-   shouldShowEvnWallets,
-   setActiveConnector,
- ]);
-
   const filteredEvmConnectors = connectors.filter(
     (con) => con.id !== "app.phantom" && con.name.toLowerCase() !== "injected",
   );
+
+  const handleSolanaConnect = async (connector: Adapter) => {
+    setActiveConnector(connector);
+    try {
+      await connectSolana();
+      select(connector.name);
+    } catch (error) {
+      console.error("Error during Solana wallet selection preparation:", error);
+      setActiveConnector(null);
+    }
+  };
+
+  useEffect(() => {
+    const shouldAutoConnect =
+      (step === "connectInChosenChain" ||
+        fundWalletStep === "reconnectChain") &&
+      !shouldShowEvnWallets &&
+      solanaWalletAdapter &&
+      !connected;
+
+    if (!shouldAutoConnect) return;
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        if (solanaWalletAdapter && !connected) {
+          await solanaWalletAdapter.connect();
+        }
+      } catch (error: any) {
+        console.error("Error connecting Solana wallet after selection:", error);
+        setActiveConnector(null);
+      }
+    }, 50);
+
+    return () => clearTimeout(timeoutId);
+  }, [
+    solanaWalletAdapter,
+    connected,
+    step,
+    fundWalletStep,
+    shouldShowEvnWallets,
+    setActiveConnector,
+  ]);
 
   return (
     <Modal

@@ -41,13 +41,14 @@ export const useMultichainTokenBalanceForModal = (
 
   // Auto-set Solana balance for Solana chains
   useEffect(() => {
-    if (selectedChain === "solana") {
+    if (currentChain?.name === "Solana") {
       setBalance(solanaBalance);
     }
-  }, [selectedChain, solanaBalance.formatted]);
+  }, [currentChain?.name, solanaBalance.formatted]);
 
   const internalFetchBalance = useCallback(async () => {
-    console.log('internalFetchBalance')
+    console.log("internalFetchBalance");
+
     // Early validation
     if (!currentToken || !walletAddress || !currentChain?.id) {
       setBalance(DEFAULT_BALANCE);
@@ -61,7 +62,9 @@ export const useMultichainTokenBalanceForModal = (
 
       // Handle native tokens
       if (currentToken.isNative) {
-        if (selectedChain === "evm") {
+        if (currentChain.name === "Solana") {
+          refetchSolBalance();
+        } else {
           try {
             const { getPublicClient } = await import("@/utils/getPublicClient");
             const { formatEther } = await import("viem");
@@ -86,8 +89,6 @@ export const useMultichainTokenBalanceForModal = (
             console.error("Error fetching EVM native balance:", error);
             setBalance(DEFAULT_BALANCE);
           }
-        } else if (selectedChain === "solana") {
-          refetchSolBalance();
         }
 
         setIsLoading(false);
@@ -172,16 +173,10 @@ export const useMultichainTokenBalanceForModal = (
       setIsLoading(false);
       setError(error instanceof Error ? error.message : "Unknown error");
     }
-  }, [
-    currentToken,
-    walletAddress,
-    currentChain,
-    selectedChain,
-    refetchSolBalance,
-  ]);
+  }, [currentToken, walletAddress, currentChain, refetchSolBalance]);
 
   useEffect(() => {
-    console.log('set balance use effect')
+    console.log("set balance use effect");
     const currentChainId = currentChain?.id;
     const hasChainSwitched =
       prevChainIdRef.current !== undefined &&
@@ -202,7 +197,7 @@ export const useMultichainTokenBalanceForModal = (
   }, [currentToken, walletAddress, currentChain, internalFetchBalance]);
 
   const manualRefetchBalance = useCallback(() => {
-    console.log('manualRefetchBalance')
+    console.log("manualRefetchBalance");
     if (currentToken && walletAddress && currentChain?.id) {
       retryCountRef.current = 0;
       internalFetchBalance();
