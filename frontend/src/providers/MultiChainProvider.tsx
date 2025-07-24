@@ -204,7 +204,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       if (step) {
         localStorage.removeItem("connectorId");
         setFundWalletAddress(publicKey.toBase58());
-        return setStep("confirm");
+        return setStep("selectChain");
       }
 
       setWalletAddress(publicKey.toBase58());

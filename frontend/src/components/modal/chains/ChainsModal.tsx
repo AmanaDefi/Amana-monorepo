@@ -432,7 +432,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
 
   const handleBalanceUpdate = useCallback(
     (token: Token, balance: Balance, price: number, isLoading: boolean) => {
-      const tokenKey = `${token.address.toLowerCase()}-${selectedChainLocal?.id}`;
+      const tokenKey = `${token.address.toLowerCase()}-${selectedChainLocal?.id}-${token.symbol}`;
 
       setTokenBalances((prev) => {
         const newMap = new Map(prev);
@@ -456,8 +456,8 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
 
   const sortedTokens = useMemo(() => {
     return [...filteredTokens].sort((a, b) => {
-      const keyA = `${a.address.toLowerCase()}-${selectedChainLocal?.id}`;
-      const keyB = `${b.address.toLowerCase()}-${selectedChainLocal?.id}`;
+      const keyA = `${a.address.toLowerCase()}-${selectedChainLocal?.id}-${a.symbol}`;
+      const keyB = `${b.address.toLowerCase()}-${selectedChainLocal?.id}-${b.symbol}`;
 
       const dataA = tokenBalances.get(keyA);
       const dataB = tokenBalances.get(keyB);
