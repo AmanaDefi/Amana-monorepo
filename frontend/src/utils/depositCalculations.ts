@@ -2,10 +2,11 @@ import { VaultData, Token } from "../types/types";
 import { Chain, parseAbiItem, Address, parseUnits, formatUnits } from "viem";
 import { getPathDataAndAmountOut } from "../actions/actions";
 import { ZRC20_TOKENS_BY_ADDRESS } from "../constants/ZRC20TokensByAddress";
-import { isZetachain } from "./utils";
+import { isStablecoin, isZetachain } from "./utils";
 import { getPublicClient } from "./getPublicClient";
 import { SUPPORTED_CHAINS } from "../constants/chainConfig";
 import { ConnectedWallet } from "@privy-io/react-auth";
+import { token } from "@coral-xyz/anchor/dist/cjs/utils";
 
 const SWAP_HELPER_ADDRESS = process.env
   .NEXT_PUBLIC_SWAPHELPER_ADDRESS as `0x${string}`;
@@ -356,8 +357,19 @@ export const calculateDepositOutput = async (
       500
     );
     amountAfterSwap = swapResult.amountOut;
+    console.log("amountAfterSwap", amountAfterSwap);
     // Calculate swap slippage in vault asset
-    const inputAmountInVaultAsset = BigInt(Math.floor((Number(inputAmount) / 10 ** (zcInputToken.decimals ?? 18)) * inputTokenPrice * 10 ** vaultData.inputToken.decimals));
+    console.log("zcInputToken decimals", zcInputToken.decimals);
+    let inputAmountInVaultAsset: bigint;
+    console.log("zcInputToken symbol", zcInputToken.symbol);
+    if (isStablecoin(zcInputToken.symbol)) {
+      console.log("Stablecoin detected, using vaultTokenPrice for slippage calculation");
+      inputAmountInVaultAsset = BigInt(Math.floor((Number(inputAmount) / 10 ** (zcInputToken.decimals ?? 18)) / vaultTokenPrice * 10 ** vaultData.inputToken.decimals));
+    } else {
+      console.log("Non-stablecoin detected, using vaultTokenPrice for slippage calculation");
+      inputAmountInVaultAsset = BigInt(Math.floor((Number(inputAmount) / 10 ** (zcInputToken.decimals ?? 18)) * inputTokenPrice * 10 ** vaultData.inputToken.decimals));
+    }
+    console.log("inputAmountInVaultAsset", inputAmountInVaultAsset);
     swapSlippage = inputAmountInVaultAsset > amountAfterSwap ? inputAmountInVaultAsset - amountAfterSwap : 0n;
   }
 
@@ -440,4 +452,8 @@ export const calculateDepositOutput = async (
     needsTokenSwap,
     needsGasFee: gasFeeResult.needsDeduction,
   };
-}; 
+};
+
+// const isStablecoin = (token: Token): boolean => {
+//   return token.symbol === "USDC" || token.symbol === "USDT" || token.symbol === "USDC.ETH" || token.symbol === "USDT.ETH";
+// };
