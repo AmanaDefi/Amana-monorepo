@@ -42,8 +42,6 @@ export const useMaxAmount = ({
       handleChangeInput({
         currentTarget: { value: tokenBalance.formatted },
       } as React.ChangeEvent<HTMLInputElement>);
-      // setInputBalance(tokenBalance);
-      // setDisplayValue(tokenBalance.formatted);
 
       updateLocalStorageObject(vaultId, {
         inputBal: JSON.stringify(tokenBalance, bigIntReplacer),
