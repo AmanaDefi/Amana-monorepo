@@ -63,13 +63,14 @@ const ConnectChosenChain = () => {
   } = useConnect({
     mutation: {
       onSuccess: async (result) => {
-        if (fundWalletStep) {
-          setWalletAddress(result.accounts[0]);
-          localStorage.removeItem("connectorId");
-          closeAll();
-          return fundWalletConnect();
+        setWalletAddress(result.accounts[0]);
+        localStorage.removeItem("connectorId");
+
+        closeAll();
+
+        if (!fundWalletStep) {
+          successAuth(null, activeAccount || undefined, true);
         }
-        return successAuth(null, activeAccount || undefined, true);
       },
     },
   });
@@ -155,9 +156,12 @@ const ConnectChosenChain = () => {
     try {
       await connectSolana();
       select(connector.name);
+
+      closeAll();
     } catch (error) {
       console.error("Error during Solana wallet selection preparation:", error);
       setActiveConnector(null);
+      closeAll();
     }
   };
 
