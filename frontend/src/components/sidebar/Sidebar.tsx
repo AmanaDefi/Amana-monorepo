@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { usePathname } from "next/navigation";
 import AmanaLogo from "@public/logo/amanadefi/logo.svg";
 import { menuItems } from "@/constants/sidebarMenu";
@@ -69,46 +69,33 @@ const Sidebar = ({
       <div className="absolute top-[54px] left-[29px] z-20">
         <AmanaLogo width={78} height={53} className="w-[78px] h-[53px]" />
       </div>
-
-      <AnimatePresence>
-        {!isCollapsed && (
-          <motion.button
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{
-              duration: 0.4,
-              ease: "easeInOut",
-            }}
-            onClick={toggleSidebar}
-            className="absolute top-[54px] right-[29px] z-20 flex-shrink-0 p-1"
-          >
-            <CloseSidebarIcon width={20} height={20} />
-          </motion.button>
-        )}
-      </AnimatePresence>
+      {!isCollapsed && (
+        <button
+          onClick={toggleSidebar}
+          className="absolute top-[54px] right-[29px] z-20 flex-shrink-0 p-1  rounded-md transition-colors duration-200 group"
+        >
+          <CloseSidebarIcon width={20} height={20} />
+          <span className="absolute bottom-full right-0 mb-2 px-2 py-1 text-xs bg-gray-900 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
+            Minimise
+          </span>
+        </button>
+      )}
 
       <div className="text-white overflow-hidden">
         <div className="mb-[65px] h-[53px]"></div>
-
-        <AnimatePresence>
-          {isCollapsed && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={{
-                duration: 0.4,
-                ease: "easeInOut",
-              }}
-              className="absolute z-10 top-[160px] right-3"
+        {isCollapsed && (
+          <div className="absolute z-10 top-[160px] right-3">
+            <button
+              onClick={toggleSidebar}
+              className="p-1  rounded-md transition-colors duration-200 group"
             >
-              <button onClick={toggleSidebar}>
-                <OpenSidebarIcon width={20} height={20} />
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              <OpenSidebarIcon width={20} height={20} />
+              <span className="absolute bottom-full right-0 mb-2 px-2 py-1 text-xs bg-gray-900 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
+                Maximise
+              </span>
+            </button>
+          </div>
+        )}
 
         <div className="mb-8 overflow-hidden">
           <motion.div
