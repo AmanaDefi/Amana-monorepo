@@ -54,6 +54,7 @@ const ConnectChosenChain = () => {
 
   const fundWalletConnect = () => {
     setStep("selectChain");
+    closeAll();
   };
 
   const {

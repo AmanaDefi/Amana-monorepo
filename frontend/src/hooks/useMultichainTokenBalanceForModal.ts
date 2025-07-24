@@ -40,11 +40,11 @@ export const useMultichainTokenBalanceForModal = (
   const MAX_RETRIES = 3;
 
   // Auto-set Solana balance for Solana chains
-  useEffect(() => {
-    if (currentChain?.name === "Solana") {
-      setBalance(solanaBalance);
-    }
-  }, [currentChain?.name, solanaBalance.formatted]);
+ useEffect(() => {
+   if (currentChain?.name === "Solana" && currentToken?.isNative) {
+     setBalance(solanaBalance);
+   }
+ }, [currentChain?.name, currentToken?.isNative, solanaBalance.formatted]);
 
   const internalFetchBalance = useCallback(async () => {
     console.log("internalFetchBalance");
