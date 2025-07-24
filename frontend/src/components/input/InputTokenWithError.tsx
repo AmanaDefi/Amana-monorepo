@@ -238,7 +238,14 @@ export default function InputTokenWithError({
               topSectionData.maxButtonPosition === "left" && (
                 <button
                   onClick={onMaxClick}
-                  className={`text-[#3E73C4] hover:underline font-normal text-xs md:text-sm text-start ${!isDeposit ? "-ml-2" : ""}`}
+                  disabled={loadingOutputToken || disabled} 
+                  className={`font-normal text-xs md:text-sm text-start transition-colors duration-200 ${
+                    !isDeposit ? "-ml-2" : ""
+                  } ${
+                    loadingOutputToken || disabled
+                      ? "text-[#535E73] cursor-not-allowed opacity-50" 
+                      : "text-[#3E73C4] hover:underline hover:text-[#4A82D1] cursor-pointer"
+                  }`}
                 >
                   MAX
                 </button>

@@ -29,7 +29,11 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   const router = useRouter();
   const { isReady } = useInitializationStore();
 
-  const { walletAddress, activeChain, activeEvmWallet: activeAccount } = useMultiChain();
+  const {
+    walletAddress,
+    activeChain,
+    activeEvmWallet: activeAccount,
+  } = useMultiChain();
   const isConnected = !!walletAddress;
   const [isMenuOpened, setIsMenuOpened] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -163,9 +167,12 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
             {navLinks.map(({ label, href }) => (
               <span
                 key={href}
-                className={`cursor-pointer transition-all duration-300 font-normal text-white text-[16px] border rounded-lg px-[14px] py-[10px] flex items-center justify-center relative z-50 ${
-                  path === href ? "border-[#1B46E0]" : "border-transparent"
-                }`}
+                className={`cursor-pointer font-normal text-white text-[16px] border rounded-lg px-[14px] py-[10px] flex items-center justify-center relative z-50 
+        transition-all duration-200 ease-in-out
+        hover:scale-105 
+        active:scale-95
+        ${path === href ? "border-[#1B46E0]" : "border-transparent"}
+      `}
                 onClick={() => router.push(href)}
               >
                 {label}
