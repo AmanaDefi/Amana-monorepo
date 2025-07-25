@@ -349,13 +349,16 @@ export const calculateDepositOutput = async (
 
   if (zcInputToken?.address.toLowerCase() !== vaultData.inputToken.address.toLowerCase()) {
     needsTokenSwap = true;
+    console.log('[depositCalculations.ts] Calling getPathDataAndAmountOut', { inputAmount, zcInputToken, vaultData });
     const swapResult = await getPathDataAndAmountOut(
       inputAmount,
       zcInputToken,
       vaultData.inputToken,
       vaultData.id as Address,
-      500
+      500,
+      { inputTokenChainId: activeChain.id, outputTokenChainId: vaultData.protocol.chainId }
     );
+    console.log('[depositCalculations.ts] getPathDataAndAmountOut result', swapResult);
     amountAfterSwap = swapResult.amountOut;
     // Calculate swap slippage in vault asset
     let inputAmountInVaultAsset: bigint;

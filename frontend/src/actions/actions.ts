@@ -992,6 +992,7 @@ const getPathDataAndMinSharesOut = async (
       vaultData.inputToken,
       vaultData.id as Address,
       getCurrentSlippage(vaultData.id) * 100,
+      { inputTokenChainId: activeChain.id, outputTokenChainId: vaultData.protocol.chainId }
     );
     swapPath = encodedPath ?? "0x";
     assetsConversionAmount = amountOut;
@@ -1039,6 +1040,7 @@ const getPathDataAndMinAmountOut = async (
       outputToken,
       vaultData.id as Address,
       slippageBps,
+      { inputTokenChainId: vaultData.protocol.chainId, outputTokenChainId: vaultData.protocol.chainId }
     );
     swapPath = result.encodedPath ?? "0x";
   }
@@ -1217,6 +1219,7 @@ const executeCrossChainDeposit = async (
         vaultData.inputToken,
         vaultData.id as Address,
         getCurrentSlippage(vaultData.id) * 100,
+        { inputTokenChainId: activeChain.id, outputTokenChainId: vaultData.protocol.chainId }
       );
       swapPath = swapResult.encodedPath ?? "0x";
     }
@@ -1429,6 +1432,7 @@ const executeSolanaDeposit = async (
         vaultData.inputToken,
         vaultData.id as Address,
         getCurrentSlippage(vaultData.id) * 100,
+        { inputTokenChainId: activeChain.id, outputTokenChainId: vaultData.protocol.chainId }
       );
       swapPath = swapResult.encodedPath ?? "0x";
     }
@@ -2306,67 +2310,133 @@ export const getBeamTokenId = async (
   }
 };
 
+// Zuno API base URL
+const ZUNO_API_BASE = "https://cross-chain-zetachain-server.zunodex.xyz";
+
+/**
+ * Get token info from Zuno tokenlist endpoint
+ */
+async function getZunoTokenInfo(tokenAddress: string, chainId: number) {
+  try {
+    const resp = await axios.get(`${ZUNO_API_BASE}/api/cross_chain/tokenlist`, {
+      params: { chainId: String(chainId) },
+    });
+    console.log('[actions.ts] Zuno tokenlist response:', resp.data);
+    const tokens = resp.data?.data || [];
+    const found = tokens.find(
+      (t: any) => t.address.toLowerCase() === tokenAddress.toLowerCase()
+    );
+    if (!found) {
+      console.warn('[actions.ts] Token not found in Zuno tokenlist', { tokenAddress, chainId, tokens });
+    } else {
+      console.log('[actions.ts] Token found in Zuno tokenlist', found);
+    }
+    return found;
+  } catch (e) {
+    console.warn('[actions.ts] Error fetching Zuno tokenlist', e);
+    return null;
+  }
+}
+
+/**
+ * Get swap path and amount out using Zuno (fallback to Beam if Zuno fails)
+ */
 export const getPathDataAndAmountOut = async (
   amount: bigint,
   inputToken: Token,
   outputToken: Token,
   userAddress: string,
   slippage: Number,
+  context?: { inputTokenChainId?: number; outputTokenChainId?: number }
 ): Promise<{ encodedPath: `0x${string}` | null; amountOut: bigint }> => {
-  const [inputTokenId, outputTokenId] = await Promise.all([
-    getBeamTokenId(inputToken.address),
-    getBeamTokenId(outputToken.address),
-  ]);
-
-  if (!inputTokenId || !outputTokenId) {
-    return { encodedPath: null, amountOut: BigInt(0) };
-  }
-
-  const swapDetails: swap.native.getSwapData.Input = {
-    tokenAId: inputTokenId,
-    tokenBId: outputTokenId,
-    slippage: Number(slippage),
-    amount: formatUnits(amount, inputToken.decimals),
-    sender: userAddress,
-    recipient: userAddress,
-  };
-
+  // Derive chainId for tokens
+  const inputTokenChainId = (inputToken as any).chainId || context?.inputTokenChainId;
+  const outputTokenChainId = (outputToken as any).chainId || context?.outputTokenChainId;
+  // Try Zuno first
   try {
-    const beamQuote = (await swap.native.getSwapData(
-      beamConnection,
-      swapDetails,
-    )) as {
-      data?: {
+    console.log('[actions.ts] Attempting Zuno swap/quote', { inputTokenChainId, outputTokenChainId, inputToken, outputToken });
+    // 1. Get token info for both tokens
+    const [inputTokenInfo, outputTokenInfo] = await Promise.all([
+      getZunoTokenInfo(inputToken.address, inputTokenChainId),
+      getZunoTokenInfo(outputToken.address, outputTokenChainId),
+    ]);
+    if (!inputTokenInfo || !outputTokenInfo) throw new Error("Zuno token info missing");
+    // 2. Get quote from Zuno
+    const quoteResp = await axios.get(`${ZUNO_API_BASE}/api/cross_chain/routes`, {
+      params: {
+        fromChainId: inputTokenChainId,
+        toChainId: outputTokenChainId,
+        fromTokenAddress: inputToken.address,
+        toTokenAddress: outputToken.address,
+        fromAmount: amount.toString(),
+        fromAddress: userAddress,
+        toAddress: userAddress,
+        slippage: Number(slippage) / 10000, // Zuno expects decimal (e.g. 0.005 for 0.5%)
+      },
+    });
+    const quote = quoteResp.data?.data;
+    if (!quote?.encodeParams?.interfaceParams) throw new Error("Zuno quote missing encodeParams");
+    // 3. Get encoded calldata from Zuno
+    const encodeResp = await axios.post(`${ZUNO_API_BASE}/api/cross_chain/transaction/encode`, {
+      interfaceParams: quote.encodeParams.interfaceParams,
+    });
+    const encodedPath = encodeResp.data?.data?.data;
+    const amountOut = BigInt(quote.toAmount);
+    if (!encodedPath) throw new Error("Zuno encode missing data");
+    console.log('[actions.ts] Zuno call successful');
+    return { encodedPath, amountOut };
+  } catch (zunoErr) {
+    console.warn('[actions.ts] Zuno call failed, falling back to Beam', zunoErr);
+    // Fallback to Beam logic
+    try {
+      const [inputTokenId, outputTokenId] = await Promise.all([
+        getBeamTokenId(inputToken.address),
+        getBeamTokenId(outputToken.address),
+      ]);
+      if (!inputTokenId || !outputTokenId) {
+        return { encodedPath: null, amountOut: BigInt(0) };
+      }
+      const swapDetails: swap.native.getSwapData.Input = {
+        tokenAId: inputTokenId,
+        tokenBId: outputTokenId,
+        slippage: Number(slippage),
+        amount: formatUnits(amount, inputToken.decimals),
+        sender: userAddress,
+        recipient: userAddress,
+      };
+      const beamQuote = (await swap.native.getSwapData(
+        beamConnection,
+        swapDetails,
+      )) as {
         data?: {
-          path?: string[];
-          expectedAmountOut?: number;
+          data?: {
+            path?: string[];
+            expectedAmountOut?: number;
+          };
         };
       };
-    };
-
-    const path = beamQuote.data?.data?.path;
-    const expectedAmountOut = beamQuote.data?.data?.expectedAmountOut;
-    if (expectedAmountOut == null) {
-      throw new Error("Beam quote is missing expectedAmountOut");
+      const path = beamQuote.data?.data?.path;
+      const expectedAmountOut = beamQuote.data?.data?.expectedAmountOut;
+      if (expectedAmountOut == null) {
+        throw new Error("Beam quote is missing expectedAmountOut");
+      }
+      if (!path || !Array.isArray(path) || path.length < 2) {
+        throw new Error("Beam quote returned invalid path");
+      }
+      const encodedPath = solidityPacked(
+        Array(path.length).fill("address"),
+        path,
+      ) as `0x${string}`;
+      const amountOutRaw = parseUnits(expectedAmountOut.toString(), outputToken.decimals);
+      console.log('[actions.ts] Beam call successful');
+      return {
+        encodedPath,
+        amountOut: BigInt(amountOutRaw),
+      };
+    } catch (beamErr) {
+      console.warn('[actions.ts] Beam call failed', beamErr);
+      return { encodedPath: null, amountOut: BigInt(0) };
     }
-
-    if (!path || !Array.isArray(path) || path.length < 2) {
-      throw new Error("Beam quote returned invalid path");
-    }
-
-    const encodedPath = solidityPacked(
-      Array(path.length).fill("address"),
-      path,
-    ) as `0x${string}`;
-
-    const amountOutRaw = parseUnits(expectedAmountOut.toString(), outputToken.decimals);
-
-    return {
-      encodedPath,
-      amountOut: BigInt(amountOutRaw),
-    };
-  } catch (e: any) {
-    return { encodedPath: null, amountOut: BigInt(0) };
   }
 };
 

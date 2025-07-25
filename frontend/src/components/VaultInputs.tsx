@@ -815,13 +815,16 @@ if (isDeposit && (inputToken && (inputTokenPrice === 0 || inputTokenPrice === un
 
       let tokenConversionAmount = assetsAmount;
       if (actualInputToken.address.toLowerCase() !== vaultData.inputToken.address.toLowerCase()) {
+        console.log('[VaultInputs.tsx] Calling getPathDataAndAmountOut', { assetsAmount, vaultData, actualInputToken });
         const result = await getPathDataAndAmountOut(
           assetsAmount,
           vaultData.inputToken,
           actualInputToken,
           vaultData.id as Address,
           userSlippage * 100,
+          { inputTokenChainId: vaultData.protocol.chainId, outputTokenChainId: (actualInputToken as any).chainId || vaultData.protocol.chainId }
         );
+        console.log('[VaultInputs.tsx] getPathDataAndAmountOut result', result);
         tokenConversionAmount = result.amountOut;
       }
 
