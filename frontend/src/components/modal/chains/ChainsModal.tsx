@@ -24,6 +24,7 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import { AppButton } from "@/components/button/AppButton";
 import { zetachain } from "viem/chains";
 import { useAuthStore } from "@/store/authStore";
+import { useWallets } from "@privy-io/react-auth";
 
 const containerVariants = {
   hidden: { opacity: 0 },
