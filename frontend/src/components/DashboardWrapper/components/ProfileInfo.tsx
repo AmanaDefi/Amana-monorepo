@@ -9,7 +9,8 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import { AppModals } from "@/components/modal/AppModals";
 
 const ProfileInfo = () => {
-  const { walletAddress, balance, activeChain } = useMultiChain();
+  const { walletAddress, balance, activeChain, isWalletSwitching } =
+    useMultiChain();
   const isConnected = !!walletAddress;
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -51,10 +52,16 @@ const ProfileInfo = () => {
               Total Portfolio
             </p>
             <div className="text-[32px] font-normal md:font-medium md:text-[24px]">
-              {balance?.formatted && Number(balance.formatted) > 0
-                ? Number(balance.formatted).toFixed(4)
-                : "0"}{" "}
-              {activeChain?.nativeCurrency?.symbol || ""}
+              {isWalletSwitching ? (
+                <div className="animate-spin w-6 h-6 border-2 border-white border-t-transparent rounded-full" />
+              ) : (
+                <>
+                  {balance?.formatted && Number(balance.formatted) > 0
+                    ? Number(balance.formatted).toFixed(4)
+                    : "0"}{" "}
+                  {activeChain?.nativeCurrency?.symbol || ""}
+                </>
+              )}
             </div>
             {/* <p
               className={`md:hidden ${205.6 > 0 ? "text-[#05D47F]" : "text-white"}`}

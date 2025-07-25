@@ -62,6 +62,7 @@ interface MultiChainContextType {
   refetchBalance: (address: string) => Promise<Balance | undefined>;
   evmDisconnect: () => Promise<void>;
   activeEvmWallet: ConnectedWallet;
+  isWalletSwitching: boolean;
 }
 
 const MultiChainContext = createContext<MultiChainContextType | undefined>(
@@ -84,6 +85,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const { publicKey, disconnect, connected } = useWallet();
   const [balance, setBalance] = useState({ value: 0n, formatted: "0" });
   const { connectors } = useConnect();
+  const [isWalletSwitching, setIsWalletSwitching] = useState(false);
   const { disconnectAsync } = useDisconnect();
 
   const {
@@ -177,10 +179,14 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
 
   const evmDisconnect = useCallback(async () => {
     console.log("evm disconnect");
+    setIsWalletSwitching(true);
     try {
       await disconnectConnectors();
     } finally {
       await logout();
+      setTimeout(() => {
+        setIsWalletSwitching(false);
+      }, 800);
     }
   }, [logout, disconnectConnectors]);
 
@@ -645,6 +651,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         isModalOpen,
         setIsModalOpen,
         switchToChain,
+        isWalletSwitching,
         refetchBalance: getEvmBalance,
         evmDisconnect: evmDisconnect,
         activeEvmWallet: privyWallet,
