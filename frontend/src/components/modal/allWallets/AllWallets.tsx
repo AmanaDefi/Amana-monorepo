@@ -71,7 +71,6 @@ const AllWAllets = () => {
       onSuccess: (result) => {
         if (fundWalletStep === "connectWallet") {
           setWalletAddress(result.accounts[0]);
-          localStorage.removeItem("connectorId");
           return fundWalletConnect();
         }
 
@@ -114,7 +113,6 @@ const AllWAllets = () => {
 
           if (error.name === "ConnectorAlreadyConnectedError") {
             connector.disconnect();
-            localStorage.removeItem("connectorId");
             disconnectAsync({ connector });
 
             setActiveConnector(null);

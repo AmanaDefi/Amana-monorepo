@@ -95,6 +95,7 @@ const handleDepositTransaction = async (
       (receipt?.status && receipt?.status !== "success")
     ) {
       setFailedOnConfirmation(true);
+      updateLocalStorageObject(vaultData.id, null);
       throw new Error("Failed Tx");
     }
 
@@ -267,6 +268,7 @@ const handleWithdrawTransaction = async (
       (receipt?.status && receipt?.status !== "success")
     ) {
       setFailedOnConfirmation(true);
+      updateLocalStorageObject(vaultData.id, null);
       throw new Error("Failed Tx");
     }
 
@@ -378,6 +380,7 @@ export default function InteractionContainer({
     finishedTransaction,
     isTransactionProcessing,
     setIsTransactionProcessing,
+    setIsFailedOnCOnfirmation,
 
     setCurrentInputBalance,
     setCurrentErrorMessage,
@@ -537,6 +540,7 @@ export default function InteractionContainer({
       `[Transaction Complete] Setting final action to ${finalAction}`,
     );
     setAction(finalAction);
+    setIsFailedOnCOnfirmation(false);
 
     // 3. Trigger the completed UI state with "Done" button
     setFinishedTransaction(true);
@@ -546,15 +550,7 @@ export default function InteractionContainer({
     setIsTransactionStarted(false);
     setCrosschainInvestHash("");
     setcrossChainTxId("");
-    updateLocalStorageObject(vaultData.id, {
-      action: finalAction,
-      isTransactionProcessing: false,
-      isTransactionStarted: false,
-      crosschainInvestHash: "",
-      crossChainTxId: "",
-      finishedTransaction: true,
-      lastTransactionStepFeedback: feedbackSnapshot,
-    });
+    updateLocalStorageObject(vaultData.id, null);
 
     // 5. Save the final feedback state for display
     setLastTransactionStepFeedback(feedbackSnapshot);
@@ -584,6 +580,7 @@ export default function InteractionContainer({
         isTransactionStarted: false,
         step: 0,
       });
+      setIsFailedOnCOnfirmation(false);
     }
 
     if (
@@ -638,6 +635,7 @@ export default function InteractionContainer({
           setAction(finalAction);
           setStep(nextStep);
           setFinishedTransaction(true);
+          updateLocalStorageObject(vaultData.id, null);
 
           setTransactionCompleted(true);
 
@@ -762,12 +760,8 @@ export default function InteractionContainer({
           setFinishedTransaction(true);
           setIsTransactionProcessing(false);
 
-          updateLocalStorageObject(vaultData.id, {
-            step: actionMapping.length - 1,
-            action: finalAction,
-            finishedTransaction: true,
-            isTransactionProcessing: false,
-          });
+          updateLocalStorageObject(vaultData.id, null);
+          setIsFailedOnCOnfirmation(false);
 
           setTransactionCompleted(true);
 
@@ -784,13 +778,7 @@ export default function InteractionContainer({
         } else {
           useTransactionStore.setState((prev) => {
             setLastTransactionStepFeedback(prev.transactionStepFeedback);
-            updateLocalStorageObject(vaultData.id, {
-              transactionStepFeedback: prev.transactionStepFeedback,
-              lastTransactionStepFeedback: prev.transactionStepFeedback,
-              finishedTransaction: true,
-              isTransactionProcessing: false,
-              isTransactionStarted: false,
-            });
+            updateLocalStorageObject(vaultData.id, null);
 
             return { transactionStepFeedback: prev.transactionStepFeedback };
           });
@@ -1295,16 +1283,7 @@ function Interaction({
     setCrosschainInvestHash("");
     setcrossChainTxId("");
 
-    updateLocalStorageObject(vaultData?.id, {
-      lastTransactionStepFeedback: {},
-      transactionStepFeedback: {},
-      finishedTransaction: false,
-      transactionCompleted: false,
-      isTransactionProcessing: false,
-      isTransactionStarted: false,
-      crosschainInvestHash: "",
-      crossChainTxId: "",
-    });
+    updateLocalStorageObject(vaultData.id, null);
 
     // Reactivate component after clearing
     setTimeout(() => {

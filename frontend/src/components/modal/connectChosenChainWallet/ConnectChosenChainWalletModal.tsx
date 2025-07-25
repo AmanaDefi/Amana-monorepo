@@ -55,7 +55,6 @@ const ConnectChosenChain = () => {
       onSuccess: async (result) => {
         if (fundWalletStep === "reconnectChain") {
           setWalletAddress(result.accounts[0]);
-          localStorage.removeItem("connectorId");
           return fundWalletConnect();
         }
         return successAuth(null, activeAccount || undefined, true);
@@ -95,7 +94,6 @@ const ConnectChosenChain = () => {
 
           if (error.name === "ConnectorAlreadyConnectedError") {
             connector.disconnect();
-            localStorage.removeItem("connectorId");
 
             setActiveConnector(null);
             showInfoToast("Please try to connect wallet again");

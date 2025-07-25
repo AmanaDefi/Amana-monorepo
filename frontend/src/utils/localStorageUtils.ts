@@ -1,10 +1,10 @@
 import { ITxLocalStorage } from "@/types/types";
 
-export const VAULTS_INFO_KEY = 'vaultsInfo';
+export const VAULTS_INFO_KEY = "vaultsInfo";
 
 export function updateLocalStorageObject(
   subKey: string,
-  partialData: Partial<ITxLocalStorage>,
+  partialData: Partial<ITxLocalStorage> | null,
 ): boolean {
   if (typeof window === "undefined" || !window?.localStorage) {
     return false;
@@ -27,7 +27,7 @@ export function updateLocalStorageObject(
         } else {
           console.warn(
             `Found invalid data for key "${VAULTS_INFO_KEY}" in localStorage. ` +
-            `Starting with an empty object for vaults data.`
+              `Starting with an empty object for vaults data.`,
           );
           vaultsData = {};
         }
@@ -35,30 +35,33 @@ export function updateLocalStorageObject(
         console.error(
           `Error parsing existing data for key "${VAULTS_INFO_KEY}" from localStorage. ` +
             `A new object will be created. Original error:`,
-          error
+          error,
         );
-        vaultsData = {}; 
+        vaultsData = {};
       }
     }
-    vaultsData[subKey] = {
-      ...(vaultsData[subKey] || {}),
-      ...partialData,
-    };
+
+    if (!partialData) {
+      vaultsData[subKey] = {};
+    } else {
+      vaultsData[subKey] = {
+        ...(vaultsData[subKey] || {}),
+        ...partialData,
+      };
+    }
 
     localStorage.setItem(VAULTS_INFO_KEY, JSON.stringify(vaultsData));
-    return true; 
+    return true;
   } catch (error) {
     console.error(
       `Failed to update localStorage for key "${VAULTS_INFO_KEY}" (subKey: "${subKey}"). Error:`,
-      error
+      error,
     );
     return false;
   }
 }
 
-export function getLocalStorageObject(
-  subKey: string, 
-): ITxLocalStorage | null {
+export function getLocalStorageObject(subKey: string): ITxLocalStorage | null {
   if (typeof window === "undefined" || !window?.localStorage) {
     return null;
   }
@@ -82,14 +85,14 @@ export function getLocalStorageObject(
         parsedVaultsData = parsedData;
       } else {
         console.warn(
-          `Found invalid data format for key "${VAULTS_INFO_KEY}" in localStorage. Expected an object.`
+          `Found invalid data format for key "${VAULTS_INFO_KEY}" in localStorage. Expected an object.`,
         );
-        return null; 
+        return null;
       }
     } catch (parseError) {
       console.error(
         `Error parsing data for key "${VAULTS_INFO_KEY}" from localStorage:`,
-        parseError
+        parseError,
       );
       return null;
     }
@@ -108,7 +111,7 @@ export function getLocalStorageObject(
   } catch (error) {
     console.error(
       `Failed to retrieve from localStorage for key "${VAULTS_INFO_KEY}" (subKey: "${subKey}"). Error:`,
-      error
+      error,
     );
     return null;
   }
@@ -116,6 +119,7 @@ export function getLocalStorageObject(
 
 export const CheckTheTxIsInProgress = (vaultId: string) => {
   const TxVaultInfo = getLocalStorageObject(vaultId);
+  console.log(TxVaultInfo);
   return (
     !!TxVaultInfo &&
     (TxVaultInfo?.crosschainInvestHash?.length > 0 ||

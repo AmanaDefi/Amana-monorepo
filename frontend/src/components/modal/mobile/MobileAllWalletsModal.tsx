@@ -62,7 +62,6 @@ const MobileAllWallets = () => {
       onSuccess: (result) => {
         if (fundWalletStep === "connectWallet") {
           setWalletAddress(result.accounts[0]);
-          localStorage.removeItem("connectorId");
           return fundWalletConnect();
         }
         return successAuth(walletAddress, activeAccount || undefined, true);
@@ -109,7 +108,6 @@ const MobileAllWallets = () => {
             );
             if (connectedConnector) {
               connectedConnector.disconnect();
-              localStorage.removeItem("connectorId");
               setActiveConnector(null);
             }
             showInfoToast("Please try to connect wallet again");
