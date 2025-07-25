@@ -41,9 +41,9 @@ const teamData = [
   },
   {
     id: 5,
-    name: "Valentine Zlenko",
-    position: "BD & Growth",
-    image: "/team/Valentine.png",
+    name: "Jose Neto",
+    position: "Smart Contract Engineer",
+    image: "/team/Jose.png",
     linkedin: "#",
     twitter: "#",
   },
