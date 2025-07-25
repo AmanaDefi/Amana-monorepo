@@ -46,7 +46,10 @@ import { ConnectedWallet } from "@privy-io/react-auth";
 import { useAuthStore } from "@/store/authStore";
 import { zetachain } from "viem/chains";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { useTokenPrices, TokenPriceContextType} from "@/providers/TokenPriceProvider";
+import {
+  useTokenPrices,
+  TokenPriceContextType,
+} from "@/providers/TokenPriceProvider";
 
 function isHex(value: string): value is `0x${string}` {
   return typeof value === "string" && value.startsWith("0x");
@@ -1090,7 +1093,7 @@ function Interaction({
 
     if (
       action == Action.withdraw &&
-      actions[step + 1] == Action.withdrawconfirmed
+      actions[step + 1] == Action.withdrawconfirmed && success
     ) {
       const isUserOnZetachain = isZetachain(activeChain?.id);
       const isVaultOnZetachain = isZetachain(vaultData.protocol.chainId);

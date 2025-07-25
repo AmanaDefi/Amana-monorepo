@@ -161,8 +161,8 @@ const AllWAllets = () => {
     } catch (error) {
       console.log(error);
 
-      if (connector.connected) {
-        connector.disconnect();
+      if (connected) {
+        disconnect();
 
         setActiveConnector(null);
         showInfoToast("Please try to connect wallet again");
