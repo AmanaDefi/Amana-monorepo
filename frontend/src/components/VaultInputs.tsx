@@ -814,7 +814,7 @@ if (isDeposit && (inputToken && (inputTokenPrice === 0 || inputTokenPrice === un
       if (!actualInputToken) return;
 
       let tokenConversionAmount = assetsAmount;
-      if (actualInputToken.address !== vaultData.inputToken.address) {
+      if (actualInputToken.address.toLowerCase() !== vaultData.inputToken.address.toLowerCase()) {
         const result = await getPathDataAndAmountOut(
           assetsAmount,
           vaultData.inputToken,
