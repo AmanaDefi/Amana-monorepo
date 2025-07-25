@@ -3,15 +3,16 @@
 import ChainTokenSelector from "@/components/input/ChainTokenSelector";
 import InputNumber from "@/components/input/InputNumber";
 import WarningIcon from "@/components/svg/WarningIcon";
-import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useFundWalletStore } from "@/store/fundWalletStore";
-import { Balance, Token } from "@/types/types";
+import { Token } from "@/types/types";
 import { useWallets } from "@privy-io/react-auth";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useMultichainTokenBalanceForModal } from "@/hooks/useMultichainTokenBalanceForModal";
+import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import clsx from "clsx";
 import { Dispatch, SetStateAction, useEffect, useMemo } from "react";
 import { MiniSpinner } from "@/components/PendingDots";
+import { formatTokenBalanceUSD } from "@/utils/tokenFormat";
 
 export const DepositInput = ({
   setError,
@@ -36,10 +37,7 @@ export const DepositInput = ({
     (wallet) => wallet.meta.id !== "app.phantom",
   );
 
-  // const [tokenBalance, setTokenBalance] = useState<Balance>(EMPTY_BALANCE);
-  // const { activeEvmWallet: activeWallet } = useMultiChain();
-    const activeWallet = filteredWallets[0];
-
+  const activeWallet = filteredWallets[0];
 
   const walletAddressForBalance = useMemo(() => {
     let result;
@@ -60,14 +58,27 @@ export const DepositInput = ({
   const { balance: tokenBalance, isLoading } =
     useMultichainTokenBalanceForModal(currency, chain, walletAddressForBalance);
 
+  const selectedTokenPrice = useTokenPriceBySymbol(currency?.symbol);
+
+  const balanceUsdValue = useMemo(() => {
+    if (!currency || !tokenBalance?.formatted) {
+      return "$0.00";
+    }
+    return formatTokenBalanceUSD(
+      tokenBalance.formatted,
+      currency.symbol,
+      selectedTokenPrice,
+    );
+  }, [tokenBalance?.formatted, selectedTokenPrice, currency]);
+
   useEffect(() => {
     setError("");
-    setDepositAmount("");
+    setDepositAmount("0.00");
   }, [chain, setDepositAmount, setError]);
 
   useEffect(() => {
     setError("");
-    setDepositAmount("");
+    setDepositAmount("0.00");
   }, [currency, setError, setDepositAmount]);
 
   const onTokenSelect = (token: Token) => {
@@ -131,7 +142,7 @@ export const DepositInput = ({
               {isLoading ? (
                 <MiniSpinner size={12} color="#1B46E0" />
               ) : (
-                Number(tokenBalance?.formatted ?? "").toFixed(4)
+                `${balanceUsdValue}`
               )}
             </p>
           </div>
