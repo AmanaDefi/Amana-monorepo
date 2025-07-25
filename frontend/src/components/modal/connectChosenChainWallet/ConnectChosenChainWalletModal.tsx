@@ -98,15 +98,17 @@ const ConnectChosenChain = () => {
       {
         onError: (error) => {
           console.log(error);
+          setActiveConnector(null);
 
-          if (error.name === "ConnectorAlreadyConnectedError") {
+          if (error.name === "UserRejectedRequestError") {
+            showInfoToast(
+              "Connection cancelled. Please try again.",
+            );
+          } else if (error.name === "ConnectorAlreadyConnectedError") {
             connector.disconnect();
             localStorage.removeItem("connectorId");
-
-            setActiveConnector(null);
             showInfoToast("Please try to connect wallet again");
           } else {
-            setActiveConnector(null);
             showInfoToast(
               `EVM connection failed: ${error.message || "Unknown error"}`,
             );
