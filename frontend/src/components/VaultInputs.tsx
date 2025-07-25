@@ -204,7 +204,7 @@ export default function VaultInputs({
     clearDepositCalculationCache,
     setLastTransactionStepFeedback,
     setTransactionStepFeedback,
-    setIsFailedOnCOnfirmation
+    setIsFailedOnCOnfirmation,
   } = useTransactionStore();
 
   const { isOpen, setSelectedTokenFromModal, selectedTokenFromModal } =
@@ -401,151 +401,125 @@ export default function VaultInputs({
     }
   }, [inputToken, selectChain, vaultData.id]);
 
-useEffect(() => {
-  const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
+  useEffect(() => {
+    const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
 
-  if (!inputToken || isTxInProgress) {
-    return;
-  }
-
-  if (loadingOutputToken) {
-    setErrorMessage("");
-    return;
-  }
-
-  if (isDeposit) {
-    setErrorMessage(
-      getVaultErrorMessage(
-        inputBalance.formatted, 
-        tokenBalance.formatted, 
-        steps,
-        vaultData,
-        inputTokenPrice,
-        isDeposit,
-      ),
-    );
-  } else {
-    const availableBalanceForWithdrawal = userVaultBalance?.formatted || "0";
-
-    setErrorMessage(
-      getVaultErrorMessage(
-        inputBalance.formatted,
-        availableBalanceForWithdrawal,
-        steps,
-        vaultData,
-        vaultTokenPrice,
-        isDeposit,
-      ),
-    );
-  }
-}, [
-  inputToken,
-  inputBalance.formatted,
-  isDeposit,
-  vaultData,
-  steps,
-  inputTokenPrice,
-  vaultTokenPrice,
-  loadingOutputToken,
-  userVaultBalance?.formatted,
-  tokenBalance.formatted,
-]);
-
-  const isButtonDisabled = useMemo(async () => {
-    if (
-      !inputBalance.formatted ||
-      inputBalance.formatted === "0" ||
-      inputBalance.formatted === "0.00" ||
-      Number(inputBalance.formatted) <= 0
-    ) {
-      setIsButtonDisabled(true);
-      return true;
+    if (!inputToken || isTxInProgress) {
+      return;
     }
 
     if (loadingOutputToken) {
-      setIsButtonDisabled(true);
-      return true;
-    }
-
-    if (errorMessage || outputBoxErrorMessage) {
-      setIsButtonDisabled(true);
-      return true;
+      setErrorMessage("");
+      return;
     }
 
     if (isDeposit) {
-      if (Number(inputBalance.value) > Number(tokenBalance.value)) {
-        setIsButtonDisabled(true);
-        return true;
-      }
-    } else {
-      if (!walletAddress) {
-        setIsButtonDisabled(true);
-        return true;
-      }
-      const maxWithdrawAmount = await fetchUserVaultMaxWithdraw(
-        vaultData.inputToken.decimals,
-        walletAddress,
-        vaultData.id,
+      setErrorMessage(
+        getVaultErrorMessage(
+          inputBalance.formatted,
+          tokenBalance.formatted,
+          steps,
+          vaultData,
+          inputTokenPrice,
+          isDeposit,
+        ),
       );
-      if (Number(inputBalance.formatted) > Number(maxWithdrawAmount)) {
+    } else {
+      const checkWithdrawError = async () => {
+        if (!walletAddress) return;
+
+        const maxWithdrawAmount = await fetchUserVaultMaxWithdraw(
+          vaultData.inputToken.decimals,
+          walletAddress,
+          vaultData.id,
+        );
+        console.log("WITHDRAW ERROR CHECK (FIXED):", {
+          inputBalance: inputBalance.formatted,
+          maxWithdrawAmount,
+          comparison:
+            Number(inputBalance.formatted) > Number(maxWithdrawAmount),
+        });
+
+        setErrorMessage(
+          getVaultErrorMessage(
+            inputBalance.formatted,
+            maxWithdrawAmount,
+            steps,
+            vaultData,
+            vaultTokenPrice,
+            isDeposit,
+          ),
+        );
+      };
+
+      checkWithdrawError();
+    }
+  }, [
+    inputToken,
+    inputBalance.formatted,
+    isDeposit,
+    vaultData,
+    steps,
+    inputTokenPrice,
+    vaultTokenPrice,
+    loadingOutputToken,
+    userVaultBalance?.formatted,
+    tokenBalance.formatted,
+  ]);
+
+  useEffect(() => {
+    const checkButtonDisabled = async () => {
+      if (
+        !inputBalance.formatted ||
+        Number(inputBalance.formatted) <= 0 ||
+        loadingOutputToken ||
+        errorMessage ||
+        outputBoxErrorMessage ||
+        isSlippageExceedingLimit
+      ) {
         setIsButtonDisabled(true);
-        return true;
+        return;
       }
-    }
 
-    if (
-      isDeposit &&
-      !vaultData.depositFeePaidFromGasTank &&
-      debouncedInputBalance.value > 0n &&
-      Number(
-        conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, ""),
-      ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, ""))
-    ) {
-      setIsButtonDisabled(true);
-      return true;
-    }
-    if (
-      inputBalance.value > 0n &&
-      conversionOutput.outputAmountFormatted &&
-      Number(conversionOutput.outputAmountFormatted) === 0 &&
-      !(
-        isDeposit &&
-        !vaultData.depositFeePaidFromGasTank &&
-        debouncedInputBalance.value > 0n &&
-        Number(
-          conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, "") ??
-            0,
-        ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, "") ?? 0)
-      )
-    ) {
-      setIsButtonDisabled(true);
-      return true;
-    }
+      if (isDeposit) {
+        if (Number(inputBalance.value) > Number(tokenBalance.value)) {
+          setIsButtonDisabled(true);
+          return;
+        }
+      } else {
+        if (!walletAddress) {
+          setIsButtonDisabled(true);
+          return;
+        }
 
-    if (isSlippageExceedingLimit) {
-      setIsButtonDisabled(true);
-      return true;
-    }
-    setIsButtonDisabled(false);
-    return false;
+        const maxWithdrawAmount = await fetchUserVaultMaxWithdraw(
+          vaultData.inputToken.decimals,
+          walletAddress,
+          vaultData.id,
+        );
+
+        if (Number(inputBalance.formatted) > Number(maxWithdrawAmount)) {
+          setIsButtonDisabled(true);
+          return;
+        }
+      }
+
+      setIsButtonDisabled(false);
+    };
+
+    checkButtonDisabled();
   }, [
     inputBalance.formatted,
-    inputBalance.value,
     loadingOutputToken,
     errorMessage,
     outputBoxErrorMessage,
+    isSlippageExceedingLimit,
     isDeposit,
     tokenBalance.value,
-    vaultData.depositFeePaidFromGasTank,
-    debouncedInputBalance.value,
-    conversionOutput.inputAmountInUSDFormatted,
-    conversionOutput.gasFeeInUSD,
-    conversionOutput.outputAmountFormatted,
-    isSlippageExceedingLimit,
-    setIsButtonDisabled,
     walletAddress,
     vaultData.id,
     vaultData.inputToken.decimals,
+    setIsButtonDisabled,
   ]);
 
   // Watch input balance and trigger steps config selection
@@ -634,7 +608,7 @@ useEffect(() => {
 
     setLastTransactionStepFeedback({});
     setTransactionStepFeedback({});
-    setIsFailedOnCOnfirmation(false)
+    setIsFailedOnCOnfirmation(false);
 
     // Only attempt to set steps if we have a token and chain
     if (inputToken && selectedChain) {
@@ -669,7 +643,7 @@ useEffect(() => {
 
       setLastTransactionStepFeedback({});
       setTransactionStepFeedback({});
-      setIsFailedOnCOnfirmation(false)
+      setIsFailedOnCOnfirmation(false);
 
       let value = e.currentTarget.value;
 
@@ -739,6 +713,10 @@ useEffect(() => {
       // convert string amt to bigint
       const newAmt = parseUnits(inputAmt, decimalsNumber);
 
+      if (Number(inputAmt) > 0) {
+        setLoadingOutputToken(true);
+      }
+
       setInputBalance({
         value: newAmt,
         formatted: inputAmt,
@@ -759,7 +737,14 @@ useEffect(() => {
         displayValue: inputAmt,
       });
     },
-    [inputToken, inputTokenPrice, isDeposit, vaultToken.decimals, vaultData.id, setInputBalance],
+    [
+      inputToken,
+      inputTokenPrice,
+      isDeposit,
+      vaultToken.decimals,
+      vaultData.id,
+      setInputBalance,
+    ],
   );
 
   const { handleMaxClick } = useMaxAmount({
@@ -773,6 +758,7 @@ useEffect(() => {
     handleChangeInput,
     walletAddress,
     vaultTokenDecimals: vaultData.inputToken.decimals,
+    setLoadingOutputToken,
   });
 
   const tokenList = useMemo(() => {

@@ -19,6 +19,7 @@ interface UseMaxAmountProps {
   handleChangeInput: (event: React.ChangeEvent<HTMLInputElement>) => void;
   walletAddress: string | null;
   vaultTokenDecimals: number;
+  setLoadingOutputToken: (loading: boolean) => void;
 }
 
 export const useMaxAmount = ({
@@ -31,12 +32,15 @@ export const useMaxAmount = ({
   setDisplayValue,
   handleChangeInput,
   walletAddress,
-  vaultTokenDecimals
+  vaultTokenDecimals,
+  setLoadingOutputToken,
 }: UseMaxAmountProps) => {
   const handleMaxClick = useCallback(async () => {
     const isTxInProgress = CheckTheTxIsInProgress(vaultId);
 
     if (!inputToken || isTxInProgress || !walletAddress) return;
+
+    setLoadingOutputToken(true);
 
     if (isDeposit) {
       handleChangeInput({
@@ -58,7 +62,6 @@ export const useMaxAmount = ({
       handleChangeInput({
         currentTarget: { value: maxValue },
       } as React.ChangeEvent<HTMLInputElement>);
-
     }
   }, [
     inputToken,
@@ -67,7 +70,8 @@ export const useMaxAmount = ({
     vaultId,
     handleChangeInput,
     walletAddress,
-    vaultTokenDecimals
+    vaultTokenDecimals,
+    setLoadingOutputToken,
   ]);
 
   const getMaxAmount = useCallback(async (): Promise<string> => {
