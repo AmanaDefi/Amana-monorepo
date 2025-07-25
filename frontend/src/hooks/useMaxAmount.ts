@@ -6,6 +6,7 @@ import {
   updateLocalStorageObject,
 } from "@/utils/localStorageUtils";
 import { bigIntReplacer } from "@/utils/utils";
+import { fetchUserVaultMaxWithdraw } from "@/actions/actions";
 
 interface UseMaxAmountProps {
   inputToken: Token | null | undefined;
@@ -16,6 +17,8 @@ interface UseMaxAmountProps {
   setInputBalance: (balance: Balance) => void;
   setDisplayValue: (value: string) => void;
   handleChangeInput: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  walletAddress: string | null;
+  vaultTokenDecimals: number;
 }
 
 export const useMaxAmount = ({
@@ -27,48 +30,68 @@ export const useMaxAmount = ({
   setInputBalance,
   setDisplayValue,
   handleChangeInput,
+  walletAddress,
+  vaultTokenDecimals
 }: UseMaxAmountProps) => {
-  const handleMaxClick = useCallback(() => {
+  const handleMaxClick = useCallback(async () => {
     const isTxInProgress = CheckTheTxIsInProgress(vaultId);
 
-    if (!inputToken || isTxInProgress) return;
+    if (!inputToken || isTxInProgress || !walletAddress) return;
 
     if (isDeposit) {
-      setInputBalance(tokenBalance);
-      setDisplayValue(tokenBalance.formatted);
+      handleChangeInput({
+        currentTarget: { value: tokenBalance.formatted },
+      } as React.ChangeEvent<HTMLInputElement>);
 
       updateLocalStorageObject(vaultId, {
         inputBal: JSON.stringify(tokenBalance, bigIntReplacer),
         displayValue: tokenBalance.formatted,
       });
     } else {
-      const maxValue =
-        vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0.00";
+      const maxAmount = await fetchUserVaultMaxWithdraw(
+        vaultTokenDecimals,
+        walletAddress,
+        vaultId,
+      );
+      const maxValue = maxAmount ?? "0.00";
 
       handleChangeInput({
         currentTarget: { value: maxValue },
       } as React.ChangeEvent<HTMLInputElement>);
+
     }
   }, [
     inputToken,
     tokenBalance,
     isDeposit,
     vaultId,
-    vaultTotalAssetinToken,
-    setInputBalance,
-    setDisplayValue,
     handleChangeInput,
+    walletAddress,
+    vaultTokenDecimals
   ]);
 
-  const getMaxAmount = useCallback((): string => {
+  const getMaxAmount = useCallback(async (): Promise<string> => {
     if (!inputToken) return "0";
 
     if (isDeposit) {
       return tokenBalance.formatted;
     } else {
-      return vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0.00";
+      if (!walletAddress) {
+        return "0.00";
+      }
+
+      const maxAmount = await fetchUserVaultMaxWithdraw(
+        vaultTokenDecimals,
+        walletAddress,
+        vaultId,
+      );
+      return (
+        maxAmount ??
+        vaultTotalAssetinToken?.totalAssetsinToken?.toString() ??
+        "0.00"
+      );
     }
-  }, [inputToken, tokenBalance, isDeposit, vaultTotalAssetinToken]);
+  }, [inputToken, tokenBalance, isDeposit, vaultTotalAssetinToken, walletAddress, vaultId, vaultTokenDecimals]);
 
   return {
     handleMaxClick,

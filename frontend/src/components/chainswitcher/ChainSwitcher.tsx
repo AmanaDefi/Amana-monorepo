@@ -9,7 +9,6 @@ import { showErrorToast, showSuccessToast } from "@/toasts";
 import Image from "next/image";
 import { DropdownList } from "../VaultsWrapper/components/DropdownList";
 import Button from "../common/Button";
-import { useWallets } from "@privy-io/react-auth";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { WithTooltip } from "../common/Tooltip";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -20,14 +19,9 @@ const [zetachain] = chainsWithCustomRpcs();
 
 // ChainSwitcher Component
 const ChainSwitcher: React.FC = () => {
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const wallet = filteredWallets[0];
   const { publicKey } = useWallet();
   const [isOpen, setIsOpen] = useState(false);
-  const { switchToChain, activeChain: currentChain } = useMultiChain();
+  const { switchToChain, activeChain: currentChain, activeEvmWallet: wallet } = useMultiChain();
   const [isLoading, setIsLoading] = useState<number | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const previousChainRef = useRef<string | null>(null);

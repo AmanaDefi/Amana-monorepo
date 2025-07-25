@@ -82,11 +82,6 @@ const VaultsDetailContainer: React.FC<{
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
   const initialIsDeposit = tabParam !== "withdraw";
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const user = filteredWallets[0];
   const wallet = useWallet();
 
   const [loading, setLoading] = useState<boolean>(true);
@@ -135,7 +130,7 @@ const VaultsDetailContainer: React.FC<{
     isFailedOnConfirmation,
   } = useTransactionStore();
 
-  const { switchToChain, walletAddress, activeChain, selectedChain } =
+  const { switchToChain, walletAddress, activeChain, activeEvmWallet: user } =
     useMultiChain();
 
   const vaultIdStr = Array.isArray(vaultID) ? vaultID[0] : vaultID;
@@ -520,6 +515,55 @@ const VaultsDetailContainer: React.FC<{
       {/* {walletAddress && isWithdraw && <WithdrawPendingBlock />} */}
 
       <VaultHeaderInfo vaultData={vaultData} />
+
+      {/* Mobile Vault Header */}
+      <div className="md:hidden flex w-full flex-row items-center mt-4 mb-4">
+        <div className="flex items-center gap-3 max-w-full flex-wrap flex-1">
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Image
+                src={vaultData.imgURL ?? ""}
+                alt={vaultData.protocol.network}
+                width={24}
+                height={24}
+                className="w-6 h-6 rounded-full"
+                sizes="24px"
+              />
+            </div>
+            <h2 className="font-bold text-white text-sm">{vaultData.protocol.network}</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Image
+                src={vaultData.protocol.imgURL}
+                alt={vaultData.protocol.name}
+                width={24}
+                height={24}
+                className="w-6 h-6 rounded-full"
+                sizes="24px"
+              />
+            </div>
+            <h2 className="font-bold text-white text-sm">{vaultData.protocol.name}</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Image
+                src={vaultData.inputToken.imgURL}
+                alt={vaultData.name}
+                width={24}
+                height={24}
+                className="w-6 h-6 rounded-full"
+                sizes="24px"
+              />
+            </div>
+            <h2 className="font-bold text-white text-sm">{vaultData.name}</h2>
+            <h2 className="font-bold text-white py-1 ">
+            {vaultData.type}
+          </h2>
+          </div>
+          
+        </div>
+      </div>
 
       {walletAddress && isDeposit && (
         <div className="block lg:hidden mt-6 lg:mt-0">

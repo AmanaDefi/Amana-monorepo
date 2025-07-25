@@ -29,8 +29,8 @@ const ClientLayout = (props: PropsWithChildren) => {
       className={`${fustat.variable} ${gotham.variable} ${inter.variable} ${spaceMono.variable}`}
     >
       <body className="font-sans font-light">
-        <SolanaWalletProvider>
-          <CustomPrivyProvider>
+        <CustomPrivyProvider>
+          <SolanaWalletProvider>
             <AccountProvider>
               <MultiChainProvider>
                 <TokenPriceProvider>
@@ -41,8 +41,8 @@ const ClientLayout = (props: PropsWithChildren) => {
               </MultiChainProvider>
             </AccountProvider>
             <ToastContainer />
-          </CustomPrivyProvider>
-        </SolanaWalletProvider>
+          </SolanaWalletProvider>
+        </CustomPrivyProvider>
       </body>
     </html>
   );

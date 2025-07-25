@@ -6,14 +6,11 @@ import { useParams } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { trackEvent } from "@/utils/trackEvent";
 import clsx from "clsx";
-import { useWallets } from "@privy-io/react-auth";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 
 function Index({}) {
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const account = filteredWallets[0];
+  const {activeEvmWallet} = useMultiChain();
+
   const { id } = useParams();
   const wallet = useWallet();
   const [vaultSymbol, setVaultSymbol] = useState<string | null>(null);
@@ -29,7 +26,7 @@ function Index({}) {
 
   return (
     <>
-      {(account || wallet) && (
+      {(activeEvmWallet || wallet) && (
         <div className="flex-1 flex flex-col w-full justify-between pl-0">
           <div className={clsx("flex-1", !wallet && "mt-8", wallet && "mt-0")}>
             <Suspense fallback={<div>Loading...</div>}>

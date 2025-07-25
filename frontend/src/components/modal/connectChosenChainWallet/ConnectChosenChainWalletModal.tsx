@@ -9,7 +9,7 @@ import { Connector, useConnect } from "wagmi";
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import { showInfoToast } from "@/toasts";
 
-import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { usePrivy } from "@privy-io/react-auth";
 import { useWallet } from "@solana/wallet-adapter-react";
 import {
   Adapter,
@@ -22,7 +22,7 @@ import { CHAIN_ID } from "@/constants/chainConfig";
 import { useEffect } from "react";
 
 const ConnectChosenChain = () => {
-  const { selectedChain, activeChain, connectSolana } = useMultiChain();
+  const { selectedChain, activeChain, connectSolana, activeEvmWallet: activeAccount } = useMultiChain();
 
   const { step, successAuth, closeAll, chosenChain } = useAuthStore();
   const {
@@ -33,12 +33,7 @@ const ConnectChosenChain = () => {
     chain,
   } = useFundWalletStore();
 
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
   const { logout } = usePrivy();
-  const activeAccount = filteredWallets[0];
 
   const {
     wallets: solanaAdapters,

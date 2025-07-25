@@ -63,3 +63,6 @@ export const useUserSettingsStore = create<UserSettingsState>((set, get) => ({
     return get().slippage[vaultId] || DEFAULT_SETTINGS.slippage;
   },
 }));
+
+export const getUserSettings = useUserSettingsStore.getState;
+export const getSlippageForVault = (vaultId: string) => getUserSettings().getSlippageForVault(vaultId);

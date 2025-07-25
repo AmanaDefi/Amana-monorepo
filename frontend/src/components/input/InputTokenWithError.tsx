@@ -11,7 +11,6 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import { Chain } from "viem";
 import clsx from "clsx";
 import { BreathingValue, MiniSpinner } from "../PendingDots";
-import { useWallets } from "@privy-io/react-auth";
 
 export type InputTokenWithErrorProps = {
   errorMessage?: string;
@@ -63,7 +62,6 @@ export default function InputTokenWithError({
   setInputBalance,
   selectedChain,
   showFeeDisplay = false,
-  debouncedInputBalance,
   performanceFee,
   value,
   onChange,
@@ -72,15 +70,8 @@ export default function InputTokenWithError({
   ...props
 }: InputTokenWithErrorProps): JSX.Element {
   const selectedTokenPrice = useTokenPriceBySymbol(selectedToken?.symbol);
-  const { walletAddress } = useMultiChain();
+  const { activeEvmWallet: activeAccount } = useMultiChain();
   const [isInputFocused, setIsInputFocused] = useState(false);
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const activeAccount = filteredWallets[0];
-
-  const isConnected = !!walletAddress;
 
   const showTokenSelector = useMemo(() => {
     return (
@@ -180,8 +171,12 @@ export default function InputTokenWithError({
           </div>
         );
       }
-      // Hide shares number from UI display only - return empty span
-      return <span></span>;
+      
+      return (
+        <span className="text-white text-2xl">
+          {outputAmount}
+        </span>
+      );
     }
 
     return (
@@ -243,7 +238,14 @@ export default function InputTokenWithError({
               topSectionData.maxButtonPosition === "left" && (
                 <button
                   onClick={onMaxClick}
-                  className={`text-[#3E73C4] hover:underline font-normal text-xs md:text-sm text-start ${!isDeposit ? "-ml-2" : ""}`}
+                  disabled={loadingOutputToken || disabled} 
+                  className={`font-normal text-xs md:text-sm text-start transition-colors duration-200 ${
+                    !isDeposit ? "-ml-2" : ""
+                  } ${
+                    loadingOutputToken || disabled
+                      ? "text-[#535E73] cursor-not-allowed opacity-50" 
+                      : "text-[#3E73C4] hover:underline hover:text-[#4A82D1] cursor-pointer"
+                  }`}
                 >
                   MAX
                 </button>
@@ -264,9 +266,11 @@ export default function InputTokenWithError({
             }
           >
             {shouldSwapValues ? (
-              <p className="group-hover/max:text-white text-[#535E73]">
-                {renderMainValue()}
-              </p>
+              <BreathingValue
+                value={conversionOutput.outputAmountInUSDFormatted || "$0.00"}
+                isBreathing={!!loadingOutputToken}
+                className="group-hover/max:text-white text-[#535E73]"
+              />
             ) : (
               <p className="group-hover/max:text-white">{renderUSDValue()}</p>
             )}
@@ -283,9 +287,9 @@ export default function InputTokenWithError({
                 </div>
               ) : (
                 <span
-                  className={`text-white text-2xl ${conversionOutput.outputAmountInUSDFormatted && conversionOutput.outputAmountInUSDFormatted !== "0.00" ? "font-medium" : "font-normal"}`}
+                  className={`text-white text-2xl ${conversionOutput.outputAmountFormatted && conversionOutput.outputAmountFormatted !== "0.00" ? "font-medium" : "font-normal"}`}
                 >
-                  {conversionOutput.outputAmountInUSDFormatted || "0.00"}
+                  {conversionOutput.outputAmountFormatted || "0.00"}
                 </span>
               )
             ) : (
@@ -316,15 +320,39 @@ export default function InputTokenWithError({
               <div className="flex items-center flex-row gap-1 md:gap-2">
                 <div className="relative flex-none w-5 h-5 border border-white rounded-full bg-[#10B981]">
                   <TokenIcon
-                    token={selectedToken as Token}
-                    icon={selectedToken?.imgURL}
+                    token={
+                      isOutput
+                        ? ({
+                            ...selectedToken,
+                            symbol:
+                              vaultData.outputTokenSymbol ||
+                              selectedToken?.symbol ||
+                              "",
+                            imgURL:
+                              vaultData.outputTokenImage ||
+                              selectedToken?.imgURL ||
+                              "",
+                          } as Token)
+                        : (selectedToken as Token)
+                    }
+                    icon={
+                      isOutput
+                        ? vaultData.outputTokenImage || selectedToken?.imgURL
+                        : selectedToken?.imgURL
+                    }
                     imageSize="w-5 h-5"
                   />
                 </div>
                 <p className="font-normal text-base leading-none text-white ">
-                  {selectedToken?.symbol
-                    ? getOnlyTokenSymbol(selectedToken.symbol)
-                    : ""}
+                  {isOutput
+                    ? getOnlyTokenSymbol(
+                        vaultData.outputTokenSymbol ||
+                          selectedToken?.symbol ||
+                          "",
+                      )
+                    : selectedToken?.symbol
+                      ? getOnlyTokenSymbol(selectedToken.symbol)
+                      : ""}
                 </p>
               </div>
             )}
@@ -332,12 +360,7 @@ export default function InputTokenWithError({
         </div>
 
         {errorMessage && (
-          <p
-            className={`${
-              !isOutput &&
-              "absolute bottom-0 left-0 translate-y-full lg:translate-y-full"
-            } pt-0.5 lg:pt-1 text-red-500 leading-6`}
-          >
+          <p className="mt-2 pt-1 text-red-500 text-sm md:text-base leading-6">
             {errorMessage}
           </p>
         )}

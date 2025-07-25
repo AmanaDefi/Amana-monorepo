@@ -6,18 +6,12 @@ import Button from "./common/Button";
 import { useAuthStore } from "@/store/authStore";
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { useWallets } from "@privy-io/react-auth";
 import { ShimmerAnimation } from "./button/ShimmerAnimation";
 
 const InvestBlock = () => {
-  const { walletAddress } = useMultiChain();
+  const { walletAddress, activeEvmWallet: user } = useMultiChain();
   const { openStep } = useAuthStore();
   const { setStep } = useFundWalletStore();
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const user = filteredWallets[0];
 
   const handleFundWallet = () => {
     if (user?.walletClientType !== "privy") {
@@ -29,7 +23,7 @@ const InvestBlock = () => {
 
   return (
     <div className="font-gotham pl-[44px] pr-[40px] py-[18px] hidden md:flex items-center justify-between rounded-[16px] bg-[rgba(20,23,31,0.15)] backdrop-blur-[20px] shadow-md before-gradient-border">
-      <div className="flex flex-row gap-4">
+      <div className="flex flex-row gap-4 items-center">
         <div className="rounded-full bg-[#1B46E0] w-[44px] h-[44px] flex items-center justify-center">
           <InvestIcon width={25} height={25} />
         </div>

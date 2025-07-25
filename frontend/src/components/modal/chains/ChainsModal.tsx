@@ -23,7 +23,6 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { AppButton } from "@/components/button/AppButton";
 import { zetachain } from "viem/chains";
-import { useWallets } from "@privy-io/react-auth";
 import { useAuthStore } from "@/store/authStore";
 
 const containerVariants = {
@@ -312,12 +311,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
   } = useFundWalletStore();
 
   const { publicKey } = useWallet();
-  const { walletAddress, activeChain, selectedChain } = useMultiChain();
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const activeAccount = filteredWallets[0];
+  const { activeChain, selectedChain, activeEvmWallet: activeAccount } = useMultiChain();
 
   const { openStep } = useAuthStore();
   const { setChain } = useAuthStore();

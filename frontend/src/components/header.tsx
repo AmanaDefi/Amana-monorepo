@@ -16,7 +16,6 @@ import ProfileIcon from "./svg/Profile";
 import ProfileDropdown from "./ProfileDropdown";
 import BurgerMenuIcon from "./svg/BurgerMenu";
 import MobileMenuModal from "./modal/MobileMenuModal";
-import { useWallets } from "@privy-io/react-auth";
 import { CHAIN_ID } from "@/constants/chainConfig";
 import ButtonSkeleton from "./button/Skeleton";
 
@@ -28,14 +27,13 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
   const path = usePathname();
   const router = useRouter();
-  const { wallets } = useWallets();
   const { isReady } = useInitializationStore();
 
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const activeAccount = filteredWallets[0];
-  const { walletAddress, activeChain } = useMultiChain();
+  const {
+    walletAddress,
+    activeChain,
+    activeEvmWallet: activeAccount,
+  } = useMultiChain();
   const isConnected = !!walletAddress;
   const [isMenuOpened, setIsMenuOpened] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -169,9 +167,12 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
             {navLinks.map(({ label, href }) => (
               <span
                 key={href}
-                className={`cursor-pointer transition-all duration-300 font-normal text-white text-[16px] border rounded-lg px-[14px] py-[10px] flex items-center justify-center relative z-50 ${
-                  path === href ? "border-[#1B46E0]" : "border-transparent"
-                }`}
+                className={`cursor-pointer font-normal text-white text-[16px] border rounded-lg px-[14px] py-[10px] flex items-center justify-center relative z-50 
+        transition-all duration-200 ease-in-out
+        hover:scale-105 
+        active:scale-95
+        ${path === href ? "border-[#1B46E0]" : "border-transparent"}
+      `}
                 onClick={() => router.push(href)}
               >
                 {label}
@@ -190,7 +191,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
 
         <div className="flex items-center gap-2 lg:gap-6 flex-1 justify-end relative z-50">
           <div className="transition-all duration-300 ease-in-out">
-            {activeAccount &&
+            {isConnected &&
               activeAccount?.walletClientType !== "privy" &&
               !isMenuOpened &&
               activeChain?.id !== CHAIN_ID["solana"] && <ChainSwitcher />}

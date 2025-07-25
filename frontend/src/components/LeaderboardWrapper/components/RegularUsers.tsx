@@ -5,8 +5,8 @@ import { motion } from "framer-motion";
 import { LeaderboardUserData } from "@/types/types";
 import { formatCurrency } from "@/utils/utils";
 import CopyTextButton from "@/components/common/CopyTextButton";
-import { useWallets } from "@privy-io/react-auth";
 import { ZERO_ACCOUNT } from "@/constants";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 
 interface RegularUsersProps {
   users: LeaderboardUserData[];
@@ -51,11 +51,8 @@ const userRowVariants = {
 };
 
 export default function RegularUsers({ users, searchTerm }: RegularUsersProps) {
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const currentUserAccount = filteredWallets[0] || ZERO_ACCOUNT;
+  const { activeEvmWallet } = useMultiChain();
+  const currentUserAccount = activeEvmWallet || ZERO_ACCOUNT;
 
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible">

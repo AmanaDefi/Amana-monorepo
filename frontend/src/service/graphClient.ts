@@ -69,6 +69,8 @@ class GraphClient {
           cooldownPeriod
           minDeposit
           maxWithdraw
+          outputTokenSymbol
+          outputTokenImage
         }
       }
     `;
@@ -132,6 +134,8 @@ class GraphClient {
           cooldownPeriod
           minDeposit
           maxWithdraw
+          outputTokenSymbol
+          outputTokenImage
         }
       }
     `;
@@ -223,7 +227,9 @@ class GraphClient {
           cooldownPeriod
           minDeposit
           maxWithdraw
-        }
+          outputTokenSymbol
+          outputTokenImage
+          }
       }
     `;
 
@@ -337,6 +343,8 @@ class GraphClient {
           cooldownPeriod
           minDeposit
           maxWithdraw
+          outputTokenSymbol
+          outputTokenImage
         }
       }
     `;
@@ -500,6 +508,8 @@ class GraphClient {
           cooldownPeriod
           minDeposit
           maxWithdraw
+          outputTokenSymbol
+          outputTokenImage
         }
       }
     `;
@@ -605,6 +615,8 @@ class GraphClient {
           cooldownPeriod
           minDeposit
           maxWithdraw
+          outputTokenSymbol
+          outputTokenImage
         }
       }
     `;
@@ -710,6 +722,8 @@ class GraphClient {
           cooldownPeriod
           minDeposit
           maxWithdraw
+          outputTokenSymbol
+          outputTokenImage
         }
       }
     `;
@@ -815,6 +829,8 @@ class GraphClient {
           cooldownPeriod
           minDeposit
           maxWithdraw
+          outputTokenSymbol
+          outputTokenImage
         }
       }
     `;
@@ -920,6 +936,8 @@ class GraphClient {
           cooldownPeriod
           minDeposit
           maxWithdraw
+          outputTokenSymbol
+          outputTokenImage
         }
       }
     `;
@@ -1026,6 +1044,8 @@ class GraphClient {
           cooldownPeriod
           minDeposit
           maxWithdraw
+          outputTokenSymbol
+          outputTokenImage
         }
       }
     `;
@@ -1142,6 +1162,8 @@ class GraphClient {
           cooldownPeriod
           minDeposit
           maxWithdraw
+          outputTokenSymbol
+          outputTokenImage
         }
       }
     `;
@@ -1208,6 +1230,8 @@ class GraphClient {
           cooldownPeriod
           minDeposit
           maxWithdraw
+          outputTokenSymbol
+          outputTokenImage
         }
       }
     `;

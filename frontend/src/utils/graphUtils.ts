@@ -24,6 +24,8 @@ export function convertGraphVaultToVaultData(graphVault: GraphVault): VaultData 
     depositFeePaidFromGasTank: graphVault.depositFeePaidFromGasTank,
     inputToken,
     strategyNetwork: graphVault.strategyNetwork,
+    outputTokenSymbol: graphVault.outputTokenSymbol,
+    outputTokenImage: graphVault.outputTokenImage,
     protocolPoints: graphVault.protocolPoints,
     protocolPointsDescription: graphVault.protocolPointsDescription,
     cooldownPeriod: graphVault.cooldownPeriod,

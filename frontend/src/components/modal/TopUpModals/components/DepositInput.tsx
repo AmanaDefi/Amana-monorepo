@@ -3,6 +3,7 @@
 import ChainTokenSelector from "@/components/input/ChainTokenSelector";
 import InputNumber from "@/components/input/InputNumber";
 import WarningIcon from "@/components/svg/WarningIcon";
+import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import { Balance, Token } from "@/types/types";
 import { useWallets } from "@privy-io/react-auth";
@@ -34,7 +35,11 @@ export const DepositInput = ({
   const filteredWallets = wallets.filter(
     (wallet) => wallet.meta.id !== "app.phantom",
   );
-  const activeWallet = filteredWallets[0];
+
+  // const [tokenBalance, setTokenBalance] = useState<Balance>(EMPTY_BALANCE);
+  // const { activeEvmWallet: activeWallet } = useMultiChain();
+    const activeWallet = filteredWallets[0];
+
 
   const walletAddressForBalance = useMemo(() => {
     let result;

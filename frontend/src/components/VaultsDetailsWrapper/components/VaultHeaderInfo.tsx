@@ -50,6 +50,9 @@ export default function VaultHeaderInfo({
             />
           </div>
           <h2 className="font-bold text-white">{vaultData.name}</h2>
+          <h2 className="font-bold text-white py-1 ">
+            {vaultData.type}
+          </h2>
         </div>
       </div>
     </div>
