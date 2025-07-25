@@ -1335,7 +1335,7 @@ const executeCrossChainDeposit = async (
         account: activeAccount.address,
       });
 
-     
+
 
       const publicClient = getPublicClient(activeChain?.id);
       if (!publicClient) {
@@ -2359,10 +2359,8 @@ export const getPathDataAndAmountOut = async (
       path,
     ) as `0x${string}`;
 
-    const amountOutRaw = (
-      expectedAmountOut *
-      10 ** outputToken.decimals
-    ).toFixed(0);
+    const amountOutRaw = parseUnits(expectedAmountOut.toString(), outputToken.decimals);
+
     return {
       encodedPath,
       amountOut: BigInt(amountOutRaw),
@@ -2404,7 +2402,7 @@ export const getPerformanceFee = async (
   return perfFee;
 };
 
-export const updatePythPrices = async () => {};
+export const updatePythPrices = async () => { };
 
 export async function fetchReceiptTokens(
   vaults: VaultData[],
@@ -2415,7 +2413,7 @@ export async function fetchReceiptTokens(
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     if (raw) cache = JSON.parse(raw);
-  } catch {}
+  } catch { }
 
   const missingIds = vaults.map((v) => v.id).filter((id) => !(id in cache));
 
