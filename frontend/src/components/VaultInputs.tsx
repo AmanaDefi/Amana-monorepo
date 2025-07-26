@@ -202,6 +202,9 @@ export default function VaultInputs({
     setLastWithdrawInfo,
     finishedTransaction,
     clearDepositCalculationCache,
+    setLastTransactionStepFeedback,
+    setTransactionStepFeedback,
+    setIsFailedOnCOnfirmation
   } = useTransactionStore();
 
   const { isOpen, setSelectedTokenFromModal, selectedTokenFromModal } =
@@ -611,7 +614,7 @@ useEffect(() => {
     const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
     if (isTxInProgress) return;
 
-    localStorage.removeItem(vaultData?.id);
+    updateLocalStorageObject(vaultData.id, null);
     const newIsDeposit = tab.toLowerCase() === "invest";
     const newTab = newIsDeposit ? Tabs.DEPOSIT : Tabs.WITHDRAW;
 
@@ -628,6 +631,10 @@ useEffect(() => {
 
     // Notify parent component about tab change
     onTabChange(tab);
+
+    setLastTransactionStepFeedback({});
+    setTransactionStepFeedback({});
+    setIsFailedOnCOnfirmation(false)
 
     // Only attempt to set steps if we have a token and chain
     if (inputToken && selectedChain) {
@@ -659,6 +666,10 @@ useEffect(() => {
       if (!inputToken) return;
       const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
       if (isTxInProgress) return;
+
+      setLastTransactionStepFeedback({});
+      setTransactionStepFeedback({});
+      setIsFailedOnCOnfirmation(false)
 
       let value = e.currentTarget.value;
 

@@ -87,11 +87,17 @@ export default function ChainSelector({
       const defaultToken =
         tokens.find((token) => token.symbol === "USDC") || tokens[0];
 
+      const tokenForZetaChain = vaultData?.inputToken;
+
       onSelectChain(chainToSelect);
 
       if (onSelectChainAndToken && defaultToken) {
         setSelectedChainFromModal(chainToSelect);
-        onSelectChainAndToken(chainToSelect, defaultToken);
+        if ((chainId === 7000 || chainId === 7001) && tokenForZetaChain) {
+          onSelectChainAndToken(chainToSelect, tokenForZetaChain);
+        } else {
+          onSelectChainAndToken(chainToSelect, defaultToken);
+        }
       }
     }
   };

@@ -100,7 +100,7 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
         <div className="flex flex-col mx-auto w-full min-h-screen pt-4 md:py-6 lg:pt-10 pb-[30px] px-4 md:px-[44px] lg:px-0 ">
           <Header activeSection={activeSection} />
           <div className="flex flex-1">
-            <div className="flex-shrink-0 lg:min-h-[908px] max-h-[1001px]">
+            <div className="flex-shrink-0 lg:h-[908px]">
               <Sidebar
                 activeSection={activeSection}
                 isCollapsed={isCollapsed}

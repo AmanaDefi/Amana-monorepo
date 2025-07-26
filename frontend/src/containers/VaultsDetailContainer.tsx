@@ -128,6 +128,7 @@ const VaultsDetailContainer: React.FC<{
     setLastWithdrawInfo,
     lastWithdrawInfo,
     isFailedOnConfirmation,
+    setIsFailedOnCOnfirmation,
   } = useTransactionStore();
 
   const { switchToChain, walletAddress, activeChain, activeEvmWallet: user } =
@@ -152,6 +153,7 @@ const VaultsDetailContainer: React.FC<{
         setIsDeposit(shouldBeDeposit);
       }
     }
+    setIsFailedOnCOnfirmation(false);
   }, [searchParams, vaultData?.id]);
 
   const handleTabChange = (tab: string) => {
@@ -236,6 +238,7 @@ const VaultsDetailContainer: React.FC<{
         setLastTransactionStepFeedback({});
         setFinishedTransaction(false);
         setIsTransactionProcessing(false);
+        setIsFailedOnCOnfirmation(false);
       }
     };
 
@@ -387,9 +390,10 @@ const VaultsDetailContainer: React.FC<{
   const handleBack = () => {
     const isTxInProgress = CheckTheTxIsInProgress(vaultID.toString());
     if (!isTxInProgress) {
-      localStorage.removeItem(vaultID.toString());
+      updateLocalStorageObject(vaultID.toString(), null);
     }
     router.push(backPath);
+    setIsFailedOnCOnfirmation(false);
   };
 
   const isWithdraw = !isDeposit;
@@ -616,9 +620,10 @@ const VaultsDetailContainer: React.FC<{
                   setIsTransactionProcessing(false);
                   setLastDepositInfo(null);
                   setLastWithdrawInfo(null);
+                  setIsFailedOnCOnfirmation(false);
 
                   if (vaultID) {
-                    localStorage.removeItem(vaultID.toString());
+                    updateLocalStorageObject(vaultID.toString(), null);
                   }
                   // setTransactionCompleted(true);
                 }}

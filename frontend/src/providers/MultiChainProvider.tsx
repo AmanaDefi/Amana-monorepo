@@ -227,8 +227,8 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       // connectSolana();
       isConnectedRef.current = true;
 
-      if (step) {
-        localStorage.removeItem("connectorId");
+      if (step === "connectWallet") {
+
         setFundWalletAddress(publicKey.toBase58());
         return setStep("selectChain");
       }
