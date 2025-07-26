@@ -71,6 +71,22 @@ export const DepositInput = ({
     );
   }, [tokenBalance?.formatted, selectedTokenPrice, currency]);
 
+  const depositAmountUsdValue = useMemo(() => {
+    if (
+      !currency ||
+      !depositAmount ||
+      depositAmount === "0.00" ||
+      !selectedTokenPrice
+    ) {
+      return "$0.00";
+    }
+    return formatTokenBalanceUSD(
+      depositAmount,
+      currency.symbol,
+      selectedTokenPrice,
+    );
+  }, [depositAmount, selectedTokenPrice, currency]);
+
   useEffect(() => {
     setError("");
     setDepositAmount("0.00");
@@ -142,7 +158,7 @@ export const DepositInput = ({
               {isLoading ? (
                 <MiniSpinner size={12} color="#1B46E0" />
               ) : (
-                `${balanceUsdValue}`
+                `${depositAmountUsdValue}`
               )}
             </p>
           </div>
