@@ -87,8 +87,11 @@ const TableChart: React.FC<TableChartProps> = ({
       id: "vault-apy-chart",
       toolbar: { show: false },
       zoom: { enabled: false },
-      sparkline: { enabled: false },
+      sparkline: { enabled: true },
       background: "transparent",
+      offsetX: 0,
+      offsetY: 0,
+      parentHeightOffset: 0,
     },
     stroke: {
       curve: "straight",
@@ -110,6 +113,17 @@ const TableChart: React.FC<TableChartProps> = ({
     },
     grid: {
       show: false,
+      padding: {
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+      },
+    },
+    plotOptions: {
+      area: {
+        fillTo: "end",
+      },
     },
     tooltip: {
       enabled: true,
@@ -154,6 +168,8 @@ const TableChart: React.FC<TableChartProps> = ({
     },
     yaxis: {
       show: false,
+      min: undefined,
+      max: undefined,
     },
     dataLabels: {
       enabled: false,
