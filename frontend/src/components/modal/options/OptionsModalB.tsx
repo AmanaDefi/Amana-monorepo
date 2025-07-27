@@ -8,7 +8,6 @@ import ConnectWallet from "../shared/ConnectWallet";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import PopularOptions from "../shared/PopularOptions";
 import ModalButton from "../shared/ModalButton";
-import BackedBy from "../shared/BackedBy";
 import EmailOptionsIcon from "@/components/svg/EmailOptionsIcon";
 import PasskeyOptionsIcon from "@/components/svg/PasskeyOptionsIcon";
 import GoogleOptionsIcon from "@/components/svg/GoogleOptionsButton";
