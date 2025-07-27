@@ -48,7 +48,7 @@ export const Modal = ({
                 <GlowIcon position="bottom-mobile" />
               </div>
             </motion.div>
-            <div className="fixed inset-0 flex flex-col h-[100vh] md:items-center md:justify-center justify-between items-center pt-10 p-4">
+            <div className="fixed inset-0 flex flex-col h-[100dvh] h-[100vh] md:items-center md:justify-center justify-between items-center pt-10 p-4">
               <DialogPanel as={Fragment}>
                 <motion.div
                   key="modal"
@@ -66,7 +66,14 @@ export const Modal = ({
                   <div className={paddingClass}>{children}</div>
                 </motion.div>
               </DialogPanel>
-              <div className="block md:hidden mb-3">
+
+              <div
+                className="block md:hidden mb-3 relative z-[60] w-full"
+                style={{
+                  paddingBottom: "max(12px, env(safe-area-inset-bottom))",
+                  minHeight: "60px", 
+                }}
+              >
                 <Footer isConnected={false} />
               </div>
             </div>
