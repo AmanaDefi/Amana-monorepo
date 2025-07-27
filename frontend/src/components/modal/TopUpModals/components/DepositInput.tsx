@@ -157,8 +157,10 @@ export const DepositInput = ({
             <p className="group-hover/max:text-white">
               {isLoading ? (
                 <MiniSpinner size={12} color="#1B46E0" />
-              ) : (
+              ) : depositAmount && depositAmount !== "0.00" ? (
                 `${depositAmountUsdValue}`
+              ) : (
+                `${balanceUsdValue}`
               )}
             </p>
           </div>
