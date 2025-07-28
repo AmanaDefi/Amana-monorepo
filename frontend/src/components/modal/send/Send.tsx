@@ -447,7 +447,9 @@ export const Send = () => {
     setSelectedToken(null);
     setSelectedNetwork(null);
     setValue("token", undefined, { shouldValidate: true });
+    setValue("amount", "", { shouldValidate: true });
     setTokenBalances(new Map());
+    setErrorMessage("");
   }, [activeChain, setValue]);
 
   // auto-select first token
@@ -585,15 +587,19 @@ export const Send = () => {
     setSelectedToken(token);
     setSelectedNetwork(networkName);
     setValue("token", token.symbol, { shouldValidate: true });
+    setValue("amount", "", { shouldValidate: true });
     setShowTokenSelection(false);
     setTokenSearchQuery("");
+    setErrorMessage("");
   };
 
   const handleTokenSelect = (token: Token): void => {
     setSelectedToken(token);
     setValue("token", token.symbol, { shouldValidate: true });
+    setValue("amount", "", { shouldValidate: true });
     setShowTokenSelection(false);
     setTokenSearchQuery("");
+    setErrorMessage("");
 
     if (!isZetaChain) {
       setSelectedNetwork(null);
