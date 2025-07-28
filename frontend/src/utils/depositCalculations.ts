@@ -356,7 +356,6 @@ export const calculateDepositOutput = async (
       vaultData.inputToken,
       vaultData.id as Address,
       500,
-      { inputTokenChainId: activeChain.id, outputTokenChainId: vaultData.protocol.chainId }
     );
     console.log('[depositCalculations.ts] getPathDataAndAmountOut result', swapResult);
     amountAfterSwap = swapResult.amountOut;

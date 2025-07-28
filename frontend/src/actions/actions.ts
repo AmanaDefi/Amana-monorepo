@@ -992,7 +992,6 @@ const getPathDataAndMinSharesOut = async (
       vaultData.inputToken,
       vaultData.id as Address,
       getCurrentSlippage(vaultData.id) * 100,
-      { inputTokenChainId: activeChain.id, outputTokenChainId: vaultData.protocol.chainId }
     );
     swapPath = encodedPath ?? "0x";
     assetsConversionAmount = amountOut;
@@ -1040,7 +1039,6 @@ const getPathDataAndMinAmountOut = async (
       outputToken,
       vaultData.id as Address,
       slippageBps,
-      { inputTokenChainId: vaultData.protocol.chainId, outputTokenChainId: vaultData.protocol.chainId }
     );
     swapPath = result.encodedPath ?? "0x";
   }
@@ -1219,7 +1217,6 @@ const executeCrossChainDeposit = async (
         vaultData.inputToken,
         vaultData.id as Address,
         getCurrentSlippage(vaultData.id) * 100,
-        { inputTokenChainId: activeChain.id, outputTokenChainId: vaultData.protocol.chainId }
       );
       swapPath = swapResult.encodedPath ?? "0x";
     }
@@ -1432,7 +1429,6 @@ const executeSolanaDeposit = async (
         vaultData.inputToken,
         vaultData.id as Address,
         getCurrentSlippage(vaultData.id) * 100,
-        { inputTokenChainId: activeChain.id, outputTokenChainId: vaultData.protocol.chainId }
       );
       swapPath = swapResult.encodedPath ?? "0x";
     }
@@ -2319,21 +2315,13 @@ const ZUNO_API_BASE = "https://cross-chain-zetachain-server.zunodex.xyz";
 async function getZunoTokenInfo(tokenAddress: string, chainId: number) {
   try {
     const resp = await axios.get(`${ZUNO_API_BASE}/api/cross_chain/tokenlist`, {
-      params: { chainId: String(chainId) },
+      params: { chainId },
     });
-    console.log('[actions.ts] Zuno tokenlist response:', resp.data);
     const tokens = resp.data?.data || [];
-    const found = tokens.find(
+    return tokens.find(
       (t: any) => t.address.toLowerCase() === tokenAddress.toLowerCase()
     );
-    if (!found) {
-      console.warn('[actions.ts] Token not found in Zuno tokenlist', { tokenAddress, chainId, tokens });
-    } else {
-      console.log('[actions.ts] Token found in Zuno tokenlist', found);
-    }
-    return found;
   } catch (e) {
-    console.warn('[actions.ts] Error fetching Zuno tokenlist', e);
     return null;
   }
 }
@@ -2347,11 +2335,11 @@ export const getPathDataAndAmountOut = async (
   outputToken: Token,
   userAddress: string,
   slippage: Number,
-  context?: { inputTokenChainId?: number; outputTokenChainId?: number }
 ): Promise<{ encodedPath: `0x${string}` | null; amountOut: bigint }> => {
-  // Derive chainId for tokens
-  const inputTokenChainId = (inputToken as any).chainId || context?.inputTokenChainId;
-  const outputTokenChainId = (outputToken as any).chainId || context?.outputTokenChainId;
+  // Always use Zetachain (7000) for both input and output chainId for Zuno
+  const ZETA_CHAIN_ID = 7000;
+  const inputTokenChainId = ZETA_CHAIN_ID;
+  const outputTokenChainId = ZETA_CHAIN_ID;
   // Try Zuno first
   try {
     console.log('[actions.ts] Attempting Zuno swap/quote', { inputTokenChainId, outputTokenChainId, inputToken, outputToken });
@@ -2371,16 +2359,19 @@ export const getPathDataAndAmountOut = async (
         fromAmount: amount.toString(),
         fromAddress: userAddress,
         toAddress: userAddress,
-        slippage: Number(slippage) / 10000, // Zuno expects decimal (e.g. 0.005 for 0.5%)
+        slippage,
       },
     });
     const quote = quoteResp.data?.data;
+    console.log('[actions.ts] Zuno quote', quote);
     if (!quote?.encodeParams?.interfaceParams) throw new Error("Zuno quote missing encodeParams");
     // 3. Get encoded calldata from Zuno
     const encodeResp = await axios.post(`${ZUNO_API_BASE}/api/cross_chain/transaction/encode`, {
       interfaceParams: quote.encodeParams.interfaceParams,
     });
+    console.log('[actions.ts] Zuno encodeResp', encodeResp);
     const encodedPath = encodeResp.data?.data?.data;
+    console.log('[actions.ts] Zuno encodedPath', encodedPath);
     const amountOut = BigInt(quote.toAmount);
     if (!encodedPath) throw new Error("Zuno encode missing data");
     console.log('[actions.ts] Zuno call successful');
