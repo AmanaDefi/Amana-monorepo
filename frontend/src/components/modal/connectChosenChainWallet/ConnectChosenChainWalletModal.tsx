@@ -4,7 +4,7 @@ import { Modal } from "../base/Modal";
 import { useAuthStore } from "@/store/authStore";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import ModalButton from "../shared/ModalButton";
-import { Connector, useConnect } from "wagmi";
+import { Connector, useConnect, useDisconnect } from "wagmi";
 
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import { showInfoToast } from "@/toasts";
@@ -22,6 +22,7 @@ import { CHAIN_ID } from "@/constants/chainConfig";
 
 const ConnectChosenChain = () => {
   const { selectedChain, activeChain, connectSolana, activeEvmWallet: activeAccount } = useMultiChain();
+  const { disconnectAsync } = useDisconnect();
 
   const { step, successAuth, closeAll, chosenChain } = useAuthStore();
   const {
@@ -55,7 +56,6 @@ const ConnectChosenChain = () => {
       onSuccess: async (result) => {
         if (fundWalletStep === "reconnectChain") {
           setWalletAddress(result.accounts[0]);
-          localStorage.removeItem("connectorId");
           return fundWalletConnect();
         }
         return successAuth(null, activeAccount || undefined, true);
@@ -64,7 +64,9 @@ const ConnectChosenChain = () => {
   });
 
   const handleExternalWalletConnect = async (connector: Connector) => {
-    if (isConnectingWallet) return;
+    if (isConnectingWallet) {
+      await disconnectAsync();
+    }
     if (
       activeAccount?.walletClientType === "privy" &&
       fundWalletStep !== "connectWallet"
@@ -95,7 +97,7 @@ const ConnectChosenChain = () => {
 
           if (error.name === "ConnectorAlreadyConnectedError") {
             connector.disconnect();
-            localStorage.removeItem("connectorId");
+            disconnectAsync({ connector });
 
             setActiveConnector(null);
             showInfoToast("Please try to connect wallet again");
