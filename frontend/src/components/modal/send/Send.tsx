@@ -35,6 +35,7 @@ import { MiniSpinner, BreathingValue } from "@/components/PendingDots";
 import { useSendTransaction } from "@/hooks/useSendTransaction";
 import { useMaxAmountSimple } from "@/hooks/useMaxAmount";
 import { AmountInputField } from "./components/AmountInputField";
+import NetworkTokenSelector from "./components/NetworkTokenSelector";
 
 const getSendErrorMessage = (
   amount: string,
@@ -120,7 +121,7 @@ const SelectedTokenBalanceLoader = ({
   return null;
 };
 
-const TokenBalanceItem = ({
+export const TokenBalanceItem = ({
   token,
   selectedChain,
   isSelected,
@@ -244,11 +245,17 @@ export const Send = () => {
   const [networkSearchQuery, setNetworkSearchQuery] = useState("");
   const [tokenSearchQuery, setTokenSearchQuery] = useState("");
   const [selectedToken, setSelectedToken] = useState<Token | null>(null);
+  const [selectedNetwork, setSelectedNetwork] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const { walletAddress, activeChain, switchToChain, balance, activeEvmWallet: activePrivyEVMWallet } =
-    useMultiChain();
+  const {
+    walletAddress,
+    activeChain,
+    switchToChain,
+    balance,
+    activeEvmWallet: activePrivyEVMWallet,
+  } = useMultiChain();
   const { connected: solanaConnected } = useWallet();
 
   const [tokenBalances, setTokenBalances] = useState<
@@ -261,6 +268,9 @@ export const Send = () => {
       }
     >
   >(new Map());
+
+  const isZetaChain: boolean =
+    activeChain?.id === 7000 || activeChain?.id === 7001;
 
   const { sendTransaction: sendTransactionFromHook } = useSendTransaction({
     walletAddress,
@@ -309,6 +319,7 @@ export const Send = () => {
       token: "",
     });
     setSelectedToken(null);
+    setSelectedNetwork(null);
     setErrorMessage("");
     setShowNetworkSelection(false);
     setShowTokenSelection(false);
@@ -403,7 +414,12 @@ export const Send = () => {
   }, [displayTokens, tokenBalances, activeChain]);
 
   const handleBalanceUpdate = useCallback(
-    (token: Token, balance: Balance, price: number, isLoading: boolean) => {
+    (
+      token: Token,
+      balance: Balance,
+      price: number,
+      isLoading: boolean,
+    ): void => {
       const tokenKey = `${token.address.toLowerCase()}-${activeChain?.id}`;
       setTokenBalances((prev) => {
         const newMap = new Map(prev);
@@ -429,13 +445,19 @@ export const Send = () => {
   // reset token selection when network changes
   useEffect(() => {
     setSelectedToken(null);
+    setSelectedNetwork(null);
     setValue("token", undefined, { shouldValidate: true });
     setTokenBalances(new Map());
   }, [activeChain, setValue]);
 
   // auto-select first token
   useEffect(() => {
-    if (sortedTokens.length > 0 && !selectedToken && activeChain) {
+    if (
+      !isZetaChain &&
+      sortedTokens.length > 0 &&
+      !selectedToken &&
+      activeChain
+    ) {
       const firstToken = sortedTokens[0];
       setSelectedToken(firstToken);
       setValue("token", firstToken.symbol, { shouldValidate: true });
@@ -443,7 +465,7 @@ export const Send = () => {
       setSelectedToken(null);
       setValue("token", undefined, { shouldValidate: true });
     }
-  }, [sortedTokens, selectedToken, setValue, activeChain]);
+  }, [sortedTokens, selectedToken, setValue, activeChain, isZetaChain]);
 
   useEffect(() => {
     if (selectedToken && activeChain && !showTokenSelection) {
@@ -485,15 +507,25 @@ export const Send = () => {
   const selectedNetworkValue = watch("network") || "";
   const selectedTokenValue = watch("token") || "";
 
-  const tokenPlaceholder = useMemo(() => {
-    if (selectedToken) return getOnlyTokenSymbol(selectedToken.symbol);
+  const tokenPlaceholder = useMemo((): string => {
+    if (selectedToken) {
+      if (isZetaChain && selectedNetwork) {
+        const baseSymbol = getOnlyTokenSymbol(selectedToken.symbol);
+        return `${baseSymbol} on ${selectedNetwork}`;
+      } else {
+        return getOnlyTokenSymbol(selectedToken.symbol);
+      }
+    }
 
     if (sortedTokens.length === 0) return "No tokens available";
-    if (sortedTokens.length === 1)
-      return `Select ${getOnlyTokenSymbol(sortedTokens[0].symbol)}`;
+
+    if (sortedTokens.length === 1) {
+      const baseSymbol = getOnlyTokenSymbol(sortedTokens[0].symbol);
+      return `Select ${baseSymbol}`;
+    }
 
     return `Select token (${sortedTokens.length} available)`;
-  }, [selectedToken, sortedTokens]);
+  }, [selectedToken, selectedNetwork, sortedTokens, isZetaChain]);
 
   const chainList =
     activePrivyEVMWallet?.walletClientType === "privy"
@@ -546,11 +578,26 @@ export const Send = () => {
     }
   };
 
+  const handleTokenSelectWithNetwork = (
+    token: Token,
+    networkName: string,
+  ): void => {
+    setSelectedToken(token);
+    setSelectedNetwork(networkName);
+    setValue("token", token.symbol, { shouldValidate: true });
+    setShowTokenSelection(false);
+    setTokenSearchQuery("");
+  };
+
   const handleTokenSelect = (token: Token): void => {
     setSelectedToken(token);
     setValue("token", token.symbol, { shouldValidate: true });
     setShowTokenSelection(false);
     setTokenSearchQuery("");
+
+    if (!isZetaChain) {
+      setSelectedNetwork(null);
+    }
   };
 
   const isButtonDisabled = useMemo(() => {
@@ -723,87 +770,102 @@ export const Send = () => {
         ) : showTokenSelection ? (
           // token Selection Block
           <div className="space-y-4">
-            <div>
-              <div className="relative mb-4">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <MagnifyingGlassIcon className="h-5 w-5 text-[#535E73]" />
+            {isZetaChain ? (
+              // ZetaChain
+              <NetworkTokenSelector
+                availableTokens={availableTokens}
+                selectedToken={selectedToken}
+                onTokenSelect={handleTokenSelectWithNetwork}
+                activeChain={activeChain}
+                handleBalanceUpdate={handleBalanceUpdate}
+                searchQuery={tokenSearchQuery}
+                onSearchChange={setTokenSearchQuery}
+                tokenBalances={tokenBalances}
+                activePrivyEVMWallet={activePrivyEVMWallet}
+              />
+            ) : (
+              <div>
+                <div className="relative mb-4">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <MagnifyingGlassIcon className="h-5 w-5 text-[#535E73]" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search tokens..."
+                    value={tokenSearchQuery}
+                    onChange={(e) => setTokenSearchQuery(e.target.value)}
+                    className="w-full rounded-[8px] pl-10 pr-4 py-3 text-[16px] font-normal text-white placeholder-[#535E73] bg-[#161C27] border border-[#2C2F36] transition-all duration-200 focus:outline-none focus:border-[#3E73C4] hover:border-[#3E73C4]"
+                  />
                 </div>
-                <input
-                  type="text"
-                  placeholder="Search tokens..."
-                  value={tokenSearchQuery}
-                  onChange={(e) => setTokenSearchQuery(e.target.value)}
-                  className="w-full rounded-[8px] pl-10 pr-4 py-3 text-[16px] font-normal text-white placeholder-[#535E73] bg-[#161C27] border border-[#2C2F36] transition-all duration-200 focus:outline-none focus:border-[#3E73C4] hover:border-[#3E73C4]"
-                />
-              </div>
 
-              <div
-                className="flex flex-col gap-2 max-h-[300px] overflow-y-auto mt-6 pr-1"
-                style={{
-                  scrollbarWidth: "thin",
-                  scrollbarColor: "#1B46E0 transparent",
-                }}
-              >
-                <style jsx>{`
-                  div::-webkit-scrollbar {
-                    width: 6px;
-                  }
-                  div::-webkit-scrollbar-track {
-                    background: #161c27;
-                  }
-                  div::-webkit-scrollbar-thumb {
-                    background-color: #1b46e0;
-                    border-radius: 4px;
-                  }
-                `}</style>
-                <p className="text-[#4874DB] text-[16px]">Available Tokens</p>
+                <div
+                  className="flex flex-col gap-2 max-h-[300px] overflow-y-auto mt-6 pr-1"
+                  style={{
+                    scrollbarWidth: "thin",
+                    scrollbarColor: "#1B46E0 transparent",
+                  }}
+                >
+                  <style jsx>{`
+                    div::-webkit-scrollbar {
+                      width: 6px;
+                    }
+                    div::-webkit-scrollbar-track {
+                      background: #161c27;
+                    }
+                    div::-webkit-scrollbar-thumb {
+                      background-color: #1b46e0;
+                      border-radius: 4px;
+                    }
+                  `}</style>
+                  <p className="text-[#4874DB] text-[16px]">Available Tokens</p>
 
-                <AnimatePresence mode="wait">
-                  {sortedTokens.length === 0 ? (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      className="text-center text-[#535E73] py-8"
-                    >
-                      {tokenSearchQuery
-                        ? "No tokens found"
-                        : activePrivyEVMWallet?.walletClientType === "privy"
-                          ? "No tokens with balance available to send"
-                          : "No tokens available for this network"}
-                    </motion.div>
-                  ) : (
-                    <>
-                      {sortedTokens.map((token, index) => (
-                        <motion.div
-                          key={`${token.address}-${activeChain?.id}`}
-                          layout
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -20 }}
-                          transition={{
-                            layout: { duration: 0.3, ease: "easeInOut" },
-                            opacity: { duration: 0.2 },
-                            y: { duration: 0.2 },
-                          }}
-                        >
-                          <TokenBalanceItem
-                            token={token}
-                            selectedChain={activeChain}
-                            isSelected={
-                              selectedToken?.address === token.address
-                            }
-                            onClick={() => handleTokenSelect(token)}
-                            onBalanceUpdate={handleBalanceUpdate}
-                            index={index}
-                          />
-                        </motion.div>
-                      ))}
-                    </>
-                  )}
-                </AnimatePresence>
+                  <AnimatePresence mode="wait">
+                    {sortedTokens.length === 0 ? (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="text-center text-[#535E73] py-8"
+                      >
+                        {tokenSearchQuery
+                          ? "No tokens found"
+                          : activePrivyEVMWallet?.walletClientType === "privy"
+                            ? "No tokens with balance available to send"
+                            : "No tokens available for this network"}
+                      </motion.div>
+                    ) : (
+                      <>
+                        {sortedTokens.map((token: Token, index: number) => (
+                          <motion.div
+                            key={`${token.address}-${activeChain?.id}`}
+                            layout
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            transition={{
+                              layout: { duration: 0.3, ease: "easeInOut" },
+                              opacity: { duration: 0.2 },
+                              y: { duration: 0.2 },
+                            }}
+                          >
+                            <TokenBalanceItem
+                              token={token}
+                              selectedChain={activeChain}
+                              isSelected={
+                                selectedToken?.address === token.address
+                              }
+                              onClick={() => handleTokenSelect(token)}
+                              onBalanceUpdate={handleBalanceUpdate}
+                              index={index}
+                            />
+                          </motion.div>
+                        ))}
+                      </>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         ) : (
           <form
