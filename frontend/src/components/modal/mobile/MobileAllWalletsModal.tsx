@@ -5,7 +5,7 @@ import ModalButton from "../shared/ModalButton";
 import { MobileModal } from "./MobileModal";
 import { ConnectorIcon } from "../allWallets/components/ConnectorIcon";
 
-import { Connector, useConnect } from "wagmi";
+import { Connector, useConnect, useDisconnect } from "wagmi";
 import { useFundWalletStore } from "@/store/fundWalletStore";
 import { showInfoToast } from "@/toasts";
 import { useEffect, useState } from "react";
@@ -37,6 +37,8 @@ const MobileAllWallets = () => {
     connected,
   } = useWallet();
 
+  const { disconnectAsync } = useDisconnect();
+
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const checkIsMobile = () => {
@@ -49,7 +51,12 @@ const MobileAllWallets = () => {
     return () => window?.removeEventListener("resize", checkIsMobile);
   }, []);
 
-  const { walletAddress, connectSolana, activeChain, activeEvmWallet: activeAccount } = useMultiChain();
+  const {
+    walletAddress,
+    connectSolana,
+    activeChain,
+    activeEvmWallet: activeAccount,
+  } = useMultiChain();
 
   const { logout } = usePrivy();
 
@@ -74,7 +81,9 @@ const MobileAllWallets = () => {
   };
 
   const handleExternalWalletConnect = async (connector: Connector) => {
-    if (isConnectingWallet) return;
+    if (isConnectingWallet) {
+      await disconnectAsync();
+    }
     if (activeAccount?.walletClientType === "privy") {
       const confirmResult = confirm(
         "You smart wallet account will be disconnected",
@@ -87,7 +96,7 @@ const MobileAllWallets = () => {
     if (connected) {
       disconnect();
     }
-    
+
     setActiveConnector(connector);
     localStorage.setItem("connectorId", connector.id);
     connect(
@@ -103,13 +112,10 @@ const MobileAllWallets = () => {
           console.log(error);
 
           if (error.name === "ConnectorAlreadyConnectedError") {
-            const connectedConnector = connectors.find(
-              (c) => c.id === localStorage.getItem("connectorId"),
-            );
-            if (connectedConnector) {
-              connectedConnector.disconnect();
-              setActiveConnector(null);
-            }
+            connector.disconnect();
+            disconnectAsync({ connector });
+            setActiveConnector(null);
+
             showInfoToast("Please try to connect wallet again");
           }
         },
@@ -230,7 +236,6 @@ const MobileAllWallets = () => {
                   }}
                 />
               ))}
-
           </div>
         </div>
       </div>
