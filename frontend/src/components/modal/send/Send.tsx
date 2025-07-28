@@ -77,7 +77,11 @@ const sendSchema = z.object({
   recipientAddress: z
     .string()
     .min(1, "Wallet address is required")
-    .regex(/^0x[a-fA-F0-9]{40}$/, "Invalid wallet address format"),
+    .refine((address) => {
+      if (/^0x[a-fA-F0-9]{40}$/.test(address)) return true;
+      if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address)) return true;
+      return false;
+    }, "Invalid wallet address format"),
   amount: z
     .string()
     .min(1, "Amount is required")
