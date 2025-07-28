@@ -45,13 +45,11 @@ export const SwapSlippageBlock: React.FC<SwapSlippageProps> = ({
       <span className="text-white flex items-center gap-1">
         Swap Slippage:
         <InfoBlock>
-          <ErrorInputIcon
-            width={14}
-            height={14}
-            className="ml-1 cursor-pointer fill-[#1B46E0]"
-          />
           <div className="text-xs text-white mt-2">
-            The difference between the expected and actual amount received when swapping your input token to the vault&apos;s asset. This occurs when your input token differs from the vault&apos;s asset token.
+            💡 The difference between the expected and actual amount received
+            when swapping your input token to the vault&apos;s asset. This
+            occurs when your input token differs from the vault&apos;s asset
+            token.
           </div>
         </InfoBlock>
       </span>
@@ -59,7 +57,9 @@ export const SwapSlippageBlock: React.FC<SwapSlippageProps> = ({
         value={
           <span className="font-normal flex-row gap-1">
             {conversionOutput.swapSlippagePercentage.toFixed(2)}%{" "}
-            <span className="font-medium">({conversionOutput.swapSlippageUSD})</span>
+            <span className="font-medium">
+              ({conversionOutput.swapSlippageUSD})
+            </span>
           </span>
         }
         isBreathing={isBreathing}
@@ -102,13 +102,10 @@ export const DepositSlippageBlock: React.FC<DepositSlippageProps> = ({
       <span className="text-white flex items-center gap-1">
         Deposit Slippage:
         <InfoBlock>
-          <ErrorInputIcon
-            width={14}
-            height={14}
-            className="ml-1 cursor-pointer fill-[#1B46E0]"
-          />
           <div className="text-xs text-white mt-2">
-            The difference between the amount sent to the strategy and the final output amount. This occurs due to the strategy&apos;s share calculation and any fees charged by the underlying yield source.
+            💡 The difference between the amount sent to the strategy and the
+            final output amount. This occurs due to the strategy&apos;s share
+            calculation and any fees charged by the underlying yield source.
           </div>
         </InfoBlock>
       </span>
@@ -116,7 +113,9 @@ export const DepositSlippageBlock: React.FC<DepositSlippageProps> = ({
         value={
           <span className="font-normal flex-row gap-1">
             {conversionOutput.depositSlippagePercentage.toFixed(2)}%{" "}
-            <span className="font-medium">({conversionOutput.depositSlippageUSD})</span>
+            <span className="font-medium">
+              ({conversionOutput.depositSlippageUSD})
+            </span>
           </span>
         }
         isBreathing={isBreathing}
@@ -309,12 +308,7 @@ export default function FeeDisplay({
 
               {shouldShowDepositFee && (
                 <InfoBlock>
-                  <ErrorInputIcon
-                    width={14}
-                    height={14}
-                    className="fill-[#1B46E0]"
-                  />
-                  This fee is required for processing your deposit transaction
+                  💡 This fee is required for processing your deposit transaction
                   on the Ethereum network. It is deducted directly from your
                   deposit amount and is not covered by Amana.
                 </InfoBlock>
@@ -341,8 +335,6 @@ export default function FeeDisplay({
           </span>
         </div>
       ) : null}
-
-
     </div>
   );
 }
