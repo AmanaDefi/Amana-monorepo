@@ -60,7 +60,7 @@ const Sidebar = ({
         duration: 0.8,
         ease: "easeInOut",
       }}
-      className="min-h-[908px] rounded-3xl sidebar-shadow bg-[#0D1117] flex-col justify-between relative font-gotham overflow-hidden hidden lg:flex px-[29px] py-[54px] h-full"
+      className="h-[908px] rounded-3xl sidebar-shadow bg-[#0D1117] flex-col justify-between relative font-gotham overflow-hidden hidden lg:flex px-[29px] py-[54px]"
       style={{
         boxShadow:
           "0 2px 2px 0 rgba(255, 255, 255, 0.1), inset 0 1px 0 0 rgba(255, 255, 255, 0.1), 1px 0 2px 0 rgba(255, 255, 255, 0.1)",

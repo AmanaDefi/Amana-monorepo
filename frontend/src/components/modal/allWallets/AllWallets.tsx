@@ -71,7 +71,6 @@ const AllWAllets = () => {
       onSuccess: (result) => {
         if (fundWalletStep === "connectWallet") {
           setWalletAddress(result.accounts[0]);
-          localStorage.removeItem("connectorId");
           return fundWalletConnect();
         }
 
@@ -114,7 +113,6 @@ const AllWAllets = () => {
 
           if (error.name === "ConnectorAlreadyConnectedError") {
             connector.disconnect();
-            localStorage.removeItem("connectorId");
             disconnectAsync({ connector });
 
             setActiveConnector(null);
@@ -163,8 +161,8 @@ const AllWAllets = () => {
     } catch (error) {
       console.log(error);
 
-      if (connector.connected) {
-        connector.disconnect();
+      if (connected) {
+        disconnect();
 
         setActiveConnector(null);
         showInfoToast("Please try to connect wallet again");
