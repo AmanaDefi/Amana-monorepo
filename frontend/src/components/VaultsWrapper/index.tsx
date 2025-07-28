@@ -73,6 +73,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   hasProtocolFilter = false,
 }) => {
   const { isReady } = useInitializationStore();
+  const [isSorting, setIsSorting] = useState(false);
 
   const [localSearchTerm, setLocalSearchTerm] = useState("");
   const searchTerm = onSearchChange ? externalSearchTerm : localSearchTerm;
@@ -317,17 +318,23 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     totalCount,
   ]);
 
-  const handleSortChange = (
-    newSortBy: string,
-    newSortOrder: "asc" | "desc",
-  ) => {
-    if (onSortChange) {
-      onSortChange(newSortBy, newSortOrder);
-    } else {
-      setSortBy(newSortBy);
-      setSortOrder(newSortOrder);
-    }
-  };
+const handleSortChange = async (
+  newSortBy: string,
+  newSortOrder: "asc" | "desc",
+) => {
+  setIsSorting(true);
+
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+
+  if (onSortChange) {
+    onSortChange(newSortBy, newSortOrder);
+  } else {
+    setSortBy(newSortBy);
+    setSortOrder(newSortOrder);
+  }
+
+  setIsSorting(false);
+};
 
   const handleSortByChange = (sortByValue: SetStateAction<string>) => {
     const newSortBy =
@@ -422,7 +429,11 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   };
 
   const renderEmptyState = () => {
-    if (!isReady() || loading) return null;
+    if (!isReady() || loading || isSorting) return null;
+
+    if (vaults.length === 0 && !loading) {
+      return null; 
+    }
 
     if (paginatedVaults.length === 0) {
       if (isShownMyVaults && !MyVaults?.length) {
