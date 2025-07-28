@@ -464,12 +464,24 @@ export const Send = () => {
       !selectedToken &&
       activeChain
     ) {
-      const firstToken = sortedTokens[0];
+      let firstToken: Token;
+
+      if (activeChain.id === CHAIN_ID.solana) {
+        const solToken = sortedTokens.find(
+          (token) =>
+            token.symbol === "SOL" || token.symbol.toUpperCase() === "SOL",
+        );
+        firstToken = solToken || sortedTokens[0];
+      } else {
+        firstToken = sortedTokens[0];
+      }
+
       setSelectedToken(firstToken);
       setValue("token", firstToken.symbol, { shouldValidate: true });
     } else if (sortedTokens.length === 0) {
       setSelectedToken(null);
       setValue("token", undefined, { shouldValidate: true });
+      setValue("amount", "", { shouldValidate: true });
     }
   }, [sortedTokens, selectedToken, setValue, activeChain, isZetaChain]);
 
