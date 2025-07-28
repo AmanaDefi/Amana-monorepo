@@ -23,6 +23,8 @@ import { useChartStore } from "@/store/chartStore";
 import { getVaultHistoricalAPY } from "@/utils/defillama";
 import { getFilteredChartData } from "@/utils/chart";
 import { useAPYDisplay } from "@/hooks/useAPYDisplay";
+import { usePrediction } from "@/hooks/usePrediction";
+import { formatPrediction, getPredictionColorClass } from "@/utils/prediction";
 import {
   getNoonCapital30dAvgAPY,
   getNoonCapitalHistoricalAPY,
@@ -69,6 +71,12 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
     const historicalData = getHistoricalAPY(vault.id);
     const percentageChange = getPercentageChange(vault.id);
     const hasChartData = hasHistoricalData(vault.id);
+
+    // Use prediction hook
+    const { prediction, isLoading: predictionLoading, hasData: hasPredictionData } = usePrediction({
+      vaultId: vault.id,
+      historicalAPY: historicalData
+    });
 
     // Use utility to get filtered chart data
     const chartData = getFilteredChartData(historicalData, chartRange);
@@ -130,7 +138,12 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
     useEffect(() => {
       if (isNoonCapitalVault(vault.id)) {
         getNoonCapital30dAvgAPY().then(setNoonCapitalAPY);
-        getNoonCapitalHistoricalAPY().then(setNoonCapitalChart);
+        getNoonCapitalHistoricalAPY().then((data) => {
+          setNoonCapitalChart(data);
+          // Store APY in chart store for prediction
+          const apyArray = data.map((d) => d.apy);
+          setHistoricalAPY(vault.id, apyArray);
+        });
       } else {
         getVaultHistoricalAPY(vault.id).then((data) => {
           if (data && Array.isArray(data)) {
@@ -142,10 +155,33 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
     }, [vault.id, setHistoricalAPY]);
 
     const renderPredictionDisplay = () => {
+      if (predictionLoading) {
+        return (
+          <div className="flex flex-row justify-between">
+            <p className="font-semibold text-base md:text-xl leading-5 text-gray-400">
+              Loading...
+            </p>
+          </div>
+        );
+      }
+
+      if (!hasPredictionData || !prediction) {
+        return (
+          <div className="flex flex-row justify-between">
+            <p className="font-semibold text-base md:text-xl leading-5 text-gray-400">
+              N/A
+            </p>
+          </div>
+        );
+      }
+
+      const displayText = formatPrediction(prediction);
+      const colorClass = getPredictionColorClass(prediction);
+
       return (
         <div className="flex flex-row justify-between">
-          <p className="font-semibold text-base md:text-xl leading-5 text-white">
-            N/A
+          <p className={`font-semibold text-base md:text-xl leading-5 ${colorClass}`}>
+            {displayText}
           </p>
         </div>
       );
