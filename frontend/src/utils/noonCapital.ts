@@ -55,6 +55,31 @@ export async function getNoonCapitalHistoricalAPY(): Promise<{ apy: number, time
   }
 }
 
+// New function to get TVL from Noon Capital
+export async function getNoonCapitalTVL(): Promise<number | null> {
+  try {
+    const data = await fetchNoonCapitalData();
+    
+    // Check if tvl field exists
+    if (data.tvl !== undefined && data.tvl !== null) {
+      // Convert string to number - the TVL appears to be in the smallest unit
+      // Based on your image, it looks like it needs to be divided by 1e18 (18 decimals)
+      const tvlString = String(data.tvl);
+      const tvlBigInt = BigInt(tvlString);
+      
+      // Convert from wei-like units to USD (assuming 18 decimals like ETH)
+      const tvlInUSD = Number(tvlBigInt) / Math.pow(10, 18);
+      
+      return tvlInUSD;
+    }
+    
+    return null;
+  } catch (e) {
+    console.error("Failed to get Noon Capital TVL", e);
+    return null;
+  }
+}
+
 export function isNoonCapitalVault(vaultId: string): boolean {
   return vaultId.toLowerCase() === NOON_CAPITAL_VAULT_ID.toLowerCase();
 } 
