@@ -785,7 +785,16 @@ export default function VaultInputs({
       // 🔄 NEW LOGIC: Input is now in underlying asset terms, not shares
       // So we don't need to convert from shares to assets - the input IS the asset amount
       if (!isDeposit) {
-        const availableBalance = userVaultBalance?.formatted || "0";
+
+        if (!walletAddress) {
+          setLoadingOutputToken(false);
+          return;
+        }
+        const availableBalance = await fetchUserVaultMaxWithdraw(
+          vaultData.inputToken.decimals,
+          walletAddress,
+          vaultData.id,
+        );
         const inputFormatted = (
           Number(inputAmountValue) /
           10 ** vaultData.inputToken.decimals
@@ -837,11 +846,9 @@ export default function VaultInputs({
       );
 
       if (inputAmountValue === debouncedInputBalance.value) {
-        // Use formatTokenBalance for the output amount formatting
-        const formattedOutputAmount = formatTokenBalance(
-          tokenConversionFromWei,
-          inputToken?.symbol || "",
-        );
+        const formattedOutputAmount = parseFloat(
+          tokenConversionFromWei.toFixed(8),
+        ).toString();
 
         setConversionOutput({
           slippageActualValue: Number(slippageActualValue.toFixed(2)),
@@ -864,6 +871,7 @@ export default function VaultInputs({
       vaultTokenPrice,
       inputToken,
       userSlippage,
+      walletAddress,
       userVaultBalance?.formatted,
     ],
   );

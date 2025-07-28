@@ -48,8 +48,10 @@ export default function ChainTokenSelector({
 
   if (!currentChain) {
     return (
-      <div className={`flex items-center opacity-50 text-xs md:text-sm ${className}`}>
-        <span className="text-gray-400">Select chain</span>
+      <div
+        className={`flex items-center opacity-50 text-xs md:text-sm ${className}`}
+      >
+        <span className="text-gray-400">ZetaChain</span>
       </div>
     );
   }

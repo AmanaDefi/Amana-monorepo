@@ -153,14 +153,16 @@ export const AmountInputField: React.FC<AmountInputFieldProps> = ({
           boxShadow: "0 2px 6px 0 rgba(0, 0, 0, 0.25)",
           display: "grid",
           gridTemplateColumns: "1fr auto 1fr",
-          gridTemplateRows: "auto auto",
+          gridTemplateRows: "auto 1fr", 
           gridTemplateAreas: `
-            "top-left top-center top-right"
-            "main-left main-center main-right"
-          `,
-          gap: "4px 8px",
+      "top-left top-center top-right"
+      "main-left main-center main-right"
+    `,
+          gap: "2px 4px",
+          minHeight: "60px", 
+          maxHeight: "65px",
         }}
-        className={`w-full max-h-[77px] md:max-h-[75px] bg-[#161C27] pl-5 py-2 pr-[10px] rounded-lg border transition-all duration-200 ${
+        className={`w-full bg-[#161C27] pl-5 py-2 pr-[10px] rounded-lg border transition-all duration-200 ${
           hasError
             ? "border-[#FFC700]"
             : "border-[#535E73] hover:border-[#3E73C4] focus-within:border-[#3E73C4]"
@@ -206,7 +208,7 @@ export const AmountInputField: React.FC<AmountInputFieldProps> = ({
             onKeyDown={handleKeyPress}
             onPaste={handlePaste}
             {...register(fieldName)}
-            className="text-white text-2xl bg-transparent border-none outline-none placeholder-[#535E73] w-full disabled:cursor-not-allowed"
+            className="text-white text-xl bg-transparent border-none outline-none placeholder-[#535E73] w-full disabled:cursor-not-allowed"
           />
         </div>
 
@@ -234,7 +236,7 @@ export const AmountInputField: React.FC<AmountInputFieldProps> = ({
               </p>
             </div>
           ) : (
-            <div className="text-[#535E73] text-sm">Select token first</div>
+            <div className="text-[#535E73] text-sm">Select token</div>
           )}
         </div>
       </div>
