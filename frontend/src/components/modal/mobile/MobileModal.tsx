@@ -53,7 +53,7 @@ export const MobileModal = ({
               <DialogPanel as={Fragment}>
                 <div className="relative w-full">
                   {showHeader && showInfoBlock && (
-                    <div className="absolute top-[16px] left-[16px] z-20">
+                    <div className="absolute top-[24px] left-[24px] z-20">
                       <MobileInfoBlock isLeft>
                         💡 Connecting your wallet is like “logging in” to Web3.
                         Select your wallet from the options to get started
