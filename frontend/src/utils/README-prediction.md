@@ -45,13 +45,26 @@ Trend is determined by comparing recent APY values:
 - **Decreasing**: Recent values > 5% lower than earlier values
 - **Stable**: Change within ±5% threshold
 
+## Display Logic
+
+### Text Colors
+- **Green** (`#05D47F`): APY increasing OR stable (positive/neutral)
+- **White**: APY decreasing (negative)
+- **Gray** (`text-gray-400`): Low confidence (< 30%)
+
+### Arrow Indicators
+- **Green Arrow** (`#05D47F`): APY increasing (pointing up)
+- **Orange Arrow** (`#FFA500`): APY stable (pointing right, rotated 90°)
+- **Red Arrow** (`#FF1E1E`): APY decreasing (pointing down, rotated 180°)
+- **No Arrow**: Low confidence or no prediction available
+
 ## Usage
 
 ### Basic Usage in Components
 
 ```typescript
 import { usePrediction } from '@/hooks/usePrediction';
-import { formatPrediction, getPredictionColorClass } from '@/utils/prediction';
+import { formatPrediction, getPredictionColorClass, getPredictionArrow } from '@/utils/prediction';
 
 function VaultCard({ vaultId, historicalAPY }) {
   const { prediction, isLoading, hasData } = usePrediction({
@@ -65,10 +78,19 @@ function VaultCard({ vaultId, historicalAPY }) {
 
   const displayText = formatPrediction(prediction);
   const colorClass = getPredictionColorClass(prediction);
+  const arrow = getPredictionArrow(prediction);
 
   return (
-    <div className={colorClass}>
-      {displayText}
+    <div className="flex justify-between">
+      <span className={colorClass}>{displayText}</span>
+      {arrow.isDefined && (
+        <div className={classNames({
+          "rotate-180": arrow.shouldRotate,
+          "rotate-90": arrow.shouldRotateRight,
+        })}>
+          <DynamicArrowIcon color={arrow.color} />
+        </div>
+      )}
     </div>
   );
 }
@@ -124,6 +146,7 @@ Tests cover:
 - EMA calculation accuracy
 - Confidence scoring
 - Trend detection
+- Color and arrow display logic
 - Edge cases and error handling
 - Formatting functions
 
@@ -154,6 +177,12 @@ const CONFIDENCE_MEDIUM = 0.6;
 
 // Trend detection
 const TREND_THRESHOLD = 0.05; // 5%
+
+// Display colors
+const COLOR_INCREASING = '#05D47F'; // Green
+const COLOR_STABLE = '#05D47F';     // Green (same as increasing)
+const COLOR_DECREASING = '#FF1E1E'; // Red
+const COLOR_ARROW_STABLE = '#FFA500'; // Orange
 ```
 
 ## Error Handling

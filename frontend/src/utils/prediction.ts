@@ -175,10 +175,63 @@ export function getPredictionColorClass(prediction: PredictionResult): string {
 
   switch (prediction.trend) {
     case 'increasing':
-      return 'text-[#05D47F]';
+    case 'stable':
+      return 'text-[#05D47F]'; // Green for both increase and stable
     case 'decreasing':
-      return 'text-[#FF1E1E]';
+      return 'text-white'; // White for decrease
     default:
       return 'text-white';
+  }
+}
+
+/**
+ * Gets arrow properties for prediction display (similar to useAPYDisplay)
+ * @param prediction - Prediction result
+ * @returns Arrow color and rotation properties
+ */
+export function getPredictionArrow(prediction: PredictionResult): {
+  color: string;
+  shouldRotate: boolean;
+  shouldRotateRight: boolean;
+  isDefined: boolean;
+} {
+  if (prediction.confidence < 0.3) {
+    return {
+      color: '#666666',
+      shouldRotate: false,
+      shouldRotateRight: false,
+      isDefined: false
+    };
+  }
+
+  switch (prediction.trend) {
+    case 'increasing':
+      return {
+        color: '#05D47F', // Green
+        shouldRotate: false,
+        shouldRotateRight: false,
+        isDefined: true
+      };
+    case 'stable':
+      return {
+        color: '#FFA500', // Orange/Yellow for flat
+        shouldRotate: false,
+        shouldRotateRight: true, // Rotate 90 degrees for horizontal arrow
+        isDefined: true
+      };
+    case 'decreasing':
+      return {
+        color: '#FF1E1E', // Red
+        shouldRotate: true, // Rotate 180 degrees for down arrow
+        shouldRotateRight: false,
+        isDefined: true
+      };
+    default:
+      return {
+        color: '#666666',
+        shouldRotate: false,
+        shouldRotateRight: false,
+        isDefined: false
+      };
   }
 } 

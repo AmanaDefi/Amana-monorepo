@@ -41,6 +41,7 @@ export function usePrediction({
 
     // Always normalize to decimal for prediction
     const normalizedAPY = historicalAPY.map((apy) => apy / 100);
+    console.log('Normalized APY:', normalizedAPY);
     // Check cache first
     if (enableCache && predictionCache[vaultId]) {
       const cached = predictionCache[vaultId];
@@ -51,6 +52,7 @@ export function usePrediction({
 
     // Generate new prediction
     const result = predict30DayAPY(normalizedAPY);
+    console.log('Prediction result:', result);
     // Cache the result
     if (enableCache) {
       predictionCache[vaultId] = {

@@ -4,7 +4,8 @@ import {
   calculateTrend, 
   predict30DayAPY,
   formatPrediction,
-  getPredictionColorClass 
+  getPredictionColorClass,
+  getPredictionArrow
 } from '../prediction';
 
 describe('Prediction Utilities', () => {
@@ -166,24 +167,80 @@ describe('Prediction Utilities', () => {
       expect(getPredictionColorClass(increasingPrediction)).toBe('text-[#05D47F]');
     });
 
-    it('should return red for decreasing trend', () => {
-      const decreasingPrediction = {
-        predictedAPY: 0.05,
-        confidence: 0.8,
-        trend: 'decreasing' as const,
-        lastUpdated: new Date()
-      };
-      expect(getPredictionColorClass(decreasingPrediction)).toBe('text-[#FF1E1E]');
-    });
-
-    it('should return white for stable trend', () => {
+    it('should return green for stable trend', () => {
       const stablePrediction = {
         predictedAPY: 0.05,
         confidence: 0.8,
         trend: 'stable' as const,
         lastUpdated: new Date()
       };
-      expect(getPredictionColorClass(stablePrediction)).toBe('text-white');
+      expect(getPredictionColorClass(stablePrediction)).toBe('text-[#05D47F]');
+    });
+
+    it('should return white for decreasing trend', () => {
+      const decreasingPrediction = {
+        predictedAPY: 0.05,
+        confidence: 0.8,
+        trend: 'decreasing' as const,
+        lastUpdated: new Date()
+      };
+      expect(getPredictionColorClass(decreasingPrediction)).toBe('text-white');
+    });
+  });
+
+  describe('getPredictionArrow', () => {
+    it('should return undefined arrow for low confidence', () => {
+      const lowConfidencePrediction = {
+        predictedAPY: 0.05,
+        confidence: 0.2,
+        trend: 'stable' as const,
+        lastUpdated: new Date()
+      };
+      const arrow = getPredictionArrow(lowConfidencePrediction);
+      expect(arrow.isDefined).toBe(false);
+      expect(arrow.color).toBe('#666666');
+    });
+
+    it('should return green arrow for increasing trend', () => {
+      const increasingPrediction = {
+        predictedAPY: 0.05,
+        confidence: 0.8,
+        trend: 'increasing' as const,
+        lastUpdated: new Date()
+      };
+      const arrow = getPredictionArrow(increasingPrediction);
+      expect(arrow.isDefined).toBe(true);
+      expect(arrow.color).toBe('#05D47F');
+      expect(arrow.shouldRotate).toBe(false);
+      expect(arrow.shouldRotateRight).toBe(false);
+    });
+
+    it('should return orange arrow for stable trend', () => {
+      const stablePrediction = {
+        predictedAPY: 0.05,
+        confidence: 0.8,
+        trend: 'stable' as const,
+        lastUpdated: new Date()
+      };
+      const arrow = getPredictionArrow(stablePrediction);
+      expect(arrow.isDefined).toBe(true);
+      expect(arrow.color).toBe('#FFA500');
+      expect(arrow.shouldRotate).toBe(false);
+      expect(arrow.shouldRotateRight).toBe(true);
+    });
+
+    it('should return red arrow for decreasing trend', () => {
+      const decreasingPrediction = {
+        predictedAPY: 0.05,
+        confidence: 0.8,
+        trend: 'decreasing' as const,
+        lastUpdated: new Date()
+      };
+      const arrow = getPredictionArrow(decreasingPrediction);
+      expect(arrow.isDefined).toBe(true);
+      expect(arrow.color).toBe('#FF1E1E');
+      expect(arrow.shouldRotate).toBe(true);
+      expect(arrow.shouldRotateRight).toBe(false);
     });
   });
 }); 

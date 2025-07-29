@@ -24,7 +24,7 @@ import { getVaultHistoricalAPY } from "@/utils/defillama";
 import { getFilteredChartData } from "@/utils/chart";
 import { useAPYDisplay } from "@/hooks/useAPYDisplay";
 import { usePrediction } from "@/hooks/usePrediction";
-import { formatPrediction, getPredictionColorClass } from "@/utils/prediction";
+import { formatPrediction, getPredictionColorClass, getPredictionArrow } from "@/utils/prediction";
 import {
   getNoonCapital30dAvgAPY,
   getNoonCapitalHistoricalAPY,
@@ -178,12 +178,23 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
 
       const displayText = formatPrediction(prediction);
       const colorClass = getPredictionColorClass(prediction);
+      const arrow = getPredictionArrow(prediction);
 
       return (
         <div className="flex flex-row justify-between">
           <p className={`font-semibold text-base md:text-xl leading-5 ${colorClass}`}>
             {displayText}
           </p>
+          {arrow.isDefined && (
+            <div
+              className={classNames({
+                "rotate-180": arrow.shouldRotate,
+                "rotate-90": arrow.shouldRotateRight,
+              })}
+            >
+              <DynamicArrowIcon color={arrow.color} />
+            </div>
+          )}
         </div>
       );
     };
