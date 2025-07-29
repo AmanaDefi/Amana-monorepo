@@ -46,12 +46,26 @@ export default function ChainTokenSelector({
     return APPROVED_TOKENS[chain.id];
   }, [chain]);
 
+  const usdcToken = APPROVED_TOKENS[1]?.[1];
+
   if (!currentChain) {
     return (
       <div
-        className={`flex items-center opacity-50 text-xs md:text-sm ${className}`}
+        className={`flex items-center text-xs md:text-sm text-white ${className}`}
       >
-        <span className="text-gray-400">ZetaChain</span>
+        <div className="flex flex-row gap-1 md:gap-2">
+          {" "}
+          <img
+            src={usdcToken.imgURL}
+            alt={usdcToken.symbol}
+            width={20}
+            height={21}
+            className="rounded-full border border-white bg-[#10B981] mr-"
+          />
+          <p className="max-w-[82px] md:max-w-[200px] truncate">
+            {getOnlyTokenSymbol(usdcToken.symbol)}
+          </p>
+        </div>
       </div>
     );
   }
