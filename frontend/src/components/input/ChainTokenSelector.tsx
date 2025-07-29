@@ -65,10 +65,11 @@ export default function ChainTokenSelector({
     }
   };
 
+
   if (!currentChain) {
     return (
       <div
-        className={`flex items-center opacity-50 text-xs md:text-sm ${className}`}
+        className={`flex items-center text-xs md:text-sm text-white ${className}`}
       >
         <span className="text-gray-400">Select chain</span>
       </div>
