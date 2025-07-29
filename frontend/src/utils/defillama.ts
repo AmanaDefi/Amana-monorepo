@@ -80,4 +80,26 @@ export async function getVaultHistoricalAPY(vaultId: string): Promise<Array<{tim
   } catch (e) {
     return null;
   }
+}
+
+// New function to get TVL from DefiLlama
+export async function getVaultTVL(vaultId: string): Promise<number | null> {
+  const poolId = VAULT_TO_DEFILLAMA_POOL[vaultId];
+  if (!poolId) return null;
+  
+  try {
+    const pools = await fetchDefiLlamaPools();
+    const pool = pools.find((p: any) => p.pool === poolId);
+    if (!pool || typeof pool.tvlUsd !== 'number') return null;
+    
+    return pool.tvlUsd;
+  } catch (e) {
+    console.error("Failed to get DefiLlama TVL for vault:", vaultId, e);
+    return null;
+  }
+}
+
+// Helper function to check if a vault has DefiLlama data
+export function hasDefiLlamaData(vaultId: string): boolean {
+  return !!VAULT_TO_DEFILLAMA_POOL[vaultId];
 } 
