@@ -28,6 +28,7 @@ import {
   getNoonCapitalHistoricalAPY,
   isNoonCapitalVault,
 } from "@/utils/noonCapital";
+import { MiniSpinner } from "@/components/PendingDots";
 
 const MOCK_DIGITS = 6.43;
 
@@ -252,8 +253,8 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
             </div>
           </div>
 
-          {(hasChartData ||
-            (isNoonCapitalVault(vault.id) && noonCapitalChart.length > 0)) && (
+          {hasChartData ||
+          (isNoonCapitalVault(vault.id) && noonCapitalChart.length > 0) ? (
             <div
               className="flex flex-col w-full rounded-lg pt-2 bg-[#3E73C40D] border border-[#3E3C59] mb-2"
               onClick={(e) => e.stopPropagation()}
@@ -263,8 +264,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                   Historical APY
                 </p>
               </div>
-              {/* Chart range toggle */}
-              <div className="flex flex-row gap-2 px-2 pb-1 pt-1 pl-4 ">
+              <div className="flex flex-row gap-2  pb-1 pt-1 ml-[9px] px-2">
                 <button
                   className={`px-2 py-1 rounded text-xs font-semibold border ${chartRange === "30d" ? "bg-blue-700 text-white border-blue-700" : "bg-transparent text-blue-700 border-blue-700"}`}
                   onClick={(e) => {
@@ -285,10 +285,30 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                 </button>
               </div>
               <TableChart
+                key={`${vault.id}-${chartRange}`}
                 points={filteredChartPoints}
                 percentageChange={percentageChange}
                 timestamps={filteredTimestamps}
               />
+            </div>
+          ) : (
+            <div className="flex flex-col w-full rounded-lg pt-2 bg-[#3E73C40D] border border-[#3E3C59] mb-2">
+              <div className="flex flex-row gap-1 items-center justify-between px-2">
+                <p className="font-normal text-sm leading-4 text-white pl-[9px]">
+                  Historical APY
+                </p>
+              </div>
+              <div className="flex flex-row gap-2 px-2 pb-1 pt-1">
+                <div className="px-2 py-1 rounded text-xs font-semibold border bg-blue-700 text-white border-blue-700">
+                  30d
+                </div>
+                <div className="px-2 py-1 rounded text-xs font-semibold border bg-transparent text-blue-700 border-blue-700">
+                  90d
+                </div>
+              </div>
+              <div className="w-full h-[80px] flex items-center justify-center bg-gradient-to-r animate-pulse rounded">
+                <MiniSpinner size={20} color="#1B46E0" className="-mt-7" />
+              </div>
             </div>
           )}
 

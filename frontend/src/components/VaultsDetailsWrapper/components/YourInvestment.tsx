@@ -1,9 +1,13 @@
 import Button from "@/components/common/Button";
 import ErrorInputIcon from "@/components/svg/ErrorInputIcon";
 import InvestmentStarIcon from "@/components/svg/InvestmentStar";
-import { formatTokenBalance } from "@/utils/utils";
+import { formatTokenBalance, getOnlyTokenSymbol } from "@/utils/utils";
 import { motion } from "framer-motion";
 import { VaultData } from "@/types/types";
+import {
+  formatRewards,
+  fullTruncateTokenBalance,
+} from "@/utils/truncateNumber";
 
 interface YourInvestmentProps {
   depositAmount: string;
@@ -23,7 +27,9 @@ const YourInvestment = ({
     vaultTokenSymbol,
   );
 
-  const pointsText = vaultData.protocolPointsDescription || `${vaultData.protocol.name} Points`;
+  const pointsText =
+    vaultData.protocolPointsDescription || `${vaultData.protocol.name} Points`;
+  const cleanTokenSymbol = getOnlyTokenSymbol(vaultTokenSymbol);
 
   return (
     <div className="bg-[#14171F] rounded-2xl py-[22px] px-[42px] lg:py-6 lg:px-[50px] border border-[#2A2D36] flex flex-row items-center justify-start lg:justify-between ">
@@ -146,13 +152,24 @@ const YourInvestment = ({
       <div className="w-full lg:max-w-[324px]">
         <div className="flex flex-col gap-2">
           <p className="text-lg font-bold">Your Investment</p>
-          <p className="text-[24px] font-medium">
-            ${formattedDepositAmount} {vaultTokenSymbol}
+          <p className="text-[24px] font-medium overflow-hidden text-ellipsis whitespace-nowrap">
+            $
+            {fullTruncateTokenBalance(
+              formattedDepositAmount,
+              cleanTokenSymbol,
+              4,
+              20,
+            )}
           </p>
           {vaultData.protocolPoints && vaultData.protocolPoints > 0 && (
-            <p className="flex flex-row gap-1 text-[#3E73C4] items-center text-xs lg:text-base whitespace-nowrap">
-              <ErrorInputIcon width={14} height={15} className="fill-[#1B46E0]" />
-              Points Earned: 0 {pointsText}
+            <p className="flex flex-row gap-1 text-[#3E73C4] items-center text-xs lg:text-base overflow-hidden text-ellipsis">
+              <ErrorInputIcon
+                width={14}
+                height={15}
+                className="fill-[#1B46E0]"
+              />
+              Points Earned:{" "}
+              {formatRewards(vaultData.protocolPoints, pointsText)}
             </p>
           )}
         </div>
