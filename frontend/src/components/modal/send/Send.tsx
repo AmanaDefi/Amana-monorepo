@@ -716,7 +716,7 @@ export const Send = () => {
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 200, damping: 18 }}
-        className="text-sm font-normal text-white mt-2 md:mt-5"
+        className="text-sm font-normal text-white mt-2 md:mt-5 max-h-[calc(90vh-70px)] overflow-y-auto"
       >
         {showNetworkSelection ? (
           <div className="space-y-4">
