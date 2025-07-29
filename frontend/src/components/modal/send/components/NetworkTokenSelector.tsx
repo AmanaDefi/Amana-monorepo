@@ -177,10 +177,15 @@ const TokenBalanceItem = ({
 };
 
 const NETWORK_TOKEN_MAP: { [key: string]: Omit<NetworkData, "tokens"> } = {
+  ZetaChain: {
+    networkKey: "NATIVE",
+    icon: TOKEN_LOGO_URLS.ZETA,
+    tokenSuffixes: [""],
+  },
   Ethereum: {
     networkKey: "ETH",
     icon: TOKEN_LOGO_URLS.ETH,
-    tokenSuffixes: ["ETH", ""],
+    tokenSuffixes: ["ETH"],
   },
   Base: {
     networkKey: "BASE",
