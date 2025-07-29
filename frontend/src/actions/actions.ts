@@ -2367,9 +2367,9 @@ export const getPathDataAndAmountOut = async (
     if (!quote?.encodeParams?.interfaceParams) throw new Error("Zuno quote missing encodeParams");
     // 3. Get encoded calldata from Zuno
     const encodeResp = await axios.post(`${ZUNO_API_BASE}/api/cross_chain/transaction/encode`, {
-      data: [
-        { interfaceParams: quote.encodeParams.interfaceParams }
-      ]
+      data: {
+        interfaceParams: quote.encodeParams.interfaceParams
+      }
     });
     console.log('[actions.ts] Zuno encodeResp', encodeResp);
     const encodedPath = encodeResp.data?.data?.data;
