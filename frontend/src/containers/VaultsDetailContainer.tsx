@@ -70,6 +70,7 @@ import ChainsModal from "@/components/modal/chains/ChainsModal";
 import Image from "next/image";
 import { useAuthStore } from "@/store/authStore";
 import { AiOutlineConsoleSql } from "react-icons/ai";
+import { useExternalTVL } from "@/hooks/useExternalTVL";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -281,6 +282,25 @@ const VaultsDetailContainer: React.FC<{
       setVaultTotalAsset(convertGraphVaultToTotalAssets(vaultFromGraph.vault));
     }
   }, [vaultID, vaultFromGraph]);
+
+  // Integrate external TVL data for the vault detail page
+  const {
+    enhancedTotalAssets,
+    isLoading: externalTVLLoading,
+    error: externalTVLError,
+  } = useExternalTVL({
+    vaultIds: vaultData ? [vaultData.id] : [],
+    existingTotalAssets: vaultTotalAsset ? [vaultTotalAsset] : [],
+    enabled: !!vaultData
+  });
+
+  // Update the vault total assets with external TVL data when available
+  const finalVaultTotalAsset = useMemo(() => {
+    if (enhancedTotalAssets.length > 0) {
+      return enhancedTotalAssets[0];
+    }
+    return vaultTotalAsset;
+  }, [enhancedTotalAssets, vaultTotalAsset]);
 
   // Set user vault balance from graph data
   useEffect(() => {
@@ -661,7 +681,7 @@ const VaultsDetailContainer: React.FC<{
                   vaultAPY={vaultAPYs.find(
                     (a) => a.vaultId === vaultID.toString(),
                   )}
-                  totalAssets={vaultTotalAsset}
+                  totalAssets={finalVaultTotalAsset}
                   isLoading={
                     loading ||
                     !vaultAPYs.find((a) => a.vaultId === vaultID.toString())
@@ -677,7 +697,7 @@ const VaultsDetailContainer: React.FC<{
                     vaultAPY={vaultAPYs.find(
                       (a) => a.vaultId === vaultID.toString(),
                     )}
-                    totalAssets={vaultTotalAsset}
+                    totalAssets={finalVaultTotalAsset}
                     titleColor="#535E73"
                     isLoading={
                       loading ||

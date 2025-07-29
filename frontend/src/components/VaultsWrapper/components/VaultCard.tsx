@@ -163,8 +163,8 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
           <div className="grid grid-cols-[auto_1fr] md:grid-cols-[auto_max-content] justify-between gap-1">
             <div className="grid grid-cols-[auto_1fr] gap-3 mb-3 p-2 rounded-md col-span-1 items-center">
               <Image
-                src={vault.inputToken.imgURL}
-                alt={vault.inputToken.symbol}
+                src={vault.outputTokenImage || vault.inputToken.imgURL}
+                alt={vault.outputTokenSymbol || vault.inputToken.symbol}
                 width={40}
                 height={40}
                 className="rounded-full flex-none"
@@ -264,7 +264,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                 </p>
               </div>
               {/* Chart range toggle */}
-              <div className="flex flex-row gap-2 px-2 pb-1 pt-1">
+              <div className="flex flex-row gap-2 px-2 pb-1 pt-1 pl-4 ">
                 <button
                   className={`px-2 py-1 rounded text-xs font-semibold border ${chartRange === "30d" ? "bg-blue-700 text-white border-blue-700" : "bg-transparent text-blue-700 border-blue-700"}`}
                   onClick={(e) => {
