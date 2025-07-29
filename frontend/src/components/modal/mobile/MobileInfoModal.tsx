@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { VaultData, Token } from "@/types/types";
 import { Chain } from "viem";
 import Dropdown from "@/components/VaultsDetailsWrapper/components/Dropdown";
@@ -37,6 +37,12 @@ const MobileInfoModal: React.FC<MobileInfoModalProps> = ({
 }) => {
   const { step, closeAll } = useAuthStore();
   const isOpen = step === "mobileInfo";
+
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+
+  const handleDropdownToggle = (dropdownId: string) => (isOpen: boolean) => {
+    setOpenDropdown(isOpen ? dropdownId : null);
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -91,15 +97,23 @@ const MobileInfoModal: React.FC<MobileInfoModalProps> = ({
           </Button>
         </div>
 
-        <div className="flex-1 space-y-4">
-          <Dropdown title="Historical APY" defaultOpen={false}>
+        <div className="flex-1">
+          <Dropdown
+            title="Historical APY"
+            isOpen={openDropdown === "historical-apy"}
+            onToggle={handleDropdownToggle("historical-apy")}
+          >
             <ChartDropdown
               vaultId={vaultData.id}
               vaultName={vaultData.name.replace("Pool", "").replace("Lend", "")}
             />
           </Dropdown>
 
-          <Dropdown title="Information" defaultOpen={false}>
+          <Dropdown
+            title="Information"
+            isOpen={openDropdown === "information"}
+            onToggle={handleDropdownToggle("information")}
+          >
             <VaultInformationContent
               vaultData={vaultData}
               vaultExplorerBaseUrl={vaultExplorerBaseUrl}
@@ -112,7 +126,11 @@ const MobileInfoModal: React.FC<MobileInfoModalProps> = ({
           </Dropdown>
 
           {!isWithdraw && (
-            <Dropdown title="What happens to my deposit?" defaultOpen={false}>
+            <Dropdown
+              title="What happens to my deposit?"
+              isOpen={openDropdown === "deposit-flow"}
+              onToggle={handleDropdownToggle("deposit-flow")}
+            >
               <VaultInformationContent
                 vaultData={vaultData}
                 vaultExplorerBaseUrl={vaultExplorerBaseUrl}

@@ -9,7 +9,7 @@ import Link from "next/link";
 const Footer = ({ isConnected }: { isConnected: boolean }) => {
   return (
     <footer
-      className={`flex sticky bottom-0 justify-center md:justify-between items-center w-full font-gotham mt-8 ${
+      className={`flex bottom-0 justify-center md:justify-between items-center w-full font-gotham mt-8 ${
 
         isConnected ? "px-0 lg:px-[44px]" : "pr-0 lg:pr-[44px]"
 
