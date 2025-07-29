@@ -50,7 +50,7 @@ export const Modal = ({
               </div>
             </motion.div>
 
-            <div className="fixed inset-0 flex flex-col md:items-center md:justify-center justify-between items-center pt-10 p-4 pb-10 h-[100dvh] md:h-[95vh]">
+            <div className="fixed inset-0 flex flex-col md:items-center md:justify-center justify-between items-center pt-10 p-4 pb-[34px] h-[100dvh] md:h-[95vh]">
               <DialogPanel as={Fragment}>
                 <motion.div
                   key="modal"
@@ -77,9 +77,8 @@ export const Modal = ({
                   className="relative w-full flex justify-center items-center font-gotham"
                   style={{
                     paddingBottom:
-                      "max(12px, env(safe-area-inset-bottom), 12px)",
-                    paddingTop: "12px",
-                    minHeight: "60px",
+                      "max(8px, env(safe-area-inset-bottom), 8px)",
+                    minHeight: "28px",
                     zIndex: 9999,
                     position: "relative",
                     backgroundColor: "transparent",
