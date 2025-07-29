@@ -49,8 +49,8 @@ export const Modal = ({
                 <GlowIcon position="bottom-mobile" />
               </div>
             </motion.div>
-
             <div className="fixed inset-0 flex flex-col md:items-center md:justify-center justify-between items-center pt-10 p-4 pb-[34px] h-[100dvh] md:h-[95vh]">
+
               <DialogPanel as={Fragment}>
                 <motion.div
                   key="modal"
