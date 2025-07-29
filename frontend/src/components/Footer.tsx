@@ -10,7 +10,9 @@ const Footer = ({ isConnected }: { isConnected: boolean }) => {
   return (
     <footer
       className={`flex sticky bottom-0 justify-center md:justify-between items-center w-full font-gotham mt-8 ${
-        isConnected ? "px-[44px]" : "pr-[44px]"
+
+        isConnected ? "px-[44px]" : "pr-0 lg:pr-[44px]"
+
       }`}
     >
       <div className="flex items-center gap-4">

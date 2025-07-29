@@ -100,7 +100,7 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
         <div className="flex flex-col mx-auto w-full min-h-screen pt-4 md:py-6 lg:pt-10 pb-[30px] px-4 md:px-[44px] lg:px-0 ">
           <Header activeSection={activeSection} />
           <div className="flex flex-1">
-            <div className="flex-shrink-0 lg:h-[908px]">
+            <div className="flex-shrink-0 h-[915px]">
               <Sidebar
                 activeSection={activeSection}
                 isCollapsed={isCollapsed}
@@ -120,7 +120,7 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
                 duration: 0.8,
                 ease: "easeInOut",
               }}
-              className={`flex-1 ${!isMobile ? "pr-10" : "p-0"}`}
+              className={`flex-1 ${!isMobile ? "pr-[44px]" : "p-0"}`}
             >
               {children}
             </motion.div>
@@ -131,10 +131,10 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
       ) : (
         <div className="flex flex-col flex-1 mx-auto w-full min-h-screen py-4 md:py-6 lg:py-10 px-4 md:px-[44px] lg:px-0 ">
           <Header activeSection={activeSection} />
-          <div className="flex-1 lg:ml-16 lg:pl-[44px] pr-0 lg:pr-10">
+          <div className="flex-1 px-[44px]">
             {children}
           </div>
-          <div className="lg:ml-16">
+          <div className="px-[44px]">
             <Footer isConnected={false} />
             <AppModals />
           </div>
