@@ -56,7 +56,7 @@ export const VaultRow: FC<Props> = React.memo(
         onClick={handleNavigate}
         className="flex flex-row justify-between items-center w-full rounded-lg p-4 bg-[#3E73C40D] border border-[#3E3C59] hover:cursor-pointer hover:border-[#3E73C4] transition-colors duration-200"
       >
-        <div className="flex flex-row gap-6 items-center w-[40%] min-w-0">
+        <div className="flex flex-row gap-6 items-center w-[30%] xl:w-[20%] min-w-0">
           <motion.div
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -98,10 +98,11 @@ export const VaultRow: FC<Props> = React.memo(
             </motion.div>
           </div>
         </div>
-        <div className="flex w-[60%] flex-row xl:gap-14 gap-10 items-center justify-end">
-          <div className="flex w-[40%] flex-row gap-14 items-center justify-center">
+        <div className="flex w-[70%] xl:w-[80%] flex-row items-center">
+          {/* TVL Column */}
+          <div className="w-[25%] xl:w-[30%] flex justify-end">
             <motion.p
-              className="text-white font-bold text-lg leading-5 -tracking-1 w-[50%] text-center"
+              className="text-white font-bold text-lg leading-5 -tracking-1 text-right"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25, duration: 0.3 }}
@@ -115,8 +116,12 @@ export const VaultRow: FC<Props> = React.memo(
                   )
                 : "0"}
             </motion.p>
+          </div>
+
+          {/* Risk Column */}
+          <div className="w-[25%] xl:w-[20%] flex justify-end">
             <motion.div
-              className="w-[50%] flex items-center justify-center"
+              className="flex items-center justify-end"
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.3, duration: 0.3 }}
@@ -126,16 +131,18 @@ export const VaultRow: FC<Props> = React.memo(
               </div>
             </motion.div>
           </div>
-          <div className="w-[60%] flex flex-row items-center gap-2 xl:gap-6 justify-end">
+
+          {/* APY Column */}
+          <div className="w-[25%] xl:w-[30%] flex justify-end">
             <motion.div
-              className="flex flex-row gap-1 items-center w-[50%] justify-center"
+              className="flex flex-row gap-1 items-center justify-end"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.35, duration: 0.3 }}
             >
               <p
                 className={classNames(
-                  "font-bold text-lg leading-5 ",
+                  "font-bold text-lg leading-5 text-right",
                   {
                     "text-[#05D47F]": Number(vaultAPY?.APY7d || 0) > 0,
                   },
@@ -158,8 +165,11 @@ export const VaultRow: FC<Props> = React.memo(
                 />
               </motion.div>
             </motion.div>
+          </div>
+
+          {/* Button Column */}
+          <div className="w-[25%] xl:w-[20%] flex justify-end">
             <motion.div
-              className="w-[50%]"
               initial={{ opacity: 0, x: 10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.45, duration: 0.3 }}
