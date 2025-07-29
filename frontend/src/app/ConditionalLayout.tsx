@@ -45,7 +45,7 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
 
         <div className="flex flex-col flex-1 mx-auto w-full min-h-screen relative z-10">
           <div
-            className={`${isConnected ? "pt-4 px-4 md:pt-6 lg:pt-10 lg:px-0" : "pt-4 lg:pt-10 lg:pr-0"} `}
+            className={`${isConnected ? "pt-4 px-4 md:pt-6 lg:pt-10 lg:px-0" : "pt-4 px-4 lg:px-0 lg:pt-10 lg:pr-0"} `}
           >
             <Header activeSection={activeSection} />
           </div>
