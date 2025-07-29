@@ -122,7 +122,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
     const renderAPYDisplay = () => {
       return (
         <div className="flex flex-row justify-between">
-          <p className={apyDisplay.textClass}>{apyDisplay.displayText}</p>
+          <span className={apyDisplay.textClass}>{apyDisplay.displayText}</span>
           {apyDisplay.isDefined && (
             <div
               className={classNames({
@@ -160,9 +160,9 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
       if (predictionLoading) {
         return (
           <div className="flex flex-row justify-between">
-            <p className="font-semibold text-base md:text-xl leading-5 text-gray-400">
+            <span className="font-semibold text-base md:text-xl leading-5 text-gray-400">
               Loading...
-            </p>
+            </span>
           </div>
         );
       }
@@ -170,9 +170,9 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
       if (!hasPredictionData || !prediction) {
         return (
           <div className="flex flex-row justify-between">
-            <p className="font-semibold text-base md:text-xl leading-5 text-gray-400">
+            <span className="font-semibold text-base md:text-xl leading-5 text-gray-400">
               N/A
-            </p>
+            </span>
           </div>
         );
       }
@@ -183,9 +183,9 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
 
       return (
         <div className="flex flex-row justify-between">
-          <p className={`font-semibold text-base md:text-xl leading-5 ${colorClass}`}>
+          <span className={`font-semibold text-base md:text-xl leading-5 ${colorClass}`}>
             {displayText}
-          </p>
+          </span>
           {arrow.isDefined && (
             <div
               className={classNames({

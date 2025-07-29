@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { VaultTotalAssets } from '@/types/types';
 import { mergeExternalTVLData, getBestAvailableTVL, hasExternalTVLData } from '@/utils/tvlData';
 
@@ -15,6 +15,30 @@ interface UseExternalTVLReturn {
   refreshTVL: () => Promise<void>;
 }
 
+interface TVLCacheEntry {
+  data: VaultTotalAssets[];
+  timestamp: number;
+  vaultIdsHash: string;
+}
+
+const TVL_CACHE_DURATION = 30 * 60 * 1000; 
+let globalTVLCache: TVLCacheEntry | null = null;
+
+function createVaultIdsHash(vaultIds: string[]): string {
+  return vaultIds.sort().join(',');
+}
+
+function isCacheValid(cache: TVLCacheEntry | null, vaultIds: string[]): boolean {
+  if (!cache) return false;
+  
+  const now = Date.now();
+  const isExpired = now - cache.timestamp > TVL_CACHE_DURATION;
+  const vaultIdsHash = createVaultIdsHash(vaultIds);
+  const isSameVaultIds = cache.vaultIdsHash === vaultIdsHash;
+  
+  return !isExpired && isSameVaultIds;
+}
+
 /**
  * Custom hook to integrate external TVL data (DefiLlama, Noon Capital) with existing vault data
  */
@@ -26,46 +50,58 @@ export function useExternalTVL({
   const [enhancedTotalAssets, setEnhancedTotalAssets] = useState<VaultTotalAssets[]>(existingTotalAssets);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  const existingTotalAssetsRef = useRef(existingTotalAssets);
+  const lastVaultIdsHashRef = useRef<string>('');
+  
+  useEffect(() => {
+    existingTotalAssetsRef.current = existingTotalAssets;
+  }, [existingTotalAssets]);
 
-  // Function to refresh TVL data
   const refreshTVL = useCallback(async () => {
     if (!enabled || vaultIds.length === 0) return;
+
+    const vaultIdsHash = createVaultIdsHash(vaultIds);
+    
+    if (isCacheValid(globalTVLCache, vaultIds)) {
+      setEnhancedTotalAssets(globalTVLCache!.data);
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
 
     try {
-      // Check if any vaults have external TVL data
       const vaultsWithExternalData = vaultIds.filter(vaultId => hasExternalTVLData(vaultId));
       
       if (vaultsWithExternalData.length === 0) {
-        // No external data available, use existing data
-        setEnhancedTotalAssets(existingTotalAssets);
+        setEnhancedTotalAssets(existingTotalAssetsRef.current);
         return;
       }
 
-      // Merge external TVL data with existing data
-      const mergedData = await mergeExternalTVLData(existingTotalAssets, vaultIds);
+      const mergedData = await mergeExternalTVLData(existingTotalAssetsRef.current, vaultIds);
+      
+      globalTVLCache = {
+        data: mergedData,
+        timestamp: Date.now(),
+        vaultIdsHash: vaultIdsHash
+      };
+      
       setEnhancedTotalAssets(mergedData);
     } catch (err) {
       console.error('Failed to fetch external TVL data:', err);
       setError('Failed to fetch external TVL data');
-      // Fall back to existing data on error
-      setEnhancedTotalAssets(existingTotalAssets);
+      setEnhancedTotalAssets(existingTotalAssetsRef.current);
     } finally {
       setIsLoading(false);
     }
-  }, [enabled, vaultIds, existingTotalAssets]);
+  }, [enabled, vaultIds]); 
 
-  // Effect to update enhanced data when existing data changes
   useEffect(() => {
-    setEnhancedTotalAssets(existingTotalAssets);
-  }, [existingTotalAssets]);
-
-  // Effect to refresh TVL data when vault IDs change or on mount
-  useEffect(() => {
-    refreshTVL();
-  }, [refreshTVL]);
+    if (enabled && vaultIds.length > 0) {
+      refreshTVL();
+    }
+  }, [enabled]); 
 
   return {
     enhancedTotalAssets,
@@ -97,11 +133,11 @@ export function useVaultTVL(vaultId: string, existingTotalAssets: VaultTotalAsse
     } finally {
       setIsLoading(false);
     }
-  }, [vaultId, existingTotalAssets]);
+  }, [vaultId, existingTotalAssets]); 
 
   useEffect(() => {
     fetchTVL();
-  }, [fetchTVL]);
+  }, [vaultId, existingTotalAssets]); 
 
   return {
     tvl,
