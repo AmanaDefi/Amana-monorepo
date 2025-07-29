@@ -28,12 +28,14 @@ contract CompoundEthStrategy is EthStrategyParent {
 
     /// @notice Initializes the strategy contract.
     /// @param _name Name of the strategy.
-    /// @param _amanaVault Address of the Amana vault.
     /// @param _gateway Address of the ZetaChain Gateway.
+    /// @param _amanaVault Address of the Amana vault.
     /// @param _withdrawHelper Address of the withdraw helper contract.
-    /// @param _wethAddress Address of the WETH contract.
+    /// @param _swapHelper Address of the swap helper contract.
     /// @param _receiptTokenAddress Address of the Compound vault.
+    /// @param _wethAddress Address of the WETH contract.
     /// @param _rewardsContractAddress Address of the Comet rewards contract.
+    /// @param _rewardsTokenAddress Address of the rewards token.
     function initialize(
         string memory _name,
         address _gateway,
