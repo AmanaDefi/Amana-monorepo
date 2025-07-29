@@ -101,13 +101,13 @@ const TokenBalanceItem = ({
       balance.formatted === "0" ||
       parseFloat(balance.formatted) === 0
     ) {
-      return `0 ${getOnlyTokenSymbol(token.symbol)}`;
+      return `0 ${token.symbol}`;
     }
     const formatted = formatTokenBalance(balance.formatted, token.symbol);
-    if (formatted.includes(getOnlyTokenSymbol(token.symbol))) {
+    if (formatted.includes(token.symbol)) {
       return formatted;
     }
-    return `${formatted} ${getOnlyTokenSymbol(token.symbol)}`;
+    return `${formatted} ${token.symbol}`;
   }, [balance, token.symbol]);
 
   const displayUSDValue = useMemo(() => {
@@ -149,9 +149,7 @@ const TokenBalanceItem = ({
         <TokenIcon token={token} icon={token.imgURL} imageSize="w-8 h-8" />
       </div>
       <div className="flex-1 text-left">
-        <div className="text-white text-[16px] font-normal">
-          {getOnlyTokenSymbol(token.symbol)}
-        </div>
+        <div className="text-white text-[16px] font-normal">{token.symbol}</div>
         <div className="text-[#535E73] text-[14px] font-normal">
           {selectedChain?.name}
         </div>
@@ -372,7 +370,7 @@ const NetworkTokenSelector: React.FC<NetworkTokenSelectorProps> = ({
         (token: Token) =>
           token.symbol.toLowerCase().includes(query) ||
           token.address.toLowerCase().includes(query) ||
-          getOnlyTokenSymbol(token.symbol).toLowerCase().includes(query),
+          token.symbol.toLowerCase().includes(query),
       );
     }
 
