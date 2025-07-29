@@ -4,7 +4,7 @@ import { ethers, network } from "hardhat";
 import { strategyConfigs, StrategyTestConfig } from "../config/strategy.config";
 import { deployStrategyFixture, StrategyTestContext, deployStrategyFromConfig } from "./setupStrategyTest";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { simulateRevertCallToStrategy, isBalancerStrategy, setTokenBalance, simulateDepositCallFromVaultToStrategy, simulateWithdrawCallFromVaultToStrategy, simulateSwitchCallFromVaultToStrategy, isConvexStrategy, isAegisStrategy, simulateConfirmDeposit } from "../utils";
+import { simulateRevertCallToStrategy, isBalancerStrategy, isCompoundStrategy, setTokenBalance, simulateDepositCallFromVaultToStrategy, simulateWithdrawCallFromVaultToStrategy, simulateSwitchCallFromVaultToStrategy, isConvexStrategy, isAegisStrategy, simulateConfirmDeposit } from "../utils";
 import { AMANA_VAULT_ADDRESS } from "../config/constants";
 import GatewayEVMABI from "@zetachain/protocol-contracts/abi/GatewayEVM.sol/GatewayEVM.json";
 import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
@@ -150,8 +150,8 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       let strategyBalanceAfter;
       if (isConvexStrategy(config.strategyContractName) || isBalancerStrategy(config.strategyContractName)) {
         strategyBalanceAfter = await rewardsContract.balanceOf(strategy.address);
-      } else if (rewardsContract.address != ethers.constants.AddressZero) {
-        strategyBalanceAfter = await rewardsContract.balanceOf(strategy.address);
+        // } else if (rewardsContract.address != ethers.constants.AddressZero) {
+        //   strategyBalanceAfter = await rewardsContract.balanceOf(strategy.address);
       } else {
         strategyBalanceAfter = await receiptTokenContract.balanceOf(strategy.address);
       }
@@ -191,15 +191,13 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       )
 
       let shares;
-      if (rewardsContract.address != ethers.constants.AddressZero) {
-        shares = await rewardsContract.balanceOf(strategy.address);
-      } else {
-        shares = await receiptTokenContract.balanceOf(strategy.address);
-      }
-      console.log("shares", shares.toString());
+      // if (rewardsContract.address != ethers.constants.AddressZero) {
+      //   shares = await rewardsContract.balanceOf(strategy.address);
+      // } else {
+      shares = await receiptTokenContract.balanceOf(strategy.address);
+      // }
       expect(shares).to.be.gt(0); // Ensure shares were received
       const totalAssetsBefore = await strategy.totalUnderlyingAssets();
-      console.log("Total assets before withdrawal:", totalAssetsBefore.toString());
 
       // if (isAegisStrategy(config.strategyContractName)) {
       //   await strategy.coolDown(config.withdrawAmount);
@@ -215,7 +213,6 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         config.minAmountOut,
         2
       );
-      console.log("Withdrawn amount:", config.withdrawAmount.toString());
       const totalAssetsAfter = await strategy.totalUnderlyingAssets();
       expect(totalAssetsBefore.sub(totalAssetsAfter)).to.be.closeTo(config.withdrawAmount, ERROR_MARGIN);
       // let strategyBalance;
@@ -284,7 +281,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
 
       let reward;
-      if (config.strategyContractName === "ERC20_Compound_Strategy") {
+      if (isCompoundStrategy(config.strategyContractName)) {
         reward = await rewardsContract.callStatic.getRewardOwed(config.receiptTokenAddress, strategy.address);
         reward = reward.owed;
       } else if (config.strategyContractName === "ConvexERC20StrategyArbitrum") {
@@ -324,7 +321,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       // expect(strategyBalance).to.equal(0); // Ensure strategy balance is zero
       // Step 8: Check that Rewards Were Claimed (Optional)
       let finalClaimableRewards;
-      if (config.strategyContractName === "ERC20_Compound_Strategy") {
+      if (isCompoundStrategy(config.strategyContractName)) {
         finalClaimableRewards = await rewardsContract.callStatic.getRewardOwed(config.receiptTokenAddress, strategy.address);
         finalClaimableRewards = finalClaimableRewards.owed;
       } else if (config.strategyContractName === "ConvexERC20StrategyArbitrum") {
@@ -439,7 +436,6 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       );
 
       // Call the function
-      console.log("This contract balance of receiptToken", await receiptTokenContract.balanceOf(strategy.address));
       const tx = await strategy.sendTotalUnderlyingAssetsToVault();
       await expect(tx)
         .to.emit(strategy, "TotalUnderlyingAssetsSent")
@@ -740,7 +736,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       await ethers.provider.send("evm_increaseTime", [timeToSimulate]);
       await ethers.provider.send("evm_mine", []);
       let preHarvestReward;
-      if (config.strategyContractName === "ERC20_Compound_Strategy") {
+      if (isCompoundStrategy(config.strategyContractName)) {
         preHarvestReward = await rewardsContract.callStatic.getRewardOwed(config.receiptTokenAddress, strategy.address);
         preHarvestReward = preHarvestReward.owed;
       } else if (config.strategyContractName === "ConvexERC20StrategyArbitrum") {

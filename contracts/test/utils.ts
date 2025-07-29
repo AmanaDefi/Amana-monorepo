@@ -555,6 +555,13 @@ export function isConvexStrategy(name: string): boolean {
   ].includes(name);
 }
 
+export function isCompoundStrategy(name: string): boolean {
+  return [
+    "ERC20_Compound_Strategy",
+    "ERC20_Compound_Strategy_w_swap"
+  ].includes(name);
+}
+
 export function isAegisStrategy(name: string): boolean {
   return [
     "AegisERC20Strategy"

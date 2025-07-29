@@ -367,15 +367,11 @@ abstract contract StrategyParent is
      * @param vaultNonce The execution nonce associated with the investment.
      */
     function manualResendInvestConfirmation(
-        uint256 totalUnderlyingAssetsBefore,
+        uint256 amount,
         uint256 totalUnderlyingAssetsAfter,
         uint256 vaultNonce
     ) external onlyOwner {
-        _sendInvestConfirmation(
-            totalUnderlyingAssetsBefore,
-            totalUnderlyingAssetsAfter,
-            vaultNonce
-        );
+        _sendInvestConfirmation(amount, totalUnderlyingAssetsAfter, vaultNonce);
     }
 
     /**
@@ -389,12 +385,12 @@ abstract contract StrategyParent is
      * - Includes revert options in case of failure.
      */
     function _sendInvestConfirmation(
-        uint256 totalUnderlyingAssetsBefore,
+        uint256 amount,
         uint256 totalUnderlyingAssetsAfter,
         uint256 vaultNonce
     ) internal {
         bytes memory outgoingMessage = abi.encode(
-            totalUnderlyingAssetsBefore,
+            amount,
             totalUnderlyingAssetsAfter,
             vaultNonce,
             TX_DEPOSIT_CONFIRMED

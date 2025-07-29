@@ -16,13 +16,14 @@ import "../interfaces/ICometRewards.sol";
 /// @title ERC20_4626_Strategy
 /// @notice Base contract for USDC strategies using Aave and ZetaChain.
 /// @dev Handles USDC investments and divestments for strategies on EVM-compatible chains.
-contract ERC20_Compound_Strategy is ERC20StrategyParent {
+contract ERC20_Compound_Strategy_w_swap is ERC20StrategyParent {
     using SafeERC20 for IERC20;
 
     ICompoundVault public receiptToken;
     ICometRewards public cometRewardsContract;
 
     address public rewardsTokenAddress;
+    address public lendingPoolTokenAddress;
 
     /// @notice Initializes the strategy contract.
     function initialize(
@@ -50,6 +51,7 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
         receiptToken = ICompoundVault(_receiptTokenAddress);
         cometRewardsContract = ICometRewards(_rewardsContractAddress);
         rewardsTokenAddress = _rewardsTokenAddress;
+        lendingPoolTokenAddress = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174; // USDC.e on Polygon
     }
 
     /// @notice Claims rewards from Compound
@@ -68,12 +70,6 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
                 address(this)
             );
             uint256 claimed = compBalanceAfter - compBalanceBefore;
-            console.log(
-                "Claimed rewards from Compound:",
-                claimed,
-                "from",
-                rewardsTokenAddress
-            );
             emit RewardsClaimed(address(this), rewardsTokenAddress, claimed);
             return claimed;
         } catch {
@@ -116,16 +112,49 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
         uint256 amount,
         uint256 minAmountOut
     ) internal override {
-        approveOrIncreaseAllowance(inputToken, address(receiptToken), amount);
+        // swap one form of USDC for another
+        IERC20(inputToken).safeTransfer(swapHelper, amount);
+
+        uint256 maxDeadline = 1 hours;
+        uint16 slippage = 50;
+        // Retry with increasing slippage up to 10% (1000 bps)
+        uint256 amountAfterSwap;
+        while (slippage <= 1000) {
+            try
+                ISwapHelper(swapHelper).swap(
+                    address(inputToken),
+                    amount,
+                    lendingPoolTokenAddress,
+                    slippage,
+                    address(this),
+                    maxDeadline,
+                    ""
+                )
+            returns (uint256 result) {
+                amountAfterSwap = result;
+            } catch {
+                emit SwapFailed(
+                    address(inputToken),
+                    amount,
+                    "Swap attempt failed"
+                );
+            }
+
+            slippage += 100; // increase slippage by 1% (100 bps)
+        }
+        approveOrIncreaseAllowance(
+            IERC20(lendingPoolTokenAddress),
+            address(receiptToken),
+            amountAfterSwap
+        );
         uint256 initialBalance = receiptToken.balanceOf(address(this));
-        if (amount > 0) {
-            receiptToken.supply(address(inputToken), amount);
+        if (amountAfterSwap > 0) {
+            receiptToken.supply(lendingPoolTokenAddress, amountAfterSwap);
         }
         uint256 finalBalance = receiptToken.balanceOf(address(this));
         if (finalBalance - initialBalance < minAmountOut) {
             revert InsufficientOut();
         }
-        // shares out = amount deposited, so no need to check minimumOut
     }
 
     /**
@@ -139,15 +168,17 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
         uint256 minAmountOut
     ) internal override returns (uint256 amountWithdrawn) {
         harvest(); // Harvest rewards before withdrawing
-        uint256 initialBalance = inputToken.balanceOf(address(this)); // take initial balance after harvest
         uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(assetAmount);
-        receiptToken.withdraw(address(inputToken), sharesToWithdraw);
-        uint256 finalBalance = inputToken.balanceOf(address(this));
-        amountWithdrawn = finalBalance - initialBalance;
-        if (amountWithdrawn < minAmountOut) {
+        receiptToken.withdraw(lendingPoolTokenAddress, sharesToWithdraw);
+        uint256 amountOut = swapToInputToken(
+            lendingPoolTokenAddress,
+            sharesToWithdraw,
+            harvestSwapSlippage
+        );
+        if (amountOut < minAmountOut) {
             revert InsufficientOut();
         }
-        return sharesToWithdraw;
+        return amountOut;
     }
 
     /// @notice Gets the total assets held in the strategy.

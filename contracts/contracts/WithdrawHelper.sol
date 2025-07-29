@@ -16,8 +16,6 @@ import "./interfaces/ISwapHelper.sol";
 import "./interfaces/IAmanaVault.sol";
 import "./interfaces/IZapContract.sol";
 
-import "hardhat/console.sol";
-
 contract WithdrawHelper is
     Initializable,
     OwnableUpgradeable,
@@ -582,11 +580,10 @@ contract WithdrawHelper is
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_crossChainInvestFailed"))
         ) {
-            console.log("Reverting from cross-chain invest");
+            uint256 amountToWithdraw = context.amount;
+
             if (context.amount > 0) {
-                console.log("context.amount", context.amount);
                 if (withdrawZRC20 == withdrawERC20) {
-                    console.log("Withdrawing ZRC20");
                     IERC20(withdrawZRC20).approve(
                         registry.zapContract(),
                         context.amount
@@ -600,7 +597,6 @@ contract WithdrawHelper is
                             receiver
                         );
                 } else {
-                    console.log("Withdrawing to user cross chain");
                     bytes memory recipient;
                     if (nonEvmAddress.length > 0) {
                         recipient = abi.encode(nonEvmAddress);
@@ -615,41 +611,42 @@ contract WithdrawHelper is
                         registry.swapHelper(),
                         context.amount
                     );
-                    uint256 amountToWithdraw;
-                    try
-                        ISwapHelper(registry.swapHelper()).swap(
-                            vaultAsset,
-                            context.amount,
-                            withdrawZRC20,
-                            250, // first attempt slippage
-                            address(this),
-                            200,
-                            "" // TO-DO - how can we get swap data for this swap?
-                        )
-                    returns (uint256 result) {
-                        amountToWithdraw = result;
-                    } catch {
+                    if (vaultAsset != withdrawZRC20) {
+                        // Swap vault asset to withdrawZRC20
                         try
                             ISwapHelper(registry.swapHelper()).swap(
                                 vaultAsset,
                                 context.amount,
                                 withdrawZRC20,
-                                750, // first attempt slippage
+                                250, // first attempt slippage
                                 address(this),
                                 200,
-                                ""
+                                "" // TO-DO - how can we get swap data for this swap?
                             )
                         returns (uint256 result) {
                             amountToWithdraw = result;
                         } catch {
-                            revert("Swap failed at both slippage levels");
+                            try
+                                ISwapHelper(registry.swapHelper()).swap(
+                                    vaultAsset,
+                                    context.amount,
+                                    withdrawZRC20,
+                                    750, // first attempt slippage
+                                    address(this),
+                                    200,
+                                    ""
+                                )
+                            returns (uint256 result) {
+                                amountToWithdraw = result;
+                            } catch {
+                                revert("Swap failed at both slippage levels");
+                            }
                         }
                     }
-
                     handleGasFeeAndWithdrawToUser(
                         recipient,
                         withdrawZRC20,
-                        context.amount,
+                        amountToWithdraw,
                         vaultNonce
                     );
                 }
@@ -659,7 +656,7 @@ contract WithdrawHelper is
                 vaultNonce,
                 vault,
                 receiver,
-                context.amount
+                amountToWithdraw
             );
         } else if (
             keccak256(bytes(revertMessage)) ==
@@ -722,7 +719,6 @@ contract WithdrawHelper is
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_crossChainInvestFailed"))
         ) {
-            console.log("Aborting");
             _sendRevertToStrategy(strategyAddress, vaultAsset, vaultNonce);
             emit CrossChainInvestFailed(vaultNonce, vault, receiver, amount);
         } else if (
