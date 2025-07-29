@@ -964,7 +964,7 @@ export const Approvedeposit = async (
       ) &&
       activeAccount.walletClientType === "privy"
     ) {
-      showErrorToast("Insufficient ZETA balance for perform transaction.");
+      showErrorToast("Insufficient ZETA balance to perform the transaction");
     }
     return false;
   }

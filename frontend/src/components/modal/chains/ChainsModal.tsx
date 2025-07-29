@@ -446,16 +446,16 @@ useEffect(() => {
     [selectedChainLocal],
   );
 
-  const filteredTokens = useMemo(() => {
-    if (!searchQuery) return availableTokens;
+ const filteredTokens = useMemo(() => {
+   if (!searchQuery) return availableTokens;
 
-    const query = searchQuery.toLowerCase();
-    return availableTokens.filter(
-      (token) =>
-        token.symbol.toLowerCase().includes(query) ||
-        token.address.toLowerCase().includes(query),
-    );
-  }, [availableTokens, searchQuery]);
+   const query = searchQuery.toLowerCase();
+   return availableTokens.filter(
+     (token) =>
+       token.symbol.toLowerCase().startsWith(query) ||
+       token.address.toLowerCase().includes(query),
+   );
+ }, [availableTokens, searchQuery]);
 
   const sortedTokens = useMemo(() => {
     return [...filteredTokens].sort((a, b) => {

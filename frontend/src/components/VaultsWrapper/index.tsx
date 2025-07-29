@@ -73,6 +73,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   hasProtocolFilter = false,
 }) => {
   const { isReady } = useInitializationStore();
+  const [isSorting, setIsSorting] = useState(false);
 
   const [localSearchTerm, setLocalSearchTerm] = useState("");
   const searchTerm = onSearchChange ? externalSearchTerm : localSearchTerm;
@@ -317,17 +318,23 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     totalCount,
   ]);
 
-  const handleSortChange = (
-    newSortBy: string,
-    newSortOrder: "asc" | "desc",
-  ) => {
-    if (onSortChange) {
-      onSortChange(newSortBy, newSortOrder);
-    } else {
-      setSortBy(newSortBy);
-      setSortOrder(newSortOrder);
-    }
-  };
+const handleSortChange = async (
+  newSortBy: string,
+  newSortOrder: "asc" | "desc",
+) => {
+  setIsSorting(true);
+
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+
+  if (onSortChange) {
+    onSortChange(newSortBy, newSortOrder);
+  } else {
+    setSortBy(newSortBy);
+    setSortOrder(newSortOrder);
+  }
+
+  setIsSorting(false);
+};
 
   const handleSortByChange = (sortByValue: SetStateAction<string>) => {
     const newSortBy =
@@ -398,14 +405,12 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
       <div className="flex flex-col gap-4">
         {paginatedVaults.length > 0 && (
           <div className="flex flex-row items-center justify-between">
-            <p className="w-[30%] xl:w-[20%] mr-[10%] xl:mr-[20%] text-center">
-              Pool
-            </p>
-            <div className="w-[60%] flex flex-row items-center xl:mr-[5%]">
-              <p className="w-[20%] xl:w-[40%] text-center">TVL</p>
-              <div className="w-[20%]" />
-              <p className="w-[30%] xl:w-[60%] text-center">APY</p>
-              <div className="w-[30%]" />
+            <p className="w-[30%] xl:w-[20%] text-left">Pool</p>
+            <div className="w-[70%] xl:w-[80%] flex flex-row items-center">
+              <p className="w-[25%] xl:w-[30%] text-right">TVL</p>
+              <p className="w-[25%] xl:w-[20%] text-right"></p>
+              <p className="w-[25%] xl:w-[30%] text-right pr-6">APY</p>
+              <div className="w-[25%] xl:w-[20%]" />
             </div>
           </div>
         )}
@@ -422,7 +427,11 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   };
 
   const renderEmptyState = () => {
-    if (!isReady() || loading) return null;
+    if (!isReady() || loading || isSorting) return null;
+
+    if (vaults.length === 0 && !loading) {
+      return null; 
+    }
 
     if (paginatedVaults.length === 0) {
       if (isShownMyVaults && !MyVaults?.length) {
