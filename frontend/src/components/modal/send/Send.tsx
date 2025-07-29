@@ -499,8 +499,8 @@ export const Send = () => {
     }
   }, [selectedToken, activeChain, tokenBalances, showTokenSelection]);
 
+  const currentAmount = watch("amount");
   useEffect(() => {
-    const currentAmount = watch("amount");
     if (currentAmount && selectedToken) {
       const error = getSendErrorMessage(
         currentAmount,
@@ -514,7 +514,7 @@ export const Send = () => {
       setErrorMessage("");
     }
   }, [
-    watch("amount"),
+    currentAmount,
     selectedToken,
     activeChain,
     tokenBalances,
@@ -623,8 +623,6 @@ export const Send = () => {
   };
 
   const isButtonDisabled = useMemo(() => {
-    const currentAmount = watch("amount");
-
     if (
       !currentAmount ||
       currentAmount === "0" ||
@@ -651,13 +649,12 @@ export const Send = () => {
 
     return false;
   }, [
-    watch("amount"),
+    currentAmount,
     errorMessage,
     isValid,
     sortedTokens.length,
     selectedToken,
     isGlobalLoading,
-    watch,
   ]);
 
   const onSubmit = async (data: SendFormData): Promise<void> => {
