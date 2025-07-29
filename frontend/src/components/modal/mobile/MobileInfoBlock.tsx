@@ -34,7 +34,7 @@ export const MobileInfoBlock = ({
               "absolute bottom-10 -left-5 z-50 transition-all",
               { "-left-[295px]": isRight },
               { "-left-[130px]": isMiddle },
-              { "-left-3": isLeft },
+              { "-left-4": isLeft },
             )}
           >
             <InfoPopup isRight={isRight} isMiddle={isMiddle} isLeft={isLeft}>
