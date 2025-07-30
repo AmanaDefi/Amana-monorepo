@@ -366,25 +366,10 @@ export const Send = () => {
       );
     }
 
-    if (activePrivyEVMWallet?.walletClientType === "privy") {
-      return tokens.filter((token) => {
-        const tokenKey = `${token.address.toLowerCase()}-${activeChain?.id}`;
-        const tokenData = tokenBalances.get(tokenKey);
-
-        if (tokenData?.isLoading) return true;
-
-        return (
-          tokenData?.balance && parseFloat(tokenData.balance.formatted) > 0
-        );
-      });
-    }
     return tokens;
   }, [
     availableTokens,
     tokenSearchQuery,
-    activePrivyEVMWallet?.walletClientType,
-    tokenBalances,
-    activeChain,
   ]);
 
   const sortedTokens = useMemo(() => {
