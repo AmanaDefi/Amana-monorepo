@@ -523,7 +523,7 @@ contract SwapHelperZetachain is SwapHelperParent {
                 .ExactInputParams({
                     path: path,
                     recipient: vault,
-                    deadline: block.timestamp + maxDeadline,
+                    // deadline: block.timestamp + maxDeadline,
                     amountIn: amount,
                     amountOutMinimum: minimumOut
                 });
@@ -587,7 +587,7 @@ contract SwapHelperZetachain is SwapHelperParent {
                 .ExactOutputParams({
                     path: encodedPath,
                     recipient: vault,
-                    deadline: block.timestamp + maxDeadline,
+                    // deadline: block.timestamp + maxDeadline,
                     amountOut: amountOut,
                     amountInMaximum: maxAmountIn
                 });
@@ -600,7 +600,7 @@ contract SwapHelperZetachain is SwapHelperParent {
                 .ExactOutputParams({
                     path: encodedPath,
                     recipient: vault,
-                    deadline: block.timestamp + maxDeadline,
+                    // deadline: block.timestamp + maxDeadline,
                     amountOut: amountOut,
                     amountInMaximum: maxAmountIn
                 });

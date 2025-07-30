@@ -21,8 +21,6 @@ import "./interfaces/ICurveRegistry.sol";
 import "./interfaces/ICurvePoolDynamic.sol";
 import "./CurvePoolRegistry.sol";
 
-import "hardhat/console.sol";
-
 abstract contract SwapHelperParent is
     Initializable,
     UUPSUpgradeable,
@@ -115,9 +113,6 @@ abstract contract SwapHelperParent is
             ? 1e8
             : IPriceOracle(priceOracleAddress).fetchPrice(outputPriceFeed);
         require(inputPrice > 0 && outputPrice > 0, "Invalid price data");
-
-        console.log("inputPrice", inputPrice);
-        console.log("outputPrice", outputPrice);
 
         // Get token decimals dynamically
         uint256 inputDecimals = getTokenDecimals(inputToken);
@@ -544,7 +539,7 @@ abstract contract SwapHelperParent is
                     ISwapRouter.ExactInputParams({
                         path: encodedPath,
                         recipient: receiver,
-                        deadline: block.timestamp + maxDeadline,
+                        // deadline: block.timestamp + maxDeadline,
                         amountIn: amount,
                         amountOutMinimum: minimumOut
                     })
@@ -622,7 +617,7 @@ abstract contract SwapHelperParent is
                     ISwapRouter.ExactOutputParams({
                         path: encodedPath,
                         recipient: receiver,
-                        deadline: block.timestamp,
+                        // deadline: block.timestamp,
                         amountOut: amountOut,
                         amountInMaximum: maxAmountIn
                     })

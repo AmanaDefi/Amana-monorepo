@@ -8,7 +8,6 @@ import "../interfaces/ISwapHelper.sol";
 import "../interfaces/ICometRewards.sol";
 import "../interfaces/IWETH.sol";
 import "./EthStrategyParent.sol";
-import "hardhat/console.sol";
 
 // BASE WETH receiptToken: 0x46e6b214b524310239732D51387075E0e70970bf
 // BASE rewardsTokenAddress token: 0x9e1028F5F1D5eDE59748FFceE5532509976840E0
@@ -154,19 +153,18 @@ contract CompoundEthStrategy is EthStrategyParent {
             // minClaimableReward *
             //     10 ** (IERC20Metadata(rewardsTokenAddress).decimals() - 3)
         ) {
-            console.log("Reinvesting rewards: %s COMP", compBalance);
             uint256 usdcReceived = swapToInputToken(
                 rewardsTokenAddress,
                 compBalance,
                 harvestSwapSlippage
             );
-            console.log("Received %s USDC from COMP swap", usdcReceived);
             if (
                 usdcReceived > 0
                 // minClaimableReward *
                 //     10 ** (IERC20Metadata(address(inputToken)).decimals() - 3)
             ) {
-                _depositFundsIntoYieldSource(usdcReceived, 0);
+                approveOrIncreaseAllowance(IERC20(weth), address(receiptToken), usdcReceived);
+                receiptToken.supply(address(weth), usdcReceived);
                 emit RewardsHarvested(
                     rewardsTokenAddress,
                     compBalance,

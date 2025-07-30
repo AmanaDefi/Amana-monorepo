@@ -363,7 +363,7 @@ contract SwapHelperEthereum is SwapHelperParent {
                 .ExactInputParams({
                     path: encodedPath,
                     recipient: strategy,
-                    deadline: block.timestamp + maxDeadline,
+                    // deadline: block.timestamp + maxDeadline,
                     amountIn: amount,
                     amountOutMinimum: minimumOut
                 });
@@ -432,7 +432,7 @@ contract SwapHelperEthereum is SwapHelperParent {
             .ExactInputParams({
                 path: encodedPath,
                 recipient: strategy,
-                deadline: block.timestamp + maxDeadline,
+                // deadline: block.timestamp + maxDeadline,
                 amountIn: amount,
                 amountOutMinimum: minimumOut
             });
@@ -480,7 +480,7 @@ contract SwapHelperEthereum is SwapHelperParent {
             .ExactInputParams({
                 path: encodedPath,
                 recipient: strategy,
-                deadline: block.timestamp + maxDeadline,
+                // deadline: block.timestamp + maxDeadline,
                 amountIn: amount,
                 amountOutMinimum: minimumOut
             });

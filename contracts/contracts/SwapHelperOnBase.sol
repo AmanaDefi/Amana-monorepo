@@ -9,7 +9,6 @@ import "./interfaces/IAerodromeRouter.sol";
 import "./interfaces/IBalancerRouter.sol";
 import "./interfaces/I4626Vault.sol";
 import "./CurvePoolRegistry.sol";
-import "hardhat/console.sol";
 
 // PriceOracle address: 0x7C136bC8A5Ce2245C3357bc4A7B97C1A9A2b480c
 
@@ -213,18 +212,13 @@ contract SwapHelperOnBase is SwapHelperParent {
         );
 
         bool isStable = isStablecoin(inputToken) && isStablecoin(outputToken);
-        console.log(
-            "Swapping %s %s to %s with slippage %s bps",
-            amount,
-            inputToken
-        );
         uint256 minimumOut = calculateMinAmountOut(
             inputToken,
             outputToken,
             amount,
             slippageBps
         );
-        console.log("Minimum output amount: %s %s", minimumOut, outputToken);
+
         address[] memory path = getPathAerodrome(
             inputToken,
             outputToken,
@@ -232,8 +226,7 @@ contract SwapHelperOnBase is SwapHelperParent {
             WETH_ADDRESS, // Using WETH as the intermediate token
             isStable // Assuming we want to swap through non-stable pools
         );
-        console.log("Aerodrome swap path: %s -> %s", inputToken, outputToken);
-        console.log("Path length: %s", path.length);
+
         if (path.length < 2) {
             // No valid path found
             return 0;
@@ -282,7 +275,6 @@ contract SwapHelperOnBase is SwapHelperParent {
             slippageBps
         );
         (address[] memory path, uint24[] memory feeTiers, bytes memory encodedPath) = getPathV3(inputToken, outputToken, UNISWAP_V3_FACTORY);
-        console.log("Encoded path length: %s", encodedPath.length);
         
         if (encodedPath.length > 0) {
             IERC20(inputToken).approve(UNISWAP_V3_ROUTER, amount);
@@ -290,13 +282,11 @@ contract SwapHelperOnBase is SwapHelperParent {
                 .ExactInputParams({
                     path: encodedPath,
                     recipient: receiver,
-                    deadline: block.timestamp + maxDeadline,
+                    // deadline: block.timestamp + maxDeadline,
                     amountIn: amount,
                     amountOutMinimum: minimumOut
                 });
-            console.log("Swapping via Uniswap V3", amount, minimumOut, maxDeadline);
             amountOut = ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params);
-            console.log("Swapped via Uniswap V3", amount, amountOut);
         } else {
              // Uniswap V2 Swap
             path = getPathV2(inputToken, outputToken, UNISWAP_V2_FACTORY);

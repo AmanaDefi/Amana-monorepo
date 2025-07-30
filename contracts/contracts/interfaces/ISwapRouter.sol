@@ -7,7 +7,7 @@ interface ISwapRouter {
         address tokenOut; // The token being swapped out
         uint24 fee; // The fee to pay
         address recipient; // The recipient of the output tokens
-        uint256 deadline; // The deadline for the swap to be executed
+        // uint256 deadline; // The deadline for the swap to be executed
         uint256 amountIn; // The amount of input tokens
         uint256 amountOutMinimum; // The minimum amount of output tokens to receive
         uint160 sqrtPriceLimitX96; // The price limit for the swap
@@ -16,7 +16,7 @@ interface ISwapRouter {
     struct ExactInputParams {
         bytes path;
         address recipient;
-        uint256 deadline;
+        // uint256 deadline;
         uint256 amountIn;
         uint256 amountOutMinimum;
     }
@@ -24,8 +24,9 @@ interface ISwapRouter {
     struct ExactOutputSingleParams {
         address tokenIn;
         address tokenOut;
+        uint24 fee;
         address recipient;
-        uint256 deadline;
+        // uint256 deadline;
         uint256 amountOut;
         uint256 amountInMaximum;
         uint160 limitSqrtPrice;
@@ -34,7 +35,7 @@ interface ISwapRouter {
     struct ExactOutputParams {
         bytes path;
         address recipient;
-        uint256 deadline;
+        // uint256 deadline;
         uint256 amountOut;
         uint256 amountInMaximum;
     }
