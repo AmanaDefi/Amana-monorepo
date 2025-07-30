@@ -210,15 +210,14 @@ contract SwapHelperOnBase is SwapHelperParent {
             IERC20(inputToken).balanceOf(address(this)) >= amount,
             "Insufficient balance"
         );
-
         bool isStable = isStablecoin(inputToken) && isStablecoin(outputToken);
+
         uint256 minimumOut = calculateMinAmountOut(
             inputToken,
             outputToken,
             amount,
             slippageBps
         );
-
         address[] memory path = getPathAerodrome(
             inputToken,
             outputToken,
@@ -226,7 +225,6 @@ contract SwapHelperOnBase is SwapHelperParent {
             WETH_ADDRESS, // Using WETH as the intermediate token
             isStable // Assuming we want to swap through non-stable pools
         );
-
         if (path.length < 2) {
             // No valid path found
             return 0;
@@ -305,7 +303,6 @@ contract SwapHelperOnBase is SwapHelperParent {
 
             return amounts[amounts.length - 1];
         }
-        
     }
 
     function swapViaBalancerPool(
