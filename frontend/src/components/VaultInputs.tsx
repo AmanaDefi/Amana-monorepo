@@ -402,11 +402,7 @@ export default function VaultInputs({
 
 useEffect(() => {
   const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
-// Fallback for missing input token price
-if (isDeposit && (inputToken && (inputTokenPrice === 0 || inputTokenPrice === undefined))) {
-  setErrorMessage("Token price unavailable. Please try again later or select a different token.");
-  return;
-}
+  
   if (!inputToken || isTxInProgress) {
     return;
   }

@@ -29,6 +29,8 @@ export function convertGraphVaultToVaultData(graphVault: GraphVault): VaultData 
     protocolPoints: graphVault.protocolPoints,
     protocolPointsDescription: graphVault.protocolPointsDescription,
     cooldownPeriod: graphVault.cooldownPeriod,
+    minDeposit: graphVault.minDeposit, 
+    maxWithdraw: graphVault.maxWithdraw, 
     protocol: {
       name: graphVault.protocolName || "Unknown",
       strategyAddress: graphVault.strategy || graphVault.id,

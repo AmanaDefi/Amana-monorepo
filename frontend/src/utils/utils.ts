@@ -87,25 +87,29 @@ export function getVaultErrorMessage(
   }
 
   // Check deposit/withdrawal limits if vaultData is provided
-  if (vaultData && inputTokenPrice) {
-    const amountInUSD = Number(inputValue) * inputTokenPrice;
-
-    if (
-      isDeposit &&
-      vaultData.minDeposit &&
-      amountInUSD < vaultData.minDeposit &&
-      Number(inputValue) > 0
-    ) {
-      return `Your net deposit amount needs to be greater than $${vaultData.minDeposit}`;
+  if (vaultData) {
+    // For deposit validation, we need inputTokenPrice to calculate USD amount
+    if (isDeposit && vaultData.minDeposit && Number(inputValue) > 0) {
+      if (!inputTokenPrice || inputTokenPrice === 0) {
+        return "Token price unavailable. Please try again later or select a different token.";
+      }
+      
+      const amountInUSD = Number(inputValue) * inputTokenPrice;
+      if (amountInUSD < vaultData.minDeposit) {
+        return `Your net deposit amount needs to be greater than $${vaultData.minDeposit}`;
+      }
     }
 
-    if (
-      !isDeposit &&
-      vaultData.maxWithdraw &&
-      amountInUSD > vaultData.maxWithdraw &&
-      Number(inputValue) > 0
-    ) {
-      return `You can only withdraw a maximum of $${vaultData.maxWithdraw} instantly`;
+    // For withdrawal validation, we need vaultTokenPrice to calculate USD amount
+    if (!isDeposit && vaultData.maxWithdraw && Number(inputValue) > 0) {
+      if (!inputTokenPrice || inputTokenPrice === 0) {
+        return "Token price unavailable. Please try again later or select a different token.";
+      }
+      
+      const amountInUSD = Number(inputValue) * inputTokenPrice;
+      if (amountInUSD > vaultData.maxWithdraw) {
+        return `You can only withdraw a maximum of $${vaultData.maxWithdraw} instantly`;
+      }
     }
   }
 
