@@ -68,6 +68,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
     const userBalance = userVaultBalances.find(
       (balance) => balance.vaultId === vault.id,
     );
+
     const riskLevel = calculateRiskLevel(vault);
 
     const historicalData = getHistoricalAPY(vault.id);
@@ -283,11 +284,11 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                   {renderAPYDisplay()}
                   <div className="hover:cursor-pointer absolute right-[-10px] top-0 md:top-[-10px]">
                     <InfoBlock isRight>
-                      <p>
+                      <div>
                         <strong>💡 30d Average APY</strong><br/>
                         This shows the average Annual Percentage Yield over the last 30 days. 
                         It&apos;s calculated from historical performance data and helps indicate recent vault performance.
-                      </p>
+                      </div>
                     </InfoBlock>
                   </div>
                 </div>
@@ -301,29 +302,29 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                   {renderPredictionDisplay()}
                   <div className="hover:cursor-pointer absolute right-[-10px] top-0 md:top-[-10px]">
                     <InfoBlock isRight>
-                      <p>
+                      <div>
                         <strong>💡 30d Prediction</strong><br/>
                         AI-powered prediction of APY for the next 30 days using Exponential Moving Average algorithm. 
                         Based on historical data trends and confidence levels.
                         <br/><br/>
                         <strong>Trend Indicators:</strong><br/>
-                        <span className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1">
                           <div className="transform -rotate-90">
                             <ArrowRightIcon color="#05D47F" />
                           </div>
                           <span>Increasing Trend</span>
-                        </span>
-                        <span className="flex items-center gap-2 mb-1">
+                        </div>
+                        <div className="flex items-center gap-2 mb-1">
                           <ArrowRightIcon color="#FFA500" />
                           <span>Stable Trend</span>
-                        </span>
-                        <span className="flex items-center gap-2">
+                        </div>
+                        <div className="flex items-center gap-2">
                           <div className="transform rotate-90">
                             <ArrowRightIcon color="#FF1E1E" />
                           </div>
                           <span>Decreasing Trend</span>
-                        </span>
-                      </p>
+                        </div>
+                      </div>
                     </InfoBlock>
                   </div>
                 </div>
@@ -390,18 +391,18 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
             </div>
           )}
 
-          <p className="font-normal text-xs leading-4 text-white mb-4 md:mb-6 mt-2">
+          <div className="font-normal text-xs leading-4 text-white mb-4 md:mb-6 mt-2">
             This vault auto-compounds Lenders Tokens on{" "}
             <span className="flex flex-row gap-1">
               {vault.protocol.name} <InfoBlock isLeft>
-                <p>
+                <div>
                   <strong>Auto-compounding Vault</strong><br/>
                   This vault automatically reinvests your earnings to maximize returns. 
                   It uses the {vault.protocol.name} protocol to generate yield from your deposited tokens.
-                </p>
+                </div>
               </InfoBlock>
             </span>
-          </p>
+          </div>
         </div>
         <div className="flex gap-4 mt-auto">
           <AppButton

@@ -311,7 +311,7 @@ export default function VaultInputs({
       if (!selectedChain) {
         setInputToken(undefined);
         if (onTokenSelect) {
-          onTokenSelect(undefined);
+          setTimeout(() => onTokenSelect(undefined), 0);
         }
         setSelectedTokenFromModal(null);
         return;
@@ -326,7 +326,7 @@ export default function VaultInputs({
       ) {
         setInputToken(vaultData.inputToken);
         if (onTokenSelect) {
-          onTokenSelect(vaultData.inputToken);
+          setTimeout(() => onTokenSelect(vaultData.inputToken), 0);
         }
         setSelectedTokenFromModal(vaultData.inputToken);
       } else {
@@ -336,7 +336,7 @@ export default function VaultInputs({
         if (defaultToken) {
           setInputToken(defaultToken);
           if (onTokenSelect) {
-            onTokenSelect(defaultToken);
+            setTimeout(() => onTokenSelect(defaultToken), 0);
           }
           setSelectedTokenFromModal(defaultToken);
         }
@@ -454,46 +454,34 @@ if (isDeposit && (inputToken && (inputTokenPrice === 0 || inputTokenPrice === un
   tokenBalance.formatted,
 ]);
 
-  const isButtonDisabled = useMemo(async () => {
+  // ✅ FIXED: useMemo now only computes, no setState during render
+  const shouldDisableButton = useMemo(() => {
     if (
       !inputBalance.formatted ||
       inputBalance.formatted === "0" ||
       inputBalance.formatted === "0.00" ||
       Number(inputBalance.formatted) <= 0
     ) {
-      setIsButtonDisabled(true);
       return true;
     }
 
     if (loadingOutputToken) {
-      setIsButtonDisabled(true);
       return true;
     }
 
     if (errorMessage || outputBoxErrorMessage) {
-      setIsButtonDisabled(true);
       return true;
     }
 
     if (isDeposit) {
       if (Number(inputBalance.value) > Number(tokenBalance.value)) {
-        setIsButtonDisabled(true);
         return true;
       }
     } else {
       if (!walletAddress) {
-        setIsButtonDisabled(true);
         return true;
       }
-      const maxWithdrawAmount = await fetchUserVaultMaxWithdraw(
-        vaultData.inputToken.decimals,
-        walletAddress,
-        vaultData.id,
-      );
-      if (Number(inputBalance.formatted) > Number(maxWithdrawAmount)) {
-        setIsButtonDisabled(true);
-        return true;
-      }
+      // Note: Async operation moved to separate effect
     }
 
     if (
@@ -504,7 +492,6 @@ if (isDeposit && (inputToken && (inputTokenPrice === 0 || inputTokenPrice === un
         conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, ""),
       ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, ""))
     ) {
-      setIsButtonDisabled(true);
       return true;
     }
     if (
@@ -521,15 +508,13 @@ if (isDeposit && (inputToken && (inputTokenPrice === 0 || inputTokenPrice === un
         ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, "") ?? 0)
       )
     ) {
-      setIsButtonDisabled(true);
       return true;
     }
 
     if (isSlippageExceedingLimit) {
-      setIsButtonDisabled(true);
       return true;
     }
-    setIsButtonDisabled(false);
+    
     return false;
   }, [
     inputBalance.formatted,
@@ -545,11 +530,35 @@ if (isDeposit && (inputToken && (inputTokenPrice === 0 || inputTokenPrice === un
     conversionOutput.gasFeeInUSD,
     conversionOutput.outputAmountFormatted,
     isSlippageExceedingLimit,
-    setIsButtonDisabled,
     walletAddress,
-    vaultData.id,
-    vaultData.inputToken.decimals,
   ]);
+
+  // ✅ FIXED: setState moved to useEffect (no setState during render)
+  useEffect(() => {
+    setIsButtonDisabled(shouldDisableButton);
+  }, [shouldDisableButton, setIsButtonDisabled]);
+
+  // Handle withdraw max amount check separately (async operation)
+  useEffect(() => {
+    const checkWithdrawAmount = async () => {
+      if (!isDeposit && walletAddress && inputBalance.formatted && Number(inputBalance.formatted) > 0) {
+        try {
+          const maxWithdrawAmount = await fetchUserVaultMaxWithdraw(
+            vaultData.inputToken.decimals,
+            walletAddress,
+            vaultData.id,
+          );
+          if (Number(inputBalance.formatted) > Number(maxWithdrawAmount)) {
+            setIsButtonDisabled(true);
+          }
+        } catch (error) {
+          console.error('Error checking withdraw amount:', error);
+        }
+      }
+    };
+    
+    checkWithdrawAmount();
+  }, [isDeposit, walletAddress, inputBalance.formatted, vaultData.inputToken.decimals, vaultData.id, setIsButtonDisabled]);
 
   // Watch input balance and trigger steps config selection
   useEffect(() => {
