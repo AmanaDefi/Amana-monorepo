@@ -10,7 +10,8 @@ import GatewayEVMABI from "@zetachain/protocol-contracts/abi/GatewayEVM.sol/Gate
 import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
 import type { Event } from "ethers";
 
-const ERROR_MARGIN = ethers.BigNumber.from("200000"); // 0.01% error margin or similar
+const ETH_ERROR_MARGIN = ethers.BigNumber.from("100000000000000"); // 0.01% error margin or similar
+const ERC20_ERROR_MARGIN = ethers.BigNumber.from("200000"); // 0.01% error margin or similar
 
 strategyConfigs.forEach((config: StrategyTestConfig) => {
   describe(`${config.name}`, function () {
@@ -219,7 +220,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       );
       console.log("Withdrawn amount:", config.withdrawAmount.toString());
       const totalAssetsAfter = await strategy.totalUnderlyingAssets();
-      expect(totalAssetsBefore.sub(totalAssetsAfter)).to.be.closeTo(config.withdrawAmount, ERROR_MARGIN);
+      expect(totalAssetsBefore.sub(totalAssetsAfter)).to.be.closeTo(config.withdrawAmount, config.isNative ? ETH_ERROR_MARGIN : ERC20_ERROR_MARGIN);
       // let strategyBalance;
 
       // strategyBalance = await receiptTokenContract.balanceOf(strategy.address);

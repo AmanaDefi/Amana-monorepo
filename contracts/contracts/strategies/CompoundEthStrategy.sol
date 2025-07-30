@@ -78,18 +78,21 @@ contract CompoundEthStrategy is EthStrategyParent {
 
     /**
      * @notice Withdraws funds from the configured yield source.
-     * @param assetAmount The amount of funds to withdraw from the yield source.
-     * @return amountWithdrawn The amount of funds successfully withdrawn.
+     * @param fractionToWithdraw The fraction of shares to withdraw from the yield source.
+     * @param minAmountOut The minimum amount of funds to withdraw.
+     * @return sharesToWithdraw The amount of shares successfully withdrawn.
      */
     function _withdrawFundsFromYieldSource(
-        uint256 assetAmount,
-        uint256 /* unused */
-    ) internal override returns (uint256 amountWithdrawn) {
+        uint256 fractionToWithdraw,
+        uint256 minAmountOut
+    ) internal override returns (uint256 sharesToWithdraw) {
         harvest(); // Harvest rewards before withdrawing
-        uint256 sharesToWithdraw = getStrategyWithdrawShareAmount(assetAmount);
+        sharesToWithdraw = getStrategyWithdrawShareAmount(fractionToWithdraw);
         receiptToken.withdraw(address(weth), sharesToWithdraw);
         weth.withdraw(sharesToWithdraw);
-        return sharesToWithdraw;
+        if (sharesToWithdraw < minAmountOut) {
+            revert InsufficientOut();
+        }
     }
 
     /// @notice Gets the total assets held in the strategy.
@@ -99,17 +102,16 @@ contract CompoundEthStrategy is EthStrategyParent {
     }
 
     function getStrategyWithdrawShareAmount(
-        uint256 assetAmount
+        uint256 fractionOfTotalShares
     ) public view override returns (uint256) {
         uint256 totalShares = receiptToken.balanceOf(address(this));
-        uint256 sharesToWithdraw = convertToShares(assetAmount);
-        if (sharesToWithdraw > totalShares) {
-            sharesToWithdraw = totalShares;
+        uint256 withdrawShareAmount = (fractionOfTotalShares *
+            totalShares +
+            5e17) / 1e18;
+        if (withdrawShareAmount > totalShares) {
+            withdrawShareAmount = totalShares;
         }
-        if (totalShares > 0 && totalShares - sharesToWithdraw <= 1e3) {
-            sharesToWithdraw = totalShares;
-        }
-        return sharesToWithdraw;
+        return withdrawShareAmount;
     }
 
     function checkRewards() public returns (uint256) {
@@ -142,68 +144,6 @@ contract CompoundEthStrategy is EthStrategyParent {
     }
 
     function _reinvestRewards() internal override {
-        uint256 compBalance = IERC20(rewardsTokenAddress).balanceOf(
-            address(this)
-        );
-        if (
-            compBalance >
-            minClaimableReward *
-                10 ** (IERC20Metadata(rewardsTokenAddress).decimals() - 3)
-        ) {
-            uint256 usdcReceived = _swapToInputToken(
-                rewardsTokenAddress,
-                compBalance,
-                harvestSwapSlippage
-            );
-            if (
-                usdcReceived >
-                minClaimableReward *
-                    10 ** (IERC20Metadata(address(inputToken)).decimals() - 3)
-            ) {
-                _depositFundsIntoYieldSource(usdcReceived, 0);
-                emit RewardsHarvested(
-                    rewardsTokenAddress,
-                    compBalance,
-                    usdcReceived
-                );
-            }
-        }
-    }
-
-    function _swapToInputToken(
-        address token,
-        uint256 amountIn,
-        uint16 initialSlippageBps
-    ) internal virtual returns (uint256 amountOut) {
-        if (amountIn == 0) return 0;
-
-        IERC20(token).safeTransfer(swapHelper, amountIn);
-
-        uint256 maxDeadline = 1 hours;
-        uint16 slippage = initialSlippageBps;
-        // Retry with increasing slippage up to 10% (1000 bps)
-        while (slippage <= 1000) {
-            try
-                ISwapHelper(swapHelper).swap(
-                    token,
-                    amountIn,
-                    address(inputToken),
-                    slippage,
-                    address(this),
-                    maxDeadline,
-                    ""
-                )
-            returns (uint256 result) {
-                emit RewardsHarvested(token, amountIn, result);
-                return result;
-            } catch {
-                emit SwapFailed(token, amountIn, "Swap attempt failed");
-            }
-
-            slippage += 100; // increase slippage by 1% (100 bps)
-        }
-
-        // Swap failed even after max attempts
-        return 0;
+        // No reinvestment logic yet    
     }
 }
