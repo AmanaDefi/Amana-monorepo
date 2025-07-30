@@ -1,86 +1,133 @@
 "use client";
 
-import React from "react";
+import React, { useCallback, useMemo, useState } from "react";
+import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import { Token, VaultData } from "@/types/types";
 import { Chain } from "viem";
-import { getOnlyTokenSymbol } from "@/utils/utils";
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
+import { getOnlyTokenSymbol } from "@/utils/utils";
+import { useFundWalletStore } from "@/store/fundWalletStore";
+import { DropdownList } from "../VaultsWrapper/components/DropdownList";
+import { APPROVED_TOKENS } from "@/constants/chainConfig";
 
 interface ChainTokenSelectorProps {
+  onSelectToken: (token: Token) => void;
   selectedToken?: Token;
   selectedChain?: Chain | null;
   className?: string;
-  onOpenModal?: () => void;
-  isFromTopUp?: boolean;
-  onSelectToken?: (token: Token) => void;
-  onSelectChain?: (chain: Chain) => void;
-  onSelectChainAndToken?: (chain: Chain, token: Token) => void;
   vaultData?: VaultData;
   onClick?: () => void;
+  onSelectChain: ((chain: Chain) => void) | undefined;
+  onSelectChainAndToken: ((chain: Chain, token: Token) => void) | undefined;
+  isFromTopUp?: boolean;
 }
 
 export default function ChainTokenSelector({
+  onSelectToken,
   selectedToken,
   selectedChain,
   className = "",
-  onOpenModal,
-  isFromTopUp = false,
-  onSelectToken,
-  onSelectChain,
-  onSelectChainAndToken,
   vaultData,
   onClick,
+  onSelectChain,
+  onSelectChainAndToken,
+  isFromTopUp = false,
 }: ChainTokenSelectorProps) {
-  const chainTokenModalStore = useChainTokenModalStore();
+  const { selectedChainFromModal, selectedTokenFromModal, openModal } =
+    useChainTokenModalStore();
+  const { setStep, chain, currency, setCurrency } = useFundWalletStore();
+  const [isOpenDropDown, setIsOpenDropdown] = useState(false);
 
-  const handleOpenModalLegacy = () => {
-    chainTokenModalStore.openModal(
-      selectedChain || null,
-      selectedToken ?? null,
-      onSelectChain,
-      onSelectChainAndToken,
-      vaultData,
-      false,
-    );
-  };
+  const currentChain = selectedChainFromModal || selectedChain;
+  const currentToken = vaultData?.inputToken || selectedToken;
 
-  const currentChain = selectedChain;
-  const currentToken = selectedToken;
-
-  const handleClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (onOpenModal) {
-      onOpenModal();
-      return;
-    }
-    if (onSelectChainAndToken || onSelectChain) {
-      handleOpenModalLegacy();
-      return;
-    }
-
-    if (onClick) {
-      onClick();
-    }
-  };
-
+  const availableTokens = useMemo(() => {
+    if (!chain) return [];
+    return APPROVED_TOKENS[chain.id];
+  }, [chain]);
 
   if (!currentChain) {
     return (
       <div
         className={`flex items-center text-xs md:text-sm text-white ${className}`}
       >
-        <span className="text-gray-400">Select chain</span>
+        <div className="flex flex-row gap-1 md:gap-2">
+          {currentToken ? (
+            <>
+              <img
+                src={currentToken.imgURL}
+                alt={currentToken.symbol}
+                width={20}
+                height={21}
+                className="rounded-full border border-white bg-[#10B981]"
+              />
+              <p className="max-w-[82px] md:max-w-[200px] truncate">
+                {getOnlyTokenSymbol(currentToken.symbol)}
+              </p>
+            </>
+          ) : (
+            <p className="max-w-[82px] md:max-w-[200px] truncate text-xs md:text-sm">
+              Select token
+            </p>
+          )}
+        </div>
       </div>
     );
   }
 
+  const handleOpenModal = (
+    e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isFromTopUp) {
+      setIsOpenDropdown(true);
+    } else {
+      openModal(
+        currentChain,
+        currentToken ?? null,
+        onSelectChain,
+        onSelectChainAndToken,
+        vaultData,
+        false,
+      );
+    }
+  };
+
+  const tokenOptions = availableTokens.map((token) => {
+    return {
+      value: token.symbol,
+      icon: token.imgURL,
+    };
+  });
+
+  const handleSelectToken = (
+    e:
+      | React.MouseEvent<HTMLParagraphElement, MouseEvent>
+      | React.MouseEvent<HTMLButtonElement, MouseEvent>,
+    tokenSymbol: string,
+  ) => {
+    if (!isFromTopUp) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const selected = availableTokens.find(
+      (token) => token.symbol === tokenSymbol,
+    );
+
+    if (selected) {
+      onSelectToken(selected);
+    }
+
+    setIsOpenDropdown(false);
+  };
+
   return (
     <div className={`relative ${className}`}>
       <button
-        onClick={handleClick}
-        className="flex items-center gap-1 md:gap-2 rounded-lg text-white hover:opacity-80 transition-opacity"
+        onClick={(e) => handleOpenModal(e)}
+        className="flex items-center gap-1 md:gap-2 rounded-lg text-white"
       >
         {currentToken ? (
           <>
@@ -101,6 +148,16 @@ export default function ChainTokenSelector({
           </p>
         )}
       </button>
+      <DropdownList
+        handleSelectedOption={handleSelectToken}
+        options={tokenOptions}
+        selectedOption={currency?.symbol ?? ""}
+        isShownList={isOpenDropDown}
+        variant="token"
+        isIconButton={false}
+        width={150}
+        needReset={false}
+      />
     </div>
   );
 }
