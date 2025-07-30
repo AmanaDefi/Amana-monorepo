@@ -8,6 +8,7 @@ import "../interfaces/ISwapHelper.sol";
 import "../interfaces/ICometRewards.sol";
 import "../interfaces/IWETH.sol";
 import "./EthStrategyParent.sol";
+import "hardhat/console.sol";
 
 // BASE WETH receiptToken: 0x46e6b214b524310239732D51387075E0e70970bf
 // BASE rewardsTokenAddress token: 0x9e1028F5F1D5eDE59748FFceE5532509976840E0
@@ -58,6 +59,7 @@ contract CompoundEthStrategy is EthStrategyParent {
         );
 
         weth = IWETH(_wethAddress);
+        inputToken = IWETH(_wethAddress);
         receiptToken = ICompoundVault(_receiptTokenAddress);
         cometRewardsContract = ICometRewards(_rewardsContractAddress);
         rewardsTokenAddress = _rewardsTokenAddress;
@@ -144,6 +146,70 @@ contract CompoundEthStrategy is EthStrategyParent {
     }
 
     function _reinvestRewards() internal override {
-        // No reinvestment logic yet    
+        uint256 compBalance = IERC20(rewardsTokenAddress).balanceOf(
+            address(this)
+        );
+        if (
+            compBalance > 0
+            // minClaimableReward *
+            //     10 ** (IERC20Metadata(rewardsTokenAddress).decimals() - 3)
+        ) {
+            console.log("Reinvesting rewards: %s COMP", compBalance);
+            uint256 usdcReceived = swapToInputToken(
+                rewardsTokenAddress,
+                compBalance,
+                harvestSwapSlippage
+            );
+            console.log("Received %s USDC from COMP swap", usdcReceived);
+            if (
+                usdcReceived > 0
+                // minClaimableReward *
+                //     10 ** (IERC20Metadata(address(inputToken)).decimals() - 3)
+            ) {
+                _depositFundsIntoYieldSource(usdcReceived, 0);
+                emit RewardsHarvested(
+                    rewardsTokenAddress,
+                    compBalance,
+                    usdcReceived
+                );
+            }
+        }
+    }
+
+    function swapToInputToken(
+        address token,
+        uint256 amountIn,
+        uint16 initialSlippageBps
+    ) internal virtual returns (uint256 amountOut) {
+        if (amountIn == 0) return 0;
+
+        IERC20(token).safeTransfer(swapHelper, amountIn);
+
+        uint256 maxDeadline = 1 hours;
+        uint16 slippage = initialSlippageBps;
+        // Retry with increasing slippage up to 10% (1000 bps)
+        while (slippage <= 1000) {
+            try
+                ISwapHelper(swapHelper).swap(
+                    token,
+                    amountIn,
+                    address(inputToken),
+                    slippage,
+                    address(this),
+                    maxDeadline,
+                    ""
+                )
+            returns (uint256 result) {
+                emit RewardsHarvested(token, amountIn, result);
+                return result;
+            } catch {
+                emit SwapFailed(token, amountIn, "Swap attempt failed");
+            }
+
+            slippage += 100; // increase slippage by 1% (100 bps)
+        }
+
+        // Swap failed even after max attempts
+        return 0;
     }
 }

@@ -288,8 +288,8 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
 
       let reward;
       if (isCompoundStrategy(config.strategyContractName)) {
-          reward = await strategy.callStatic.checkRewards();
-          console.log("reward", reward.toString());
+        reward = await strategy.callStatic.checkRewards();
+        console.log("reward", reward.toString());
       } else if (config.strategyContractName === "ConvexERC20StrategyArbitrum") {
         await rewardsContract.earned(strategy.address);
         // This is needed to update the internal state of the contract
@@ -339,7 +339,7 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         finalClaimableRewards = await strategy.callStatic.checkRewards();
       }
       console.log("finalClaimableRewards", finalClaimableRewards.toString());
-      
+
       expect(finalClaimableRewards).to.be.lt(reward); // Rewards should have been claimed
     });
 

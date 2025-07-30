@@ -9,6 +9,7 @@ import "./interfaces/IAerodromeRouter.sol";
 import "./interfaces/IBalancerRouter.sol";
 import "./interfaces/I4626Vault.sol";
 import "./CurvePoolRegistry.sol";
+import "hardhat/console.sol";
 
 // PriceOracle address: 0x7C136bC8A5Ce2245C3357bc4A7B97C1A9A2b480c
 
@@ -18,6 +19,7 @@ contract SwapHelperOnBase is SwapHelperParent {
     address constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
     address constant axlOP = 0x994ac01750047B9d35431a7Ae4Ed312ee955E030;
     address constant yUSD = 0x4772D2e014F9fC3a820C444e3313968e9a5C8121;
+    address constant COMP = 0x9e1028F5F1D5eDE59748FFceE5532509976840E0;
 
     bytes32 constant wellUsdPriceFeedId =
         0x3cf6bab8bf8041dc8ee2a3edebe16b5f9f4ff3cce46006aeb15c885ba4779d0b;
@@ -27,6 +29,8 @@ contract SwapHelperOnBase is SwapHelperParent {
         0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace;
     bytes32 constant opUsdPriceFeedId =
         0x385f64d993f7b77d8182ed5003d97c60aa3361f3cecfe711544d2d59165e9bdf;
+    bytes32 constant compUsdPriceFeedId =
+        0x4a8e42861cabc5ecb50996f92e7cfa2bce3fd0a2423b0c44c9b423fb2bd25478;
 
     uint24 constant V3_FEE_TIER_LOW = 500;
     uint24 constant V3_FEE_TIER_HIGH = 3000;
@@ -62,12 +66,17 @@ contract SwapHelperOnBase is SwapHelperParent {
     function getPriceFeedId(
         address token
     ) internal pure override returns (bytes32) {
+        console.log("Getting price feed ID for token: %s", token);
         if (token == WELL) {
             return wellUsdPriceFeedId;
         } else if (token == MORPHO) {
             return morphoUsdPriceFeedId;
         } else if (token == axlOP) {
             return opUsdPriceFeedId;
+        } else if (token == WETH_ADDRESS) {
+            return ethUsdPriceFeedId;
+        } else if (token == COMP) {
+            return compUsdPriceFeedId;
         } else {
             return bytes32(0); // Return zero bytes if no price feed exists
         }
@@ -203,14 +212,20 @@ contract SwapHelperOnBase is SwapHelperParent {
             IERC20(inputToken).balanceOf(address(this)) >= amount,
             "Insufficient balance"
         );
-        bool isStable = isStablecoin(inputToken) && isStablecoin(outputToken);
 
+        bool isStable = isStablecoin(inputToken) && isStablecoin(outputToken);
+        console.log(
+            "Swapping %s %s to %s with slippage %s bps",
+            amount,
+            inputToken
+        );
         uint256 minimumOut = calculateMinAmountOut(
             inputToken,
             outputToken,
             amount,
             slippageBps
         );
+        console.log("Minimum output amount: %s %s", minimumOut, outputToken);
         address[] memory path = getPathAerodrome(
             inputToken,
             outputToken,
@@ -218,6 +233,8 @@ contract SwapHelperOnBase is SwapHelperParent {
             WETH_ADDRESS, // Using WETH as the intermediate token
             isStable // Assuming we want to swap through non-stable pools
         );
+        console.log("Aerodrome swap path: %s -> %s", inputToken, outputToken);
+        console.log("Path length: %s", path.length);
         if (path.length < 2) {
             // No valid path found
             return 0;
