@@ -76,7 +76,7 @@ const Sidebar = ({
         >
           <CloseSidebarIcon width={20} height={20} />
           <span className="absolute bottom-full right-0 mb-2 px-2 py-1 text-xs bg-gray-900 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
-            Minimise
+            Minimize
           </span>
         </button>
       )}
@@ -91,7 +91,7 @@ const Sidebar = ({
             >
               <OpenSidebarIcon width={20} height={20} />
               <span className="absolute bottom-full right-0 mb-2 px-2 py-1 text-xs bg-gray-900 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
-                Maximise
+                Maximize
               </span>
             </button>
           </div>

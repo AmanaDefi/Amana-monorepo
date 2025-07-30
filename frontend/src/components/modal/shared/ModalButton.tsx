@@ -60,7 +60,7 @@ const ModalButton = ({
           })}
         >
           <span
-            className="text-[16px] font-normal md:text-[18px] md:font-bold leading-5 text-left whitespace-nowrap"
+            className="text-[16px] font-normal md:text-[18px] md:font-medium leading-5 text-left whitespace-nowrap"
             style={{ letterSpacing: "-0.06em" }}
           >
             {label}
