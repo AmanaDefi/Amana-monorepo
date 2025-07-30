@@ -86,6 +86,11 @@ const DepositComplete = ({
 
   const firstCardContent = getFirstCardContent();
 
+  const formatAmount = (amount: string) =>
+    parseFloat(amount)
+      .toFixed(5)
+      .replace(/\.?0+$/, "");
+
   return (
     <div className="flex flex-col gap-6 font-gotham">
       <div className="rounded-[16px] before-gradient-border px-4 py-8 bg-[#14171F]">
@@ -148,19 +153,19 @@ const DepositComplete = ({
               {isDeposit ? (
                 <>
                   <p className="text-white-400">
-                    -{depositedInputAmount} {inputTokenSymbol}
+                    -{formatAmount(depositedInputAmount)} {inputTokenSymbol}
                   </p>
                   <p className="text-white-400">
-                    +{depositedOutputAmount} {outputTokenSymbol}
+                    +{formatAmount(depositedOutputAmount)} {outputTokenSymbol}
                   </p>
                 </>
               ) : (
                 <>
                   <p className="text-white-400">
-                    -{depositedInputAmount} {outputTokenSymbol}
+                    -{formatAmount(depositedInputAmount)} {outputTokenSymbol}
                   </p>
                   <p className="text-white-400">
-                    +{depositedOutputAmount} {inputTokenSymbol}
+                    +{formatAmount(depositedOutputAmount)} {inputTokenSymbol}
                   </p>
                 </>
               )}
