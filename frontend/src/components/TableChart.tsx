@@ -180,7 +180,7 @@ const TableChart: React.FC<TableChartProps> = ({
   };
 
   return (
-    <div className="relative w-full h-[80px] bg-transparent rounded-lg overflow-hidden">
+    <div className="relative w-full h-[80px] bg-transparent rounded-lg">
       <Chart
         options={options}
         series={series}
