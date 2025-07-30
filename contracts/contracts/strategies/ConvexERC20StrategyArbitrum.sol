@@ -122,7 +122,7 @@ contract ConvexERC20StrategyArbitrum is ERC20StrategyParent {
         }
 
         if (
-            totalConverted >
+            IERC20(inputToken).balanceOf(address(this)) >
             minClaimableReward *
                 10 ** (IERC20Metadata(address(inputToken)).decimals() - 3)
         ) {
