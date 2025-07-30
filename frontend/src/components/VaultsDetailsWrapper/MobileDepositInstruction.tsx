@@ -194,11 +194,21 @@ const MobileDepositInstruction: React.FC<MobileDepositInstructionProps> = (
     steps,
   } = useInstructionStepLogic(props);
 
-  const currentStep = steps[currentStepIndex] || DepositStep.SELECT_TOKEN;
+  const shouldShowFinalStep =
+    finishedTransaction &&
+    (Object.keys(transactionStepFeedback ?? {}).length > 0 ||
+      Object.keys(lastTransactionStepFeedback ?? {}).length > 0) &&
+    hasNoErrors(transactionStepFeedback ?? {}) &&
+    !isFailedOnConfirmation;
+
+  const displayStepIndex = shouldShowFinalStep
+    ? steps.length - 1
+    : currentStepIndex;
+  const currentStep = steps[displayStepIndex] || DepositStep.SELECT_TOKEN;
 
   const stepState = getStepState(
     currentStep,
-    currentStepIndex,
+    displayStepIndex,
     completedSteps,
     isFirstStepActive,
     isSecondStepActive,
@@ -271,14 +281,16 @@ const MobileDepositInstruction: React.FC<MobileDepositInstructionProps> = (
     );
   }
 
-  const fullDescription =
-    currentStep === DepositStep.SELECT_TOKEN ||
-    currentStep === DepositStep.CONFIRM_DEPOSIT
+  const finalStepDescription = shouldShowFinalStep
+    ? stepStatus?.description ||
+      getStepDescription(DepositStep.FINAL_CONFIRMATION, isDeposit)
+    : currentStep === DepositStep.SELECT_TOKEN ||
+        currentStep === DepositStep.CONFIRM_DEPOSIT
       ? getStepDescription(currentStep, isDeposit)
       : stepStatus?.description || getStepDescription(currentStep, isDeposit);
 
   const { textBeforeHash, hashValue } =
-    parseTransactionMessage(fullDescription);
+    parseTransactionMessage(finalStepDescription);
 
   return (
     <motion.div
@@ -307,11 +319,11 @@ const MobileDepositInstruction: React.FC<MobileDepositInstructionProps> = (
           )}
         </div>
         <AnimatePresence>
-          {isDynamicMode && progressPercent > 0 && (
+          {isDynamicMode && (
             <motion.div
               className="absolute top-[-16px] transition-all duration-500 ease-out"
               style={{
-                left: `${Math.max(0, elephantPosition - 4)}%`,
+                left: isDynamicMode ? `${elephantPosition}%` : "0%",
                 transform: "translateX(-50%)",
                 zIndex: 1,
               }}
@@ -392,8 +404,7 @@ const MobileDepositInstruction: React.FC<MobileDepositInstructionProps> = (
               backgroundColor:
                 currentStepStatus === TransactionStepStatus.error
                   ? "#DC2626"
-                  : isFirstStepActive ||
-                      currentStepStatus === TransactionStepStatus.completed
+                  : stepState === "completed"
                     ? "#1B46E0"
                     : "#535E73",
             }}
@@ -430,7 +441,7 @@ const MobileDepositInstruction: React.FC<MobileDepositInstructionProps> = (
                   exit={{ opacity: 0, scale: 0.8 }}
                 >
                   <motion.div
-                    className="w-6 h-6 rounded-full border border-transparent border-t-gray-400"
+                    className="w-6 h-6 rounded-full border border-transparent border-t-blue-400"
                     animate={{ rotate: 360 }}
                     transition={{
                       duration: 1,
