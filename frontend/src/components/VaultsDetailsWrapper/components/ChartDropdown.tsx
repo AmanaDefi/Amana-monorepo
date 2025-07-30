@@ -61,7 +61,7 @@ const ChartDropdown: FC<ChartDropdownProps> = ({ vaultId, vaultName }) => {
   }, [vaultId, setHistoricalAPY]);
 
   return (
-    <div className="flex flex-col w-full rounded-lg pt-2 bg-[#3E73C40D] border border-[#3E3C59]">
+    <div className="flex flex-col w-full rounded-lg pt-2 bg-[#3E73C40D] border border-[#3E3C59] overflow-visible">
       <div className="flex flex-row gap-1 items-center justify-between px-2">
         {/* <p className="font-normal text-sm leading-4 text-white pl-[9px]">
           Historical APY

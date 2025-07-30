@@ -156,7 +156,7 @@ const DepositComplete = ({
                     -{formatAmount(depositedInputAmount)} {inputTokenSymbol}
                   </p>
                   <p className="text-white-400">
-                    +{formatAmount(depositedOutputAmount)} {outputTokenSymbol}
+                    +{depositedOutputAmount} {outputTokenSymbol}
                   </p>
                 </>
               ) : (
@@ -165,7 +165,7 @@ const DepositComplete = ({
                     -{formatAmount(depositedInputAmount)} {outputTokenSymbol}
                   </p>
                   <p className="text-white-400">
-                    +{formatAmount(depositedOutputAmount)} {inputTokenSymbol}
+                    +{depositedOutputAmount} {inputTokenSymbol}
                   </p>
                 </>
               )}
