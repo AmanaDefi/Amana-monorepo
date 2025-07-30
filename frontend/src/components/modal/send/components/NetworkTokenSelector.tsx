@@ -339,27 +339,9 @@ const NetworkTokenSelector: React.FC<NetworkTokenSelectorProps> = ({
     return networksWithTokens;
   };
 
-  const filteredTokens = useMemo((): Token[] => {
-    if (activePrivyEVMWallet?.walletClientType === "privy") {
-      return availableTokens.filter((token: Token) => {
-        const tokenKey = `${token.address.toLowerCase()}-${activeChain?.id}`;
-        const tokenData = tokenBalances.get(tokenKey);
-
-        if (tokenData?.isLoading) return true;
-
-        return (
-          tokenData?.balance && parseFloat(tokenData.balance.formatted) > 0
-        );
-      });
-    }
-
-    return availableTokens;
-  }, [
-    availableTokens,
-    activePrivyEVMWallet?.walletClientType,
-    tokenBalances,
-    activeChain,
-  ]);
+const filteredTokens = useMemo((): Token[] => {
+  return availableTokens;
+}, [availableTokens]);
 
   const networksWithTokens = useMemo((): NetworksMap => {
     let tokens = filteredTokens;
