@@ -80,7 +80,7 @@ const Dropdown: FC<Props> = ({
             exit={{ height: 0, opacity: 0, marginTop: 0 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
           >
-            <div className="bg-transparent min-h-[180px] rounded-none p-0 md:p-4 max-h-[300px] overflow-y-auto">
+            <div className="bg-transparent min-h-[180px] rounded-none p-0 md:p-4 max-h-[250px] overflow-y-auto">
               {children}
             </div>
           </motion.div>

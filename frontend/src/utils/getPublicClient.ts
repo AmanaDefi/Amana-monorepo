@@ -11,9 +11,7 @@ import {
 
 const walletClientCache = new Map<string, WalletClient>();
 
-export const getPublicClient = (
-  activeChainId?: number,
-) => {
+export const getPublicClient = (activeChainId?: number) => {
   const chain =
     chainsWithCustomRpcs().find(
       (chain) => chain.id === Number(activeChainId),
@@ -43,6 +41,7 @@ export const getWalletClient = async (
   }
 
   const provider = await wallet?.getEthereumProvider();
+  provider.rpcTimeoutDuration = 60 * 1000 * 10;
 
   const walletClient = createWalletClient({
     account: wallet.address,

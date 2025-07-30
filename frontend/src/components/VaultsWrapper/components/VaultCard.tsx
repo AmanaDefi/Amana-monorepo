@@ -210,7 +210,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
         className="w-full h-full bg-[#14171F] md:px-6 px-4 py-6 rounded-2xl transition-all backdrop-blur-[20px] cursor-pointer shadow-md before-gradient-border flex flex-col"
       >
         <div className="flex-1">
-          <div className="grid grid-cols-[auto_1fr] md:grid-cols-[auto_max-content] justify-between gap-1">
+          <div className="grid grid-cols-[auto_max-content] justify-between gap-1">
             <div className="grid grid-cols-[auto_1fr] gap-3 mb-3 p-2 rounded-md col-span-1 items-center">
               <Image
                 src={vault.outputTokenImage || vault.inputToken.imgURL}

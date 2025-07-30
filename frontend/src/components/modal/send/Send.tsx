@@ -2,7 +2,7 @@
 
 import { useAuthStore } from "@/store/authStore";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, UseFormSetValue } from "react-hook-form";
+import { useForm} from "react-hook-form";
 import { z } from "zod";
 import { Modal } from "../base/Modal";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,15 +23,13 @@ import {
   chainsWithCustomRpcs,
   APPROVED_TOKENS,
 } from "@/constants/chainConfig";
-import { useWallets } from "@privy-io/react-auth";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { Token, Balance } from "@/types/types";
 import TokenIcon from "@/components/common/TokenIcon";
 import { useMultichainTokenBalanceForModal } from "@/hooks/useMultichainTokenBalanceForModal";
 import { formatTokenBalance, getOnlyTokenSymbol } from "@/utils/utils";
-import { formatUSDAmount } from "@/utils/tokenFormat";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
-import { MiniSpinner, BreathingValue } from "@/components/PendingDots";
+import { MiniSpinner} from "@/components/PendingDots";
 import { useSendTransaction } from "@/hooks/useSendTransaction";
 import { useMaxAmountSimple } from "@/hooks/useMaxAmount";
 import { AmountInputField } from "./components/AmountInputField";
@@ -368,25 +366,10 @@ export const Send = () => {
       );
     }
 
-    if (activePrivyEVMWallet?.walletClientType === "privy") {
-      return tokens.filter((token) => {
-        const tokenKey = `${token.address.toLowerCase()}-${activeChain?.id}`;
-        const tokenData = tokenBalances.get(tokenKey);
-
-        if (tokenData?.isLoading) return true;
-
-        return (
-          tokenData?.balance && parseFloat(tokenData.balance.formatted) > 0
-        );
-      });
-    }
     return tokens;
   }, [
     availableTokens,
     tokenSearchQuery,
-    activePrivyEVMWallet?.walletClientType,
-    tokenBalances,
-    activeChain,
   ]);
 
   const sortedTokens = useMemo(() => {
@@ -658,6 +641,10 @@ export const Send = () => {
   ]);
 
   const onSubmit = async (data: SendFormData): Promise<void> => {
+    if (isGlobalLoading) {
+      return;
+    }
+
     if (sortedTokens.length > 0 && !selectedToken) {
       setValue("token", "", { shouldValidate: true });
       trigger("token");
@@ -1072,7 +1059,7 @@ export const Send = () => {
               <Button
                 variant="custom"
                 type="submit"
-                disabled={isButtonDisabled && !isSuccess && !isValid}
+                disabled={isButtonDisabled || isSuccess}
                 className={`!max-h-[32px] md:!max-h-[48px] !w-full !mt-4 md:!mt-6 !text-sm md:!text-base ${
                   isSuccess ? "!bg-green-500 !opacity-100 !cursor-default" : ""
                 }`}
