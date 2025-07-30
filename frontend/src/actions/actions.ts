@@ -966,6 +966,14 @@ export const Approvedeposit = async (
     ) {
       showErrorToast("Insufficient ZETA balance to perform the transaction");
     }
+    if (
+      error?.message?.toLowerCase().includes(
+        "wallet timeout",
+      ) &&
+      activeAccount.walletClientType !== "privy"
+    ) {
+      showErrorToast("It looks like the confirmation request in your wallet has timed out. You can still approve it, but our app won't be able to track its progress from here.");
+    }
     return false;
   }
 };
@@ -2194,8 +2202,16 @@ const executeCrossChainWithdrawal = async (
     }
     setcrossChainTxId(transactionId);
     return receipt;
-  } catch (error) {
+  } catch (error: any) {
     console.log("error call tx:", error);
+    if (
+      error?.message?.toLowerCase().includes(
+        "wallet timeout",
+      ) &&
+      activeAccount.walletClientType !== "privy"
+    ) {
+      showErrorToast("It looks like the confirmation request in your wallet has timed out. You can still approve it, but our app won't be able to track its progress from here.");
+    }
     return { transactionHash: null };
   }
 };
