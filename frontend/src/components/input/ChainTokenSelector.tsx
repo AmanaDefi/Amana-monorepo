@@ -39,14 +39,12 @@ export default function ChainTokenSelector({
   const [isOpenDropDown, setIsOpenDropdown] = useState(false);
 
   const currentChain = selectedChainFromModal || selectedChain;
-  const currentToken = selectedToken;
+  const currentToken = vaultData?.inputToken || selectedToken;
 
   const availableTokens = useMemo(() => {
     if (!chain) return [];
     return APPROVED_TOKENS[chain.id];
   }, [chain]);
-
-  const usdcToken = APPROVED_TOKENS[1]?.[1];
 
   if (!currentChain) {
     return (
@@ -54,17 +52,24 @@ export default function ChainTokenSelector({
         className={`flex items-center text-xs md:text-sm text-white ${className}`}
       >
         <div className="flex flex-row gap-1 md:gap-2">
-          {" "}
-          <img
-            src={usdcToken.imgURL}
-            alt={usdcToken.symbol}
-            width={20}
-            height={21}
-            className="rounded-full border border-white bg-[#10B981] mr-"
-          />
-          <p className="max-w-[82px] md:max-w-[200px] truncate">
-            {getOnlyTokenSymbol(usdcToken.symbol)}
-          </p>
+          {currentToken ? (
+            <>
+              <img
+                src={currentToken.imgURL}
+                alt={currentToken.symbol}
+                width={20}
+                height={21}
+                className="rounded-full border border-white bg-[#10B981]"
+              />
+              <p className="max-w-[82px] md:max-w-[200px] truncate">
+                {getOnlyTokenSymbol(currentToken.symbol)}
+              </p>
+            </>
+          ) : (
+            <p className="max-w-[82px] md:max-w-[200px] truncate text-xs md:text-sm">
+              Select token
+            </p>
+          )}
         </div>
       </div>
     );
@@ -138,7 +143,9 @@ export default function ChainTokenSelector({
             </p>
           </>
         ) : (
-          <p className="max-w-[82px] md:max-w-[200px] truncate text-xs md:text-sm">Select token</p>
+          <p className="max-w-[82px] md:max-w-[200px] truncate text-xs md:text-sm">
+            Select token
+          </p>
         )}
       </button>
       <DropdownList
