@@ -112,7 +112,7 @@ export const formatShares = (sharesValue: string, vaultTokenDecimals?: number): 
   // Case 2: Medium range (1-10000) - likely already human-readable
   // This covers: 18→18 decimals, 6→6 decimals
   if (sharesNumber >= 1 && sharesNumber < 1000000) {
-    const result = sharesNumber.toFixed(6).replace(/\.?0+$/, '');
+    const result = sharesNumber.toFixed(12).replace(/\.?0+$/, '');
     return result;
   }
 

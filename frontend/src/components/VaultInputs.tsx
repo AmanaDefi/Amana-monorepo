@@ -982,7 +982,7 @@ useEffect(() => {
 
         // Helper function to format and set conversion output
         const formatAndSetConversionOutput = (result: any) => {
-          const sharesAmountFormatted = formatShares(result.outputAmount, vaultData.inputToken.decimals);
+          const sharesAmountFormatted = formatShares(result.sharesAmount);
 
           const outputAmountInUSD =
             (Number(result.outputAmount) /
@@ -1003,7 +1003,7 @@ useEffect(() => {
               slippageAmountInUSDFormatted: result.totalSlippage.amountInUSD,
               finalConvertedAmountInUSDFormatted:
                 formatUSDValue(outputAmountInUSD),
-              outputAmountFormatted: sharesAmountFormatted,
+              outputAmountFormatted: sharesAmountFormatted, 
               outputAmountInUSDFormatted: formatUSDValue(outputAmountInUSD),
               gasFeeInInputToken: result.gasFee.amount.toString(),
               gasFeeInUSD: result.gasFee.amountInUSD,
