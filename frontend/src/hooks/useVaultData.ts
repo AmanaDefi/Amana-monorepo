@@ -226,6 +226,9 @@ export const useVaultData = () => {
     enabled: true
   });
 
+  // Debug: TVL state
+  console.log('📈 TVL:', { internal: vaultTotalAssets.length, enhanced: enhancedTotalAssets.length });
+
   const isDataReady = useMemo(() => {
     if (useGraphData) {
       const hasVaults = vaults.length > 0;
@@ -1355,6 +1358,13 @@ export const useVaultDataWithSearch = (
     const newAssets = sortedSubgraphTVLData.map(convertGraphVaultToTotalAssets);
     setVaultTotalAssets(prev => mergeVaultTotalAssets(prev, newAssets));
   }, [isTVLSort, shouldUseCustomTVLSort, sortedSubgraphTVLData]);
+
+  // Debug: Track TVL data flow
+  console.log('🏠 TVL Summary:', {
+    internal: vaultTotalAssets.length,
+    enhanced: enhancedTotalAssets.length,
+    loading: externalTVLLoading
+  });
 
   return {
     loading: finalLoading,

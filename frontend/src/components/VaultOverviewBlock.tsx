@@ -102,9 +102,11 @@ export const VaultOverviewBlock: React.FC<Props> = ({
               TVL
             </p>
             <InfoBlock>
-              💡 TVL (Total Value Locked) <br />
-              This is the total amount of assets deposited in this vault by all
-              users across all chains.
+              <div>
+                💡 TVL (Total Value Locked) <br />
+                This is the total amount of assets deposited in this vault by all
+                users across all chains.
+              </div>
             </InfoBlock>
           </div>
           <AnimatedValue
