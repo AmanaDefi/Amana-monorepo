@@ -90,7 +90,7 @@ const MobileMenuModal: React.FC<MobileMenuProps> = ({ toggleMenu, isOpen }) => {
 
   return (
     <div
-      className={`z-[100] pt-10 pb-16 px-4 lg:!hidden fixed top-0 bottom-0 left-0 right-0 bg-[#0C1015] h-screen supports-[height:100dvh]:h-dvh transform transition-all duration-500 ease-in-out ${
+      className={`z-[100] pt-10 pb-[44px] px-4 lg:!hidden fixed top-0 bottom-0 left-0 right-0 bg-[#0C1015] h-screen supports-[height:100dvh]:h-dvh transform transition-all duration-500 ease-in-out ${
         isOpen ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"
       }`}
     >
