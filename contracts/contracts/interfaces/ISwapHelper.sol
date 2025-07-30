@@ -135,4 +135,14 @@ interface ISwapHelper {
         uint256 amount,
         uint16 slippageBps
     ) external returns (uint256 amountOut);
+
+    function swapViaUniswap(
+        address inputToken,
+        uint256 amount,
+        address outputToken,
+        uint16 slippageBps,
+        address receiver,
+        uint256 maxDeadline,
+        bytes calldata data
+    ) external returns (uint256 amountOut);
 }

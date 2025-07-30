@@ -66,7 +66,6 @@ contract SwapHelperOnBase is SwapHelperParent {
     function getPriceFeedId(
         address token
     ) internal pure override returns (bytes32) {
-        console.log("Getting price feed ID for token: %s", token);
         if (token == WELL) {
             return wellUsdPriceFeedId;
         } else if (token == MORPHO) {
@@ -261,6 +260,62 @@ contract SwapHelperOnBase is SwapHelperParent {
             );
         amountOut = amounts[amounts.length - 1];
         return amountOut;
+    }
+
+    function swapViaUniswap(
+        address inputToken,
+        uint256 amount,
+        address outputToken,
+        uint16 slippageBps,
+        address receiver,
+        uint256 maxDeadline,
+        bytes calldata
+    ) external returns (uint256 amountOut) {
+        require(
+            IERC20(inputToken).balanceOf(address(this)) >= amount,
+            "Insufficient balance"
+        );
+        uint256 minimumOut = calculateMinAmountOut(
+            inputToken,
+            outputToken,
+            amount,
+            slippageBps
+        );
+        (address[] memory path, uint24[] memory feeTiers, bytes memory encodedPath) = getPathV3(inputToken, outputToken, UNISWAP_V3_FACTORY);
+        console.log("Encoded path length: %s", encodedPath.length);
+        
+        if (encodedPath.length > 0) {
+            IERC20(inputToken).approve(UNISWAP_V3_ROUTER, amount);
+            ISwapRouter.ExactInputParams memory params = ISwapRouter
+                .ExactInputParams({
+                    path: encodedPath,
+                    recipient: receiver,
+                    deadline: block.timestamp + maxDeadline,
+                    amountIn: amount,
+                    amountOutMinimum: minimumOut
+                });
+            console.log("Swapping via Uniswap V3", amount, minimumOut, maxDeadline);
+            amountOut = ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params);
+            console.log("Swapped via Uniswap V3", amount, amountOut);
+        } else {
+             // Uniswap V2 Swap
+            path = getPathV2(inputToken, outputToken, UNISWAP_V2_FACTORY);
+            if (path.length < 2) return 0;
+
+            IERC20(inputToken).approve(UNISWAP_V2_ROUTER, amount);
+
+            uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)
+                .swapExactTokensForTokens(
+                    amount,
+                    minimumOut,
+                    path,
+                    receiver,
+                    block.timestamp + maxDeadline
+                );
+
+            return amounts[amounts.length - 1];
+        }
+        
     }
 
     function swapViaBalancerPool(

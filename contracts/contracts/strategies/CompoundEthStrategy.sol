@@ -190,7 +190,7 @@ contract CompoundEthStrategy is EthStrategyParent {
         // Retry with increasing slippage up to 10% (1000 bps)
         while (slippage <= 1000) {
             try
-                ISwapHelper(swapHelper).swap(
+                ISwapHelper(swapHelper).swapViaUniswap(
                     token,
                     amountIn,
                     address(inputToken),
