@@ -59,42 +59,47 @@ export const useMultichainTokenBalanceForModal = (
     try {
       setIsLoading(true);
       setError(null);
+      
 
       // Handle native tokens
-      if (currentToken.isNative) {
-        if (currentChain.name === "Solana") {
-          refetchSolBalance();
-        } else {
-          try {
-            const { getPublicClient } = await import("@/utils/getPublicClient");
-            const { formatEther } = await import("viem");
+     if (
+       currentToken.isNative ||
+       (currentToken.symbol === "ZETA" &&
+         (currentChain?.id === 7000 || currentChain?.id === 7001))
+     ) {
+       if (currentChain.name === "Solana") {
+         refetchSolBalance();
+       } else {
+         try {
+           const { getPublicClient } = await import("@/utils/getPublicClient");
+           const { formatEther } = await import("viem");
 
-            const publicClient = getPublicClient(currentChain.id);
+           const publicClient = getPublicClient(currentChain.id);
 
-            if (publicClient) {
-              const nativeBalance = await publicClient.getBalance({
-                address: walletAddress as `0x${string}`,
-              });
+           if (publicClient) {
+             const nativeBalance = await publicClient.getBalance({
+               address: walletAddress as `0x${string}`,
+             });
 
-              const formattedBalance = formatEther(nativeBalance);
+             const formattedBalance = formatEther(nativeBalance);
 
-              setBalance({
-                value: nativeBalance,
-                formatted: formattedBalance,
-              });
-            } else {
-              setBalance(DEFAULT_BALANCE);
-            }
-          } catch (error) {
-            console.error("Error fetching EVM native balance:", error);
-            setBalance(DEFAULT_BALANCE);
-          }
-        }
+             setBalance({
+               value: nativeBalance,
+               formatted: formattedBalance,
+             });
+           } else {
+             setBalance(DEFAULT_BALANCE);
+           }
+         } catch (error) {
+           console.error("Error fetching EVM native balance:", error);
+           setBalance(DEFAULT_BALANCE);
+         }
+       }
 
-        setIsLoading(false);
-        retryCountRef.current = 0;
-        return;
-      }
+       setIsLoading(false);
+       retryCountRef.current = 0;
+       return;
+     }
 
       // Handle non-native tokens
       let newBalance: Balance | null = null;
