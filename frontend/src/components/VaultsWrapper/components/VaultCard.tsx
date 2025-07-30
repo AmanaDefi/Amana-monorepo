@@ -391,7 +391,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
             </div>
           )}
 
-          <p className="font-normal text-xs leading-4 text-white mb-4 md:mb-6 mt-2">
+          <div className="font-normal text-xs leading-4 text-white mb-4 md:mb-6 mt-2">
             This vault auto-compounds Lenders Tokens on{" "}
             <span className="flex flex-row gap-1">
               {vault.protocol.name} <InfoBlock isLeft>
@@ -402,7 +402,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                 </div>
               </InfoBlock>
             </span>
-          </p>
+          </div>
         </div>
         <div className="flex gap-4 mt-auto">
           <AppButton

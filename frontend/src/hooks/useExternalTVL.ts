@@ -47,13 +47,11 @@ export function useExternalTVL({
     
     // GUARD 1: Prevent concurrent executions
     if (isProcessingRef.current) {
-      console.log('🔒 Already processing, skipping...');
       return;
     }
     
     // GUARD 2: Skip if we already processed this exact data
     if (lastProcessedDataRef.current === dataHash) {
-      console.log('🔒 Same data already processed, skipping...');
       return;
     }
     
@@ -63,7 +61,6 @@ export function useExternalTVL({
       return;
     }
 
-    console.log('🔄 TVL merge:', { vaults: vaultIds.length, internal: currentExistingAssets.length });
 
     // Mark as processing and processed BEFORE starting async work
     isProcessingRef.current = true;
