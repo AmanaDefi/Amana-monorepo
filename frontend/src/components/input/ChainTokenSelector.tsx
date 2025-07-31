@@ -6,9 +6,6 @@ import { Token, VaultData } from "@/types/types";
 import { Chain } from "viem";
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 import { getOnlyTokenSymbol } from "@/utils/utils";
-import { useFundWalletStore } from "@/store/fundWalletStore";
-import { DropdownList } from "../VaultsWrapper/components/DropdownList";
-import { APPROVED_TOKENS } from "@/constants/chainConfig";
 
 interface ChainTokenSelectorProps {
   onSelectToken: (token: Token) => void;
@@ -17,35 +14,59 @@ interface ChainTokenSelectorProps {
   className?: string;
   vaultData?: VaultData;
   onClick?: () => void;
-  onSelectChain: ((chain: Chain) => void) | undefined;
-  onSelectChainAndToken: ((chain: Chain, token: Token) => void) | undefined;
+  onOpenModal?: () => void;
   isFromTopUp?: boolean;
+  onSelectChain?: (chain: Chain) => void;
+  onSelectChainAndToken?: (chain: Chain, token: Token) => void;
 }
 
 export default function ChainTokenSelector({
-  onSelectToken,
   selectedToken,
   selectedChain,
   className = "",
-  vaultData,
-  onClick,
+  onOpenModal,
+  isFromTopUp = false,
   onSelectChain,
   onSelectChainAndToken,
-  isFromTopUp = false,
+  vaultData,
+  onClick,
 }: ChainTokenSelectorProps) {
   const { selectedChainFromModal, selectedTokenFromModal, openModal } =
     useChainTokenModalStore();
-  const { setStep, chain, currency, setCurrency } = useFundWalletStore();
-  const [isOpenDropDown, setIsOpenDropdown] = useState(false);
 
   const currentChain = selectedChainFromModal || selectedChain;
   const currentToken = vaultData?.inputToken || selectedToken;
 
-  const availableTokens = useMemo(() => {
-    if (!chain) return [];
-    return APPROVED_TOKENS[chain.id];
-  }, [chain]);
+  const chainTokenModalStore = useChainTokenModalStore();
 
+  const handleOpenModalLegacy = () => {
+    chainTokenModalStore.openModal(
+      selectedChain || null,
+      selectedToken ?? null,
+      onSelectChain,
+      onSelectChainAndToken,
+      vaultData,
+      false,
+    );
+  };
+
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (onOpenModal) {
+      onOpenModal();
+      return;
+    }
+    if (onSelectChainAndToken || onSelectChain) {
+      handleOpenModalLegacy();
+      return;
+    }
+
+    if (onClick) {
+      onClick();
+    }
+  };
   if (!currentChain) {
     return (
       <div
@@ -75,58 +96,10 @@ export default function ChainTokenSelector({
     );
   }
 
-  const handleOpenModal = (
-    e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
-  ) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (isFromTopUp) {
-      setIsOpenDropdown(true);
-    } else {
-      openModal(
-        currentChain,
-        currentToken ?? null,
-        onSelectChain,
-        onSelectChainAndToken,
-        vaultData,
-        false,
-      );
-    }
-  };
-
-  const tokenOptions = availableTokens.map((token) => {
-    return {
-      value: token.symbol,
-      icon: token.imgURL,
-    };
-  });
-
-  const handleSelectToken = (
-    e:
-      | React.MouseEvent<HTMLParagraphElement, MouseEvent>
-      | React.MouseEvent<HTMLButtonElement, MouseEvent>,
-    tokenSymbol: string,
-  ) => {
-    if (!isFromTopUp) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    const selected = availableTokens.find(
-      (token) => token.symbol === tokenSymbol,
-    );
-
-    if (selected) {
-      onSelectToken(selected);
-    }
-
-    setIsOpenDropdown(false);
-  };
-
   return (
     <div className={`relative ${className}`}>
       <button
-        onClick={(e) => handleOpenModal(e)}
+        onClick={handleClick}
         className="flex items-center gap-1 md:gap-2 rounded-lg text-white"
       >
         {currentToken ? (
@@ -148,16 +121,6 @@ export default function ChainTokenSelector({
           </p>
         )}
       </button>
-      <DropdownList
-        handleSelectedOption={handleSelectToken}
-        options={tokenOptions}
-        selectedOption={currency?.symbol ?? ""}
-        isShownList={isOpenDropDown}
-        variant="token"
-        isIconButton={false}
-        width={150}
-        needReset={false}
-      />
     </div>
   );
 }
