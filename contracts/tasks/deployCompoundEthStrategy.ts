@@ -18,11 +18,12 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
   const {
     contract,
     name,
+    gateway,
     vault,
     receiptToken,
-    gateway,
     weth,
     withdrawHelper,
+    swapHelper,
     rewardsContract,
     rewardsToken
   } = args;
@@ -37,7 +38,7 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
 
   const proxy = await upgrades.deployProxy(
     StrategyFactory,
-    [name, vault, gateway, withdrawHelper, weth, receiptToken, rewardsContract, rewardsToken],
+    [name, gateway, vault, withdrawHelper, swapHelper, receiptToken, weth, rewardsContract, rewardsToken, 0],
     {
       initializer: "initialize",
       kind: "uups",
@@ -75,11 +76,12 @@ task("deploy-compound-eth-strategy", "Deploy CompoundEthStrategy (UUPS)", main)
   .addFlag("json", "Output contract details as JSON")
   .addParam("contract", "Strategy contract name, e.g., CompoundEthStrategy")
   .addParam("name", "The strategy name")
+  .addParam("gateway", "ZetaChain gateway address")
   .addParam("vault", "Amana vault address")
   .addParam("receiptToken", "Address of Compound vault")
-  .addParam("gateway", "ZetaChain gateway address")
   .addParam("weth", "WETH token address")
   .addParam("withdrawHelper", "Withdraw helper contract address")
+  .addParam("swapHelper", "Swap helper contract address")
   .addParam("rewardsContract", "Rewards contract address")
   .addParam("rewardsToken", "Rewards token address");
 
