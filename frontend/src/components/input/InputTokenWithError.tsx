@@ -11,6 +11,7 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import { Chain } from "viem";
 import clsx from "clsx";
 import { BreathingValue, MiniSpinner } from "../PendingDots";
+import { CheckTheTxIsInProgress } from "@/utils/localStorageUtils";
 
 export type InputTokenWithErrorProps = {
   errorMessage?: string;
@@ -72,6 +73,8 @@ export default function InputTokenWithError({
   const selectedTokenPrice = useTokenPriceBySymbol(selectedToken?.symbol);
   const { activeEvmWallet: activeAccount } = useMultiChain();
   const [isInputFocused, setIsInputFocused] = useState(false);
+
+  const isTxInProgress = CheckTheTxIsInProgress(vaultData.id);
 
   const showTokenSelector = useMemo(() => {
     return (
@@ -171,12 +174,8 @@ export default function InputTokenWithError({
           </div>
         );
       }
-      
-      return (
-        <span className="text-white text-2xl">
-          {outputAmount}
-        </span>
-      );
+
+      return <span className="text-white text-2xl">{outputAmount}</span>;
     }
 
     return (
@@ -186,7 +185,7 @@ export default function InputTokenWithError({
             {...props}
             value={value}
             onChange={onChange}
-            disabled={disabled}
+            disabled={disabled || isTxInProgress}
             onFocus={() => setIsInputFocused(true)}
             onBlur={() => setIsInputFocused(false)}
           />
@@ -200,8 +199,10 @@ export default function InputTokenWithError({
 
   const topSectionData = renderTopSection();
 
+  const isDisabled = disabled || isTxInProgress;
+
   return (
-    <div className={disabled ? "opacity-50 cursor-default" : ""}>
+    <div className={isDisabled ? "opacity-50 cursor-default" : ""}>
       {captionText && (
         <p className="text-white text-sm lg:text-lg font-medium mb-2">
           {captionText}
@@ -223,8 +224,8 @@ export default function InputTokenWithError({
           className={clsx(
             "w-full max-h-[77px] md:max-h-[75px] bg-[#161C27] pl-5 py-2 pr-[10px] rounded-lg border transition-all duration-200",
             errorMessage ? "border-red-500" : "border-[#535E73]",
-            "hover:border-[#3E73C4]",
-            isInputFocused && "border-[#3E73C4]",
+            !isDisabled && "hover:border-[#3E73C4]",
+            isInputFocused && !isDisabled && "border-[#3E73C4]",
           )}
         >
           <div
@@ -238,12 +239,12 @@ export default function InputTokenWithError({
               topSectionData.maxButtonPosition === "left" && (
                 <button
                   onClick={onMaxClick}
-                  disabled={loadingOutputToken || disabled} 
+                  disabled={loadingOutputToken || isDisabled}
                   className={`font-normal text-xs md:text-sm text-start transition-colors duration-200 ${
                     !isDeposit ? "-ml-2" : ""
                   } ${
-                    loadingOutputToken || disabled
-                      ? "text-[#535E73] cursor-not-allowed opacity-50" 
+                    loadingOutputToken || isDisabled
+                      ? "text-[#535E73] cursor-not-allowed opacity-50"
                       : "text-[#3E73C4] hover:underline hover:text-[#4A82D1] cursor-pointer"
                   }`}
                 >
@@ -315,6 +316,7 @@ export default function InputTokenWithError({
                 className="justify-end"
                 onSelectChain={onSelectChain}
                 onSelectChainAndToken={onSelectChainAndToken}
+                disabled={isTxInProgress} 
               />
             ) : (
               <div className="flex items-center flex-row gap-1 md:gap-2">
