@@ -424,18 +424,30 @@ useEffect(() => {
       ),
     );
   } else {
-    const availableBalanceForWithdrawal = userVaultBalance?.formatted || "0";
-
-    setErrorMessage(
-      getVaultErrorMessage(
-        inputBalance.formatted,
-        availableBalanceForWithdrawal,
-        steps,
-        vaultData,
-        vaultTokenPrice,
-        isDeposit,
-      ),
-    );
+    if (
+      walletAddress &&
+      inputBalance.formatted &&
+      Number(inputBalance.formatted) > 0
+    ) {
+      fetchUserVaultMaxWithdraw(
+        vaultData.inputToken.decimals,
+        walletAddress,
+        vaultData.id,
+      ).then((maxAmount) => {
+        setErrorMessage(
+          getVaultErrorMessage(
+            inputBalance.formatted,
+            maxAmount || "0",
+            steps,
+            vaultData,
+            vaultTokenPrice,
+            isDeposit,
+          ),
+        );
+      });
+    } else {
+      setErrorMessage("");
+    }
   }
 }, [
   inputToken,
@@ -809,18 +821,20 @@ useEffect(() => {
     async (inputAmountValue: bigint) => {
       // 🔄 NEW LOGIC: Input is now in underlying asset terms, not shares
       // So we don't need to convert from shares to assets - the input IS the asset amount
-      if (!isDeposit) {
-        const availableBalance = userVaultBalance?.formatted || "0";
-        const inputFormatted = (
-          Number(inputAmountValue) /
-          10 ** vaultData.inputToken.decimals
-        ).toString();
 
-        if (Number(inputFormatted) > Number(availableBalance)) {
-          setLoadingOutputToken(false);
-          return;
-        }
-      }
+      // if (!isDeposit) {
+      
+      //   const availableBalance = userVaultBalance?.formatted || "0";
+      //   const inputFormatted = (
+      //     Number(inputAmountValue) /
+      //     10 ** vaultData.inputToken.decimals
+      //   ).toString();
+
+      //   if (Number(inputFormatted) > Number(availableBalance)) {
+      //     setLoadingOutputToken(false);
+      //     return;
+      //   }
+      // }
 
       let assetsAmount = inputAmountValue;
 
@@ -1257,7 +1271,6 @@ useEffect(() => {
     }
 
     setLoadingOutputToken(true);
-
     if (isDeposit) getDepositOutputAmount(debouncedInputBalance.value);
     else getWithdrawOutputAmount(debouncedInputBalance.value);
   }, [

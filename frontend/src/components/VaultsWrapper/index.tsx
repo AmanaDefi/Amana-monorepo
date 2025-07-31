@@ -75,6 +75,8 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   const { isReady } = useInitializationStore();
   const [isSorting, setIsSorting] = useState(false);
 
+  const [sortedTypes, setSortedTypes] = useState<Set<string>>(new Set());
+
   const [localSearchTerm, setLocalSearchTerm] = useState("");
   const searchTerm = onSearchChange ? externalSearchTerm : localSearchTerm;
   const setSearchTerm = onSearchChange
@@ -138,6 +140,18 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   const itemsPerPage = useLayoutStore((state) => state.itemsPerPage);
 
   useEffect(() => {
+    if (onPageChange && currentPage > 1) {
+      onPageChange(1);
+    }
+  }, [itemsPerPage]);
+
+  useEffect(() => {
+    if (onPageChange) {
+      onPageChange(1);
+    }
+  }, [isShownMyVaults]);
+
+  useEffect(() => {
     setSortBy(externalSortBy);
     setSortOrder(externalSortOrder);
   }, [externalSortBy, externalSortOrder]);
@@ -158,6 +172,22 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     return vaults;
   }, [MyVaults, vaults, isShownMyVaults]);
 
+  const apyMap = useMemo(() => {
+    const map = new Map<string, number>();
+    vaultAPYs.forEach((apy) => {
+      map.set(apy.vaultId, Number(apy.APY7d || 0));
+    });
+    return map;
+  }, [vaultAPYs]);
+
+  const riskMap = useMemo(() => {
+    const map = new Map<string, number>();
+    vaultsList.forEach((vault) => {
+      map.set(vault.id, calculateRiskLevel(vault));
+    });
+    return map;
+  }, [vaultsList]);
+
   const shouldUseSubgraphSearch = hasSearchTerm && onSearchChange;
   const shouldUseSubgraphNetworkFilter =
     hasNetworkFilterActive && onChainFilterChange;
@@ -171,7 +201,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     !shouldUseSubgraphNetworkFilter &&
     !shouldUseSubgraphProtocolFilter &&
     !shouldUseSubgraphSort;
-  
+
   const mode = shouldUseSubgraphSearch
     ? "Subgraph Search"
     : shouldUseSubgraphNetworkFilter
@@ -230,11 +260,9 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     const getSortValue = (vault: VaultData) => {
       switch (sortBy.toLowerCase()) {
         case "apy":
-          return Number(
-            vaultAPYs.find((apy) => apy.vaultId === vault.id)?.APY7d || 0,
-          );
+          return apyMap.get(vault.id) || 0;
         case "risk":
-          return calculateRiskLevel(vault);
+          return riskMap.get(vault.id) || 1;
         default:
           return 0;
       }
@@ -258,8 +286,8 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     filteredVaults,
     sortBy,
     sortOrder,
-    vaultAPYs,
-    vaultTotalAssets,
+    apyMap,
+    riskMap,
     shouldUseLocalFiltering,
   ]);
 
@@ -318,23 +346,32 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     totalCount,
   ]);
 
-const handleSortChange = async (
-  newSortBy: string,
-  newSortOrder: "asc" | "desc",
-) => {
-  setIsSorting(true);
+  const handleSortChange = async (
+    newSortBy: string,
+    newSortOrder: "asc" | "desc",
+  ) => {
+    const sortType = newSortBy.toLowerCase();
 
-  await new Promise((resolve) => requestAnimationFrame(resolve));
+    const isFirstTimeForThisSort =
+      !sortedTypes.has(sortType) && (sortType === "apy" || sortType === "risk");
 
-  if (onSortChange) {
-    onSortChange(newSortBy, newSortOrder);
-  } else {
-    setSortBy(newSortBy);
-    setSortOrder(newSortOrder);
-  }
+    if (isFirstTimeForThisSort) {
+      setIsSorting(true);
 
-  setIsSorting(false);
-};
+      setSortedTypes((prev) => new Set([...prev, sortType]));
+
+      setTimeout(() => {
+        setIsSorting(false);
+      }, 300);
+    }
+
+    if (onSortChange) {
+      onSortChange(newSortBy, newSortOrder);
+    } else {
+      setSortBy(newSortBy);
+      setSortOrder(newSortOrder);
+    }
+  };
 
   const handleSortByChange = (sortByValue: SetStateAction<string>) => {
     const newSortBy =
@@ -369,7 +406,7 @@ const handleSortChange = async (
   };
 
   const renderVaultsContent = () => {
-    if (loading) {
+    if (loading || isSorting) {
       return (
         <div className="flex justify-center items-center py-20 min-h-[400px]">
           <LoadingLogo />
@@ -384,11 +421,7 @@ const handleSortChange = async (
           className="grid gap-6 md:gap-4 grid-cols-[repeat(auto-fill,minmax(328px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(365px,1fr))]"
         >
           {paginatedVaults.map((vault, index) => (
-            <div
-              key={vault.id}
-              ref={index === 0 ? cardRef : undefined}
-              
-            >
+            <div key={vault.id} ref={index === 0 ? cardRef : undefined}>
               <VaultCard
                 vault={vault}
                 vaultAPYs={vaultAPYs}
@@ -430,7 +463,7 @@ const handleSortChange = async (
     if (!isReady() || loading || isSorting) return null;
 
     if (vaults.length === 0 && !loading) {
-      return null; 
+      return null;
     }
 
     if (paginatedVaults.length === 0) {
@@ -496,14 +529,14 @@ const handleSortChange = async (
           setIsShownMyVaults={setIsShownMyVaults}
         />
 
-          <BreathingValue
-            value={
-              <div className="text-gray-400 mb-4 text-sm">
-                Showing {paginatedVaults.length} of {displayTotalCount} vaults
-              </div>
-            }
-            isBreathing={loading}
-          />
+        <BreathingValue
+          value={
+            <div className="text-gray-400 mb-4 text-sm">
+              Showing {paginatedVaults.length} of {displayTotalCount} vaults
+            </div>
+          }
+          isBreathing={loading}
+        />
       </div>
 
       <div className="flex-grow">

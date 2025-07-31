@@ -35,7 +35,7 @@ export default function LargeCardStat({
             animate="animate"
             exit="exit"
             transition={uniformTransition}
-            className="text-lg md:text-[20px] max-h-[22px] font-normal md:font-semibold whitespace-nowrap text-white leading-0 overflow-hidden text-ellipsis min-w-0 text-center"
+            className="text-lg md:text-[20px]font-normal md:font-semibold whitespace-nowrap text-white leading-tight text-ellipsis min-w-0 text-center"
           >
             {value}
           </motion.p>
@@ -64,7 +64,7 @@ export default function LargeCardStat({
       );
     } else {
       const childrenElement = (
-        <div className="text-lg md:text-[20px] max-h-[22px] font-normal md:font-semibold whitespace-nowrap text-white leading-0 overflow-hidden text-ellipsis min-w-0 text-center">
+        <div className="text-lg md:text-[20px] font-normal md:font-semibold whitespace-nowrap text-white leading-tight text-ellipsis min-w-0 text-center">
           {children}
         </div>
       );
@@ -97,7 +97,7 @@ export default function LargeCardStat({
   return (
     <div className="w-full min-w-0" id={id}>
       <div className="w-full flex flex-col items-center justify-center min-w-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mb-1">
           <div className="text-[#535E73] font-normal text-sm md:text-[16px] whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
             {label}
           </div>

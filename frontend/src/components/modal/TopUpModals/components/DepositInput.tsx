@@ -176,6 +176,7 @@ export const DepositInput = ({
                 className="justify-end flex min-w-[150px]"
                 isFromTopUp={true}
                 onOpenModal={handleOpenChainsModal}
+                onSelectToken={onTokenSelect}
               />
             </div>
           </div>

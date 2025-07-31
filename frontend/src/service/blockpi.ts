@@ -808,10 +808,12 @@ export default class Blockpi {
         if (stepCompleted && stepResult) {
           const stepData = {
             stepIndex,
-            status: 'completed' as const,
-            description: `${description} completed`,
+            status: "completed" as const,
+            description: description.includes("completed")
+              ? description
+              : `${description} completed`,
             txHash: stepHash,
-            data: stepResult.data
+            data: stepResult.data,
           };
           
           if (activeChainId && vaultProtocolChainId) {
