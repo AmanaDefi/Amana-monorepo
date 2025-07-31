@@ -149,33 +149,44 @@ const AllWAllets = () => {
       const confirmResult = confirm("You evm wallet will be disconnected");
       if (!confirmResult) return;
     }
+
     setActiveConnector(connector);
+
     try {
-      try {
-        await connectSolana();
-      } catch (e) {
-        console.log("connect solana error");
-      }
+      await connectSolana();
       select(connector.name);
       solanaConnect();
+
+      if (fundWalletStep === "connectWallet") {
+        setTimeout(() => {
+          if (publicKey) {
+            setWalletAddress(publicKey.toString());
+          }
+        }, 100);
+
+        setStep("setValues");
+      }
     } catch (error) {
       console.log(error);
+      setActiveConnector(null);
 
       if (connected) {
         disconnect();
-
-        setActiveConnector(null);
         showInfoToast("Please try to connect wallet again");
       }
     }
   };
 
   const shouldShowSolana = fundWalletStep
-    ? fundWalletStep && chain.id === CHAIN_ID["solana"]
+    ? fundWalletStep === "connectWallet"
+      ? true
+      : fundWalletStep && chain.id === CHAIN_ID["solana"]
     : true;
 
   const shouldShowEVM = fundWalletStep
-    ? fundWalletStep && chain.id !== CHAIN_ID["solana"]
+    ? fundWalletStep === "connectWallet"
+      ? true
+      : fundWalletStep && chain.id !== CHAIN_ID["solana"]
     : true;
 
   const filteredEvmConnectors = connectors.filter(
