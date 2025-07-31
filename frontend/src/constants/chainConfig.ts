@@ -397,7 +397,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       imgURL: TOKEN_LOGO_URLS.ZETA,
       price: 1,
       balance: EMPTY_BALANCE,
-      isNative: false,
+      isNative: true,
     },
     {
       symbol: "ETH.BASE",
@@ -472,7 +472,7 @@ export const APPROVED_TOKENS: { [chainId: number]: Token[] } = {
       imgURL: TOKEN_LOGO_URLS.ZETA,
       price: 1,
       balance: EMPTY_BALANCE,
-      isNative: false,
+      isNative: true,
     },
     {
       symbol: "ETH.ETH",
