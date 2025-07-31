@@ -12,7 +12,7 @@ import { useFundWalletStore } from "@/store/fundWalletStore";
 import { showInfoToast } from "@/toasts";
 
 import { ConnectorIcon } from "./components/ConnectorIcon";
-import { CHAIN_ID } from "@/constants/chainConfig";
+import { CHAIN_ID, solanaChain } from "@/constants/chainConfig";
 import { useEffect, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -43,6 +43,7 @@ const AllWAllets = () => {
     setActiveConnector,
     setWalletAddress,
     chain,
+    setChain,
   } = useFundWalletStore();
   const { connectSolana, activeEvmWallet: activeAccount } = useMultiChain();
 
@@ -83,6 +84,7 @@ const AllWAllets = () => {
     if (isConnectingWallet) {
       await disconnectAsync();
     }
+
     if (
       activeAccount?.walletClientType === "privy" &&
       fundWalletStep !== "connectWallet"
@@ -95,7 +97,7 @@ const AllWAllets = () => {
       await logout();
     }
 
-    if (connected) {
+    if (connected && fundWalletStep !== "connectWallet") {
       disconnect();
     }
 
@@ -158,6 +160,8 @@ const AllWAllets = () => {
       solanaConnect();
 
       if (fundWalletStep === "connectWallet") {
+        setChain(solanaChain); 
+
         setTimeout(() => {
           if (publicKey) {
             setWalletAddress(publicKey.toString());
