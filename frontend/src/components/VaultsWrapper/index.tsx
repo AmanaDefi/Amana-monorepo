@@ -73,6 +73,9 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   hasProtocolFilter = false,
 }) => {
   const { isReady } = useInitializationStore();
+  const [isSorting, setIsSorting] = useState(false);
+
+  const [sortedTypes, setSortedTypes] = useState<Set<string>>(new Set());
 
   const [localSearchTerm, setLocalSearchTerm] = useState("");
   const searchTerm = onSearchChange ? externalSearchTerm : localSearchTerm;
@@ -137,6 +140,18 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   const itemsPerPage = useLayoutStore((state) => state.itemsPerPage);
 
   useEffect(() => {
+    if (onPageChange && currentPage > 1) {
+      onPageChange(1);
+    }
+  }, [itemsPerPage]);
+
+  useEffect(() => {
+    if (onPageChange) {
+      onPageChange(1);
+    }
+  }, [isShownMyVaults]);
+
+  useEffect(() => {
     setSortBy(externalSortBy);
     setSortOrder(externalSortOrder);
   }, [externalSortBy, externalSortOrder]);
@@ -157,6 +172,22 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     return vaults;
   }, [MyVaults, vaults, isShownMyVaults]);
 
+  const apyMap = useMemo(() => {
+    const map = new Map<string, number>();
+    vaultAPYs.forEach((apy) => {
+      map.set(apy.vaultId, Number(apy.APY7d || 0));
+    });
+    return map;
+  }, [vaultAPYs]);
+
+  const riskMap = useMemo(() => {
+    const map = new Map<string, number>();
+    vaultsList.forEach((vault) => {
+      map.set(vault.id, calculateRiskLevel(vault));
+    });
+    return map;
+  }, [vaultsList]);
+
   const shouldUseSubgraphSearch = hasSearchTerm && onSearchChange;
   const shouldUseSubgraphNetworkFilter =
     hasNetworkFilterActive && onChainFilterChange;
@@ -170,7 +201,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     !shouldUseSubgraphNetworkFilter &&
     !shouldUseSubgraphProtocolFilter &&
     !shouldUseSubgraphSort;
-  
+
   const mode = shouldUseSubgraphSearch
     ? "Subgraph Search"
     : shouldUseSubgraphNetworkFilter
@@ -229,11 +260,9 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     const getSortValue = (vault: VaultData) => {
       switch (sortBy.toLowerCase()) {
         case "apy":
-          return Number(
-            vaultAPYs.find((apy) => apy.vaultId === vault.id)?.APY7d || 0,
-          );
+          return apyMap.get(vault.id) || 0;
         case "risk":
-          return calculateRiskLevel(vault);
+          return riskMap.get(vault.id) || 1;
         default:
           return 0;
       }
@@ -257,8 +286,8 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     filteredVaults,
     sortBy,
     sortOrder,
-    vaultAPYs,
-    vaultTotalAssets,
+    apyMap,
+    riskMap,
     shouldUseLocalFiltering,
   ]);
 
@@ -317,10 +346,25 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     totalCount,
   ]);
 
-  const handleSortChange = (
+  const handleSortChange = async (
     newSortBy: string,
     newSortOrder: "asc" | "desc",
   ) => {
+    const sortType = newSortBy.toLowerCase();
+
+    const isFirstTimeForThisSort =
+      !sortedTypes.has(sortType) && (sortType === "apy" || sortType === "risk");
+
+    if (isFirstTimeForThisSort) {
+      setIsSorting(true);
+
+      setSortedTypes((prev) => new Set([...prev, sortType]));
+
+      setTimeout(() => {
+        setIsSorting(false);
+      }, 300);
+    }
+
     if (onSortChange) {
       onSortChange(newSortBy, newSortOrder);
     } else {
@@ -362,7 +406,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   };
 
   const renderVaultsContent = () => {
-    if (loading) {
+    if (loading || isSorting) {
       return (
         <div className="flex justify-center items-center py-20 min-h-[400px]">
           <LoadingLogo />
@@ -377,11 +421,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
           className="grid gap-6 md:gap-4 grid-cols-[repeat(auto-fill,minmax(328px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(365px,1fr))]"
         >
           {paginatedVaults.map((vault, index) => (
-            <div
-              key={vault.id}
-              ref={index === 0 ? cardRef : undefined}
-              
-            >
+            <div key={vault.id} ref={index === 0 ? cardRef : undefined}>
               <VaultCard
                 vault={vault}
                 vaultAPYs={vaultAPYs}
@@ -398,14 +438,12 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
       <div className="flex flex-col gap-4">
         {paginatedVaults.length > 0 && (
           <div className="flex flex-row items-center justify-between">
-            <p className="w-[30%] xl:w-[20%] mr-[10%] xl:mr-[20%] text-center">
-              Pool
-            </p>
-            <div className="w-[60%] flex flex-row items-center xl:mr-[5%]">
-              <p className="w-[20%] xl:w-[40%] text-center">TVL</p>
-              <div className="w-[20%]" />
-              <p className="w-[30%] xl:w-[60%] text-center">APY</p>
-              <div className="w-[30%]" />
+            <p className="w-[30%] xl:w-[20%] text-left">Pool</p>
+            <div className="w-[70%] xl:w-[80%] flex flex-row items-center">
+              <p className="w-[25%] xl:w-[30%] text-right">TVL</p>
+              <p className="w-[25%] xl:w-[20%] text-right"></p>
+              <p className="w-[25%] xl:w-[30%] text-right pr-6">APY</p>
+              <div className="w-[25%] xl:w-[20%]" />
             </div>
           </div>
         )}
@@ -422,7 +460,11 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   };
 
   const renderEmptyState = () => {
-    if (!isReady() || loading) return null;
+    if (!isReady() || loading || isSorting) return null;
+
+    if (vaults.length === 0 && !loading) {
+      return null;
+    }
 
     if (paginatedVaults.length === 0) {
       if (isShownMyVaults && !MyVaults?.length) {
@@ -487,14 +529,14 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
           setIsShownMyVaults={setIsShownMyVaults}
         />
 
-          <BreathingValue
-            value={
-              <div className="text-gray-400 mb-4 text-sm">
-                Showing {paginatedVaults.length} of {displayTotalCount} vaults
-              </div>
-            }
-            isBreathing={loading}
-          />
+        <BreathingValue
+          value={
+            <div className="text-gray-400 mb-4 text-sm">
+              Showing {paginatedVaults.length} of {displayTotalCount} vaults
+            </div>
+          }
+          isBreathing={loading}
+        />
       </div>
 
       <div className="flex-grow">

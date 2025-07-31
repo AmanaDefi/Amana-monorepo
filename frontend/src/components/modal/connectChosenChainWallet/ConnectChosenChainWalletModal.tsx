@@ -19,6 +19,7 @@ import {
 import { ConnectorIcon } from "../allWallets/components/ConnectorIcon";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { CHAIN_ID } from "@/constants/chainConfig";
+import { useEffect } from "react";
 
 const ConnectChosenChain = () => {
   const { selectedChain, activeChain, connectSolana, activeEvmWallet: activeAccount } = useMultiChain();
@@ -38,13 +39,18 @@ const ConnectChosenChain = () => {
   const {
     wallets: solanaAdapters,
     select,
-    connect: solanaConnect,
     disconnect,
     connected,
+    wallet,
   } = useWallet();
 
+  const solanaWalletAdapter: Adapter | null = wallet
+    ? (wallet.adapter as Adapter)
+    : null;
+
   const fundWalletConnect = () => {
-    setStep("confirm");
+    setStep("selectChain");
+    closeAll();
   };
 
   const {
@@ -54,11 +60,15 @@ const ConnectChosenChain = () => {
   } = useConnect({
     mutation: {
       onSuccess: async (result) => {
-        if (fundWalletStep === "reconnectChain") {
-          setWalletAddress(result.accounts[0]);
-          return fundWalletConnect();
+        setWalletAddress(result.accounts[0]);
+        localStorage.removeItem("connectorId");
+
+        closeAll();
+
+        if (!fundWalletStep) {
+          successAuth(null, activeAccount || undefined, true);
+
         }
-        return successAuth(null, activeAccount || undefined, true);
       },
     },
   });
@@ -69,17 +79,15 @@ const ConnectChosenChain = () => {
     }
     if (
       activeAccount?.walletClientType === "privy" &&
-      fundWalletStep !== "connectWallet"
+      fundWalletStep !== "connectWallet" &&
+      !fundWalletStep
     ) {
       const confirmResult = confirm(
-        "You smart wallet account will be disconnected",
+        "Your smart wallet account will be disconnected",
       );
       if (!confirmResult) return;
 
       await logout();
-    }
-    if (connected) {
-      disconnect();
     }
     setActiveConnector(connector);
     localStorage.setItem("connectorId", connector.id);
@@ -94,13 +102,25 @@ const ConnectChosenChain = () => {
       {
         onError: (error) => {
           console.log(error);
+          setActiveConnector(null);
 
-          if (error.name === "ConnectorAlreadyConnectedError") {
+          if (error.name === "UserRejectedRequestError") {
+            showInfoToast(
+              "Connection cancelled. Please try again.",
+            );
+          } else if (error.name === "ConnectorAlreadyConnectedError") {
             connector.disconnect();
+            // localStorage.removeItem("connectorId");
+
             disconnectAsync({ connector });
 
             setActiveConnector(null);
+
             showInfoToast("Please try to connect wallet again");
+          } else {
+            showInfoToast(
+              `EVM connection failed: ${error.message || "Unknown error"}`,
+            );
           }
         },
       },
@@ -108,45 +128,10 @@ const ConnectChosenChain = () => {
   };
 
   const handleClose = () => {
-    if (fundWalletStep === "connectWallet") {
-      setStep("setValues");
+    if (fundWalletStep) {
+      fundWalletConnect();
     } else {
       closeAll();
-    }
-  };
-
-  const solanaConnectors = solanaAdapters
-    .filter((adapter) => {
-      if (
-        (adapter.adapter.name.toLowerCase() === "metamask" &&
-          !(adapter.adapter as WalletAdapter & { wallet?: { client?: any } })
-            ?.wallet?.client)
-      ) {
-        return false;
-      }
-      return adapter.readyState === WalletReadyState.Installed;
-    })
-    .map((adapter) => adapter.adapter);
-
-  const handleSolanaConnect = async (connector: Adapter) => {
-    setActiveConnector(connector);
-    try {
-      try {
-        await connectSolana();
-      } catch (e) {
-        console.log("connect solana error", e);
-      }
-      select(connector.name);
-      solanaConnect();
-    } catch (error) {
-      console.log(error);
-
-      if (connector.connected) {
-        connector.disconnect();
-
-        setActiveConnector(null);
-        showInfoToast("Please try to connect wallet again");
-      }
     }
   };
 
@@ -156,9 +141,67 @@ const ConnectChosenChain = () => {
       (chosenChain || activeChain)?.id !== CHAIN_ID["solana"]) ||
     (chosenChain || activeChain)?.id !== CHAIN_ID["solana"];
 
+  const solanaConnectors = solanaAdapters
+    .filter((adapter) => {
+      if (
+        adapter.adapter.name.toLowerCase() === "metamask" &&
+        !(adapter.adapter as WalletAdapter & { wallet?: { client?: any } })
+          ?.wallet?.client
+      ) {
+        return false;
+      }
+      return adapter.readyState === WalletReadyState.Installed;
+    })
+    .map((adapter) => adapter.adapter);
+
   const filteredEvmConnectors = connectors.filter(
     (con) => con.id !== "app.phantom" && con.name.toLowerCase() !== "injected",
   );
+
+  const handleSolanaConnect = async (connector: Adapter) => {
+    setActiveConnector(connector);
+    try {
+      await connectSolana();
+      select(connector.name);
+
+      closeAll();
+    } catch (error) {
+      console.error("Error during Solana wallet selection preparation:", error);
+      setActiveConnector(null);
+      closeAll();
+    }
+  };
+
+  useEffect(() => {
+    const shouldAutoConnect =
+      (step === "connectInChosenChain" ||
+        fundWalletStep === "reconnectChain") &&
+      !shouldShowEvnWallets &&
+      solanaWalletAdapter &&
+      !connected;
+
+    if (!shouldAutoConnect) return;
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        if (solanaWalletAdapter && !connected) {
+          await solanaWalletAdapter.connect();
+        }
+      } catch (error: any) {
+        console.error("Error connecting Solana wallet after selection:", error);
+        setActiveConnector(null);
+      }
+    }, 50);
+
+    return () => clearTimeout(timeoutId);
+  }, [
+    solanaWalletAdapter,
+    connected,
+    step,
+    fundWalletStep,
+    shouldShowEvnWallets,
+    setActiveConnector,
+  ]);
 
   return (
     <Modal

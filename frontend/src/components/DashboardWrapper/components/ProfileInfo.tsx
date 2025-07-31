@@ -1,15 +1,36 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import ProfileCircle from "@/components/svg/ProfileCircle";
 import ProfileIcon from "@/components/svg/Profile";
 import DropdownArrowIcon from "@/components/svg/DropdownArrowIcon";
 import WalletActions from "./WalletActions";
 import ProfileDropdown from "./ProfileDropdown";
 import { useMultiChain } from "@/providers/MultiChainProvider";
+import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { AppModals } from "@/components/modal/AppModals";
 
 const ProfileInfo = () => {
-  const { walletAddress, balance, activeChain } = useMultiChain();
+  const { walletAddress, activeChain, isWalletSwitching } = useMultiChain();
+
+  const nativeToken = useMemo(() => {
+    if (activeChain) {
+      return {
+        name: activeChain.nativeCurrency.name,
+        symbol: activeChain.nativeCurrency.symbol,
+        decimals: activeChain.nativeCurrency.decimals,
+        address: "0x0",
+        isNative: true,
+        imgURL: "",
+        price: 0,
+        balance: { value: 0n, formatted: "0" }, 
+      };
+    }
+    return undefined;
+  }, [activeChain]);
+
+  const { balance, isLoading: isBalanceLoading } =
+    useMultichainTokenBalance(nativeToken);
+
   const isConnected = !!walletAddress;
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -50,18 +71,19 @@ const ProfileInfo = () => {
             <p className="text-[#9A9CB3] text-sm md:hidden mt-2">
               Total Portfolio
             </p>
-            <div className="text-[32px] font-normal md:font-medium md:text-[24px]">
-              {balance?.formatted && Number(balance.formatted) > 0
-                ? Number(balance.formatted).toFixed(4)
-                : "0"}{" "}
-              {activeChain?.nativeCurrency?.symbol || ""}
+            <div className="text-[32px] font-normal md:font-medium md:text-[24px] min-h-[40px] flex items-center">
+              <>
+                {balance?.formatted && Number(balance.formatted) > 0
+                  ? Number(balance.formatted).toFixed(4)
+                  : "0"}{" "}
+                {activeChain?.nativeCurrency?.symbol || ""}
+              </>
             </div>
             {/* <p
               className={`md:hidden ${205.6 > 0 ? "text-[#05D47F]" : "text-white"}`}
             >
               +$205.60(+8,54%)
             </p> */}
-
             <WalletActions />
           </div>
           <AppModals />

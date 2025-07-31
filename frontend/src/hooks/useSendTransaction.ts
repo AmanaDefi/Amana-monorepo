@@ -26,6 +26,7 @@ import { ConnectedWallet } from "@privy-io/react-auth";
 import { CHAIN_ID } from "@/constants/chainConfig";
 import { Token } from "@/types/types";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { showErrorToast, showSuccessToast, showWarningToast } from "@/toasts";
 
 interface UseSendTransactionProps {
   walletAddress: string | null;
@@ -50,25 +51,52 @@ export const useSendTransaction = ({
 }: UseSendTransactionProps) => {
   const { publicKey, sendTransaction } = useWallet();
 
+  const handleTransactionError = (error: any) => {
+    console.error("Transaction error:", error);
+
+    const errorMessage =
+      error.message?.toLowerCase() || error.details?.toLowerCase() || "";
+
+    if (
+      errorMessage.includes("user rejected") ||
+      errorMessage.includes("user denied") ||
+      errorMessage.includes("user cancelled") ||
+      errorMessage.includes("user canceled") ||
+      errorMessage.includes("transaction was cancelled") ||
+      errorMessage.includes("transaction cancelled") ||
+      errorMessage.includes("rejected by user") ||
+      error.code === 4001 ||
+      error.code === "ACTION_REJECTED"
+    ) {
+      showWarningToast("Transaction was cancelled");
+      setError("");
+    } else {
+      const errorMsg =
+        error.message ||
+        error.details ||
+        "Transaction failed. Please try again.";
+      showErrorToast(errorMsg);
+      setError(errorMsg);
+    }
+  };
+
   const sendTransactionFunc = useCallback(
     async (recipientAddress: string, amount: string) => {
       if (!walletAddress || !activeChain) {
         setError("Wallet not connected or active chain not set.");
-        setLoading(false);
         return;
       }
       if (!selectedToken) {
         setError("No token selected for transaction.");
-        setLoading(false);
         return;
       }
 
       setLoading(true);
       setError("");
 
-      const amountFloat = parseFloat(amount);
-      // Solana
       try {
+        const amountFloat = parseFloat(amount);
+
         if (
           solanaConnected &&
           publicKey &&
@@ -113,16 +141,14 @@ export const useSendTransaction = ({
               );
             } catch (e: any) {
               if (e.message.includes("could not find account")) {
-                setError(
+                throw new Error(
                   `Recipient does not have a token account for ${selectedToken.symbol}. Please ask them to create one or ensure it exists.`,
                 );
               } else {
-                setError(
+                throw new Error(
                   `Failed to find recipient token account: ${e.message}`,
                 );
               }
-              setLoading(false);
-              return;
             }
 
             transaction.add(
@@ -137,21 +163,15 @@ export const useSendTransaction = ({
             );
           }
 
-          try {
-            const txSignature: string = await sendTransaction(
-              transaction,
-              connection,
-            );
-            console.log("Solana Transaction Signature:", txSignature);
-            await connection.confirmTransaction(txSignature, "confirmed");
-            console.log("Solana Transaction Confirmed!");
-            onSuccess();
-          } catch (solanaError: any) {
-            console.error("Solana Transaction Error:", solanaError);
-            setError(
-              solanaError.message || "Failed to send Solana transaction.",
-            );
-          }
+          const txSignature: string = await sendTransaction(
+            transaction,
+            connection,
+          );
+          console.log("Solana Transaction Signature:", txSignature);
+          await connection.confirmTransaction(txSignature, "confirmed");
+          console.log("Solana Transaction Confirmed!");
+          showSuccessToast("Transaction sent successfully!");
+          onSuccess();
         } else if (
           privyEVMWallet?.address &&
           activeChain.id !== CHAIN_ID.solana
@@ -161,16 +181,12 @@ export const useSendTransaction = ({
 
           const walletClient = await getWalletClient(privyEVMWallet);
           if (!walletClient) {
-            setError("Failed to get EVM wallet client.");
-            setLoading(false);
-            return;
+            throw new Error("Failed to get EVM wallet client.");
           }
 
           const publicClient = getPublicClient(activeChain.id);
           if (!publicClient) {
-            setError("Failed to get EVM public client.");
-            setLoading(false);
-            return;
+            throw new Error("Failed to get EVM public client.");
           }
 
           const senderAddress = walletAddress as Address;
@@ -178,84 +194,56 @@ export const useSendTransaction = ({
 
           if (selectedToken.isNative) {
             console.log("Sending native EVM token...");
-            try {
-              const amountWei = parseEther(amount);
-              const hash = await walletClient.sendTransaction({
-                account: senderAddress,
-                to: recipient,
-                value: amountWei,
-                chain: activeChain,
-              });
-              console.log("EVM Native Token Transaction Hash:", hash);
-              await publicClient.waitForTransactionReceipt({ hash });
-              console.log("EVM Native Token Transaction Confirmed!");
-              onSuccess();
-            } catch (evmError: any) {
-              console.error("EVM Native Token Send Error:", evmError);
-              setError(
-                evmError.details ||
-                  evmError.message ||
-                  "Failed to send native token.",
-              );
-            }
+            const amountWei = parseEther(amount);
+            const hash = await walletClient.sendTransaction({
+              account: senderAddress,
+              to: recipient,
+              value: amountWei,
+              chain: activeChain,
+            });
+            console.log("EVM Native Token Transaction Hash:", hash);
+            await publicClient.waitForTransactionReceipt({ hash });
+            console.log("EVM Native Token Transaction Confirmed!");
+            showSuccessToast("Transaction sent successfully!");
+            onSuccess();
           } else {
             console.log(`Sending ERC-20 token: ${selectedToken.symbol}...`);
-            try {
-              const tokenContractAddress = selectedToken.address as Address;
+            const tokenContractAddress = selectedToken.address as Address;
 
-              const tokenContract = getContract({
-                address: tokenContractAddress,
-                abi: erc20Abi,
-                client: publicClient,
-              });
-              const decimals = await tokenContract.read.decimals();
+            const tokenContract = getContract({
+              address: tokenContractAddress,
+              abi: erc20Abi,
+              client: publicClient,
+            });
+            const decimals = await tokenContract.read.decimals();
 
-              const amountParsedWithDecimals = parseUnits(
-                amount,
-                Number(decimals),
-              );
+            const amountParsedWithDecimals = parseUnits(
+              amount,
+              Number(decimals),
+            );
 
-              const hash = await walletClient.writeContract({
-                address: tokenContractAddress,
-                abi: erc20Abi,
-                functionName: "transfer",
-                args: [recipient, amountParsedWithDecimals],
-                account: senderAddress,
-                chain: activeChain,
-              });
+            const hash = await walletClient.writeContract({
+              address: tokenContractAddress,
+              abi: erc20Abi,
+              functionName: "transfer",
+              args: [recipient, amountParsedWithDecimals],
+              account: senderAddress,
+              chain: activeChain,
+            });
 
-              console.log("EVM ERC-20 Token Transaction Hash:", hash);
-              await publicClient.waitForTransactionReceipt({ hash });
-              console.log("EVM ERC-20 Token Transaction Confirmed!");
-              onSuccess();
-            } catch (evmError: any) {
-              console.error("EVM ERC-20 Token Send Error:", evmError);
-              setError(
-                evmError.details ||
-                  evmError.message ||
-                  "Failed to send ERC-20 token.",
-              );
-            }
+            console.log("EVM ERC-20 Token Transaction Hash:", hash);
+            await publicClient.waitForTransactionReceipt({ hash });
+            console.log("EVM ERC-20 Token Transaction Confirmed!");
+            showSuccessToast("Transaction sent successfully!");
+            onSuccess();
           }
         } else {
-          setError(
+          throw new Error(
             "No active wallet connection detected for sending. Please connect an EVM or Solana wallet.",
           );
-          console.warn(
-            "No active wallet or unsupported chain type for sending.",
-            {
-              solanaConnected,
-              publicKey,
-              privyEVMWallet,
-              activeChain,
-            },
-          );
         }
-      } catch (err) {
-        setError(
-          "An unexpected error occurred during transaction preparation.",
-        );
-        console.error("General transaction error:", err);
+      } catch (error: any) {
+        handleTransactionError(error);
       } finally {
         setLoading(false);
       }

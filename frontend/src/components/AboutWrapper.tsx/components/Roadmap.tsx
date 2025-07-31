@@ -106,7 +106,7 @@ const Roadmap = () => {
 
   return (
     <section className="mt-[167px] lg:mt-[275px] relative">
-      <div className="relative z-30 right-0 md:right-[192px] xl:right-0 2xl:right-6 -bottom-3 lg:-bottom-2 xl:-bottom-3 w-full">
+      <div className="relative z-30 right-0 md:right-[192px] xl:-right-6 2xl:right-4 -bottom-6 xl:-bottom-5 2xl:-bottom-6 w-full">
         <RoadmapIcon className="w-full" />
       </div>
 
@@ -131,7 +131,7 @@ const Roadmap = () => {
                     className="max-w-[290px] mx-auto p-6 rounded-[24px] h-[615px]"
                     style={{
                       background:
-                        "linear-gradient(180deg, #101219 0%, #1b46e0 100%)",
+                        "linear-gradient(180deg, #101219 -31%, #1b46e0 100%)",
                     }}
                   >
                     <div className="font-normal text-[14px] text-[#9A9CB3] mb-[49px]">
@@ -289,7 +289,7 @@ const Roadmap = () => {
                     className="mx-auto max-w-[340px] p-6 rounded-[24px] "
                     style={{
                       background:
-                        "linear-gradient(180deg, #101219 0%, #1b46e0 100%)",
+                        "linear-gradient(180deg, #101219 -31%, #1b46e0 100%)",
                     }}
                   >
                     <div className="font-normal text-[14px] md:text-[15px] text-[#9A9CB3] mb-[49px]">
@@ -428,7 +428,7 @@ const Roadmap = () => {
       </div>
 
       {/* Extra large layout (xl) - horizontal */}
-      <div className="hidden xl:flex flex-row justify-between items-start px-0 2xl:px-5 max-w-[1200px] 2xl:max-w-[1400px] mx-auto -mt-60">
+      <div className="hidden xl:flex flex-row justify-between items-start pl-6 3xl:pl-7 xl:pr-3 max-w-[1200px] 2xl:max-w-[1400px] mx-auto -mt-60">
         {ROADMAP_DATA.map((item, index) => (
           <motion.div
             key={index}
@@ -441,12 +441,12 @@ const Roadmap = () => {
             }`}
             style={{
               background: item.isHighlighted
-                ? "linear-gradient(180deg, #101219 0%, #1b46e0 100%)"
+                ? "linear-gradient(180deg, #101219 -31%, #1b46e0 100%)"
                 : "transparent",
             }}
           >
             {item.isHighlighted && (
-              <div className="font-normal text-[16px] text-[#9A9CB3] mb-[20px]">
+              <div className="font-normal text-[16px] text-[#9A9CB3] mb-[18px]">
                 Roadmap
               </div>
             )}
@@ -480,7 +480,7 @@ const Roadmap = () => {
               {item.title}
             </h3>
 
-            <ul className="flex flex-col gap-8">
+            <ul className="flex flex-col gap-8 max-w-[258px] 2xl:max-w-[268px]">
               {item.tasks.map((task, taskIndex) => (
                 <motion.li
                   key={taskIndex}

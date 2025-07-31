@@ -12,9 +12,10 @@ import { formatTokenBalance } from "@/utils/utils";
 import { formatTokenBalanceUSD } from "@/utils/tokenFormat";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { VaultCardInfoBlock } from "./VaultCardInfoBlock";
+import { InfoBlock } from "./InfoBlock.tsx";
 import { calculateRiskLevel } from "..";
-import InfoIcon from "@/components/svg/InfoIcon";
 import DynamicArrowIcon from "@/components/svg/DynamicArrow";
+import ArrowRightIcon from "@/components/svg/ArrowRightIcon";
 import classNames from "classnames";
 import { AppButton } from "@/components/button/AppButton";
 import { VaultOverviewBlock } from "@/components/VaultOverviewBlock";
@@ -23,11 +24,14 @@ import { useChartStore } from "@/store/chartStore";
 import { getVaultHistoricalAPY } from "@/utils/defillama";
 import { getFilteredChartData } from "@/utils/chart";
 import { useAPYDisplay } from "@/hooks/useAPYDisplay";
+import { usePrediction } from "@/hooks/usePrediction";
+import { formatPrediction, getPredictionColorClass, getPredictionArrow } from "@/utils/prediction";
 import {
   getNoonCapital30dAvgAPY,
   getNoonCapitalHistoricalAPY,
   isNoonCapitalVault,
 } from "@/utils/noonCapital";
+import { MiniSpinner } from "@/components/PendingDots";
 
 const MOCK_DIGITS = 6.43;
 
@@ -64,11 +68,18 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
     const userBalance = userVaultBalances.find(
       (balance) => balance.vaultId === vault.id,
     );
+
     const riskLevel = calculateRiskLevel(vault);
 
     const historicalData = getHistoricalAPY(vault.id);
     const percentageChange = getPercentageChange(vault.id);
     const hasChartData = hasHistoricalData(vault.id);
+
+    // Use prediction hook
+    const { prediction, isLoading: predictionLoading, hasData: hasPredictionData } = usePrediction({
+      vaultId: vault.id,
+      historicalAPY: historicalData
+    });
 
     // Use utility to get filtered chart data
     const chartData = getFilteredChartData(historicalData, chartRange);
@@ -112,7 +123,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
     const renderAPYDisplay = () => {
       return (
         <div className="flex flex-row justify-between">
-          <p className={apyDisplay.textClass}>{apyDisplay.displayText}</p>
+          <span className={apyDisplay.textClass}>{apyDisplay.displayText}</span>
           {apyDisplay.isDefined && (
             <div
               className={classNames({
@@ -130,7 +141,12 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
     useEffect(() => {
       if (isNoonCapitalVault(vault.id)) {
         getNoonCapital30dAvgAPY().then(setNoonCapitalAPY);
-        getNoonCapitalHistoricalAPY().then(setNoonCapitalChart);
+        getNoonCapitalHistoricalAPY().then((data) => {
+          setNoonCapitalChart(data);
+          // Store APY in chart store for prediction
+          const apyArray = data.map((d) => d.apy);
+          setHistoricalAPY(vault.id, apyArray);
+        });
       } else {
         getVaultHistoricalAPY(vault.id).then((data) => {
           if (data && Array.isArray(data)) {
@@ -142,11 +158,45 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
     }, [vault.id, setHistoricalAPY]);
 
     const renderPredictionDisplay = () => {
+      if (predictionLoading) {
+        return (
+          <div className="flex flex-row justify-between">
+            <span className="font-semibold text-base md:text-xl leading-5 text-gray-400">
+              Loading...
+            </span>
+          </div>
+        );
+      }
+
+      if (!hasPredictionData || !prediction) {
+        return (
+          <div className="flex flex-row justify-between">
+            <span className="font-semibold text-base md:text-xl leading-5 text-gray-400">
+              N/A
+            </span>
+          </div>
+        );
+      }
+
+      const displayText = formatPrediction(prediction);
+      const colorClass = getPredictionColorClass(prediction);
+      const arrow = getPredictionArrow(prediction);
+
       return (
         <div className="flex flex-row justify-between">
-          <p className="font-semibold text-base md:text-xl leading-5 text-white">
-            N/A
-          </p>
+          <span className={`font-semibold text-base md:text-xl leading-5 ${colorClass}`}>
+            {displayText}
+          </span>
+          {arrow.isDefined && (
+            <div
+              className={classNames({
+                "rotate-180": arrow.shouldRotate,
+                "rotate-90": arrow.shouldRotateRight,
+              })}
+            >
+              <DynamicArrowIcon color={arrow.color} />
+            </div>
+          )}
         </div>
       );
     };
@@ -160,11 +210,11 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
         className="w-full h-full bg-[#14171F] md:px-6 px-4 py-6 rounded-2xl transition-all backdrop-blur-[20px] cursor-pointer shadow-md before-gradient-border flex flex-col"
       >
         <div className="flex-1">
-          <div className="grid grid-cols-[auto_1fr] md:grid-cols-[auto_max-content] justify-between gap-1">
+          <div className="grid grid-cols-[auto_max-content] justify-between gap-1">
             <div className="grid grid-cols-[auto_1fr] gap-3 mb-3 p-2 rounded-md col-span-1 items-center">
               <Image
-                src={vault.inputToken.imgURL}
-                alt={vault.inputToken.symbol}
+                src={vault.outputTokenImage || vault.inputToken.imgURL}
+                alt={vault.outputTokenSymbol || vault.inputToken.symbol}
                 width={40}
                 height={40}
                 className="rounded-full flex-none"
@@ -233,7 +283,13 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                   </p>
                   {renderAPYDisplay()}
                   <div className="hover:cursor-pointer absolute right-[-10px] top-0 md:top-[-10px]">
-                    <InfoIcon />
+                    <InfoBlock isRight>
+                      <div>
+                        <strong>💡 30d Average APY</strong><br/>
+                        This shows the average Annual Percentage Yield over the last 30 days. 
+                        It&apos;s calculated from historical performance data and helps indicate recent vault performance.
+                      </div>
+                    </InfoBlock>
                   </div>
                 </div>
               </VaultCardInfoBlock>
@@ -245,15 +301,39 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                   </p>
                   {renderPredictionDisplay()}
                   <div className="hover:cursor-pointer absolute right-[-10px] top-0 md:top-[-10px]">
-                    <InfoIcon />
+                    <InfoBlock isRight>
+                      <div>
+                        <strong>💡 30d Prediction</strong><br/>
+                        AI-powered prediction of APY for the next 30 days using Exponential Moving Average algorithm. 
+                        Based on historical data trends and confidence levels.
+                        <br/><br/>
+                        <strong>Trend Indicators:</strong><br/>
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="transform -rotate-90">
+                            <ArrowRightIcon color="#05D47F" />
+                          </div>
+                          <span>Increasing Trend</span>
+                        </div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <ArrowRightIcon color="#FFA500" />
+                          <span>Stable Trend</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="transform rotate-90">
+                            <ArrowRightIcon color="#FF1E1E" />
+                          </div>
+                          <span>Decreasing Trend</span>
+                        </div>
+                      </div>
+                    </InfoBlock>
                   </div>
                 </div>
               </VaultCardInfoBlock>
             </div>
           </div>
 
-          {(hasChartData ||
-            (isNoonCapitalVault(vault.id) && noonCapitalChart.length > 0)) && (
+          {hasChartData ||
+          (isNoonCapitalVault(vault.id) && noonCapitalChart.length > 0) ? (
             <div
               className="flex flex-col w-full rounded-lg pt-2 bg-[#3E73C40D] border border-[#3E3C59] mb-2"
               onClick={(e) => e.stopPropagation()}
@@ -263,8 +343,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                   Historical APY
                 </p>
               </div>
-              {/* Chart range toggle */}
-              <div className="flex flex-row gap-2 px-2 pb-1 pt-1">
+              <div className="flex flex-row gap-2  pb-1 pt-1 ml-[9px] px-2">
                 <button
                   className={`px-2 py-1 rounded text-xs font-semibold border ${chartRange === "30d" ? "bg-blue-700 text-white border-blue-700" : "bg-transparent text-blue-700 border-blue-700"}`}
                   onClick={(e) => {
@@ -285,19 +364,45 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                 </button>
               </div>
               <TableChart
+                key={`${vault.id}-${chartRange}`}
                 points={filteredChartPoints}
                 percentageChange={percentageChange}
                 timestamps={filteredTimestamps}
               />
             </div>
+          ) : (
+            <div className="flex flex-col w-full rounded-lg pt-2 bg-[#3E73C40D] border border-[#3E3C59] mb-2">
+              <div className="flex flex-row gap-1 items-center justify-between px-2">
+                <p className="font-normal text-sm leading-4 text-white pl-[9px]">
+                  Historical APY
+                </p>
+              </div>
+              <div className="flex flex-row gap-2 px-2 pb-1 pt-1">
+                <div className="px-2 py-1 rounded text-xs font-semibold border bg-blue-700 text-white border-blue-700">
+                  30d
+                </div>
+                <div className="px-2 py-1 rounded text-xs font-semibold border bg-transparent text-blue-700 border-blue-700">
+                  90d
+                </div>
+              </div>
+              <div className="w-full h-[80px] flex items-center justify-center bg-gradient-to-r animate-pulse rounded">
+                <MiniSpinner size={20} color="#1B46E0" className="-mt-7" />
+              </div>
+            </div>
           )}
 
-          <p className="font-normal text-xs leading-4 text-white mb-4 md:mb-6 mt-2">
+          <div className="font-normal text-xs leading-4 text-white mb-4 md:mb-6 mt-2">
             This vault auto-compounds Lenders Tokens on{" "}
             <span className="flex flex-row gap-1">
-              {vault.protocol.name} <InfoIcon />
+              {vault.protocol.name} <InfoBlock isLeft>
+                <div>
+                  <strong>Auto-compounding Vault</strong><br/>
+                  This vault automatically reinvests your earnings to maximize returns. 
+                  It uses the {vault.protocol.name} protocol to generate yield from your deposited tokens.
+                </div>
+              </InfoBlock>
             </span>
-          </p>
+          </div>
         </div>
         <div className="flex gap-4 mt-auto">
           <AppButton

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react"; // Додаємо useEffect
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import VaultsMobileMenuIcon from "../svg/mobileMenu/VaultsMobileMenu";
@@ -76,9 +76,21 @@ const MobileMenuModal: React.FC<MobileMenuProps> = ({ toggleMenu, isOpen }) => {
 
   const menuItems = walletAddress ? USER_MENU_ITEMS : GUEST_MENU_ITEMS;
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen]);
+
   return (
     <div
-      className={`z-[100] py-10 px-4 lg:!hidden fixed top-0 bottom-0 left-0 right-0 bg-[#0C1015] h-screen transform transition-all duration-500 ease-in-out ${
+      className={`z-[100] pt-10 pb-2 px-4 lg:!hidden fixed top-0 bottom-0 left-0 right-0 bg-[#0C1015] h-screen supports-[height:100dvh]:h-dvh transform transition-all duration-500 ease-in-out ${
         isOpen ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"
       }`}
     >

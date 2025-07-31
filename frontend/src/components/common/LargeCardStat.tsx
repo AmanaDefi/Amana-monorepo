@@ -35,7 +35,7 @@ export default function LargeCardStat({
             animate="animate"
             exit="exit"
             transition={uniformTransition}
-            className="text-lg md:text-[20px] max-h-[22px] font-normal md:font-semibold whitespace-nowrap text-white leading-0 overflow-hidden text-ellipsis min-w-0"
+            className="text-lg md:text-[20px]font-normal md:font-semibold whitespace-nowrap text-white leading-tight text-ellipsis min-w-0 text-center"
           >
             {value}
           </motion.p>
@@ -52,15 +52,19 @@ export default function LargeCardStat({
             }
             subId={id}
           >
-            <div className="inline-block cursor-pointer">{valueElement}</div>
+            <div className="w-full flex justify-center cursor-pointer min-w-0">
+              {valueElement}
+            </div>
           </WithTooltip>
         );
       }
 
-      return valueElement;
+      return (
+        <div className="w-full flex justify-center min-w-0">{valueElement}</div>
+      );
     } else {
       const childrenElement = (
-        <div className="text-lg md:text-[20px] max-h-[22px] font-normal md:font-semibold whitespace-nowrap text-white leading-0 overflow-hidden text-ellipsis min-w-0">
+        <div className="text-lg md:text-[20px] font-normal md:font-semibold whitespace-nowrap text-white leading-tight text-ellipsis min-w-0 text-center">
           {children}
         </div>
       );
@@ -75,41 +79,33 @@ export default function LargeCardStat({
             }
             subId={id}
           >
-            <div className="inline-block cursor-pointer">{childrenElement}</div>
+            <div className="w-full flex justify-center cursor-pointer min-w-0">
+              {childrenElement}
+            </div>
           </WithTooltip>
         );
       }
 
-      return childrenElement;
+      return (
+        <div className="w-full flex justify-center min-w-0">
+          {childrenElement}
+        </div>
+      );
     }
   };
 
   return (
-    <div className="w-full" id={id}>
-      <div className="w-full flex flex-col items-center justify-center">
+    <div className="w-full min-w-0" id={id}>
+      <div className="w-full flex flex-col items-center justify-center min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <div className="text-[#535E73] font-normal text-sm md:text-[16px] whitespace-nowrap">
+          <div className="text-[#535E73] font-normal text-sm md:text-[16px] whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
             {label}
           </div>
         </div>
 
-        {renderValue()}
-
-        {/* {secondaryValue && (
-          <AnimatePresence mode="wait">
-            <motion.p
-              key={secondaryValue} 
-              className={`text-xl whitespace-nowrap text-customGray300 -mt-2`}
-              variants={valueVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={uniformTransition}
-            >
-              {secondaryValue}
-            </motion.p>
-          </AnimatePresence>
-        )} */}
+        <div className="w-full flex justify-center min-w-0">
+          {renderValue()}
+        </div>
       </div>
     </div>
   );

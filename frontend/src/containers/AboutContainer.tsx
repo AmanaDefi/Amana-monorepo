@@ -29,8 +29,10 @@ const AboutContainer = ({}) => {
   const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0.3]);
 
   const handleGetStartedClick = () => {
-    console.log("Get Started button clicked");
     router.push("/");
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }, 10);
   };
 
   return (
