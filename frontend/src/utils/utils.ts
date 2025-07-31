@@ -100,7 +100,29 @@ export function getVaultErrorMessage(
       }
     }
 
-    // For withdrawal validation, we need vaultTokenPrice to calculate USD amount
+    // For withdrawal validation, we need inputTokenPrice to calculate USD amount
+    if (!isDeposit && Number(inputValue) > 0) {
+      if (!inputTokenPrice || inputTokenPrice === 0) {
+        return "Token price unavailable. Please try again later or select a different token.";
+      }
+      
+      const amountInUSD = Number(inputValue) * inputTokenPrice;
+      const availableBalanceInUSD = Number(availableBalance) * inputTokenPrice;
+      
+      // Conditional $1 minimum withdrawal check (based on user's actual balance)
+      if (availableBalanceInUSD > 1) {
+        if (amountInUSD < 1) {
+          return "You must withdraw at least $1";
+        }
+      }
+      
+      // Max withdrawal limit check (using actual user balance)
+      if (Number(inputValue) > Number(availableBalance)) {
+        return `You can only withdraw a maximum of ${availableBalance} tokens`;
+      }
+    }
+
+    // Vault-level max withdrawal limit check (e.g., $1M limit per vault)
     if (!isDeposit && vaultData.maxWithdraw && Number(inputValue) > 0) {
       if (!inputTokenPrice || inputTokenPrice === 0) {
         return "Token price unavailable. Please try again later or select a different token.";
