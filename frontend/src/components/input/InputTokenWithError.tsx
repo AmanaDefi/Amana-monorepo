@@ -202,7 +202,7 @@ export default function InputTokenWithError({
   const isDisabled = disabled || isTxInProgress;
 
   return (
-    <div className={isDisabled ? "opacity-50 cursor-default" : ""}>
+    <div className={isDisabled ? "cursor-default" : ""}>
       {captionText && (
         <p className="text-white text-sm lg:text-lg font-medium mb-2">
           {captionText}
@@ -243,7 +243,7 @@ export default function InputTokenWithError({
                   className={`font-normal text-xs md:text-sm text-start transition-colors duration-200 ${
                     !isDeposit ? "-ml-2" : ""
                   } ${
-                    loadingOutputToken || isDisabled
+                    loadingOutputToken
                       ? "text-[#535E73] cursor-not-allowed opacity-50"
                       : "text-[#3E73C4] hover:underline hover:text-[#4A82D1] cursor-pointer"
                   }`}
@@ -288,7 +288,7 @@ export default function InputTokenWithError({
                 </div>
               ) : (
                 <span
-                  className={`text-white text-2xl ${conversionOutput.outputAmountFormatted && conversionOutput.outputAmountFormatted !== "0.00" ? "font-medium" : "font-normal"}`}
+                  className={`text-white text-2xl ${isDisabled && "opacity-50"} ${conversionOutput.outputAmountFormatted && conversionOutput.outputAmountFormatted !== "0.00" ? "font-medium" : "font-normal"}`}
                 >
                   {conversionOutput.outputAmountFormatted || "0.00"}
                 </span>
@@ -316,10 +316,12 @@ export default function InputTokenWithError({
                 className="justify-end"
                 onSelectChain={onSelectChain}
                 onSelectChainAndToken={onSelectChainAndToken}
-                disabled={isTxInProgress} 
+                disabled={isTxInProgress}
               />
             ) : (
-              <div className="flex items-center flex-row gap-1 md:gap-2">
+              <div
+                className={`flex items-center flex-row gap-1 md:gap-2 ${isDisabled && "opacity-50"}`}
+              >
                 <div className="relative flex-none w-5 h-5 border border-white rounded-full bg-[#10B981]">
                   <TokenIcon
                     token={
@@ -345,7 +347,9 @@ export default function InputTokenWithError({
                     imageSize="w-5 h-5"
                   />
                 </div>
-                <p className="font-normal text-base leading-none text-white ">
+                <p
+                  className={`font-normal text-base leading-none text-white ${isDisabled && "opacity-50"}`}
+                >
                   {isOutput
                     ? getOnlyTokenSymbol(
                         vaultData.outputTokenSymbol ||
