@@ -1,23 +1,22 @@
 "use client";
 
-import React, { useCallback, useMemo, useState } from "react";
-import { ChevronDownIcon } from "@heroicons/react/24/outline";
+import React from "react";
 import { Token, VaultData } from "@/types/types";
 import { Chain } from "viem";
-import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 import { getOnlyTokenSymbol } from "@/utils/utils";
+import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 
 interface ChainTokenSelectorProps {
-  onSelectToken: (token: Token) => void;
   selectedToken?: Token;
   selectedChain?: Chain | null;
   className?: string;
-  vaultData?: VaultData;
-  onClick?: () => void;
   onOpenModal?: () => void;
   isFromTopUp?: boolean;
+  onSelectToken?: (token: Token) => void;
   onSelectChain?: (chain: Chain) => void;
   onSelectChainAndToken?: (chain: Chain, token: Token) => void;
+  vaultData?: VaultData;
+  onClick?: () => void;
 }
 
 export default function ChainTokenSelector({
@@ -26,17 +25,12 @@ export default function ChainTokenSelector({
   className = "",
   onOpenModal,
   isFromTopUp = false,
+  onSelectToken,
   onSelectChain,
   onSelectChainAndToken,
   vaultData,
   onClick,
 }: ChainTokenSelectorProps) {
-  const { selectedChainFromModal, selectedTokenFromModal, openModal } =
-    useChainTokenModalStore();
-
-  const currentChain = selectedChainFromModal || selectedChain;
-  const currentToken = vaultData?.inputToken || selectedToken;
-
   const chainTokenModalStore = useChainTokenModalStore();
 
   const handleOpenModalLegacy = () => {
@@ -49,6 +43,9 @@ export default function ChainTokenSelector({
       false,
     );
   };
+
+  const currentChain = selectedChain;
+  const currentToken = selectedToken;
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     e.preventDefault();
@@ -67,31 +64,13 @@ export default function ChainTokenSelector({
       onClick();
     }
   };
+
   if (!currentChain) {
     return (
       <div
-        className={`flex items-center text-xs md:text-sm text-white ${className}`}
+        className={`flex items-center opacity-50 text-xs md:text-sm ${className}`}
       >
-        <div className="flex flex-row gap-1 md:gap-2">
-          {currentToken ? (
-            <>
-              <img
-                src={currentToken.imgURL}
-                alt={currentToken.symbol}
-                width={20}
-                height={21}
-                className="rounded-full border border-white bg-[#10B981]"
-              />
-              <p className="max-w-[82px] md:max-w-[200px] truncate">
-                {getOnlyTokenSymbol(currentToken.symbol)}
-              </p>
-            </>
-          ) : (
-            <p className="max-w-[82px] md:max-w-[200px] truncate text-xs md:text-sm">
-              Select token
-            </p>
-          )}
-        </div>
+        <span className="text-gray-400">Select chain</span>
       </div>
     );
   }
@@ -100,7 +79,7 @@ export default function ChainTokenSelector({
     <div className={`relative ${className}`}>
       <button
         onClick={handleClick}
-        className="flex items-center gap-1 md:gap-2 rounded-lg text-white"
+        className="flex items-center gap-1 md:gap-2 rounded-lg text-white hover:opacity-80 transition-opacity"
       >
         {currentToken ? (
           <>
