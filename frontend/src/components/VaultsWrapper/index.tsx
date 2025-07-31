@@ -140,6 +140,18 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   const itemsPerPage = useLayoutStore((state) => state.itemsPerPage);
 
   useEffect(() => {
+    if (onPageChange && currentPage > 1) {
+      onPageChange(1);
+    }
+  }, [itemsPerPage]);
+
+  useEffect(() => {
+    if (onPageChange) {
+      onPageChange(1);
+    }
+  }, [isShownMyVaults]);
+
+  useEffect(() => {
     setSortBy(externalSortBy);
     setSortOrder(externalSortOrder);
   }, [externalSortBy, externalSortOrder]);
