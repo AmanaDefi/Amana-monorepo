@@ -61,8 +61,8 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
     swapHelper ?? hre.ethers.constants.AddressZero,
     receiptToken,
     inputToken,
-    rewardsContract ?? "0xdAC17F958D2ee523a2206206994597C13D831ec7", //hre.ethers.constants.AddressZero,
-    rewardsToken ?? "0xdAC17F958D2ee523a2206206994597C13D831ec7", // hre.ethers.constants.AddressZero,
+    rewardsContract ?? hre.ethers.constants.AddressZero,
+    rewardsToken ?? hre.ethers.constants.AddressZero,
     0
   ]);
 
@@ -73,11 +73,11 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
       gateway,
       vault,
       withdrawHelper,
-      "0x74fCAd57C966cAB6fa02a0A5425b1c76DcaFe9A0", //swapHelper ?? hre.ethers.constants.AddressZero,
+      swapHelper ?? hre.ethers.constants.AddressZero,
       receiptToken,
       inputToken,
-      "0xdAC17F958D2ee523a2206206994597C13D831ec7", // hre.ethers.constants.AddressZero,
-      "0xdAC17F958D2ee523a2206206994597C13D831ec7", //hre.ethers.constants.AddressZero,
+      rewardsContract ?? hre.ethers.constants.AddressZero,
+      rewardsToken ?? hre.ethers.constants.AddressZero,
       0  // tokenIndex — unused
     ],
     {
