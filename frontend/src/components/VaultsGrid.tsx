@@ -38,25 +38,6 @@ const isStablecoin = (symbol: string): boolean => {
   return ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'FRAX', 'LUSD'].includes(baseSymbol);
 };
 
-// Helper function to format TVL in USD terms with proper K/M/B suffix
-const formatTVLInUSD = (totalAssets: string | number, inputTokenSymbol: string, tokenPrice: number = 0): string => {
-  const totalAssetsNumber = Number(totalAssets || 0);
-  
-  if (totalAssetsNumber === 0) {
-    return "0";
-  }
-  
-  // Check if the token is a stablecoin
-  if (isStablecoin(inputTokenSymbol)) {
-    // For stablecoins, the value is already in USD terms
-    return formatNumberWithSuffix(totalAssetsNumber);
-  } else {
-    // For native tokens (like ETH), convert to USD using token price
-    const usdValue = totalAssetsNumber * tokenPrice;
-    return formatNumberWithSuffix(usdValue);
-  }
-};
-
 // Generate a deterministic capacity percentage based on vault ID
 // This ensures consistent values across renders but is still just mock data
 const calculateCapacityPercentage = (vaultId: string): number => {
@@ -598,7 +579,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                   <div className="bg-customNeutral300 p-3 rounded-md">
                     <p className="text-gray-400 text-xs mb-1">TVL</p>
                     <p className="text-white font-bold text-xl">
-                        {formatTVLInUSD(Number(vaultTotalAssetsData?.totalAssets || 0), vault.inputToken.symbol, getTokenPrice(vault.inputToken.symbol))}
+                        {formatNumberWithSuffix(Number(vaultTotalAssetsData?.totalAssets || 0))}
                     </p>
                   </div>
                 </div>

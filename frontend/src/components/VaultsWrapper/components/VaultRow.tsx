@@ -4,7 +4,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 
 import { VaultAPY, VaultData, VaultTotalAssets } from "@/types/types";
-import { formatNumberWithSuffix, formatTVLInUSD } from "@/utils/utils";
+import { formatNumberWithSuffix } from "@/utils/utils";
 import FlashIcon from "@/components/svg/Flash";
 import { AppButton } from "@/components/button/AppButton";
 import classNames from "classnames";
@@ -109,11 +109,7 @@ export const VaultRow: FC<Props> = React.memo(
             >
               $
               {totalAssets?.totalAssets
-                ? formatTVLInUSD(
-                    Number(totalAssets.totalAssets),
-                    vault.inputToken.symbol,
-                    tokenPrice,
-                  )
+                ? formatNumberWithSuffix(Number(totalAssets.totalAssets))
                 : "0"}
             </motion.p>
           </div>
