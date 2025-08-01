@@ -2366,34 +2366,68 @@ export const getPathDataAndAmountOut = async (
     ]);
     if (!inputTokenInfo || !outputTokenInfo) throw new Error("Zuno token info missing");
     // 2. Get quote from Zuno
+    const quoteParams = {
+      fromChainId: inputTokenChainId,
+      toChainId: outputTokenChainId,
+      fromTokenAddress: inputToken.address,
+      toTokenAddress: outputToken.address,
+      fromAmount: amount.toString(),
+      fromAddress: userAddress,
+      toAddress: userAddress,
+      slippage,
+    };
+    
+    console.log('[actions.ts] Zuno quote request parameters:', JSON.stringify(quoteParams, null, 2));
+    
     const quoteResp = await axios.get(`${ZUNO_API_BASE}/api/cross_chain/routes`, {
-      params: {
-        fromChainId: inputTokenChainId,
-        toChainId: outputTokenChainId,
-        fromTokenAddress: inputToken.address,
-        toTokenAddress: outputToken.address,
-        fromAmount: amount.toString(),
-        fromAddress: userAddress,
-        toAddress: userAddress,
-        slippage,
-      },
+      params: quoteParams
     });
+    
     const quote = quoteResp.data?.data;
-    console.log('[actions.ts] Zuno quote', quote);
-    if (!quote?.encodeParams?.interfaceParams) throw new Error("Zuno quote missing encodeParams");
+    console.log('[actions.ts] Zuno quote response:', JSON.stringify(quote, null, 2));
+    console.log('[actions.ts] Zuno quote.encodeParams:', JSON.stringify(quote?.encodeParams, null, 2));
+    console.log('[actions.ts] Zuno quote.encodeParams.interfaceParams:', quote?.encodeParams?.interfaceParams);
+    
+    // Check if quote is valid and not expired
+    if (!quote?.encodeParams?.interfaceParams) {
+      console.warn('[actions.ts] Zuno quote missing encodeParams, falling back to Beam');
+      throw new Error("Zuno quote missing encodeParams");
+    }
+    
+    // Check for route expiration (if quote has timestamp)
+    if (quote.timestamp) {
+      const quoteAge = Date.now() - quote.timestamp;
+      if (quoteAge > 5 * 60 * 1000) { // 5 minutes
+        console.warn('[actions.ts] Zuno quote expired, falling back to Beam');
+        throw new Error("Zuno quote expired");
+      }
+    }
+
     // 3. Get encoded calldata from Zuno
-    const encodeResp = await axios.post(`${ZUNO_API_BASE}/api/cross_chain/transaction/encode`, {
+    const encodeRequestBody = {
       data: {
         interfaceParams: quote.encodeParams.interfaceParams
       }
-    });
-    console.log('[actions.ts] Zuno encodeResp', encodeResp);
+    };
+    
+    console.log('[actions.ts] Zuno encode request body:', JSON.stringify(encodeRequestBody, null, 2));
+    
+    const encodeResp = await axios.post(`${ZUNO_API_BASE}/api/cross_chain/transaction/encode`, encodeRequestBody);
+    console.log('[actions.ts] Zuno encode response:', JSON.stringify(encodeResp.data, null, 2));
+    
     const encodedPath = encodeResp.data?.data?.data;
-    console.log('[actions.ts] Zuno encodedPath', encodedPath);
-    const amountOut = BigInt(quote.toAmount);
-    if (!encodedPath) throw new Error("Zuno encode missing data");
-    console.log('[actions.ts] Zuno call successful');
-    return { encodedPath, amountOut };
+    console.log('[actions.ts] Zuno encodedPath:', encodedPath);
+    
+    if (!encodedPath) {
+      console.warn('[actions.ts] Zuno encode failed, falling back to Beam');
+      throw new Error("Zuno encode failed");
+    }
+
+    console.log('[actions.ts] Zuno swap/quote successful');
+    return {
+      encodedPath: encodedPath as `0x${string}`,
+      amountOut: BigInt(quote.toAmount || "0")
+    };
   } catch (zunoErr) {
     console.warn('[actions.ts] Zuno call failed, falling back to Beam', zunoErr);
     // Fallback to Beam logic
