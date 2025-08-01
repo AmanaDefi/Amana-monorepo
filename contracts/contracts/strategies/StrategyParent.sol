@@ -44,6 +44,7 @@ abstract contract StrategyParent is
 
     enum TxType {
         Deposit,
+        Unstake,
         Withdraw,
         Switch,
         Revert
@@ -76,6 +77,8 @@ abstract contract StrategyParent is
     bytes32 internal constant TX_SWITCH_REVERTED = keccak256("SwitchReverted");
     bytes32 internal constant TX_TOTAL_ASSETS_UPDATE =
         keccak256("TotalAssetsUpdated");
+    bytes32 internal constant TX_UNSTAKE_CONFIRMED =
+        keccak256("UnstakeConfirmed");
 
     event FundsInvested(
         uint256 indexed vaultNonce,
@@ -233,6 +236,8 @@ abstract contract StrategyParent is
 
         if (txData.txType == TxType.Deposit) {
             _invest();
+        } else if (txData.txType == TxType.Unstake) {
+            _unstake();
         } else if (txData.txType == TxType.Withdraw) {
             _divest();
         } else if (txData.txType == TxType.Switch) {
@@ -426,6 +431,29 @@ abstract contract StrategyParent is
      */
     function _transferAssetsToNewStrategy() internal virtual;
 
+    // @notice Withdraws funds from the yield source.
+    function _unstake() internal virtual {
+        BufferedTx storage txData = pendingByNonce[lastProcessedNonce + 1];
+        uint256 amountWithdrawn = _unstakeFundsFromYieldSource(
+            txData.assetAmount,
+            txData.minimumOut
+        );
+
+        uint256 totalUnderlyingAssetsAfter = totalUnderlyingAssets();
+
+        _confirmUnstake(
+            amountWithdrawn,
+            totalUnderlyingAssetsAfter,
+            lastProcessedNonce + 1
+        );
+
+        emit FundsDivested(
+            lastProcessedNonce + 1,
+            amountWithdrawn,
+            totalUnderlyingAssetsAfter
+        );
+    }
+
     /// @notice Withdraws funds from the yield source.
     function _divest() internal virtual {
         BufferedTx storage txData = pendingByNonce[lastProcessedNonce + 1];
@@ -506,6 +534,32 @@ abstract contract StrategyParent is
         );
     }
 
+    function _confirmUnstake(
+        uint256 amountWithdrawn,
+        uint256 totalUnderlyingAssetsAfter,
+        uint256 vaultNonce
+    ) internal {
+        // bytes memory outgoingMessage = abi.encode(
+        //     amountWithdrawn,
+        //     totalUnderlyingAssetsAfter,
+        //     vaultNonce,
+        //     TX_UNSTAKE_CONFIRMED
+        // );
+        // RevertOptions memory revertOptions = RevertOptions(
+        //     address(this),
+        //     true,
+        //     amanaVault,
+        //     abi.encode(
+        //         "_returnFundsFromStrategyFailed",
+        //         amountWithdrawn,
+        //         totalUnderlyingAssetsAfter,
+        //         vaultNonce
+        //     ),
+        //     uint256(1500000)
+        // );
+        _sendUpdateToVault(lastProcessedNonce, TX_UNSTAKE_CONFIRMED);
+    }
+
     /**
      * @dev Sends a deposit and calls the `amanaVault` with the specified outgoing message and revert options.
      * @param amountWithdrawn The amount of native tokens to send with the transaction.
@@ -519,6 +573,11 @@ abstract contract StrategyParent is
         bytes memory outgoingMessage,
         RevertOptions memory revertOptions
     ) internal virtual;
+
+    function _unstakeFundsFromYieldSource(
+        uint256 amount,
+        uint256 minAmountOut
+    ) internal virtual returns (uint256 amountWithdrawn);
 
     /**
      * @notice Withdraws funds from the configured yield source.
