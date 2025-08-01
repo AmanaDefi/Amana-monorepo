@@ -25,6 +25,7 @@ interface DepositInstructionProps {
   activeChainId?: number;
   vaultStrategyChainId?: number;
   isDeposit?: boolean;
+  currentTab?: string;
   currentStep?: DepositStep;
   isProcessing?: boolean;
   isFailedOnConfirmation: boolean;
@@ -60,6 +61,7 @@ const getStepState = (
   isStaticMode: boolean,
   isFailedOnConfirmation: boolean,
   finishedTransaction: boolean,
+  currentTab?: string,
 ) => {
   if (isFailedOnConfirmation && step === DepositStep.CONFIRM_DEPOSIT) {
     return "error";
@@ -188,6 +190,7 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
     isDeposit = true,
     finishedTransaction = false,
     isFailedOnConfirmation,
+    currentTab,
   } = props;
 
   const {
@@ -231,6 +234,7 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
             isStaticMode,
             isFailedOnConfirmation,
             finishedTransaction,
+            currentTab,
           );
 
           let stepStatus;
@@ -288,14 +292,15 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
               isDeposit,
               shouldShowFinalStep,
               isFailedOnConfirmation,
+              currentTab,
             );
           }
 
           const fullDescription =
             step === DepositStep.SELECT_TOKEN ||
             step === DepositStep.CONFIRM_DEPOSIT
-              ? getStepDescription(step, isDeposit)
-              : stepStatus?.description || getStepDescription(step, isDeposit);
+              ? getStepDescription(step, isDeposit, currentTab)
+              : stepStatus?.description || getStepDescription(step, isDeposit, currentTab);
 
           const { textBeforeHash, hashValue } =
             parseTransactionMessage(fullDescription);

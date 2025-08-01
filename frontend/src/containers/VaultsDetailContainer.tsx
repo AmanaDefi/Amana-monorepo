@@ -93,6 +93,7 @@ const VaultsDetailContainer: React.FC<{
     useState<VaultTotalAssetsinToken>();
   const [selectedToken, setSelectedToken] = useState<Token | undefined>();
   const [isDeposit, setIsDeposit] = useState<boolean>(initialIsDeposit);
+  const [currentTab, setCurrentTab] = useState<string>(initialIsDeposit ? "Invest" : "Withdraw");
   const [showMobileInvestment, setShowMobileInvestment] = useState(false);
   const giftButtonRef = useRef<HTMLButtonElement>(null);
   const { openStep } = useAuthStore();
@@ -163,6 +164,7 @@ const VaultsDetailContainer: React.FC<{
 
     const newIsDeposit = tab.toLowerCase() === "invest";
     setIsDeposit(newIsDeposit);
+    setCurrentTab(tab);
 
     updateLocalStorageObject(vaultID.toString(), {
       tab: newIsDeposit ? Tabs.DEPOSIT : Tabs.WITHDRAW,
@@ -770,7 +772,7 @@ const VaultsDetailContainer: React.FC<{
               isProcessingTx
                 ? "Transaction Progress"
                 : isWithdraw
-                  ? "Withdraw flow"
+                  ? currentTab === "Unstake" ? "Unstake flow" : "Withdraw flow"
                   : "Deposit flow"
             }
             defaultOpen={true}
@@ -786,6 +788,7 @@ const VaultsDetailContainer: React.FC<{
               activeChainId={activeChain?.id}
               vaultStrategyChainId={vaultData?.protocol?.chainId}
               isDeposit={isDeposit}
+              currentTab={currentTab}
               isProcessing={isTransactionProcessing}
               isFailedOnConfirmation={isFailedOnConfirmation}
             />

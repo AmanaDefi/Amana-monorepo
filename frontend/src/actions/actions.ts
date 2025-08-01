@@ -2010,7 +2010,7 @@ const executeDirectWithdrawal = async (
   withdrawAssetAmount: bigint,
 ) => {
   //vaultId: string
-  const { swapPath, minAmountOut } = await getPathDataAndMinAmountOut(
+  const { minAmountOut } = await getPathDataAndMinAmountOut(
     vaultData,
     vaultData.inputToken,
     withdrawAssetAmount,

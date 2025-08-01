@@ -98,17 +98,28 @@ const mapActionToUserStep = (
 const getStepDescription = (
   step: DepositStep,
   isDeposit: boolean = true,
+  currentTab?: string,
 ): string => {
   const operationType = isDeposit ? "deposit" : "withdrawal";
+  const isUnstake = currentTab === "Unstake";
 
   switch (step) {
     case DepositStep.SELECT_TOKEN:
+      if (isUnstake) {
+        return "Select the token and amount to unstake";
+      }
       return `Select the token ${operationType === "deposit" ? "and amount you want to deposit" : "and amount to withdraw "}`;
     case DepositStep.CONFIRM_DEPOSIT:
+      if (isUnstake) {
+        return "Confirm unstake";
+      }
       return `Confirm ${operationType}`;
     case DepositStep.CROSS_CHAIN_TRANSFER:
       return `Cross-chain transfer ${operationType === "deposit" ? " and investment of funds" : "(if needed)"}`;
     case DepositStep.FINAL_CONFIRMATION:
+      if (isUnstake) {
+        return "7-Day cooldown period initiated";
+      }
       return `${operationType === "deposit" ? "Final confirmation and issue of shares" : "Funds arrive in your wallet"}`;
     default:
       return `${operationType} step`;
@@ -122,6 +133,7 @@ const getUserStepStatus = (
   isDeposit: boolean = true,
   shouldShowFinalStep: boolean,
   isFailedOnConfirmation: boolean,
+  currentTab?: string,
 ): {
   status: TransactionStepStatus;
   description: string;
@@ -138,7 +150,7 @@ const getUserStepStatus = (
   }
 
   let latestStatus = TransactionStepStatus.pending;
-  let description = getStepDescription(step, isDeposit);
+  let description = getStepDescription(step, isDeposit, currentTab);
   let txHash: string | undefined;
   let isWaitingTooLong = false;
 
@@ -179,6 +191,7 @@ interface UseInstructionStepLogicProps {
   activeChainId?: number;
   vaultStrategyChainId?: number;
   isDeposit?: boolean;
+  currentTab?: string;
   isProcessing?: boolean;
   isFailedOnConfirmation?: boolean;
 }
@@ -190,6 +203,7 @@ export const useInstructionStepLogic = ({
   activeChainId,
   vaultStrategyChainId,
   isDeposit = true,
+  currentTab,
   isProcessing: propIsProcessing = false,
   isFailedOnConfirmation = false,
 }: UseInstructionStepLogicProps) => {
@@ -271,13 +285,25 @@ export const useInstructionStepLogic = ({
   ]);
 
   const steps = useMemo(() => {
+    // For Noon Capital vaults on Withdraw tab, skip the first step
+    // since the user has already done the unstaking process
+    const isNoonCapitalWithdraw = !isDeposit && currentTab === "Withdraw";
+    
+    if (isNoonCapitalWithdraw) {
+      return [
+        DepositStep.CONFIRM_DEPOSIT,
+        DepositStep.CROSS_CHAIN_TRANSFER,
+        DepositStep.FINAL_CONFIRMATION,
+      ];
+    }
+    
     return [
       DepositStep.SELECT_TOKEN,
       DepositStep.CONFIRM_DEPOSIT,
       DepositStep.CROSS_CHAIN_TRANSFER,
       DepositStep.FINAL_CONFIRMATION,
     ];
-  }, []);
+  }, [isDeposit, currentTab]);
 
   const {
     progressPercent,
@@ -295,6 +321,7 @@ export const useInstructionStepLogic = ({
         currentStepDescription: getStepDescription(
           DepositStep.SELECT_TOKEN,
           isDeposit,
+          currentTab,
         ),
       };
     }
@@ -319,6 +346,7 @@ export const useInstructionStepLogic = ({
             isDeposit,
             shouldShowFinalStep,
             isFailedOnConfirmation,
+            currentTab,
           );
           if (
             stepStatus.status === TransactionStepStatus.processing &&
@@ -337,6 +365,7 @@ export const useInstructionStepLogic = ({
           isDeposit,
           shouldShowFinalStep,
           isFailedOnConfirmation,
+          currentTab,
         );
 
         if (stepStatus.status === TransactionStepStatus.completed) {
@@ -369,6 +398,7 @@ export const useInstructionStepLogic = ({
       isDeposit,
       shouldShowFinalStep,
       isFailedOnConfirmation,
+      currentTab,
     );
     currentDesc = currentStepStatusObj.description;
 
