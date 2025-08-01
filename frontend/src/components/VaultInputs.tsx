@@ -176,7 +176,7 @@ export default function VaultInputs({
 
   const selectChain = useMemo(() => selectedChain, [selectedChain]);
 
-  const { slippageValue: userSlippage } = useSlippage(vaultId);
+  const { slippageValue: userSlippage, isAuto } = useSlippage(vaultId);
 
   const handleSelectChainAngToken = (chain: Chain, token: Token) => {
     setInputToken(token);
@@ -1250,6 +1250,32 @@ useEffect(() => {
     initialConversionOutput,
     isDeposit,
     vaultData,
+    userSlippage,
+  ]);
+
+  useEffect(() => {
+    // Force recalculation when slippage changes, but only if we have a valid input
+    if (
+      debouncedInputBalance.formatted &&
+      Number(debouncedInputBalance.formatted) > 0 &&
+      !CheckTheTxIsInProgress(vaultData?.id)
+    ) {
+      setLoadingOutputToken(true);
+      clearDepositCalculationCache();
+      if (isDeposit) {
+        getDepositOutputAmount(debouncedInputBalance.value);
+      } else {
+        getWithdrawOutputAmount(debouncedInputBalance.value);
+      }
+    }
+  }, [
+    userSlippage,
+    isAuto,
+    debouncedInputBalance.formatted,
+    debouncedInputBalance.value,
+    isDeposit,
+    vaultData?.id,
+    clearDepositCalculationCache,
   ]);
 
   // Clear cache when important parameters change
