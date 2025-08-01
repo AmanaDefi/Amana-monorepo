@@ -14,6 +14,7 @@ export default function InputNumber({
   onFocus,
   onBlur,
   className,
+  disabled,
   ...props
 }: InputNumberProps): JSX.Element {
   const { inputRef, handlers } = useNumberInput({
@@ -29,6 +30,7 @@ export default function InputNumber({
       ref={inputRef}
       className={clsx(
         "w-full h-[31px] p-0 border-none text-white text-2xl bg-inherit focus:ring-0 focus:outline-none",
+        disabled && "opacity-50",
         className,
       )}
       inputMode="decimal"

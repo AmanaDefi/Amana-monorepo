@@ -38,7 +38,8 @@ export const Deposit = () => {
   } = useFundWalletStore();
 
   const [error, setError] = useState("");
-  const { walletAddress: smartWalletAddress, activeEvmWallet: activeWallet } = useMultiChain();
+  const { walletAddress: smartWalletAddress, activeEvmWallet: activeWallet } =
+    useMultiChain();
 
   const walletContext = useWallet();
   const [loading, setLoading] = useState(false);
@@ -75,6 +76,11 @@ export const Deposit = () => {
     }
   }, [step]);
 
+  useEffect(() => {
+    if (walletContext.publicKey && !chain) {
+    }
+  }, [walletContext.publicKey, chain]);
+
   const isExternalWalletConnected = useMemo(() => {
     if (!chain) return false;
 
@@ -93,18 +99,17 @@ export const Deposit = () => {
     if (isExternalWalletConnected && chain && currency) {
       return !depositAmount || !!error;
     }
-    
 
     return false;
   })();
-
 
   const handleConfirm = async () => {
     if (
       !chain ||
       !currency ||
       !depositAmount ||
-      !!error || !smartWalletAddress 
+      !!error ||
+      !smartWalletAddress
     ) {
       return;
     }

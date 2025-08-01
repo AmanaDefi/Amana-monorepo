@@ -17,6 +17,7 @@ interface ChainTokenSelectorProps {
   onSelectChainAndToken?: (chain: Chain, token: Token) => void;
   vaultData?: VaultData;
   onClick?: () => void;
+  disabled?: boolean;
 }
 
 export default function ChainTokenSelector({
@@ -30,10 +31,13 @@ export default function ChainTokenSelector({
   onSelectChainAndToken,
   vaultData,
   onClick,
+  disabled = false,
 }: ChainTokenSelectorProps) {
   const chainTokenModalStore = useChainTokenModalStore();
 
   const handleOpenModalLegacy = () => {
+    if (disabled) return;
+
     chainTokenModalStore.openModal(
       selectedChain || null,
       selectedToken ?? null,
@@ -50,6 +54,9 @@ export default function ChainTokenSelector({
   const handleClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // Block all interactions when disabled
+    if (disabled) return;
 
     if (onOpenModal) {
       onOpenModal();
@@ -79,7 +86,12 @@ export default function ChainTokenSelector({
     <div className={`relative ${className}`}>
       <button
         onClick={handleClick}
-        className="flex items-center gap-1 md:gap-2 rounded-lg text-white hover:opacity-80 transition-opacity"
+        disabled={disabled}
+        className={`flex items-center gap-1 md:gap-2 rounded-lg text-white transition-opacity ${
+          disabled
+            ? "opacity-50 cursor-not-allowed"
+            : "hover:opacity-80 cursor-pointer"
+        }`}
       >
         {currentToken ? (
           <>
