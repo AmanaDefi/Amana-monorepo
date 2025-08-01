@@ -201,41 +201,51 @@ const MobileAllWallets = () => {
           className="overflow-auto flex flex-1 scrollbar-thin flex-col items-center"
         >
           <div className="flex flex-col gap-4 items-center justify-center">
-            {shouldShowEVM &&
-              filteredEvmConnectors.map((connector) => (
-                <ModalButton
-                  key={connector.id}
-                  label={connector.name}
-                  icon={
-                    <ConnectorIcon
-                      connectorId={connector.id}
-                      name={connector.name}
-                      connectorIcon={connector.icon}
-                    />
-                  }
-                  onClick={() => {
-                    handleExternalWalletConnect(connector);
-                  }}
-                />
-              ))}
+            {shouldShowEVM && filteredEvmConnectors.length > 0 && (
+              <>
+                <p className="text-base text-[#3E73C4]">EVM chains connectors</p>
+                {filteredEvmConnectors.map((connector) => (
+                  <ModalButton
+                    key={connector.id}
+                    label={connector.name}
+                    icon={
+                      <ConnectorIcon
+                        connectorId={connector.id}
+                        name={connector.name}
+                        connectorIcon={connector.icon}
+                      />
+                    }
+                    onClick={() => {
+                      handleExternalWalletConnect(connector);
+                    }}
+                  />
+                ))}
+              </>
+            )}
 
-            {shouldShowSolana &&
-              solanaConnectors.map((connector) => (
-                <ModalButton
-                  key={connector.name}
-                  label={connector.name}
-                  icon={
-                    <ConnectorIcon
-                      connectorId={connector.name}
-                      name={connector.name}
-                      connectorIcon={connector.icon}
-                    />
-                  }
-                  onClick={() => {
-                    handleSolanaConnect(connector);
-                  }}
-                />
-              ))}
+            {shouldShowSolana && solanaConnectors.length > 0 && (
+              <>
+                <p className="text-base text-[#3E73C4]">
+                  Solana chain connectors
+                </p>
+                {solanaConnectors.map((connector) => (
+                  <ModalButton
+                    key={connector.name}
+                    label={connector.name}
+                    icon={
+                      <ConnectorIcon
+                        connectorId={connector.name}
+                        name={connector.name}
+                        connectorIcon={connector.icon}
+                      />
+                    }
+                    onClick={() => {
+                      handleSolanaConnect(connector);
+                    }}
+                  />
+                ))}
+              </>
+            )}
           </div>
         </div>
       </div>
