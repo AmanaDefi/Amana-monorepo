@@ -23,7 +23,7 @@ export default function TabSelector({
       {availableTabs.map((tab) => (
         <button
           key={tab}
-          className={`relative z-9 w-1/2 py-3 px-4 max-h-10 rounded-lg text-base font-normal flex items-center justify-center transition-all duration-200 border ${
+          className={`relative z-9 w-1/3 py-3 px-4 max-h-10 rounded-lg text-base font-normal flex items-center justify-center transition-all duration-200 border ${
             activeTab === tab
               ? "text-white border-transparent"
               : "text-white border-transparent hover:border-[#3E73C4]"

@@ -222,6 +222,7 @@ export type Icon = {
 export enum Tabs {
   DEPOSIT = 'deposit',
   WITHDRAW = 'withdraw',
+  UNSTAKE = 'unstake',
 }
 
 export interface ITxLocalStorage {
