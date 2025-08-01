@@ -79,18 +79,18 @@ contract CompoundEthStrategy is EthStrategyParent {
 
     /**
      * @notice Withdraws funds from the configured yield source.
-     * @param fractionToWithdraw The fraction of shares to withdraw from the yield source.
+     * @param assetAmount The amount of assets to withdraw from the yield source.
      * @param minAmountOut The minimum amount of funds to withdraw.
      * @return sharesToWithdraw The amount of shares successfully withdrawn.
      */
     function _withdrawFundsFromYieldSource(
-        uint256 fractionToWithdraw,
+        uint256 assetAmount,
         uint256 minAmountOut
     ) internal override returns (uint256 sharesToWithdraw) {
         harvest(); // Harvest rewards before withdrawing
-        sharesToWithdraw = getStrategyWithdrawShareAmount(fractionToWithdraw);
+        sharesToWithdraw = getStrategyWithdrawShareAmount(assetAmount);
         receiptToken.withdraw(address(weth), sharesToWithdraw);
-        weth.withdraw(sharesToWithdraw);
+        weth.withdraw(sharesToWithdraw);     
         if (sharesToWithdraw < minAmountOut) {
             revert InsufficientOut();
         }
@@ -103,16 +103,17 @@ contract CompoundEthStrategy is EthStrategyParent {
     }
 
     function getStrategyWithdrawShareAmount(
-        uint256 fractionOfTotalShares
+        uint256 assetAmount
     ) public view override returns (uint256) {
         uint256 totalShares = receiptToken.balanceOf(address(this));
-        uint256 withdrawShareAmount = (fractionOfTotalShares *
-            totalShares +
-            5e17) / 1e18;
-        if (withdrawShareAmount > totalShares) {
-            withdrawShareAmount = totalShares;
+        uint256 sharesToWithdraw = convertToShares(assetAmount);
+        if (sharesToWithdraw > totalShares) {
+            sharesToWithdraw = totalShares;
         }
-        return withdrawShareAmount;
+        if (totalShares > 0 && totalShares - sharesToWithdraw <= 1e3) {
+            sharesToWithdraw = totalShares;
+        }
+        return sharesToWithdraw;
     }
 
     function checkRewards() public returns (uint256) {

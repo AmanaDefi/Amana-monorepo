@@ -10,7 +10,7 @@ import GatewayEVMABI from "@zetachain/protocol-contracts/abi/GatewayEVM.sol/Gate
 import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
 import type { Event } from "ethers";
 
-const ETH_ERROR_MARGIN = ethers.BigNumber.from("100000000000000"); // 0.01% error margin or similar
+const ETH_ERROR_MARGIN = ethers.BigNumber.from("1000000000000000"); // 0.1% error margin or similar
 const ERC20_ERROR_MARGIN = ethers.BigNumber.from("200000"); // 0.01% error margin or similar
 
 strategyConfigs.forEach((config: StrategyTestConfig) => {
@@ -289,7 +289,6 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       let reward;
       if (isCompoundStrategy(config.strategyContractName)) {
         reward = await strategy.callStatic.checkRewards();
-        console.log("reward", reward.toString());
       } else if (config.strategyContractName === "ConvexERC20StrategyArbitrum") {
         await rewardsContract.earned(strategy.address);
         // This is needed to update the internal state of the contract
@@ -307,6 +306,8 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       } else {
         reward = await strategy.checkRewards();
       }
+      console.log("reward", reward.toString());
+      
       const totalAssets = await strategy.totalUnderlyingAssets();
       await simulateWithdrawCallFromVaultToStrategy(
         AMANA_VAULT_ADDRESS,

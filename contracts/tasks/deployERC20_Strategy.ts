@@ -63,6 +63,8 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
     inputToken,
     rewardsContract ?? hre.ethers.constants.AddressZero,
     rewardsToken ?? hre.ethers.constants.AddressZero,
+    rewardsContract ?? hre.ethers.constants.AddressZero,
+    rewardsToken ?? hre.ethers.constants.AddressZero,
     0
   ]);
 
@@ -76,8 +78,8 @@ const main = async (args: any, hre: HardhatRuntimeEnvironment) => {
       swapHelper ?? hre.ethers.constants.AddressZero,
       receiptToken,
       inputToken,
-      hre.ethers.constants.AddressZero,
-      hre.ethers.constants.AddressZero,
+      rewardsContract ?? hre.ethers.constants.AddressZero,
+      rewardsToken ?? hre.ethers.constants.AddressZero,
       0  // tokenIndex — unused
     ],
     {
