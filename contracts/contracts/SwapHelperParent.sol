@@ -17,9 +17,12 @@ import "./interfaces/ISwapRouter.sol";
 import "./interfaces/IErrors.sol";
 import "./interfaces/IPriceOracle.sol";
 import "./interfaces/ICurveRegistry.sol";
-
+import "./interfaces/IQuoter.sol";
 import "./interfaces/ICurvePoolDynamic.sol";
+import "./libraries/FullMath.sol";
+
 import "./CurvePoolRegistry.sol";
+import "hardhat/console.sol";
 
 abstract contract SwapHelperParent is
     Initializable,
@@ -33,6 +36,7 @@ abstract contract SwapHelperParent is
     address public UNISWAP_V3_ROUTER;
     address public UNISWAP_V3_FACTORY;
     address public CURVE_REGISTRY;
+    address public UNISWAP_V3_QUOTER;
 
     address public intermediateToken;
 
@@ -55,6 +59,7 @@ abstract contract SwapHelperParent is
         UNISWAP_V3_FACTORY = _v3Factory;
         CURVE_REGISTRY = _curveRegistry;
         intermediateToken = _intermediateToken;
+        UNISWAP_V3_QUOTER = 0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6; // add to init vars rather - for different chains
     }
 
     function setPriceOracleAddress(address _priceOracle) external onlyOwner {
@@ -412,7 +417,6 @@ abstract contract SwapHelperParent is
             address tokenOut = path[i + 1];
             uint24 feeTier = feeTiers[i];
 
-            // Fetch Uniswap V3 pool address
             address pool = IUniswapV3Factory(UNISWAP_V3_FACTORY).getPool(
                 tokenIn,
                 tokenOut,
@@ -422,17 +426,46 @@ abstract contract SwapHelperParent is
                 revert IErrors.InsufficientLiquidity();
             }
 
-            // Fetch slot0 to get sqrtPriceX96
-            (uint160 sqrtPriceX96, , , , , , ) = IUniswapV3Pool(pool).slot0();
-            uint128 liquidity = IUniswapV3Pool(pool).liquidity();
+            IUniswapV3Pool uniPool = IUniswapV3Pool(pool);
+            (uint160 sqrtPriceX96, , , , , , ) = uniPool.slot0();
+            uint128 liquidity = uniPool.liquidity();
             if (liquidity == 0) {
                 revert IErrors.InsufficientLiquidity();
             }
 
-            // Calculate amountOut using Uniswap V3 price formula
-            uint256 priceX96 = (uint256(sqrtPriceX96) * uint256(sqrtPriceX96)) /
-                (1 << 96);
-            amountOut = (amountOut * priceX96) / (1 << 96);
+            address token0 = uniPool.token0();
+            bool inverse = (tokenIn != token0); // if tokenIn == token1 → need to invert
+
+            uint256 priceX96;
+            if (inverse) {
+                // Invert price: price = Q192 / (sqrtPriceX96 ^ 2)
+                uint256 square = FullMath.mulDiv(
+                    uint256(sqrtPriceX96),
+                    uint256(sqrtPriceX96),
+                    1
+                );
+                priceX96 = FullMath.mulDiv(1 << 192, 1, square);
+            } else {
+                // Direct price: price = (sqrtPriceX96 ^ 2) / Q96
+                priceX96 = FullMath.mulDiv(
+                    uint256(sqrtPriceX96),
+                    uint256(sqrtPriceX96),
+                    1 << 96
+                );
+            }
+
+            amountOut = FullMath.mulDiv(amountOut, priceX96, 1 << 96);
+
+            console.log("inverse: %s", inverse);
+            console.log(
+                "Hop %s: tokenIn=%s, tokenOut=%s",
+                i,
+                tokenIn,
+                tokenOut
+            );
+            console.log("  sqrtPriceX96: %s", sqrtPriceX96);
+            console.log("  priceX96: %s", priceX96);
+            console.log("  amountOut: %s", amountOut);
         }
     }
 

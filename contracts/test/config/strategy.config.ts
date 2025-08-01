@@ -42,7 +42,7 @@ export const strategyConfigs: StrategyTestConfig[] = [
   //   receiptTokenContractName: "ICompoundVault",
   //   swapHelperContractName: "SwapHelperPolygon",
   //   rewardsContractName: "ICometRewards",
-  //   forkBlock: 71580000,
+  //   forkBlock: 74396214,
   //   inputTokenAddress: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
   //   inputTokenStorageSlot: 0,
   //   inputTokenIndexOrPlaceholder: 0,
@@ -58,6 +58,32 @@ export const strategyConfigs: StrategyTestConfig[] = [
   //   minSharesOut: ethers.utils.parseUnits("900", 6),
   //   withdrawAmount: ethers.utils.parseUnits("1000", 6),
   //   minAmountOut: ethers.utils.parseUnits("900", 6),
+  //   slippage: 10000
+  // },
+  // {
+  //   name: "Compound USDC Strategy",
+  //   gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed",
+  //   strategyContractName: "ERC20_Compound_Strategy_w_swap",
+  //   strategyChainId: 137,
+  //   receiptTokenContractName: "ICompoundVault",
+  //   swapHelperContractName: "SwapHelperPolygon",
+  //   rewardsContractName: "ICometRewards",
+  //   forkBlock: 74396214,
+  //   inputTokenAddress: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
+  //   inputTokenStorageSlot: 9,
+  //   inputTokenIndexOrPlaceholder: 0,
+  //   receiptTokenAddress: "0xF25212E676D1F7F89Cd72fFEe66158f541246445",
+  //   rewardsContractAddress: "0x45939657d1CA34A8FA39A924B71D28Fe8431e581",
+  //   rewardsTokenAddress: "0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c",
+  //   originChainId: 8453,
+  //   withdrawZRC20: ZC_USDC_BASE_ADDRESS,
+  //   otherErc20Address: POL_USDC_ADDRESS,
+  //   otherErc20BalanceStorageSlot: 0,
+  //   isNative: false,
+  //   depositAmount: ethers.utils.parseUnits("1000", 6),
+  //   minSharesOut: ethers.utils.parseUnits("90", 6),
+  //   withdrawAmount: ethers.utils.parseUnits("1000", 6),
+  //   minAmountOut: ethers.utils.parseUnits("90", 6),
   //   slippage: 10000
   // },
   // {
@@ -437,62 +463,118 @@ export const strategyConfigs: StrategyTestConfig[] = [
     minAmountOut: ethers.utils.parseUnits("90", 6),
     slippage: 100,
   },
-  {
-    name: "Convex tacBTC-cbBTC-FBTC Strategy - Ethereum",
-    gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed",
-    strategyContractName: "ConvexERC20StrategyStableSwapNG",
-    strategyChainId: 1,
-    receiptTokenContractName: "ICurveStableSwapNG",
-    swapHelperContractName: "SwapHelperEthereum",
-    rewardsContractName: "IConvexRewardPool",
-    forkBlock: 22881757,
-    inputTokenAddress: "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf", // cbBTC on Ethereum
-    inputTokenStorageSlot: 9,
-    inputTokenIndexOrPlaceholder: 1,
-    receiptTokenAddress: "0xFfF8634dE89271b6075C55FA89B4E9A087Fdb9FE",
-    rewardsContractAddress: "0xca55D40f6703a5FcC46d8277D1D78751acCe9305",
-    rewardsTokenAddress: "0xD533a949740bb3306d119CC777fa900bA034cd52", // crv 
-    originChainId: 8453,
-    withdrawZRC20: ZC_USDC_BASE_ADDRESS,
-    otherErc20Address: ETH_USDC_ADDRESS,
-    otherErc20BalanceStorageSlot: 9,
-    isNative: false,
-    depositAmount: ethers.utils.parseUnits("0.1", 8),
-    minSharesOut: ethers.utils.parseUnits("0.09", 8), // to do - this should be in shares, not cbBTC amount!
-    withdrawAmount: ethers.utils.parseUnits("0.1", 8),
-    minAmountOut: ethers.utils.parseUnits("0.09", 8),
-    slippage: 100,
-    convexBooster: "0xF403C135812408BFbE8713b5A23a04b3D48AAE31",
-    cvxTokenAddress: "0x4e3fbd56cd56c3e72c1403e103b45db9da5b9d2b",
-    convexPoolId: 454 // find on convex website
-  },
-  {
-    name: "Convex USDC-USDf Strategy - Ethereum",
-    gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed",
-    strategyContractName: "ConvexERC20StrategyStableSwapNG",
-    strategyChainId: 1,
-    receiptTokenContractName: "ICurveStableSwapNG",
-    swapHelperContractName: "SwapHelperEthereum",
-    rewardsContractName: "IConvexRewardPool",
-    forkBlock: 22881757,
-    inputTokenAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC on Ethereum
-    inputTokenStorageSlot: 9,
-    inputTokenIndexOrPlaceholder: 0,
-    receiptTokenAddress: "0x72310DAAed61321b02B08A547150c07522c6a976",
-    rewardsContractAddress: "0x4A87e4219f10510b0943DCD0cD0247868Ec59E85",
-    rewardsTokenAddress: "0xD533a949740bb3306d119CC777fa900bA034cd52", // crv 
-    originChainId: 8453,
-    withdrawZRC20: ZC_USDC_BASE_ADDRESS,
-    otherErc20Address: ETH_USDC_ADDRESS,
-    otherErc20BalanceStorageSlot: 9,
-    isNative: false,
-    depositAmount: ethers.utils.parseUnits("100", 6),
-    minSharesOut: ethers.utils.parseUnits("90", 6), // to do - this should be in shares, not cbBTC amount!
-    withdrawAmount: ethers.utils.parseUnits("100", 6),
-    minAmountOut: ethers.utils.parseUnits("90", 6),
-    slippage: 100,
-    convexBooster: "0xF403C135812408BFbE8713b5A23a04b3D48AAE31",
-    cvxTokenAddress: "0x4e3fbd56cd56c3e72c1403e103b45db9da5b9d2b",
-    convexPoolId: 449 // find on convex website
-  },
+  // {
+  //   name: "Convex tacBTC-cbBTC-FBTC Strategy - Ethereum",
+  //   gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed",
+  //   strategyContractName: "ConvexERC20StrategyStableSwapNG",
+  //   strategyChainId: 1,
+  //   receiptTokenContractName: "ICurveStableSwapNG",
+  //   swapHelperContractName: "SwapHelperEthereum",
+  //   rewardsContractName: "IConvexRewardPool",
+  //   forkBlock: 22881757,
+  //   inputTokenAddress: "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf", // cbBTC on Ethereum
+  //   inputTokenStorageSlot: 9,
+  //   inputTokenIndexOrPlaceholder: 1,
+  //   receiptTokenAddress: "0xFfF8634dE89271b6075C55FA89B4E9A087Fdb9FE",
+  //   rewardsContractAddress: "0xca55D40f6703a5FcC46d8277D1D78751acCe9305",
+  //   rewardsTokenAddress: "0xD533a949740bb3306d119CC777fa900bA034cd52", // crv 
+  //   originChainId: 8453,
+  //   withdrawZRC20: ZC_USDC_BASE_ADDRESS,
+  //   otherErc20Address: ETH_USDC_ADDRESS,
+  //   otherErc20BalanceStorageSlot: 9,
+  //   isNative: false,
+  //   depositAmount: ethers.utils.parseUnits("0.1", 8),
+  //   minSharesOut: ethers.utils.parseUnits("0.09", 8), // to do - this should be in shares, not cbBTC amount!
+  //   withdrawAmount: ethers.utils.parseUnits("0.1", 8),
+  //   minAmountOut: ethers.utils.parseUnits("0.09", 8),
+  //   slippage: 100,
+  //   convexBooster: "0xF403C135812408BFbE8713b5A23a04b3D48AAE31",
+  //   cvxTokenAddress: "0x4e3fbd56cd56c3e72c1403e103b45db9da5b9d2b",
+  //   convexPoolId: 454 // find on convex website
+  // },
+  // {
+  //   name: "Convex USDC-USDf Strategy - Ethereum",
+  //   gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed",
+  //   strategyContractName: "ConvexERC20StrategyStableSwapNG",
+  //   strategyChainId: 1,
+  //   receiptTokenContractName: "ICurveStableSwapNG",
+  //   swapHelperContractName: "SwapHelperEthereum",
+  //   rewardsContractName: "IConvexRewardPool",
+  //   forkBlock: 22881757,
+  //   inputTokenAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC on Ethereum
+  //   inputTokenStorageSlot: 9,
+  //   inputTokenIndexOrPlaceholder: 0,
+  //   receiptTokenAddress: "0x72310DAAed61321b02B08A547150c07522c6a976",
+  //   rewardsContractAddress: "0x4A87e4219f10510b0943DCD0cD0247868Ec59E85",
+  //   rewardsTokenAddress: "0xD533a949740bb3306d119CC777fa900bA034cd52", // crv 
+  //   originChainId: 8453,
+  //   withdrawZRC20: ZC_USDC_BASE_ADDRESS,
+  //   otherErc20Address: ETH_USDC_ADDRESS,
+  //   otherErc20BalanceStorageSlot: 9,
+  //   isNative: false,
+  //   depositAmount: ethers.utils.parseUnits("100", 6),
+  //   minSharesOut: ethers.utils.parseUnits("90", 6), // to do - this should be in shares, not cbBTC amount!
+  //   withdrawAmount: ethers.utils.parseUnits("100", 6),
+  //   minAmountOut: ethers.utils.parseUnits("90", 6),
+  //   slippage: 100,
+  //   convexBooster: "0xF403C135812408BFbE8713b5A23a04b3D48AAE31",
+  //   cvxTokenAddress: "0x4e3fbd56cd56c3e72c1403e103b45db9da5b9d2b",
+  //   convexPoolId: 449 // find on convex website
+  // },
+  // {
+  //   name: "Morpho Relend USDC Strategy - Ethereum",
+  //   gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed",
+  //   strategyContractName: "MorphoERC20Strategy",
+  //   strategyChainId: 1,
+  //   receiptTokenContractName: "ICurveStableSwapNG",
+  //   swapHelperContractName: "SwapHelperEthereum",
+  //   rewardsContractName: "IConvexRewardPool",
+  //   forkBlock: 22881757,
+  //   inputTokenAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // USDC on Ethereum
+  //   inputTokenStorageSlot: 9,
+  //   inputTokenIndexOrPlaceholder: 0,
+  //   receiptTokenAddress: "0x72310DAAed61321b02B08A547150c07522c6a976",
+  //   rewardsContractAddress: "0x4A87e4219f10510b0943DCD0cD0247868Ec59E85",
+  //   rewardsTokenAddress: "0xD533a949740bb3306d119CC777fa900bA034cd52", // crv 
+  //   originChainId: 8453,
+  //   withdrawZRC20: ZC_USDC_BASE_ADDRESS,
+  //   otherErc20Address: ETH_USDC_ADDRESS,
+  //   otherErc20BalanceStorageSlot: 9,
+  //   isNative: false,
+  //   depositAmount: ethers.utils.parseUnits("100", 6),
+  //   minSharesOut: ethers.utils.parseUnits("90", 6), // to do - this should be in shares, not cbBTC amount!
+  //   withdrawAmount: ethers.utils.parseUnits("100", 6),
+  //   minAmountOut: ethers.utils.parseUnits("90", 6),
+  //   slippage: 100
+  // },
+  // {
+  //   name: "PancakeSwap USDC/USD1 Strategy - Base",
+  //   gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed", // Replace with actual gateway address
+  //   strategyContractName: "YieldFiERC20Strategy",
+  //   strategyChainId: 8453, // BNB
+  //   receiptTokenContractName: "IERC20", // LP token is a plain ERC20
+  //   swapHelperContractName: "SwapHelperOnBase",
+  //   rewardsContractName: "I4626Vault",
+  //   forkBlock: 31945037, // Set your fork block
+
+  //   inputTokenAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC on Base
+  //   inputTokenStorageSlot: 9, // Update if needed for forking balance injection
+  //   inputTokenIndexOrPlaceholder: 1,
+
+  //   receiptTokenAddress: "0xF4F447E6AFa04c9D11Ef0e2fC0d7f19C24Ee55de", // vyUSD
+  //   rewardsContractAddress: ethers.constants.AddressZero, // Staking contract
+  //   rewardsTokenAddress: ethers.constants.AddressZero, // axlOP - not actually needed in strategy, but useful here in the test
+
+  //   originChainId: 8453, // Base
+  //   withdrawZRC20: ZC_USDC_BASE_ADDRESS, // Replace with actual ZRC20 constant
+  //   otherErc20Address: BASE_USDT_ADDRESS, // For cross-chain withdrawal test - must be a token on the strategy chain
+  //   otherErc20BalanceStorageSlot: 0, // Only if needed for balance impersonation
+
+  //   isNative: false,
+  //   depositAmount: ethers.utils.parseUnits("100", 6),
+  //   minSharesOut: ethers.utils.parseUnits("90", 6),
+  //   withdrawAmount: ethers.utils.parseUnits("100", 6),
+  //   minAmountOut: ethers.utils.parseUnits("90", 6),
+  //   slippage: 10000,
+  // },
 ];

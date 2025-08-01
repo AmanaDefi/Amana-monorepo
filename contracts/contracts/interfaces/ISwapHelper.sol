@@ -135,4 +135,18 @@ interface ISwapHelper {
         uint256 amount,
         uint16 slippageBps
     ) external returns (uint256 amountOut);
+
+    function getPathV3SpecificIntermediateTokens(
+        address inputToken,
+        address intToken1,
+        address intToken2,
+        address outputToken
+    )
+        external
+        view
+        returns (
+            address[] memory path,
+            uint24[] memory feeTiers,
+            bytes memory encodedPath
+        );
 }

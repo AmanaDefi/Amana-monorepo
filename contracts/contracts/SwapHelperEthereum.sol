@@ -242,8 +242,7 @@ contract SwapHelperEthereum is SwapHelperParent {
         address inputToken,
         address intToken1,
         address intToken2,
-        address outputToken,
-        address factoryAddress
+        address outputToken
     )
         public
         view
@@ -270,15 +269,27 @@ contract SwapHelperEthereum is SwapHelperParent {
         uint24 fee3;
 
         // Check path: input → intToken1
-        (exists, fee1) = _getBestV3Pool(inputToken, intToken1, factoryAddress);
+        (exists, fee1) = _getBestV3Pool(
+            inputToken,
+            intToken1,
+            UNISWAP_V3_FACTORY
+        );
         if (!exists) return (path, feeTiers, encodedPath);
 
         // Check path: intToken1 → intToken2
-        (exists, fee2) = _getBestV3Pool(intToken1, intToken2, factoryAddress);
+        (exists, fee2) = _getBestV3Pool(
+            intToken1,
+            intToken2,
+            UNISWAP_V3_FACTORY
+        );
         if (!exists) return (path, feeTiers, encodedPath);
 
         // Check path: intToken2 → output
-        (exists, fee3) = _getBestV3Pool(intToken2, outputToken, factoryAddress);
+        (exists, fee3) = _getBestV3Pool(
+            intToken2,
+            outputToken,
+            UNISWAP_V3_FACTORY
+        );
         if (!exists) return (path, feeTiers, encodedPath);
 
         // If all pools exist, build path
@@ -466,8 +477,7 @@ contract SwapHelperEthereum is SwapHelperParent {
             inputToken,
             intToken1,
             intToken2,
-            outputToken,
-            UNISWAP_V3_FACTORY
+            outputToken
         );
 
         approveOrIncreaseAllowance(

@@ -8,6 +8,7 @@ import "./ERC20StrategyParent.sol";
 
 import "../interfaces/ISwapHelper.sol";
 import "../interfaces/I4626Vault.sol";
+import "hardhat/console.sol";
 
 contract NoonERC20Strategy is ERC20StrategyParent {
     using SafeERC20 for IERC20;
@@ -165,32 +166,47 @@ contract NoonERC20Strategy is ERC20StrategyParent {
         if (address(inputToken) == receiptTokenAddress || shares == 0) {
             return shares;
         }
-        uint256 totalInUsn = I4626Vault(receiptTokenAddress).convertToAssets(
+        // uint256 totalInUsn = I4626Vault(receiptTokenAddress).convertToAssets(
+        //     shares
+        // );
+        // uint256 totalInUsdt = totalInUsn / 10 ** 12; // assuming USN:USDT is 1:1
+        // return totalInUsdt;
+        console.log(
+            "NoonERC20Strategy: getPath called with shares: %s",
             shares
         );
-        uint256 totalInUsdt = totalInUsn / 10 ** 12; // assuming USN:USDT is 1:1
-        return totalInUsdt;
-        // try
-        //     ISwapHelper(swapHelper).getPathV3(receiptTokenAddress, address(inputToken))
-        // returns (
-        //     address[] memory path,
-        //     uint24[] memory feeTiers,
-        //     bytes memory /* encodedPath */
-        // ) {
-        //     if (path.length == 0 || feeTiers.length == 0) {
-        //         return shares; // fallback to 1:1 if no path found
-        //     }
+        try
+            ISwapHelper(swapHelper).getPathV3SpecificIntermediateTokens(
+                receiptTokenAddress,
+                USN_ADDRESS, // USN as intermediate token
+                USDT_ADDRESS, // USDT as intermediate token
+                address(inputToken)
+            )
+        returns (
+            address[] memory path,
+            uint24[] memory feeTiers,
+            bytes memory encodedPath
+        ) {
+            console.log("path.length: %s", path.length);
 
-        //     try
-        //         ISwapHelper(swapHelper).getAmountOutV3(shares, path, feeTiers)
-        //     returns (uint amountOut) {
-        //         return amountOut;
-        //     } catch {
-        //         return shares; // fallback if price estimation fails
-        //     }
-        // } catch {
-        //     return shares; // fallback if path retrieval fails
-        // }
+            if (path.length == 0 || feeTiers.length == 0) {
+                return shares; // fallback to 1:1 if no path found
+            }
+            console.log(
+                "NoonERC20Strategy: getAmountOut called with shares: %s",
+                shares
+            );
+            try
+                ISwapHelper(swapHelper).getAmountOutV3(shares, path, feeTiers)
+            returns (uint amountOut) {
+                console.log("amountOut: %s", amountOut);
+                return amountOut;
+            } catch {
+                return shares; // fallback if price estimation fails
+            }
+        } catch {
+            return shares; // fallback if path retrieval fails
+        }
     }
 
     function convertToShares(
@@ -199,32 +215,46 @@ contract NoonERC20Strategy is ERC20StrategyParent {
         if (address(inputToken) == receiptTokenAddress || assets == 0) {
             return assets;
         }
-        uint256 totalinUsn = assets * 10 ** 12; // assuming USN:USDT is 1:1
-        uint256 totalinSusn = I4626Vault(receiptTokenAddress).convertToShares(
-            totalinUsn
+        // uint256 totalinUsn = assets * 10 ** 12; // assuming USN:USDT is 1:1
+        // uint256 totalinSusn = I4626Vault(receiptTokenAddress).convertToShares(
+        //     totalinUsn
+        // );
+        // return totalinSusn;
+        console.log(
+            "NoonERC20Strategy: getPath called with assets: %s",
+            assets
         );
-        return totalinSusn;
-        // try
-        //     ISwapHelper(swapHelper).getPathV3(address(inputToken), receiptTokenAddress)
-        // returns (
-        //     address[] memory path,
-        //     uint24[] memory feeTiers,
-        //     bytes memory /* encodedPath */
-        // ) {
-        //     if (path.length == 0 || feeTiers.length == 0) {
-        //         return assets; // fallback to 1:1 if no path found
-        //     }
-
-        //     try
-        //         ISwapHelper(swapHelper).getAmountOutV3(assets, path, feeTiers)
-        //     returns (uint amountOut) {
-        //         return amountOut;
-        //     } catch {
-        //         return assets; // fallback if price estimation fails
-        //     }
-        // } catch {
-        //     return assets; // fallback if path retrieval fails
-        // }
+        try
+            ISwapHelper(swapHelper).getPathV3SpecificIntermediateTokens(
+                address(inputToken),
+                USDT_ADDRESS, // USDT as intermediate token
+                USN_ADDRESS, // USN as intermediate token
+                receiptTokenAddress
+            )
+        returns (
+            address[] memory path,
+            uint24[] memory feeTiers,
+            bytes memory encodedPath
+        ) {
+            console.log("path.length: %s", path.length);
+            if (path.length == 0 || feeTiers.length == 0) {
+                return assets; // fallback to 1:1 if no path found
+            }
+            console.log(
+                "NoonERC20Strategy: getAmountOut called with assets: %s",
+                assets
+            );
+            try
+                ISwapHelper(swapHelper).getAmountOutV3(assets, path, feeTiers)
+            returns (uint amountOut) {
+                console.log("amountOut: %s", amountOut);
+                return amountOut;
+            } catch {
+                return assets; // fallback if price estimation fails
+            }
+        } catch {
+            return assets; // fallback if path retrieval fails
+        }
     }
 
     function getStrategyWithdrawShareAmount(

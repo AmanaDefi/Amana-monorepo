@@ -35,6 +35,21 @@
       "address": "0xE588Ed2AC6A3D0A1A4a5833fBb4b4A026834Da57",
       "txHash": "0x80ccaf292a5b14ce2789f6a51816a83823478a4d71c1f90b34dfec976bea4e88",
       "kind": "uups"
+    },
+    {
+      "address": "0x129bd3a864E1610D06feb1B682BB7A5F7533bD37",
+      "txHash": "0x0a434ee0937f4e4179b129cb495669e3c7197b76ec5be7aec347b117efe4222d",
+      "kind": "uups"
+    },
+    {
+      "address": "0x83AC13C8657074E374bfF6B18E951D11b2C33A3c",
+      "txHash": "0x05aa112c8de9ab6f2f1d7f996f62d1b4f53776f8930e01d7d9eb32d69118b9cd",
+      "kind": "uups"
+    },
+    {
+      "address": "0x9c9bdAaa176d46BE025563091BFe74D09B0b0957",
+      "txHash": "0x68b35f9154a90a86e359c13e8a28ffbc006ca52e7d708147c32e8edec8108c7e",
+      "kind": "uups"
     }
   ],
   "impls": {
@@ -1487,6 +1502,267 @@
               {
                 "label": "txType",
                 "type": "t_enum(TxType)8793",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "assetAmount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "minimumOut",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "newStrategy",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "3"
+              }
+            ],
+            "numberOfBytes": "128"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64"
+          },
+          "t_bool": {
+            "label": "bool"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable2Step": [
+            {
+              "contract": "Ownable2StepUpgradeable",
+              "label": "_pendingOwner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol:29"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73"
+            }
+          ]
+        }
+      }
+    },
+    "3d99eb0a32ee57bf419455d395f04bb211c9313021af6332562bf7b5174813ed": {
+      "address": "0x0F72Fb580FC37789279cE8f98383074034320eF5",
+      "txHash": "0x6d353e839f994ecfc983359ede20ff8780368c193df921edb5eb0dbf51c05f98",
+      "layout": {
+        "solcVersion": "0.8.26",
+        "storage": [
+          {
+            "label": "name",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_string_storage",
+            "contract": "StrategyParent",
+            "src": "contracts/strategies/StrategyParent.sol:30"
+          },
+          {
+            "label": "amanaVault",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_address",
+            "contract": "StrategyParent",
+            "src": "contracts/strategies/StrategyParent.sol:31"
+          },
+          {
+            "label": "withdrawHelper",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_address",
+            "contract": "StrategyParent",
+            "src": "contracts/strategies/StrategyParent.sol:32"
+          },
+          {
+            "label": "oldStrategy",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_address",
+            "contract": "StrategyParent",
+            "src": "contracts/strategies/StrategyParent.sol:33"
+          },
+          {
+            "label": "rewardsDistributor",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_address",
+            "contract": "StrategyParent",
+            "src": "contracts/strategies/StrategyParent.sol:34"
+          },
+          {
+            "label": "_GATEWAY_ADDRESS",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_address",
+            "contract": "StrategyParent",
+            "src": "contracts/strategies/StrategyParent.sol:36"
+          },
+          {
+            "label": "lastProcessedNonce",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_uint256",
+            "contract": "StrategyParent",
+            "src": "contracts/strategies/StrategyParent.sol:38"
+          },
+          {
+            "label": "harvestSwapSlippage",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_uint16",
+            "contract": "StrategyParent",
+            "src": "contracts/strategies/StrategyParent.sol:40"
+          },
+          {
+            "label": "minClaimableReward",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_uint256",
+            "contract": "StrategyParent",
+            "src": "contracts/strategies/StrategyParent.sol:41"
+          },
+          {
+            "label": "swapHelper",
+            "offset": 0,
+            "slot": "9",
+            "type": "t_address",
+            "contract": "StrategyParent",
+            "src": "contracts/strategies/StrategyParent.sol:43"
+          },
+          {
+            "label": "pendingByNonce",
+            "offset": 0,
+            "slot": "10",
+            "type": "t_mapping(t_uint256,t_struct(BufferedTx)34796_storage)",
+            "contract": "StrategyParent",
+            "src": "contracts/strategies/StrategyParent.sol:59"
+          },
+          {
+            "label": "inputToken",
+            "offset": 0,
+            "slot": "11",
+            "type": "t_contract(IERC20)3152",
+            "contract": "StrategyParent",
+            "src": "contracts/strategies/StrategyParent.sol:61"
+          },
+          {
+            "label": "receiptTokenAddress",
+            "offset": 0,
+            "slot": "12",
+            "type": "t_address",
+            "contract": "StrategyParent",
+            "src": "contracts/strategies/StrategyParent.sol:62"
+          },
+          {
+            "label": "weth",
+            "offset": 0,
+            "slot": "13",
+            "type": "t_contract(IWETH)23617",
+            "contract": "CompoundEthStrategy",
+            "src": "contracts/strategies/CompoundEthStrategy.sol:23"
+          },
+          {
+            "label": "receiptToken",
+            "offset": 0,
+            "slot": "14",
+            "type": "t_contract(ICompoundVault)22011",
+            "contract": "CompoundEthStrategy",
+            "src": "contracts/strategies/CompoundEthStrategy.sol:24"
+          },
+          {
+            "label": "cometRewardsContract",
+            "offset": 0,
+            "slot": "15",
+            "type": "t_contract(ICometRewards)21976",
+            "contract": "CompoundEthStrategy",
+            "src": "contracts/strategies/CompoundEthStrategy.sol:25"
+          },
+          {
+            "label": "rewardsTokenAddress",
+            "offset": 0,
+            "slot": "16",
+            "type": "t_address",
+            "contract": "CompoundEthStrategy",
+            "src": "contracts/strategies/CompoundEthStrategy.sol:27"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ICometRewards)21976": {
+            "label": "contract ICometRewards",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ICompoundVault)22011": {
+            "label": "contract ICompoundVault",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IERC20)3152": {
+            "label": "contract IERC20",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IWETH)23617": {
+            "label": "contract IWETH",
+            "numberOfBytes": "20"
+          },
+          "t_enum(TxType)34786": {
+            "label": "enum StrategyParent.TxType",
+            "members": [
+              "Deposit",
+              "Withdraw",
+              "Switch",
+              "Revert"
+            ],
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_uint256,t_struct(BufferedTx)34796_storage)": {
+            "label": "mapping(uint256 => struct StrategyParent.BufferedTx)",
+            "numberOfBytes": "32"
+          },
+          "t_string_storage": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_struct(BufferedTx)34796_storage": {
+            "label": "struct StrategyParent.BufferedTx",
+            "members": [
+              {
+                "label": "txType",
+                "type": "t_enum(TxType)34786",
                 "offset": 0,
                 "slot": "0"
               },
