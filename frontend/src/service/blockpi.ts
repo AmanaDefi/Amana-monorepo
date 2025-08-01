@@ -806,12 +806,15 @@ export default class Blockpi {
         }
 
         if (stepCompleted && stepResult) {
+
+        const isFinalStep =
+          description ===
+          "Final confirmation completed, shares issued by vault";
+          
           const stepData = {
             stepIndex,
             status: "completed" as const,
-            description: description.includes("completed")
-              ? description
-              : `${description} completed`,
+            description: isFinalStep ? description : `${description} completed`,
             txHash: stepHash,
             data: stepResult.data,
           };
