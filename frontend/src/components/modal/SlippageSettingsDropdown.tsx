@@ -37,10 +37,10 @@ export default function SlippageSettingsDropdown({
       setShowCustomInput(!isPreset);
       setCustomInputValue(!isPreset ? slippageValue.toString() : "");
 
-      setInputBalance(EMPTY_BALANCE);
-      updateLocalStorageObject(vaultId, {
-        inputBal: JSON.stringify(EMPTY_BALANCE, bigIntReplacer),
-      });
+      // setInputBalance(EMPTY_BALANCE);
+      // updateLocalStorageObject(vaultId, {
+      //   inputBal: JSON.stringify(EMPTY_BALANCE, bigIntReplacer),
+      // });
     }
   }, [isOpen, slippageValue, isAuto, setInputBalance, vaultId]);
 
