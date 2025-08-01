@@ -133,6 +133,14 @@ export default function VaultInputs({
   selectedChain,
   APY7DValue,
 }: VaultInputsProps): JSX.Element {
+  // Check if this is a Noon Capital vault
+  const isNoonCapitalVault = vaultData?.protocol?.name === "Noon Capital";
+  
+  // State to track current tab (Invest/Withdraw/Unstake)
+  const [currentTab, setCurrentTab] = useState<string>(isDeposit ? "Invest" : "Withdraw");
+  
+  // Helper function to determine if current tab is deposit
+  const isCurrentTabDeposit = () => currentTab === "Invest";
   const priceContext = useTokenPrices();
   const [gasTokenSymbol, setGasTokenSymbol] = useState<string>("ETH");
   const [gasTokenPrice, setGasTokenPrice] = useState<number>(0);
@@ -636,10 +644,20 @@ useEffect(() => {
 
     updateLocalStorageObject(vaultData.id, null);
     const newIsDeposit = tab.toLowerCase() === "invest";
-    const newTab = newIsDeposit ? Tabs.DEPOSIT : Tabs.WITHDRAW;
+    const isUnstake = tab.toLowerCase() === "unstake";
+    const newTab = newIsDeposit ? Tabs.DEPOSIT : isUnstake ? Tabs.UNSTAKE : Tabs.WITHDRAW;
+
+    // Update current tab state
+    setCurrentTab(tab);
 
     // Update label
-    setLabel(newIsDeposit ? "Invest" : "Withdraw");
+    if (newIsDeposit) {
+      setLabel("Invest");
+    } else if (isUnstake) {
+      setLabel("Unstake");
+    } else {
+      setLabel("Withdraw");
+    }
 
     // Reset input balance
     setInputBalance(EMPTY_BALANCE);
@@ -1383,8 +1401,8 @@ useEffect(() => {
             </div>
           )}
           <TabSelector
-            availableTabs={["Invest", "Withdraw"]}
-            activeTab={isDeposit ? "Invest" : "Withdraw"}
+            availableTabs={isNoonCapitalVault ? ["Invest", "Unstake", "Withdraw"] : ["Invest", "Withdraw"]}
+            activeTab={currentTab}
             setActiveTab={handleTabChange}
           />
 
@@ -1415,7 +1433,7 @@ useEffect(() => {
       </div>
 
       <AnimatePresence mode="wait" initial={false}>
-        {isDeposit ? (
+        {currentTab === "Invest" ? (
           <motion.div
             key="deposit-tab-content"
             initial={{ opacity: 0, y: 20 }}
@@ -1423,7 +1441,7 @@ useEffect(() => {
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
           >
-            {onSelectChain && vaultId && isDeposit && (
+            {onSelectChain && vaultId && isCurrentTabDeposit() && (
               <div className="mb-4">
                 <ChainSelector
                   selectedChain={selectedChain}
@@ -1438,30 +1456,30 @@ useEffect(() => {
             <InputTokenWithError
               onSelectChain={onSelectChain}
               onSelectChainAndToken={handleSelectChainAngToken}
-              onSelectToken={isDeposit ? handleDepositTokenSelect : () => {}}
+              onSelectToken={isCurrentTabDeposit() ? handleDepositTokenSelect : () => {}}
               allowInput={allowInput}
               vaultData={vaultData}
               onMaxClick={handleMaxClick}
               value={displayValue}
               onChange={handleChangeInput}
               selectedChain={selectedChain}
-              selectedToken={isDeposit ? inputToken : vaultData.inputToken}
+              selectedToken={isCurrentTabDeposit() ? inputToken : vaultData.inputToken}
               inputTokenbalance={
-                isDeposit
+                isCurrentTabDeposit()
                   ? tokenBalance.formatted
                   : (vaultTotalAssetinToken?.totalAssetsinToken?.toString() ??
                     "0.00")
               }
               errorMessage={errorMessage}
-              tokenList={isDeposit ? tokenList : []}
+              tokenList={isCurrentTabDeposit() ? tokenList : []}
               disabled={loadingOutputToken}
-              isDeposit={isDeposit}
+              isDeposit={isCurrentTabDeposit()}
               loadingOutputToken={loadingOutputToken}
               conversionOutput={conversionOutput}
               isSlippageExceedingLimit={isSlippageExceedingLimit}
               setInputBalance={setInputBalance}
               isOutput={false}
-              captionText={!isDeposit ? "Output Amount" : ""}
+              captionText={!isCurrentTabDeposit() ? "Output Amount" : ""}
             />
             <SwapSlippageBlock
               conversionOutput={conversionOutput}
@@ -1472,7 +1490,7 @@ useEffect(() => {
             />
             <div className="my-4">
               <FeeDisplay
-                isDeposit={isDeposit}
+                isDeposit={isCurrentTabDeposit()}
                 vaultData={vaultData}
                 conversionOutput={conversionOutput}
                 debouncedInputBalance={inputBalance}
@@ -1484,7 +1502,7 @@ useEffect(() => {
               conversionOutput={conversionOutput}
               vaultData={vaultData}
               debouncedInputBalance={inputBalance}
-              isDeposit={isDeposit}
+              isDeposit={isCurrentTabDeposit()}
               isVisible={true}
               isBreathing={loadingOutputToken}
             />
@@ -1497,7 +1515,7 @@ useEffect(() => {
             />
 
             <div className="mb-4">
-              {onSelectChain && vaultId && !isDeposit && (
+              {onSelectChain && vaultId && !isCurrentTabDeposit() && (
                 <ChainSelector
                   selectedChain={selectedChain}
                   onSelectChain={onSelectChain}
@@ -1536,14 +1554,24 @@ useEffect(() => {
               setInputBalance={setInputBalance}
             />
           </motion.div>
-        ) : (
+        ) : (currentTab === "Withdraw" || currentTab === "Unstake") ? (
           <motion.div
-            key="withdraw-tab-content"
+            key={`${currentTab.toLowerCase()}-tab-content`}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
           >
+            {/* Unstake informational message */}
+            {currentTab === "Unstake" && (
+              <div className="mb-4 p-4 bg-[#0C1015] rounded-lg border border-[#1E2328]">
+                <div className="text-sm text-white">
+                  <div className="text-gray-300">
+                    There is a 7-day cooling off period for unstaking sUSN. Your funds will be available to withdraw 7 days after you unstake your sUSN
+                  </div>
+                </div>
+              </div>
+            )}
             {onSelectChain && vaultId && isDeposit && (
               <div className="mb-4">
                 <ChainSelector
@@ -1582,7 +1610,7 @@ useEffect(() => {
               isSlippageExceedingLimit={isSlippageExceedingLimit}
               setInputBalance={setInputBalance}
               isOutput={false}
-              captionText={!isDeposit ? "Output Amount" : ""}
+              captionText={currentTab === "Unstake" ? "Unstake Amount" : !isCurrentTabDeposit() ? "Output Amount" : ""}
             />
             <div className="mb-6 md:mb-10"></div>
             <div className="mb-4">
@@ -1624,7 +1652,7 @@ useEffect(() => {
               setInputBalance={setInputBalance}
             />
           </motion.div>
-        )}
+        ) : null}
       </AnimatePresence>
       <APYChangeCard
         isDeposit={isDeposit}
