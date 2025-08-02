@@ -35,9 +35,9 @@ export interface StrategyTestConfig {
 
 export const strategyConfigs: StrategyTestConfig[] = [
   {
-    name: "Compound USDS Strategy - Base",
+    name: "Compound USDC Strategy - Base",
     gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed",
-    strategyContractName: "CompoundERC20Strategy_w_swap",
+    strategyContractName: "CompoundERC20Strategy",
     strategyChainId: 8453,
     receiptTokenContractName: "ICompoundVault",
     swapHelperContractName: "SwapHelperOnBase",
@@ -46,7 +46,7 @@ export const strategyConfigs: StrategyTestConfig[] = [
     inputTokenAddress: BASE_USDC_ADDRESS,
     inputTokenStorageSlot: 9,
     inputTokenIndexOrPlaceholder: 0,
-    receiptTokenAddress: "0x2c776041CCFe903071AF44aa147368a9c8EEA518",
+    receiptTokenAddress: "0xb125E6687d4313864e53df431d5425969c15Eb2F",
     rewardsContractAddress: "0x123964802e6ABabBE1Bc9547D72Ef1B69B00A6b1",
     rewardsTokenAddress: "0x9e1028F5F1D5eDE59748FFceE5532509976840E0",
     originChainId: 8453,
@@ -60,6 +60,32 @@ export const strategyConfigs: StrategyTestConfig[] = [
     minAmountOut: ethers.utils.parseUnits("900", 6),
     slippage: 10000
   },
+  // {
+  //   name: "Compound USDS Strategy - Base",
+  //   gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed",
+  //   strategyContractName: "CompoundERC20Strategy_w_swap",
+  //   strategyChainId: 8453,
+  //   receiptTokenContractName: "ICompoundVault",
+  //   swapHelperContractName: "SwapHelperOnBase",
+  //   rewardsContractName: "ICometRewards",
+  //   forkBlock: 31433507,
+  //   inputTokenAddress: BASE_USDC_ADDRESS,
+  //   inputTokenStorageSlot: 9,
+  //   inputTokenIndexOrPlaceholder: 0,
+  //   receiptTokenAddress: "0x2c776041CCFe903071AF44aa147368a9c8EEA518",
+  //   rewardsContractAddress: "0x123964802e6ABabBE1Bc9547D72Ef1B69B00A6b1",
+  //   rewardsTokenAddress: "0x9e1028F5F1D5eDE59748FFceE5532509976840E0",
+  //   originChainId: 8453,
+  //   withdrawZRC20: ZC_USDC_BASE_ADDRESS,
+  //   otherErc20Address: BASE_USDT_ADDRESS,
+  //   otherErc20BalanceStorageSlot: 0,
+  //   isNative: false,
+  //   depositAmount: ethers.utils.parseUnits("1000", 6),
+  //   minSharesOut: ethers.utils.parseUnits("900", 6),
+  //   withdrawAmount: ethers.utils.parseUnits("1000", 6),
+  //   minAmountOut: ethers.utils.parseUnits("900", 6),
+  //   slippage: 10000
+  // },
   // {
   //   name: "Compound ETH Strategy - Base",
   //   gatewayAddress: "0x48B9AACC350b20147001f88821d31731Ba4C30ed",

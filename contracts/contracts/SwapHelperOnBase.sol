@@ -9,7 +9,6 @@ import "./interfaces/IAerodromeRouter.sol";
 import "./interfaces/IBalancerRouter.sol";
 import "./interfaces/I4626Vault.sol";
 import "./CurvePoolRegistry.sol";
-import "hardhat/console.sol";
 
 // PriceOracle address: 0x7C136bC8A5Ce2245C3357bc4A7B97C1A9A2b480c
 
