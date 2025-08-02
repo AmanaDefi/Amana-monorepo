@@ -568,6 +568,7 @@ export function isBalancerStrategy(name: string): boolean {
 export function isCompoundStrategy(name: string): boolean {
   return [
     "CompoundEthStrategy",
-    "ERC20_Compound_Strategy"
+    "ERC20_Compound_Strategy",
+    "CompoundERC20Strategy_w_swap"
   ].includes(name);
 }

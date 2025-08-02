@@ -9,6 +9,7 @@ import "./interfaces/IAerodromeRouter.sol";
 import "./interfaces/IBalancerRouter.sol";
 import "./interfaces/I4626Vault.sol";
 import "./CurvePoolRegistry.sol";
+import "hardhat/console.sol";
 
 // PriceOracle address: 0x7C136bC8A5Ce2245C3357bc4A7B97C1A9A2b480c
 
@@ -19,6 +20,7 @@ contract SwapHelperOnBase is SwapHelperParent {
     address constant axlOP = 0x994ac01750047B9d35431a7Ae4Ed312ee955E030;
     address constant yUSD = 0x4772D2e014F9fC3a820C444e3313968e9a5C8121;
     address constant COMP = 0x9e1028F5F1D5eDE59748FFceE5532509976840E0;
+    address constant USDS = 0x820C137fa70C8691f0e44Dc420a5e53c168921Dc;
 
     bytes32 constant wellUsdPriceFeedId =
         0x3cf6bab8bf8041dc8ee2a3edebe16b5f9f4ff3cce46006aeb15c885ba4779d0b;
@@ -48,8 +50,8 @@ contract SwapHelperOnBase is SwapHelperParent {
     function initialize(address _priceOracle) external initializer {
         __SwapHelperParent_init(
             _priceOracle,
-            address(0), // ← Uniswap V2 Router on Base
-            address(0), // ← Uniswap V2 Factory on Base
+            0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24, // ← Uniswap V2 Router on Base
+            0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6, // ← Uniswap V2 Factory on Base
             0x2626664c2603336E57B271c5C0b26F421741e481, // ← Uniswap V3 Router on Base
             0x33128a8fC17869897dcE68Ed026d694621f6FDfD, // ← Uniswap V3 Factory on Base
             0x5524124b8F36e682f3A23D069399247806e8B627, // ← Curve Registry on Base
@@ -86,7 +88,7 @@ contract SwapHelperOnBase is SwapHelperParent {
      * @return True if the token is a stablecoin, false otherwise.
      */
     function isStablecoin(address token) internal pure override returns (bool) {
-        return (token == USDC || token == yUSD);
+        return (token == USDC || token == yUSD || token == USDS);
     }
 
     /**
@@ -143,7 +145,14 @@ contract SwapHelperOnBase is SwapHelperParent {
             tokenB,
             isStable
         );
-        return pair != address(0) && IUniswapV2Pair(pair).totalSupply() > 0;
+        // address pair = IAerodromeRouter(AERODROME_ROUTER).poolFor(
+        //     tokenA,
+        //     tokenB,
+        //     isStable,
+        //     factoryAddress
+        // );
+        console.log("Pair:", pair);
+        return pair != address(0);
     }
 
     function getPathAerodrome(
@@ -225,10 +234,8 @@ contract SwapHelperOnBase is SwapHelperParent {
             WETH_ADDRESS, // Using WETH as the intermediate token
             isStable // Assuming we want to swap through non-stable pools
         );
-        if (path.length < 2) {
-            // No valid path found
-            return 0;
-        }
+        console.log("Path length:", path.length);
+        if (path.length < 2) return 0;
         IERC20(inputToken).approve(AERODROME_ROUTER, amount);
         IAerodromeRouter.Route[] memory routes = new IAerodromeRouter.Route[](
             path.length - 1
@@ -241,6 +248,7 @@ contract SwapHelperOnBase is SwapHelperParent {
                 factory: AERODROME_FACTORY
             });
         }
+        console.log("Routes length:", routes.length);
         uint256[] memory amounts = IAerodromeRouter(AERODROME_ROUTER)
             .swapExactTokensForTokens(
                 amount,
@@ -250,6 +258,7 @@ contract SwapHelperOnBase is SwapHelperParent {
                 block.timestamp + maxDeadline
             );
         amountOut = amounts[amounts.length - 1];
+        console.log("Amount out:", amountOut);
         return amountOut;
     }
 
@@ -272,8 +281,10 @@ contract SwapHelperOnBase is SwapHelperParent {
             amount,
             slippageBps
         );
+        console.log("Input token:", inputToken);
+        console.log("Output token:", outputToken);
         (address[] memory path, uint24[] memory feeTiers, bytes memory encodedPath) = getPathV3(inputToken, outputToken, UNISWAP_V3_FACTORY);
-        
+        console.log("Encoded path length:", encodedPath.length);
         if (encodedPath.length > 0) {
             IERC20(inputToken).approve(UNISWAP_V3_ROUTER, amount);
             ISwapRouter.ExactInputParams memory params = ISwapRouter
