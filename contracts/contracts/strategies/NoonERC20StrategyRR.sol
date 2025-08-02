@@ -8,6 +8,7 @@ import "./ERC20StrategyParent.sol";
 
 import "../interfaces/ISwapHelper.sol";
 import "../interfaces/I4626Vault.sol";
+import "../interfaces/INoonWithdrawHelper.sol";
 
 contract NoonERC20Strategy is ERC20StrategyParent {
     using SafeERC20 for IERC20;
@@ -16,6 +17,8 @@ contract NoonERC20Strategy is ERC20StrategyParent {
         0xdA67B4284609d2d48e5d10cfAc411572727dc1eD;
     address public constant USDT_ADDRESS =
         0xdAC17F958D2ee523a2206206994597C13D831ec7;
+    address public constant WITHDRAWHELPER =
+        0x0DaBc0D9B270c9B0C4C77AaCeAa712b56D0F9178;
 
     function initialize(
         string memory _name,
@@ -76,12 +79,15 @@ contract NoonERC20Strategy is ERC20StrategyParent {
     function _unstakeFundsFromYieldSource(
         uint256 amount,
         uint256 minAmountOut
-    ) internal override returns (uint256 amountUnstaked) {
+    ) internal override returns (uint256 requestId) {
         require(amount > 0, "Unstake amount must be greater than zero");
 
         // approveOrIncreaseAllowance(receiptTokenAddress, inputToken, amount);
         // this is a withdraw call, so it will withdraw USN from the vault, so amount can be used directly
-        amountUnstaked = I4626Vault(receiptTokenAddress).withdraw(
+        requestId = INoonWithdrawHelper(WITHDRAWHELPER).getUserNextRequestId(
+            address(this)
+        );
+        uint256 amountUnstaked = I4626Vault(receiptTokenAddress).withdraw(
             amount,
             address(this),
             address(this)
@@ -105,31 +111,11 @@ contract NoonERC20Strategy is ERC20StrategyParent {
     }
 
     function _withdrawFundsFromYieldSource(
-        uint256 assetAmount,
-        uint256 minAmountOut
+        uint256 amount,
+        uint256 requestId
     ) internal override returns (uint256 amountWithdrawn) {
-        uint256 susnToWithdraw = getStrategyWithdrawShareAmount(assetAmount);
-
-        IERC20(receiptTokenAddress).transfer(
-            address(swapHelper),
-            susnToWithdraw
-        );
-
-        uint256 amountOut = ISwapHelper(swapHelper)
-            .swapViaUniV3SpecificIntermediateTokens(
-                receiptTokenAddress,
-                USN_ADDRESS, // USN as intermediate token
-                USDT_ADDRESS, // USDT as intermediate token
-                susnToWithdraw,
-                address(inputToken),
-                10000, // 100% slippage allowed for this operation
-                address(this),
-                9999,
-                "0x"
-            );
-
-        require(amountOut >= minAmountOut, "Insufficient output amount");
-        amountWithdrawn = amountOut;
+        INoonWithdrawHelper(WITHDRAWHELPER).claimWithdrawal(requestId);
+        return amount; // amount is already the amount withdrawn
     }
 
     function _transferAssetsToNewStrategy() internal override {

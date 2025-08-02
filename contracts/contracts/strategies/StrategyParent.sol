@@ -434,22 +434,22 @@ abstract contract StrategyParent is
     // @notice Withdraws funds from the yield source.
     function _unstake() internal virtual {
         BufferedTx storage txData = pendingByNonce[lastProcessedNonce + 1];
-        uint256 amountWithdrawn = _unstakeFundsFromYieldSource(
+        uint256 requestId = _unstakeFundsFromYieldSource(
             txData.assetAmount,
-            txData.minimumOut
+            txData.minimumOut // TODO can I actually use this?
         );
 
         uint256 totalUnderlyingAssetsAfter = totalUnderlyingAssets();
 
         _confirmUnstake(
-            amountWithdrawn,
+            requestId,
             totalUnderlyingAssetsAfter,
             lastProcessedNonce + 1
         );
 
         emit FundsDivested(
             lastProcessedNonce + 1,
-            amountWithdrawn,
+            requestId,
             totalUnderlyingAssetsAfter
         );
     }
@@ -535,29 +535,41 @@ abstract contract StrategyParent is
     }
 
     function _confirmUnstake(
-        uint256 amountWithdrawn,
+        uint256 requestId,
         uint256 totalUnderlyingAssetsAfter,
         uint256 vaultNonce
     ) internal {
-        // bytes memory outgoingMessage = abi.encode(
-        //     amountWithdrawn,
-        //     totalUnderlyingAssetsAfter,
-        //     vaultNonce,
-        //     TX_UNSTAKE_CONFIRMED
-        // );
-        // RevertOptions memory revertOptions = RevertOptions(
-        //     address(this),
-        //     true,
-        //     amanaVault,
-        //     abi.encode(
-        //         "_returnFundsFromStrategyFailed",
-        //         amountWithdrawn,
-        //         totalUnderlyingAssetsAfter,
-        //         vaultNonce
-        //     ),
-        //     uint256(1500000)
-        // );
-        _sendUpdateToVault(lastProcessedNonce, TX_UNSTAKE_CONFIRMED);
+        bytes memory outgoingMessage = abi.encode(
+            requestId,
+            totalUnderlyingAssetsAfter,
+            vaultNonce,
+            TX_UNSTAKE_CONFIRMED
+        );
+
+        RevertOptions memory revertOptions = RevertOptions(
+            address(this),
+            false,
+            amanaVault,
+            abi.encode(
+                "_handleRevertOnUnstakeConfirmation",
+                requestId,
+                totalUnderlyingAssetsAfter,
+                vaultNonce
+            ),
+            1_000_000
+        );
+
+        IGatewayEVM(_GATEWAY_ADDRESS).call(
+            amanaVault,
+            outgoingMessage,
+            revertOptions
+        );
+
+        emit UnstakeConfirmationSent(
+            vaultNonce,
+            requestId,
+            totalUnderlyingAssetsAfter
+        );
     }
 
     /**
@@ -577,7 +589,7 @@ abstract contract StrategyParent is
     function _unstakeFundsFromYieldSource(
         uint256 amount,
         uint256 minAmountOut
-    ) internal virtual returns (uint256 amountWithdrawn);
+    ) internal virtual returns (uint256 amountWithdrawn) {}
 
     /**
      * @notice Withdraws funds from the configured yield source.

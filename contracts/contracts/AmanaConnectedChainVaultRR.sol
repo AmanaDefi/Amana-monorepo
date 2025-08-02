@@ -225,6 +225,8 @@ contract AmanaConnectedChainVaultRR is AmanaVaultBase {
                 emit StrategyUpdated(strategyAddress);
             } else if (transaction.txStatus == TX_WITHDRAW_CONFIRMED) {
                 _confirmWithdrawAndBurn();
+            } else if (transaction.txStatus == TX_UNSTAKE_CONFIRMED) {
+                _confirmUnstakeAndBurn();
             } else {
                 break; // No valid transaction to process
             }
@@ -490,6 +492,69 @@ contract AmanaConnectedChainVaultRR is AmanaVaultBase {
             );
     }
 
+    function _confirmUnstakeAndBurn() internal {
+        Transaction storage txn = pendingTransactions[lastProcessedNonce + 1];
+
+        uint256 userShares = balanceOf(txn.user);
+        uint256 vaultSharesToBeBurnt = previewWithdraw(txn.amount);
+
+        uint256 tolerance = 1e3;
+
+        // If the required burn exceeds user's balance by more than the tolerance, revert
+        if (vaultSharesToBeBurnt > userShares + tolerance) {
+            revert UserSharesInsufficientForWithdrawal(
+                txn.user,
+                vaultSharesToBeBurnt,
+                userShares
+            );
+        }
+
+        // Cap burn to actual user shares if it's within tolerance
+        if (vaultSharesToBeBurnt > userShares) {
+            vaultSharesToBeBurnt = userShares;
+        }
+
+        uint256 remainingShares = userShares - vaultSharesToBeBurnt;
+        if (remainingShares > 0 && remainingShares < tolerance) {
+            vaultSharesToBeBurnt = userShares;
+        }
+
+        uint256 fractionOfUserShares = (vaultSharesToBeBurnt * 1e18) /
+            userShares;
+        uint256 principalWithdrawn = (fractionOfUserShares *
+            userPrincipal[txn.user]) / 1e18;
+
+        // uint256 feeToWithdraw;
+        // if (txn.amount > principalWithdrawn) {
+        //     feeToWithdraw =
+        //         ((txn.amount - principalWithdrawn) * perfFee) /
+        //         10000;
+        //     emit PerformanceFeePaid(txn.user, feeToWithdraw);
+        //     SafeERC20.safeTransfer(
+        //         IERC20(asset()),
+        //         IAmanaRegistry(registry).treasury(),
+        //         feeToWithdraw
+        //     );
+        // }
+
+        // txn.amount -= feeToWithdraw;
+
+        // userPrincipal[txn.user] -= principalWithdrawn;
+        // totalPrincipal -= principalWithdrawn;
+
+        // latestTotalAssetsUpdateFromStrategy = txn.totalAssetsAfter;
+        _burn(txn.user, vaultSharesToBeBurnt);
+
+        // _returnFundsToUser(lastProcessedNonce + 1);
+
+        emit Unstaked(
+            txn.user,
+            txn.amount,
+            vaultSharesToBeBurnt,
+            lastProcessedNonce + 1
+        );
+    }
+
     /**
      * @dev Confirms the withdrawal process by burning shares, applying fees, and returning assets to the user.
 
@@ -547,7 +612,7 @@ contract AmanaConnectedChainVaultRR is AmanaVaultBase {
         totalPrincipal -= principalWithdrawn;
 
         latestTotalAssetsUpdateFromStrategy = txn.totalAssetsAfter;
-        _burn(txn.user, vaultSharesToBeBurnt);
+        // _burn(txn.user, vaultSharesToBeBurnt);
 
         _returnFundsToUser(lastProcessedNonce + 1);
 
