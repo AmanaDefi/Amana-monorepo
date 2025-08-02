@@ -145,13 +145,6 @@ contract SwapHelperOnBase is SwapHelperParent {
             tokenB,
             isStable
         );
-        // address pair = IAerodromeRouter(AERODROME_ROUTER).poolFor(
-        //     tokenA,
-        //     tokenB,
-        //     isStable,
-        //     factoryAddress
-        // );
-        console.log("Pair:", pair);
         return pair != address(0);
     }
 
@@ -234,7 +227,6 @@ contract SwapHelperOnBase is SwapHelperParent {
             WETH_ADDRESS, // Using WETH as the intermediate token
             isStable // Assuming we want to swap through non-stable pools
         );
-        console.log("Path length:", path.length);
         if (path.length < 2) return 0;
         IERC20(inputToken).approve(AERODROME_ROUTER, amount);
         IAerodromeRouter.Route[] memory routes = new IAerodromeRouter.Route[](
@@ -248,7 +240,6 @@ contract SwapHelperOnBase is SwapHelperParent {
                 factory: AERODROME_FACTORY
             });
         }
-        console.log("Routes length:", routes.length);
         uint256[] memory amounts = IAerodromeRouter(AERODROME_ROUTER)
             .swapExactTokensForTokens(
                 amount,
@@ -258,7 +249,6 @@ contract SwapHelperOnBase is SwapHelperParent {
                 block.timestamp + maxDeadline
             );
         amountOut = amounts[amounts.length - 1];
-        console.log("Amount out:", amountOut);
         return amountOut;
     }
 
@@ -281,10 +271,7 @@ contract SwapHelperOnBase is SwapHelperParent {
             amount,
             slippageBps
         );
-        console.log("Input token:", inputToken);
-        console.log("Output token:", outputToken);
         (address[] memory path, uint24[] memory feeTiers, bytes memory encodedPath) = getPathV3(inputToken, outputToken, UNISWAP_V3_FACTORY);
-        console.log("Encoded path length:", encodedPath.length);
         if (encodedPath.length > 0) {
             IERC20(inputToken).approve(UNISWAP_V3_ROUTER, amount);
             ISwapRouter.ExactInputParams memory params = ISwapRouter
