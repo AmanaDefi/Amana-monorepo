@@ -46,7 +46,11 @@ const AllWAllets = () => {
     chain,
     setChain,
   } = useFundWalletStore();
-  const { connectSolana, activeEvmWallet: activeAccount } = useMultiChain();
+  const {
+    connectSolana,
+    activeEvmWallet: activeAccount,
+    setWalletAddress: setMultiChainWalletAddress,
+  } = useMultiChain();
 
   const { logout } = usePrivy();
   const { disconnectAsync } = useDisconnect();
@@ -75,6 +79,7 @@ const AllWAllets = () => {
           setWalletAddress(result.accounts[0]);
           return fundWalletConnect();
         }
+        setMultiChainWalletAddress(result.accounts[0]);
 
         return successAuth(null, activeAccount || undefined, true);
       },

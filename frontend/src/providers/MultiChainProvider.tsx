@@ -63,6 +63,7 @@ interface MultiChainContextType {
   evmDisconnect: () => Promise<void>;
   activeEvmWallet: ConnectedWallet;
   isWalletSwitching: boolean;
+  setWalletAddress: (address: string | null) => void;
 }
 
 const MultiChainContext = createContext<MultiChainContextType | undefined>(
@@ -655,6 +656,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         refetchBalance: getEvmBalance,
         evmDisconnect: evmDisconnect,
         activeEvmWallet: privyWallet,
+        setWalletAddress,
       }}
     >
       {children}
