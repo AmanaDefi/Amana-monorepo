@@ -56,6 +56,7 @@ const MobileAllWallets = () => {
     connectSolana,
     activeChain,
     activeEvmWallet: activeAccount,
+    setWalletAddress: setMultiChainWalletAddress,
   } = useMultiChain();
 
   const { logout } = usePrivy();
@@ -71,7 +72,13 @@ const MobileAllWallets = () => {
           setWalletAddress(result.accounts[0]);
           return fundWalletConnect();
         }
-        return successAuth(walletAddress, activeAccount || undefined, true);
+        setMultiChainWalletAddress(result.accounts[0]);
+
+        return successAuth(
+          result.accounts[0],
+          activeAccount || undefined,
+          true,
+        );
       },
     },
   });
