@@ -1017,7 +1017,7 @@ export default class Blockpi {
   }
 
   // Add method to construct correct explorer links for each step
-  private getStepExplorerLink(
+  public getStepExplorerLink(
     stepIndex: number, 
     stepData: any, 
     stepHash: string, 

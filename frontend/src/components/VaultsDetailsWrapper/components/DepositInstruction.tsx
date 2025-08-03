@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import {
   TransactionStepMessages,
@@ -17,6 +17,7 @@ import {
 import Link from "next/link";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/solid";
 import { hasNoErrors, parseTransactionMessage } from "@/utils/utils";
+import Blockpi from "@/service/blockpi";
 
 interface DepositInstructionProps {
   transactionStepFeedback?: TransactionStepMessages;
@@ -188,6 +189,8 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
     isDeposit = true,
     finishedTransaction = false,
     isFailedOnConfirmation,
+    activeChainId,
+    vaultStrategyChainId,
   } = props;
 
   const {
@@ -207,6 +210,8 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
   } = useInstructionStepLogic(props);
 
   const shouldShowElephant = isDynamicMode && progressPercent > 0;
+
+  const blockpi = useMemo(() => new Blockpi(), []);
 
   return (
     <motion.div
@@ -403,7 +408,19 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
                         whileTap={{ scale: 0.95 }}
                       >
                         <Link
-                          href={stepStatus.txHash}
+                          href={
+                            stepStatus.txHash.startsWith("http")
+                              ? stepStatus.txHash
+                              : blockpi.getStepExplorerLink(
+                                  step,
+                                  stepStatus,
+                                  stepStatus.txHash,
+                                  isDeposit ? "deposit" : "withdrawal",
+                                  { isType2: isType2Transaction },
+                                  activeChainId || 0,
+                                  vaultStrategyChainId || 0,
+                                )
+                          }
                           className="flex items-center gap-1 group text-white hover:text-blue-600 transition-colors"
                           target="_blank"
                           rel="noopener noreferrer"
