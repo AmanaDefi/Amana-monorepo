@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react"; // Додаємо useEffect
+import React, { useEffect } from "react"; 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import VaultsMobileMenuIcon from "../svg/mobileMenu/VaultsMobileMenu";
@@ -98,7 +98,9 @@ const MobileMenuModal: React.FC<MobileMenuProps> = ({ toggleMenu, isOpen }) => {
       <GlowIcon position="bottom-mobile" />
       <nav className="flex flex-col h-full w-full items-center justify-between">
         <div className="flex flex-col w-full items-center">
-          <div className="flex flex-row items-center w-full justify-between mb-10">
+          <div
+            className={`flex flex-row items-center w-full justify-between ${walletAddress ? "mb-10" : "mb-[72px]"}`}
+          >
             <div className="w-[50px] h-10" />
             <AmanaLogo width={65} height={46} className="w-[65px] h-[46px]" />
             <button
@@ -143,14 +145,17 @@ const MobileMenuModal: React.FC<MobileMenuProps> = ({ toggleMenu, isOpen }) => {
         </div>
 
         <div className="flex flex-col justify-center items-center">
-          <div className="flex flex-col justify-center items-center mb-[62px]">
-            <div className="border-t border-[#535E73] w-[224px] mb-8"></div>
-            <MenuNavigation
-              isCollapsed={false}
-              isMobile={true}
-              onItemClick={toggleMenu}
-            />
-          </div>
+          {walletAddress && (
+            <div className="flex flex-col justify-center items-center mb-[62px]">
+              <div className="border-t border-[#535E73] w-[224px] mb-8"></div>
+              <MenuNavigation
+                isCollapsed={false}
+                isMobile={true}
+                onItemClick={toggleMenu}
+              />
+            </div>
+          )}
+
           <div className="flex items-center gap-4">
             <Link
               href="https://www.linkedin.com/company/amana-defi"
