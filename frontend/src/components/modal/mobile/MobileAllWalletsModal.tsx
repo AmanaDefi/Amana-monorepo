@@ -51,14 +51,15 @@ const MobileAllWallets = () => {
     return () => window?.removeEventListener("resize", checkIsMobile);
   }, []);
 
-  const {
-    walletAddress,
-    connectSolana,
-    activeChain,
-    activeEvmWallet: activeAccount,
-    setWalletAddress: setMultiChainWalletAddress,
-  } = useMultiChain();
-
+    const {
+      walletAddress,
+      connectSolana,
+      activeChain,
+      activeEvmWallet: activeAccount,
+      setWalletAddress: setMultiChainWalletAddress,
+    } = useMultiChain();
+  
+  
   const { logout } = usePrivy();
 
   const {
@@ -82,6 +83,54 @@ const MobileAllWallets = () => {
       },
     },
   });
+
+  useEffect(() => {
+    const checkConnectionAfterReturn = async () => {
+      const storedConnectorId = localStorage.getItem("connectorId");
+
+      if (storedConnectorId && !walletAddress) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        const connector = connectors.find((c) => c.id === storedConnectorId);
+        if (connector) {
+          try {
+            const isConnected = await connector.isAuthorized();
+            if (isConnected) {
+              const accounts = await connector.getAccounts();
+              const account = accounts[0];
+              if (account) {
+                console.log("Restored mobile connection:", account);
+                setMultiChainWalletAddress(account);
+                successAuth(account, activeAccount || undefined, true);
+              }
+            }
+          } catch (error) {
+            console.log("Error restoring connection:", error);
+          }
+        }
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        setTimeout(checkConnectionAfterReturn, 500);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", checkConnectionAfterReturn);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", checkConnectionAfterReturn);
+    };
+  }, [
+    connectors,
+    walletAddress,
+    setMultiChainWalletAddress,
+    successAuth,
+    activeAccount,
+  ]);
 
   const fundWalletConnect = () => {
     setStep("confirm");
@@ -117,6 +166,8 @@ const MobileAllWallets = () => {
       {
         onError: (error) => {
           console.log(error);
+
+          localStorage.removeItem("connectorId");
 
           if (error.name === "ConnectorAlreadyConnectedError") {
             connector.disconnect();
