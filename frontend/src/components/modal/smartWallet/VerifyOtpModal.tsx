@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuthStore } from "@/store/authStore";
+import { useAuthStore, handleAuthSuccess } from "@/store/authStore";
 import { Modal } from "../base/Modal";
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
@@ -13,6 +13,7 @@ import {
   usePrivy,
   useCreateWallet,
   useWallets,
+  ConnectedWallet,
 } from "@privy-io/react-auth";
 import { useWallet } from "@solana/wallet-adapter-react";
 
@@ -44,7 +45,7 @@ export const VerifyOtpModal = () => {
         disconnect();
       }
       if (!result.wasAlreadyAuthenticated) {
-        successAuth();
+        handleAuthSuccess(result, successAuth);
       }
     },
     onError: (err) => {

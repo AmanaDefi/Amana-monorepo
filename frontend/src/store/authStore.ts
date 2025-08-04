@@ -52,6 +52,30 @@ interface AuthState {
   logout: () => void;
 }
 
+export const handleAuthSuccess = (
+  result: any,
+  successAuthCallback: (
+    walletAddress?: string | null,
+    activeAccount?: ConnectedWallet,
+  ) => void,
+) => {
+  if (!result.wasAlreadyAuthenticated) {
+    const walletAccount = result.user.linkedAccounts?.find(
+      (account: any) => account.type === "wallet",
+    );
+
+    const walletAddress =
+      walletAccount && "address" in walletAccount
+        ? walletAccount.address
+        : null;
+
+    successAuthCallback(
+      walletAddress as string | null,
+      walletAccount as ConnectedWallet | undefined,
+    );
+  }
+};
+
 let successAuthTimeout: NodeJS.Timeout | null = null;
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -111,14 +135,40 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
     } else {
       if (!activeAccount || activeAccount?.walletClientType === "privy") {
-        set({
-          step: "success",
-          isLoading: false,
-          error: null,
-          username: "",
-          otp: "",
-          _isProcessingAuth: false,
-        });
+        const walletAddr = walletAddress || activeAccount?.address;
+        const viewedWallets = JSON.parse(
+          localStorage.getItem("viewedWelcomeWallets") || "[]",
+        );
+
+        const hasThisWalletViewedWelcome = viewedWallets.includes(walletAddr);
+
+        if (hasThisWalletViewedWelcome) {
+          set({
+            step: null,
+            isLoading: false,
+            error: null,
+            username: "",
+            otp: "",
+            _isProcessingAuth: false,
+          });
+        } else {
+          if (walletAddr) {
+            viewedWallets.push(walletAddr);
+            localStorage.setItem(
+              "viewedWelcomeWallets",
+              JSON.stringify(viewedWallets),
+            );
+          }
+
+          set({
+            step: "success",
+            isLoading: false,
+            error: null,
+            username: "",
+            otp: "",
+            _isProcessingAuth: false,
+          });
+        }
       } else {
         set({
           step: null,
