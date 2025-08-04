@@ -62,7 +62,8 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
 
     function _depositFundsIntoYieldSource(
         uint256 amount,
-        uint256 minBptOut
+        uint256 minBptOut,
+        TxType /* txType */ // not used in this strategy
     ) internal override {
         permit2ApproveIfNeeded(
             address(inputToken),
@@ -291,6 +292,7 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
                 if (converted > 0) {
                     emit RewardsHarvested(reward, balance, converted);
                     totalConverted += converted;
+                    pendingDepositAmount += converted;
                 }
             }
         } catch {
@@ -302,7 +304,7 @@ contract BalancerERC20Strategy is ERC20StrategyParent {
             minClaimableReward *
                 10 ** (IERC20Metadata(address(inputToken)).decimals() - 3)
         ) {
-            _depositFundsIntoYieldSource(totalConverted, 0);
+            _depositFundsIntoYieldSource(totalConverted, 0, TxType.Deposit);
         }
     }
 

@@ -200,7 +200,8 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
       expect(shares).to.be.gt(0); // Ensure shares were received
       const totalAssetsBefore = await strategy.totalUnderlyingAssets();
       console.log("Total assets before withdrawal:", totalAssetsBefore.toString());
-
+      const inputTokenBalanceBefore = await inputToken.balanceOf(strategy.address);
+      console.log("Input token balance before withdrawal:", inputTokenBalanceBefore.toString());
       // if (isAegisStrategy(config.strategyContractName)) {
       //   await strategy.coolDown(config.withdrawAmount);
 
@@ -215,7 +216,23 @@ strategyConfigs.forEach((config: StrategyTestConfig) => {
         config.minAmountOut,
         2
       );
+      console.log("strategyContractName", config.strategyContractName);
+      if (config.strategyContractName === "YieldFiERC20Strategy") {
+        console.log("YieldFiERC20Strategy detected, executing mock callback");
+        const expectedReturnedAmount = config.withdrawAmount;
+
+        // Transfer tokens to strategy to simulate what YieldFi protocol returns
+        await setTokenBalance(config.inputTokenAddress, strategy.address, expectedReturnedAmount, config.inputTokenStorageSlot, config.isNative);
+        const inputTokenBalanceAfter = await inputToken.balanceOf(strategy.address);
+        console.log("Input token balance after withdrawal:", inputTokenBalanceAfter.toString());
+
+        // Execute the mock callback
+        await strategy.connect(gatewaySigner).execWithdraw();
+      }
+
       console.log("Withdrawn amount:", config.withdrawAmount.toString());
+      const inputTokenBalanceAfter = await inputToken.balanceOf(strategy.address);
+      console.log("Input token balance after withdrawal:", inputTokenBalanceAfter.toString());
       const totalAssetsAfter = await strategy.totalUnderlyingAssets();
       expect(totalAssetsBefore.sub(totalAssetsAfter)).to.be.closeTo(config.withdrawAmount, ERROR_MARGIN);
       // let strategyBalance;

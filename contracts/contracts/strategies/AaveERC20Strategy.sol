@@ -52,7 +52,8 @@ contract AaveERC20Strategy is ERC20StrategyParent {
     /// @param amount Amount to be deposited.
     function _depositFundsIntoYieldSource(
         uint256 amount,
-        uint256 minSharesOut
+        uint256 minSharesOut,
+        TxType
     ) internal override {
         approveOrIncreaseAllowance(inputToken, address(aavePool), amount);
         uint256 initialBalance = receiptToken.balanceOf(address(this));

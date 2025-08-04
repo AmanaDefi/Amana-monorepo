@@ -15,7 +15,11 @@ abstract contract ERC20StrategyParent is StrategyParent {
         BufferedTx memory txn = pendingByNonce[lastProcessedNonce + 1];
 
         uint256 totalUnderlyingAssetsBefore = totalUnderlyingAssets();
-        _depositFundsIntoYieldSource(txn.assetAmount, txn.minimumOut);
+        _depositFundsIntoYieldSource(
+            txn.assetAmount,
+            txn.minimumOut,
+            txn.txType
+        );
         _sendInvestConfirmation(
             totalUnderlyingAssets() - totalUnderlyingAssetsBefore,
             totalUnderlyingAssets(),

@@ -50,7 +50,8 @@ contract Eth_4626_Strategy is EthStrategyParent {
     /// @notice deposits funds into the yield source.
     function _depositFundsIntoYieldSource(
         uint256 amount,
-        uint256 minimumOut
+        uint256 minimumOut,
+        TxType /* txType */
     ) internal override {
         weth.deposit{value: amount}();
         approveOrIncreaseAllowance(IERC20(weth), address(receiptToken), amount);

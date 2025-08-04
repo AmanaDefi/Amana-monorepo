@@ -161,7 +161,8 @@ contract ConvexERC20Strategy is ERC20StrategyParent {
 
     function _depositFundsIntoYieldSource(
         uint256 amount,
-        uint256 minimumOut
+        uint256 minimumOut,
+        TxType /* txType */
     ) internal override {
         harvest();
 

@@ -408,7 +408,8 @@ contract ConvexERC20StrategyStableSwapNG is ERC20StrategyParent {
 
     function _depositFundsIntoYieldSource(
         uint256 amount,
-        uint256 minimumOut
+        uint256 minimumOut,
+        TxType
     ) internal override {
         uint256[] memory amounts = new uint256[](3);
         amounts[inputTokenIndex] = amount;

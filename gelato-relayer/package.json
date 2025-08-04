@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "@gelatonetwork/automate-sdk": "^3.0.0",
+    "@gelatonetwork/web3-functions-sdk": "^2.4.5-betatest",
+    "ethers": "^6.15.0"
+  }
+}

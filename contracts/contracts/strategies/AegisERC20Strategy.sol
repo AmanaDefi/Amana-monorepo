@@ -48,7 +48,8 @@ contract AegisERC20Strategy is ERC20StrategyParent {
 
     function _depositFundsIntoYieldSource(
         uint256 amount,
-        uint256 minAmountOut
+        uint256 minAmountOut,
+        TxType /* txType */ // not used in this strategy
     ) internal override {
         require(amount > 0, "Deposit amount must be greater than zero");
 

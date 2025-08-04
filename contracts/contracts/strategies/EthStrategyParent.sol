@@ -15,7 +15,7 @@ abstract contract EthStrategyParent is StrategyParent {
         BufferedTx memory txn = pendingByNonce[lastProcessedNonce + 1];
         uint256 totalUnderlyingAssetsBefore = totalUnderlyingAssets();
 
-        _depositFundsIntoYieldSource(msg.value, txn.minimumOut);
+        _depositFundsIntoYieldSource(msg.value, txn.minimumOut, TxType.Deposit);
 
         _sendInvestConfirmation(
             totalUnderlyingAssets() - totalUnderlyingAssetsBefore,

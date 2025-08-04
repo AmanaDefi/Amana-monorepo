@@ -65,7 +65,8 @@ contract AaveEthStrategy is EthStrategyParent {
     /// @param amount Amount to be deposited.
     function _depositFundsIntoYieldSource(
         uint256 amount,
-        uint256
+        uint256,
+        TxType
     ) internal override {
         weth.deposit{value: amount}();
         approveOrIncreaseAllowance(IERC20(weth), address(aavePool), amount);

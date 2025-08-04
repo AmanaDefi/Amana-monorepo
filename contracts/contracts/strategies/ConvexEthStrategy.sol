@@ -180,7 +180,8 @@ contract ConvexEthStrategy is EthStrategyParent {
 
     function _depositFundsIntoYieldSource(
         uint256 amount,
-        uint256 minimumOut
+        uint256 minimumOut,
+        TxType txType
     ) internal override {
         // harvest(); // TO DO remove this from the deposit flow, rather do it manually
         weth.deposit{value: amount}();

@@ -37,6 +37,9 @@ interface IErrors {
     error InvalidAmanaVault();
     error InvalidNonce();
 
+    error InvalidTxType();
+    error IncorrectAmount();
+
     error UserSharesInsufficientForWithdrawal(
         address user,
         uint256 required,

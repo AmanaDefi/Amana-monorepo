@@ -44,7 +44,8 @@ contract ERC20_4626_Strategy is ERC20StrategyParent {
     /// @param amount Amount to be deposited.
     function _depositFundsIntoYieldSource(
         uint256 amount,
-        uint256 minimumOut
+        uint256 minimumOut,
+        TxType
     ) internal override {
         approveOrIncreaseAllowance(inputToken, address(receiptToken), amount);
 

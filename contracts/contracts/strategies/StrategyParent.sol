@@ -60,6 +60,7 @@ abstract contract StrategyParent is
 
     IERC20 internal inputToken;
     address internal receiptTokenAddress;
+    uint256 public pendingDepositAmount;
 
     // uint256[50] private __gap;
 
@@ -188,6 +189,7 @@ abstract contract StrategyParent is
                 address(this),
                 assetAmount
             );
+            pendingDepositAmount += assetAmount;
         }
         pendingByNonce[vaultNonce] = BufferedTx({
             txType: txType,
@@ -217,6 +219,7 @@ abstract contract StrategyParent is
 
     function _processNextBufferedTransaction()
         internal
+        virtual
         returns (bool didProcess)
     {
         uint256 nextNonce = lastProcessedNonce + 1;
@@ -348,7 +351,7 @@ abstract contract StrategyParent is
         uint256 amount,
         uint256 minimumOut
     ) external onlyOwner {
-        _depositFundsIntoYieldSource(amount, minimumOut);
+        _depositFundsIntoYieldSource(amount, minimumOut, TxType.Deposit);
     }
 
     /**
@@ -358,7 +361,8 @@ abstract contract StrategyParent is
      */
     function _depositFundsIntoYieldSource(
         uint256 amount,
-        uint256 minimumOut
+        uint256 minimumOut,
+        TxType txType
     ) internal virtual;
 
     /**
@@ -626,7 +630,7 @@ abstract contract StrategyParent is
             keccak256(bytes(revertMessage)) ==
             keccak256(bytes("_returnFundsFromStrategyFailed"))
         ) {
-            _depositFundsIntoYieldSource(context.amount, 1);
+            _depositFundsIntoYieldSource(context.amount, 1, TxType.Revert);
             _sendUpdateToVault(vaultNonce, TX_WITHDRAW_REVERTED);
             emit ReturnFundsFromStrategyFailed(
                 vaultNonce,

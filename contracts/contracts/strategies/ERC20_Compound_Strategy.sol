@@ -89,12 +89,13 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
                 compBalance,
                 harvestSwapSlippage
             );
+            pendingDepositAmount += usdcReceived;
             if (
                 usdcReceived >
                 minClaimableReward *
                     10 ** (IERC20Metadata(address(inputToken)).decimals() - 3)
             ) {
-                _depositFundsIntoYieldSource(usdcReceived, 0);
+                _depositFundsIntoYieldSource(usdcReceived, 0, TxType.Deposit);
                 emit RewardsHarvested(
                     rewardsTokenAddress,
                     compBalance,
@@ -108,7 +109,8 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
     /// @param amount Amount to be deposited.
     function _depositFundsIntoYieldSource(
         uint256 amount,
-        uint256 minAmountOut
+        uint256 minAmountOut,
+        TxType /* txType */
     ) internal override {
         approveOrIncreaseAllowance(inputToken, address(receiptToken), amount);
         uint256 initialBalance = receiptToken.balanceOf(address(this));
