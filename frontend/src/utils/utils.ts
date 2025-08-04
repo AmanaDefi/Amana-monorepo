@@ -24,6 +24,8 @@ import SolanaConnectionSingleton from "./solanaSingleton";
 import { erc20Abi, getContract, formatUnits } from "viem";
 import { getPublicClient } from "./getPublicClient";
 import { ConnectedWallet } from "@privy-io/react-auth";
+import { getSlippageForVault } from "@/store/userSettingsStore";
+import { useRef } from "react";
 
 export const formatTotalAssets = (
   totalAssets: string,
@@ -85,25 +87,51 @@ export function getVaultErrorMessage(
   }
 
   // Check deposit/withdrawal limits if vaultData is provided
-  if (vaultData && inputTokenPrice) {
-    const amountInUSD = Number(inputValue) * inputTokenPrice;
-
-    if (
-      isDeposit &&
-      vaultData.minDeposit &&
-      amountInUSD < vaultData.minDeposit &&
-      Number(inputValue) > 0
-    ) {
-      return `Your net deposit amount needs to be greater than $${vaultData.minDeposit}`;
+  if (vaultData) {
+    // For deposit validation, we need inputTokenPrice to calculate USD amount
+    if (isDeposit && vaultData.minDeposit && Number(inputValue) > 0) {
+      if (!inputTokenPrice || inputTokenPrice === 0) {
+        return "Token price unavailable. Please try again later or select a different token.";
+      }
+      
+      const amountInUSD = Number(inputValue) * inputTokenPrice;
+      if (amountInUSD < vaultData.minDeposit) {
+        return `Your net deposit amount needs to be greater than $${vaultData.minDeposit}`;
+      }
     }
 
-    if (
-      !isDeposit &&
-      vaultData.maxWithdraw &&
-      amountInUSD > vaultData.maxWithdraw &&
-      Number(inputValue) > 0
-    ) {
-      return `You can only withdraw a maximum of $${vaultData.maxWithdraw} instantly`;
+    // For withdrawal validation, we need inputTokenPrice to calculate USD amount
+    if (!isDeposit && Number(inputValue) > 0) {
+      if (!inputTokenPrice || inputTokenPrice === 0) {
+        return "Token price unavailable. Please try again later or select a different token.";
+      }
+      
+      const amountInUSD = Number(inputValue) * inputTokenPrice;
+      const availableBalanceInUSD = Number(availableBalance) * inputTokenPrice;
+      
+      // Conditional $1 minimum withdrawal check (based on user's actual balance)
+      if (availableBalanceInUSD > 1) {
+        if (amountInUSD < 1) {
+          return "You must withdraw at least $1";
+        }
+      }
+      
+      // Max withdrawal limit check (using actual user balance)
+      if (Number(inputValue) > Number(availableBalance)) {
+        return `You can only withdraw a maximum of ${availableBalance} tokens`;
+      }
+    }
+
+    // Vault-level max withdrawal limit check (e.g., $1M limit per vault)
+    if (!isDeposit && vaultData.maxWithdraw && Number(inputValue) > 0) {
+      if (!inputTokenPrice || inputTokenPrice === 0) {
+        return "Token price unavailable. Please try again later or select a different token.";
+      }
+      
+      const amountInUSD = Number(inputValue) * inputTokenPrice;
+      if (amountInUSD > vaultData.maxWithdraw) {
+        return `You can only withdraw a maximum of $${vaultData.maxWithdraw} instantly`;
+      }
     }
   }
 
@@ -563,10 +591,30 @@ export function getStoredSettings(): UserSettings {
   }
 }
 
-export function getCurrentSlippage(): number {
-  const settings = getStoredSettings();
-  return settings.slippage.value;
+export function getCurrentSlippage(vaultId: string): number {
+  const settings = getSlippageForVault(vaultId);
+  return settings.value;
 }
+
+// export function getVaultSlippage(vaultId: string): number {
+//   // Try Zustand first
+//   try {
+//     // Dynamically require to avoid circular deps in some build setups
+//     const store = require("@/store/userSettingsStore");
+//     const slippageSettings = store.useUserSettingsStore.getState().getSlippageForVault(vaultId);
+//     return slippageSettings.value;
+//   } catch (e) {
+//     // fallback: try localStorage
+//     try {
+//       const settings = JSON.parse(localStorage.getItem("globalSettings") || "{}");
+//       if (settings && settings.slippage && settings.slippage[vaultId]) {
+//         return settings.slippage[vaultId].value;
+//       }
+//     } catch {}
+//     // fallback default
+//     return 0.5;
+//   }
+// }
 
 export function formatSlippageUSD(amount: number): string {
   if (Number.isNaN(amount)) {
@@ -607,7 +655,6 @@ export const getERC20TokenBalance = async (
   walletAddress: string,
   tokenAddress: string,
   chain: any,
-  activeWallet: ConnectedWallet,
 ) => {
   try {
     // Skip call for invalid inputs
@@ -685,8 +732,6 @@ export const getERC20TokenBalance = async (
 
       // Now get the balance
       const balance = await contract.read.balanceOf([walletAddress]);
-
-      console.log(balance, decimals, "balance, decimals");
 
       return {
         balance: balance,
@@ -887,6 +932,9 @@ export function bigIntReviver(key: string, value: any) {
 }
 
 export const checkAmount = (amountString: string, amount: string) => {
+  if (amountString === "") {
+    return "";
+  }
   if (!/^([0-9,]*|[0-9]*\.[0-9,]*)$/g.test(amountString.replace(",", "."))) {
     return null;
   } else if (
@@ -964,3 +1012,60 @@ export function hasNoErrors(messages: TransactionStepMessages): boolean {
     return feedback.status !== TransactionStepStatus.error;
   });
 }
+
+export const parseTransactionMessage = (message: string) => {
+  const fullHashInParenthesesRegex =
+    /(?<=\(hash:\s*)(0x[0-9a-fA-F]{64})(?=\)$)/;
+  const fullHashAtEndRegex = /(0x[0-9a-fA-F]{64})\s*$/;
+
+  const addressRegex = /(0x[0-9a-fA-F]{40})\s*$/;
+
+  const shortHashRegex = /(0x[0-9a-fA-F]{1,39})\b\s*$/;
+
+  let hashValue = null;
+  let textBeforeHash = message;
+
+  let match = message.match(fullHashInParenthesesRegex);
+  if (match) {
+    hashValue = `${match[1]})`;
+    textBeforeHash = message.replace(match[0], "").replace(")", "");
+    return { textBeforeHash, hashValue };
+  }
+
+  match = message.match(fullHashAtEndRegex);
+  if (match) {
+    hashValue = match[1];
+    textBeforeHash = message.substring(0, match.index).trim();
+    return { textBeforeHash, hashValue };
+  }
+
+  match = message.match(addressRegex);
+  if (match) {
+    hashValue = match[1];
+    textBeforeHash = message.substring(0, match.index).trim();
+    return { textBeforeHash, hashValue };
+  }
+
+  match = message.match(shortHashRegex);
+  if (match) {
+    hashValue = match[1];
+    textBeforeHash = message.substring(0, match.index).trim();
+    return { textBeforeHash, hashValue };
+  }
+
+  return { textBeforeHash: message, hashValue: null };
+};
+
+export const useDebounce = (func: Function, delay: number) => {
+  const timer = useRef<NodeJS.Timeout | null>(null);
+
+  return (...args: any[]) => {
+    if (timer.current) {
+      clearTimeout(timer.current);
+    }
+
+    timer.current = setTimeout(() => {
+      func(...args);
+    }, delay);
+  };
+};

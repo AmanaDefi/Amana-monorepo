@@ -81,7 +81,7 @@ export default function APYChangeCard({
             </InfoBlock>
           </div>
 
-          <span className="font-medium text-sm">${minReceived}</span>
+          <span className="font-medium text-sm">{minReceived}</span>
         </div>
       </div>
       {/* <p className="text-[12px] text-[#535E73] mt-4">

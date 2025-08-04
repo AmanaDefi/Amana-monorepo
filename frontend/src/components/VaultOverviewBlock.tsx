@@ -1,7 +1,7 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { VaultAPY, VaultTotalAssets, VaultData } from "@/types/types";
-import { formatTVLInUSD } from "@/utils/utils";
+import { formatNumberWithSuffix } from "@/utils/utils";
 import classNames from "classnames";
 import { calculateRiskLevel } from "./VaultsWrapper";
 import { InfoBlock } from "./VaultsWrapper/components/InfoBlock.tsx";
@@ -102,15 +102,17 @@ export const VaultOverviewBlock: React.FC<Props> = ({
               TVL
             </p>
             <InfoBlock>
-              💡 TVL (Total Value Locked) <br />
-              This is the total amount of assets deposited in this vault by all
-              users across all chains.
+              <div>
+                💡 TVL (Total Value Locked) <br />
+                This is the total amount of assets deposited in this vault by all
+                users across all chains.
+              </div>
             </InfoBlock>
           </div>
           <AnimatedValue
             value={
               totalAssets?.totalAssets
-                ? `$${formatTVLInUSD(Number(totalAssets.totalAssets), vault.inputToken.symbol, tokenPrice)}`
+                ? `$${formatNumberWithSuffix(Number(totalAssets.totalAssets))}`
                 : "$0"
             }
             className="text-blue-digits font-bold text-base md:text-xl leading-6"

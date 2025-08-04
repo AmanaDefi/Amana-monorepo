@@ -17,7 +17,7 @@ export const InfoPopup = ({
   autoWidth?: boolean;
 }) => {
   return (
-    <span
+    <div
       className={classNames(
         "relative rounded-lg px-3 md:px-[19px] py-3 md:py-[14px] z-20 text-white text-xs md:text-sm leading-4 bg-blue-button inline-block",
         {
@@ -37,6 +37,6 @@ export const InfoPopup = ({
       >
         <Polygon />
       </span>
-    </span>
+    </div>
   );
 };

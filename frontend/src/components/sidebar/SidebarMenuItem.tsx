@@ -26,7 +26,7 @@ const SidebarMenuItem: React.FC<SidebarMenuItemProps> = ({
   const isDisabled =
     item.id !== "dashboard" && item.id !== "logout" && item.id !== "earn";
 
-  const commonClasses = `px-[22px] w-full flex items-center rounded-lg h-12 font-medium text-lg transition-all duration-500 ease-in-out relative overflow-hidden ${
+  const commonClasses = `px-[22px] w-full flex items-center rounded-lg h-12 font-medium text-lg transition-all duration-800 ease-in-out relative overflow-hidden ${
     isCollapsed ? "justify-center max-w-[64px]" : "gap-3"
   }`;
 
@@ -43,18 +43,20 @@ const SidebarMenuItem: React.FC<SidebarMenuItemProps> = ({
         <item.icon />
       </div>
       <span
-        className={`transition-all duration-500 ease-in-out whitespace-nowrap ${
+        className={`transition-all duration-800 ease-in-out whitespace-nowrap ${
           isCollapsed
-            ? "opacity-0 max-w-0 ml-0 overflow-hidden"
-            : "opacity-100 max-w-[200px] ml-3"
+            ? "opacity-0 max-w-0 ml-0 overflow-hidden transition-delay-300"
+            : "opacity-100 max-w-[200px] ml-3 transition-delay-0"
         }`}
       >
         {item.label}
       </span>
       {isActive && !isDisabled && (
         <div
-          className={`absolute right-0 top-1/2 transform -translate-y-1/2 w-0.5 h-6 bg-[#1B46E0] rounded-sm transition-opacity duration-500 ${
-            isCollapsed ? "opacity-0" : "opacity-100"
+          className={`absolute right-0 top-1/2 transform -translate-y-1/2 w-0.5 h-6 bg-[#1B46E0] rounded-sm transition-opacity duration-800 ${
+            isCollapsed
+              ? "opacity-0 transition-delay-300"
+              : "opacity-100 transition-delay-0"
           }`}
         ></div>
       )}

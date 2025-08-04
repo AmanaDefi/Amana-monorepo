@@ -26,8 +26,6 @@ interface ProfileDropdownProps {
 const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
   isOpen,
   onClose,
-  triggerRef,
-  onDisconnect,
 }) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { walletAddress, disconnectWallet } = useMultiChain();
@@ -56,16 +54,13 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
     (event: MouseEvent) => {
       if (
         dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node) &&
-        triggerRef.current &&
-        !triggerRef.current.contains(event.target as Node)
+        !dropdownRef.current.contains(event.target as Node)
       ) {
         onClose();
       }
     },
-    [onClose, triggerRef],
+    [onClose],
   );
-
   const handleEscapeKey = useCallback(
     (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -75,44 +70,15 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
     [onClose],
   );
 
-  const handleScroll = useCallback(() => {
-    onClose();
-  }, [onClose]);
-
-  const handleResize = useCallback(() => {
-    onClose();
-  }, [onClose]);
-
-  const handleVisibilityChange = useCallback(() => {
-    if (document.hidden) {
-      onClose();
-    }
-  }, [onClose]);
-
   useEffect(() => {
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      document.addEventListener("keydown", handleEscapeKey);
-      window.addEventListener("scroll", handleScroll, true);
-      window.addEventListener("resize", handleResize);
-      document.addEventListener("visibilitychange", handleVisibilityChange);
-    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscapeKey);
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleEscapeKey);
-      window.removeEventListener("scroll", handleScroll, true);
-      window.removeEventListener("resize", handleResize);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [
-    isOpen,
-    handleClickOutside,
-    handleEscapeKey,
-    handleScroll,
-    handleResize,
-    handleVisibilityChange,
-  ]);
+  }, [isOpen, handleClickOutside, handleEscapeKey]);
 
   useEffect(() => {
     if (!walletAddress && isOpen) {

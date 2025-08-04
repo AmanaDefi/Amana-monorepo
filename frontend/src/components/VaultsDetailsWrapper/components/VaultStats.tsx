@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import {
   VaultData,
-  VaultTotalAssets,
   VaultAPY,
   Token,
   Balance,
@@ -12,8 +11,13 @@ import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { formatTokenBalance, getOnlyTokenSymbol } from "@/utils/utils";
 import { APPROVED_TOKENS } from "@/constants/chainConfig";
-import PointsIcon from "@/components/svg/PointsIcon";
-import ResponsiveTooltip from "@/components/common/Tooltip";
+import { convertStringToBalance } from "@/utils/graphUtils";
+import {
+  formatRewards,
+  formatTruncatedTokenBalance,
+  fullTruncateTokenBalance,
+  truncateNumber,
+} from "@/utils/truncateNumber";
 
 
 interface VaultStatsProps {
@@ -58,7 +62,7 @@ export default function VaultStats({
       setInputToken(selectedToken);
     }
     // Only auto-select if there's no token already selected or if we have a new vault/chain
-    else if (!inputToken || isNewVault || isChainChanged) {
+    else if (!selectedToken || isNewVault || isChainChanged) {
       const isZetaChain = activeChain?.id === 7000 || activeChain?.id === 7001;
 
       if (isZetaChain) {
@@ -232,33 +236,46 @@ export default function VaultStats({
   }
 
   return (
-    <div className="w-full flex space-y-4 md:space-y-0 mt-4 md:mt-0">
-      <div className="flex flex-row justify-between items-center p-4 gap-4 md:gap-6 before-gradient-border rounded-lg max-h-[80px] w-full ">
-        <LargeCardStat
-          id="deposits"
-          label="Deposits"
-          value={`${formatTokenBalance(depositAmount, vaultData.inputToken.symbol)} ${
-            vaultData.inputToken.symbol
-              ? getOnlyTokenSymbol(vaultData.inputToken.symbol)
-              : ""
-          }`}
-          tooltip="Value of your vault deposits"
-        />
-        <LargeCardStat
-          id="wallet"
-          label="Your Wallet"
-          value={`${formattedWalletBalance} ${
-            symbol ? getOnlyTokenSymbol(symbol) : ""
-          }`}
-          tooltip="Value of deposit assets held in your wallet"
-        />
-        <LargeCardStat
-          id="rewards"
-          label="Your rewards"
-          value="0 Points"
-          tooltip="Your rewards"
-        />
-      </div>
+      <div className="w-full flex space-y-4 md:space-y-0 mt-4 md:mt-0">
+    <div className="grid grid-cols-3 gap-2 md:gap-4 p-4 before-gradient-border rounded-lg max-h-[80px] w-full">
+      
+      <LargeCardStat
+        id="deposits"
+        label="Deposits"
+        value={fullTruncateTokenBalance(
+          depositAmount,
+          vaultData.inputToken.symbol ? getOnlyTokenSymbol(vaultData.inputToken.symbol) : "",
+          3, 
+          11 
+        )}
+        tooltip="Value of your vault deposits"
+      />
+
+      <LargeCardStat
+        id="wallet"
+        label="Your Wallet"
+        value={fullTruncateTokenBalance(
+          formattedWalletBalance,
+          symbol ? getOnlyTokenSymbol(symbol) : "",
+          3,
+          11
+        )}
+        tooltip="Value of deposit assets held in your wallet"
+      />
+
+      <LargeCardStat
+        id="rewards"
+        label="Your rewards"
+        value={
+          vaultData?.protocolPoints
+            ? formatRewards(vaultData.protocolPoints)
+            : "0 Points"
+        }
+        tooltip="Your rewards"
+      />
+
     </div>
-  );
+  </div>
+);
+
 }

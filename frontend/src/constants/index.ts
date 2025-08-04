@@ -982,6 +982,11 @@ export const USER_SETTINGS_LOCAL_STORAGE_KEY = "user_settings";
 export const ONE_MINUTE = 60 * 1000;
 
 export const RECEIPT_LOCAL_STORAGE_KEY = "receipt_local_storage_key";
+export const DEFAULT_SORT_CONFIG = {
+  sortBy: "apy" as const,
+  sortOrder: "desc" as const
+} as const;
+
 
 export const ZERO_ACCOUNT = {
   address: "0x0000000000000000000000000000000000000000",

@@ -40,6 +40,8 @@ export interface VaultData {
   cooldownPeriod?: number; // Cooldown period in days before funds can be withdrawn
   inputToken: Token;
   strategyNetwork?: string;
+  outputTokenSymbol?: string; // Output token symbol for display
+  outputTokenImage?: string; // Output token image for display
   protocol: {
     name: string;
     strategyAddress: string;

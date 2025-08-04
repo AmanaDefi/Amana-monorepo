@@ -35,6 +35,7 @@ interface AuthState {
   error: string | null;
   userAddress: string | null;
   chosenChain: Chain | null;
+  _isProcessingAuth: boolean;
 
   openStep: (step: AuthStep) => void;
   closeAll: () => void;
@@ -51,7 +52,9 @@ interface AuthState {
   logout: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+let successAuthTimeout: NodeJS.Timeout | null = null;
+
+export const useAuthStore = create<AuthState>((set, get) => ({
   step: null,
   username: "",
   email: "",
@@ -61,9 +64,14 @@ export const useAuthStore = create<AuthState>((set) => ({
   error: null,
   userAddress: null,
   chosenChain: null,
+  _isProcessingAuth: false,
 
   openStep: (step) => set({ step }),
-  closeAll: () =>
+  closeAll: () => {
+    if (successAuthTimeout) {
+      clearTimeout(successAuthTimeout);
+      successAuthTimeout = null;
+    }
     set({
       step: null,
       isLoading: false,
@@ -71,40 +79,65 @@ export const useAuthStore = create<AuthState>((set) => ({
       email: "",
       username: "",
       otp: "",
-    }),
+      _isProcessingAuth: false,
+    });
+  },
   successAuth: (walletAddress, activeAccount, fromAllWallets = false) => {
-    if (fromAllWallets) {
-      set({
-        step: null,
-        isLoading: false,
-        error: null,
-        username: "",
-        otp: "",
-      });
-    } else {
-      if (activeAccount?.walletClientType === "privy") {
-        set({
-          step: "success",
-          isLoading: false,
-          error: null,
-          username: "",
-          otp: "",
-        });
-      } else {
+    const state = get();
+
+    if (state._isProcessingAuth) {
+      return;
+    }
+
+    if (state.step === "success" && !fromAllWallets) {
+      return;
+    }
+
+    if (successAuthTimeout) {
+      clearTimeout(successAuthTimeout);
+    }
+
+    set({ _isProcessingAuth: true });
+
+    successAuthTimeout = setTimeout(() => {
+      if (fromAllWallets) {
         set({
           step: null,
           isLoading: false,
           error: null,
           username: "",
           otp: "",
+          _isProcessingAuth: false,
         });
+      } else {
+        if (!activeAccount || activeAccount?.walletClientType === "privy") {
+          set({
+            step: "success",
+            isLoading: false,
+            error: null,
+            username: "",
+            otp: "",
+            _isProcessingAuth: false,
+          });
+        } else {
+          set({
+            step: null,
+            isLoading: false,
+            error: null,
+            username: "",
+            otp: "",
+            _isProcessingAuth: false,
+          });
+        }
       }
-    }
+
+      successAuthTimeout = null;
+    }, 100);
   },
   updateField: (name, value) => set((state) => ({ ...state, [name]: value })),
   setLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error }),
-  setChain: (chosenChain) => set({chosenChain}),
+  setChain: (chosenChain) => set({ chosenChain }),
   authenticate: (address) =>
     set({
       isAuthenticated: true,
@@ -113,13 +146,20 @@ export const useAuthStore = create<AuthState>((set) => ({
       username: "",
       otp: "",
       error: null,
+      _isProcessingAuth: false,
     }),
-  logout: () =>
+  logout: () => {
+    if (successAuthTimeout) {
+      clearTimeout(successAuthTimeout);
+      successAuthTimeout = null;
+    }
     set({
       isAuthenticated: false,
       userAddress: null,
       email: "",
       username: "",
       otp: "",
-    }),
+      _isProcessingAuth: false,
+    });
+  },
 }));

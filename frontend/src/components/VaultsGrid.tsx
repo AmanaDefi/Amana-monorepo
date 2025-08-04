@@ -9,6 +9,7 @@ import {
   UserVaultBalance
 } from '@/types/types';
 import { formatNumberWithSuffix, getOnlyTokenSymbol, formatBalance, formatTokenBalance } from '@/utils/utils';
+import { formatTokenBalanceUSD } from '@/utils/tokenFormat';
 import LoadingLogo from './LoadingLogo';
 import { useMultiChain } from '@/providers/MultiChainProvider';
 import { useTokenPriceBySymbol } from '@/hooks/hooks';
@@ -35,25 +36,6 @@ const calculateRiskLevel = (vault: VaultData): number => {
 const isStablecoin = (symbol: string): boolean => {
   const baseSymbol = symbol.split('.')[0].toUpperCase();
   return ['USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'USDP', 'FRAX', 'LUSD'].includes(baseSymbol);
-};
-
-// Helper function to format TVL in USD terms with proper K/M/B suffix
-const formatTVLInUSD = (totalAssets: string | number, inputTokenSymbol: string, tokenPrice: number = 0): string => {
-  const totalAssetsNumber = Number(totalAssets || 0);
-  
-  if (totalAssetsNumber === 0) {
-    return "0";
-  }
-  
-  // Check if the token is a stablecoin
-  if (isStablecoin(inputTokenSymbol)) {
-    // For stablecoins, the value is already in USD terms
-    return formatNumberWithSuffix(totalAssetsNumber);
-  } else {
-    // For native tokens (like ETH), convert to USD using token price
-    const usdValue = totalAssetsNumber * tokenPrice;
-    return formatNumberWithSuffix(usdValue);
-  }
 };
 
 // Generate a deterministic capacity percentage based on vault ID
@@ -120,28 +102,6 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   const [sortBy, setSortBy] = useState<string>(externalSortBy);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">(externalSortOrder);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-
-  // Use useLayoutStore for adaptive page size
-  const itemsPerPage = useLayoutStore((state) => state.itemsPerPage);
-  const setItemsPerPage = useLayoutStore((state) => state.setItemsPerPage);
-
-  // Adaptive logic for VaultsGrid
-  useEffect(() => {
-    const updatePageSize = () => {
-      const width = window.innerWidth;
-      const newSize = width >= 1805 ? 8 : 6;
-      if (newSize !== itemsPerPage) {
-        setItemsPerPage(newSize);
-      }
-    };
-
-    updatePageSize();
-    window.addEventListener("resize", updatePageSize);
-
-    return () => {
-      window.removeEventListener("resize", updatePageSize);
-    };
-  }, [setItemsPerPage, itemsPerPage]);
 
   useEffect(() => {
     setSortBy(externalSortBy);
@@ -540,7 +500,6 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
               {/* Card Content */}
               <div className="p-4">
                 <div className="flex md:flex-row flex-col gap-2 justify-between">
-                  {/* Lending Pool with Logo (was Protocol) */}
                   <div className="flex items-center gap-3 mb-3 p-2 rounded-md">
                     <Image
                       src={vault.inputToken.imgURL}
@@ -551,9 +510,6 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                       sizes="36px"
                     />
                     <div>
-                      <span className="text-gray-400 text-xs">
-                        Lending Pool
-                      </span>
                       <p className="text-white font-medium">{vault.name}</p>
                     </div>
                   </div>
@@ -623,7 +579,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                   <div className="bg-customNeutral300 p-3 rounded-md">
                     <p className="text-gray-400 text-xs mb-1">TVL</p>
                     <p className="text-white font-bold text-xl">
-                        {formatTVLInUSD(Number(vaultTotalAssetsData?.totalAssets || 0), vault.inputToken.symbol, getTokenPrice(vault.inputToken.symbol))}
+                        {formatNumberWithSuffix(Number(vaultTotalAssetsData?.totalAssets || 0))}
                     </p>
                   </div>
                 </div>
@@ -647,14 +603,14 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                       <div className="flex justify-around text-[16px] mb-1">
                         <span className="text-gray-400">Your Deposits:</span>
                         <span className="text-white font-medium">
-                          {formatTokenBalance(
+                          {formatTokenBalanceUSD(
                             userVaultBalances.find(
                               (balance: UserVaultBalance) =>
                                 balance.vaultId === vault.id,
                             )?.balance || 0,
                             vault.inputToken.symbol,
-                          )}{" "}
-                          {vault.inputToken.symbol}
+                            getTokenPrice(vault.inputToken.symbol),
+                          )}
                         </span>
                       </div>
                     </div>

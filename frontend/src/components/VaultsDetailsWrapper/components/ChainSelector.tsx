@@ -10,11 +10,7 @@ import {
 } from "@/constants/chainConfig";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { CheckTheTxIsInProgress } from "@/utils/localStorageUtils";
-import {
-  CHAINS_ICONS_BUTTON,
-  CHAINS_ICONS_BUTTON_WITHOUT_ZETA,
-} from "@/constants/tokens";
-import { useFundWallet, useWallets } from "@privy-io/react-auth";
+import { CHAINS_ICONS_BUTTON } from "@/constants/tokens";
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 import { Token, VaultData } from "@/types/types";
 import { useFundWalletStore } from "@/store/fundWalletStore";
@@ -40,22 +36,21 @@ export default function ChainSelector({
   isFromTopUp,
   vaultData,
 }: ChainSelectorProps) {
-  const { activeChain, walletAddress } = useMultiChain();
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const activeAccount = filteredWallets[0];
+  const {
+    activeChain,
+    walletAddress,
+    activeEvmWallet: activeAccount,
+  } = useMultiChain();
+
   const { openModal, setSelectedChainFromModal } = useChainTokenModalStore();
   const { setStep } = useFundWalletStore();
+
+  const isTxInProgress = vaultId ? CheckTheTxIsInProgress(vaultId) : false;
 
   const handleOpenModal = (e: React.MouseEvent) => {
     e.stopPropagation();
 
-    if (vaultId) {
-      const isTxInProgress = CheckTheTxIsInProgress(vaultId);
-      if (isTxInProgress) return;
-    }
+    if (isTxInProgress) return;
 
     if (isFromTopUp) {
       setStep("selectChain");
@@ -80,6 +75,8 @@ export default function ChainSelector({
     e.stopPropagation();
     e.preventDefault();
 
+    if (isTxInProgress) return;
+
     const chainToSelect = SUPPORTED_CHAINS.find(
       (chain) => chain.id === chainId,
     );
@@ -88,13 +85,19 @@ export default function ChainSelector({
       const tokens = APPROVED_TOKENS[chainId] ?? [];
       const defaultToken =
         tokens.find((token) => token.symbol === "USDC") || tokens[0];
-      
+
+      const tokenForZetaChain = vaultData?.inputToken;
+
       onSelectChain(chainToSelect);
 
-     if (onSelectChainAndToken && defaultToken) {
-       setSelectedChainFromModal(chainToSelect);
-       onSelectChainAndToken(chainToSelect, defaultToken);
-     }
+      if (onSelectChainAndToken && defaultToken) {
+        setSelectedChainFromModal(chainToSelect);
+        if ((chainId === 7000 || chainId === 7001) && tokenForZetaChain) {
+          onSelectChainAndToken(chainToSelect, tokenForZetaChain);
+        } else {
+          onSelectChainAndToken(chainToSelect, defaultToken);
+        }
+      }
     }
   };
 
@@ -118,7 +121,11 @@ export default function ChainSelector({
   return (
     <div
       onClick={handleOpenModal}
-      className="font-gotham w-full max-h-[56px] bg-[#161C27] pl-4 pr-[19px] py-3 rounded-lg shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] flex flex-row justify-between items-center hover:cursor-pointer"
+      className={`font-gotham w-full max-h-[56px] bg-[#161C27] pl-4 pr-[10px] md:pr-[19px] py-3 rounded-lg shadow-[0_4px_6px_0_rgba(0,0,0,0.15)] flex flex-row justify-between items-center ${
+        isTxInProgress
+          ? "opacity-50 cursor-not-allowed"
+          : "hover:cursor-pointer"
+      }`}
     >
       <div className="flex items-center gap-4">
         <img
@@ -134,20 +141,27 @@ export default function ChainSelector({
 
       <div className="relative">
         <div
-          className={`flex items-center justify-between gap-4 py-[6px] ${className} ${
-            walletAddress &&
-            activeAccount?.walletClientType === "privy" &&
-            !isFromTopUp
-              ? ""
-              : "cursor-pointer"
+          className={`flex items-center justify-between gap-2 md:gap-4 py-[6px] ${className} ${
+            isTxInProgress
+              ? "cursor-not-allowed"
+              : walletAddress &&
+                  activeAccount?.walletClientType === "privy" &&
+                  !isFromTopUp
+                ? ""
+                : "cursor-pointer"
           }`}
         >
-          <div className="flex items-center -space-x-2">
+          <div className="flex items-center -space-x-3 md:-space-x-2">
             {chainIconsList.map((icon, index) => (
               <button
                 onClick={(e) => handleChainSelect(e, icon.id)}
                 key={icon.symbol}
-                className="w-5 h-5 md:w-[30px] md:h-[30px] rounded-full overflow-hidden hover:scale-125 transition-transform duration-200 relative border border-white bg-[#3E73C4]"
+                disabled={isTxInProgress}
+                className={`w-[30px] h-[30px] rounded-full overflow-hidden transition-transform duration-200 relative border border-white bg-[#3E73C4] ${
+                  isTxInProgress
+                    ? "cursor-not-allowed"
+                    : "hover:scale-125"
+                }`}
                 style={{ zIndex: index }}
               >
                 <img
@@ -158,7 +172,11 @@ export default function ChainSelector({
               </button>
             ))}
           </div>
-          <ChevronDownIcon className="w-5 h-5 text-[#9A9CB3] transition-transform" />
+          <ChevronDownIcon
+            className={`w-5 h-5 text-[#9A9CB3] transition-transform ${
+              isTxInProgress ? "opacity-50" : ""
+            }`}
+          />
         </div>
       </div>
     </div>

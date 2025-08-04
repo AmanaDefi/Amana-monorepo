@@ -16,7 +16,7 @@ import {
 } from "@/hooks/useInstructionStepLogic";
 import Link from "next/link";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/solid";
-import { hasNoErrors } from "@/utils/utils";
+import { hasNoErrors, parseTransactionMessage } from "@/utils/utils";
 
 interface DepositInstructionProps {
   transactionStepFeedback?: TransactionStepMessages;
@@ -246,6 +246,8 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
             case "completed":
               bgColor = "#1B46E0";
               textColor = "#FFFFFF";
+              isHighlighted = false;
+              showLoader = false;
               break;
             case "active":
               bgColor = "#535E73";
@@ -293,6 +295,15 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
             );
           }
 
+          const fullDescription =
+            step === DepositStep.SELECT_TOKEN ||
+            step === DepositStep.CONFIRM_DEPOSIT
+              ? getStepDescription(step, isDeposit)
+              : stepStatus?.description || getStepDescription(step, isDeposit);
+
+          const { textBeforeHash, hashValue } =
+            parseTransactionMessage(fullDescription);
+
           return (
             <motion.div
               key={`step-${step}`}
@@ -302,54 +313,46 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
               animate={stepState}
               layout
             >
-              <AnimatePresence>
-                {isHighlighted && (
-                  <motion.div
-                    className="absolute inset-0 -mx-4 -my-2 rounded-lg bg-gradient-to-r from-gray-500/10 via-gray-400/20 to-gray-500/10"
-                    variants={highlightVariants}
-                    initial="hidden"
-                    animate="visible"
-                    exit="hidden"
-                  />
-                )}
-              </AnimatePresence>
+              {stepState !== "completed" && (
+                <AnimatePresence>
+                  {isHighlighted && (
+                    <motion.div
+                      className="absolute inset-0 -mx-4 -my-2 rounded-lg bg-gradient-to-r from-gray-500/10 via-gray-400/20 to-gray-500/10"
+                      variants={highlightVariants}
+                      initial="hidden"
+                      animate="visible"
+                      exit="hidden"
+                    />
+                  )}
+                </AnimatePresence>
+              )}
 
               <div className="relative flex flex-row gap-4 items-center z-10">
                 <motion.div
                   className="relative rounded-full w-11 h-11 flex items-center justify-center flex-shrink-0 transition-colors duration-300"
                   style={{ backgroundColor: bgColor }}
-                  animate={
-                    isHighlighted
-                      ? {
-                          boxShadow: [
-                            "0 0 0 0 rgba(62, 115, 196, 0)",
-                            "0 0 0 4px rgba(62, 115, 196, 0.2)",
-                            "0 0 0 0 rgba(62, 115, 196, 0)",
-                          ],
-                        }
-                      : {}
-                  }
                   transition={{ duration: 2, repeat: Infinity }}
                 >
-                  <AnimatePresence>
-                    {isHighlighted && (
-                      <motion.div
-                        className="absolute inset-0 rounded-full border-2 border-[#3E73C4]"
-                        initial={{ scale: 1, opacity: 0.5 }}
-                        animate={{
-                          scale: [1, 1.3, 1],
-                          opacity: [0.5, 0, 0.5],
-                        }}
-                        exit={{ scale: 1, opacity: 0 }}
-                        transition={{
-                          duration: 2,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                        }}
-                      />
-                    )}
-                  </AnimatePresence>
-
+                  {stepState !== "completed" && (
+                    <AnimatePresence>
+                      {isHighlighted && (
+                        <motion.div
+                          className="absolute inset-0 rounded-full border-2 border-[#3E73C4]"
+                          initial={{ scale: 1, opacity: 0.5 }}
+                          animate={{
+                            scale: [1, 1.3, 1],
+                            opacity: [0.5, 0, 0.5],
+                          }}
+                          exit={{ scale: 1, opacity: 0 }}
+                          transition={{
+                            duration: 2,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                          }}
+                        />
+                      )}
+                    </AnimatePresence>
+                  )}
                   {/* Always show the main step icon */}
                   <div>{getStepIcon(step)}</div>
 
@@ -389,11 +392,8 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
                     }
                     transition={{ duration: 2, repeat: Infinity }}
                   >
-                    {step === DepositStep.SELECT_TOKEN ||
-                    step === DepositStep.CONFIRM_DEPOSIT
-                      ? getStepDescription(step, isDeposit)
-                      : stepStatus?.description ||
-                        getStepDescription(step, isDeposit)}
+                    <span>{textBeforeHash}</span>
+                    {hashValue && <p className="!break-all">{hashValue}</p>}
                   </motion.p>
                 </div>
                 <AnimatePresence>

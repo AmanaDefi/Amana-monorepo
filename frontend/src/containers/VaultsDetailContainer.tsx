@@ -70,6 +70,7 @@ import ChainsModal from "@/components/modal/chains/ChainsModal";
 import Image from "next/image";
 import { useAuthStore } from "@/store/authStore";
 import { AiOutlineConsoleSql } from "react-icons/ai";
+import { useExternalTVL } from "@/hooks/useExternalTVL";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -82,11 +83,6 @@ const VaultsDetailContainer: React.FC<{
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
   const initialIsDeposit = tabParam !== "withdraw";
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const user = filteredWallets[0];
   const wallet = useWallet();
 
   const [loading, setLoading] = useState<boolean>(true);
@@ -133,9 +129,10 @@ const VaultsDetailContainer: React.FC<{
     setLastWithdrawInfo,
     lastWithdrawInfo,
     isFailedOnConfirmation,
+    setIsFailedOnCOnfirmation,
   } = useTransactionStore();
 
-  const { switchToChain, walletAddress, activeChain, selectedChain } =
+  const { switchToChain, walletAddress, activeChain, activeEvmWallet: user } =
     useMultiChain();
 
   const vaultIdStr = Array.isArray(vaultID) ? vaultID[0] : vaultID;
@@ -157,6 +154,7 @@ const VaultsDetailContainer: React.FC<{
         setIsDeposit(shouldBeDeposit);
       }
     }
+    setIsFailedOnCOnfirmation(false);
   }, [searchParams, vaultData?.id]);
 
   const handleTabChange = (tab: string) => {
@@ -200,10 +198,9 @@ const VaultsDetailContainer: React.FC<{
 
   const handleChainSelect = useCallback(
     async (chain: Chain) => {
-      console.log("handleChainSelect", chain.id);
       await switchToChain(chain);
     },
-    [vaultID, switchToChain],
+    [switchToChain],
   );
 
   useEffect(() => {
@@ -242,6 +239,7 @@ const VaultsDetailContainer: React.FC<{
         setLastTransactionStepFeedback({});
         setFinishedTransaction(false);
         setIsTransactionProcessing(false);
+        setIsFailedOnCOnfirmation(false);
       }
     };
 
@@ -284,6 +282,25 @@ const VaultsDetailContainer: React.FC<{
       setVaultTotalAsset(convertGraphVaultToTotalAssets(vaultFromGraph.vault));
     }
   }, [vaultID, vaultFromGraph]);
+
+  // Integrate external TVL data for the vault detail page
+  const {
+    enhancedTotalAssets,
+    isLoading: externalTVLLoading,
+    error: externalTVLError,
+  } = useExternalTVL({
+    vaultIds: vaultData ? [vaultData.id] : [],
+    existingTotalAssets: vaultTotalAsset ? [vaultTotalAsset] : [],
+    enabled: !!vaultData
+  });
+
+  // Update the vault total assets with external TVL data when available
+  const finalVaultTotalAsset = useMemo(() => {
+    if (enhancedTotalAssets.length > 0) {
+      return enhancedTotalAssets[0];
+    }
+    return vaultTotalAsset;
+  }, [enhancedTotalAssets, vaultTotalAsset]);
 
   // Set user vault balance from graph data
   useEffect(() => {
@@ -393,9 +410,10 @@ const VaultsDetailContainer: React.FC<{
   const handleBack = () => {
     const isTxInProgress = CheckTheTxIsInProgress(vaultID.toString());
     if (!isTxInProgress) {
-      localStorage.removeItem(vaultID.toString());
+      updateLocalStorageObject(vaultID.toString(), null);
     }
     router.push(backPath);
+    setIsFailedOnCOnfirmation(false);
   };
 
   const isWithdraw = !isDeposit;
@@ -404,8 +422,6 @@ const VaultsDetailContainer: React.FC<{
     finishedTransaction &&
     (Object.keys(lastTransactionStepFeedback).length > 0 ||
       Object.keys(transactionStepFeedback).length > 0);
-
-
   const currentTransactionInfo = isDeposit ? lastDepositInfo : lastWithdrawInfo;
 
   return vaultData ? (
@@ -524,6 +540,55 @@ const VaultsDetailContainer: React.FC<{
 
       <VaultHeaderInfo vaultData={vaultData} />
 
+      {/* Mobile Vault Header */}
+      <div className="md:hidden flex w-full flex-row items-center mt-4 mb-4">
+        <div className="flex items-center gap-3 max-w-full flex-wrap flex-1">
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Image
+                src={vaultData.imgURL ?? ""}
+                alt={vaultData.protocol.network}
+                width={24}
+                height={24}
+                className="w-6 h-6 rounded-full"
+                sizes="24px"
+              />
+            </div>
+            <h2 className="font-bold text-white text-sm">{vaultData.protocol.network}</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Image
+                src={vaultData.protocol.imgURL}
+                alt={vaultData.protocol.name}
+                width={24}
+                height={24}
+                className="w-6 h-6 rounded-full"
+                sizes="24px"
+              />
+            </div>
+            <h2 className="font-bold text-white text-sm">{vaultData.protocol.name}</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Image
+                src={vaultData.inputToken.imgURL}
+                alt={vaultData.name}
+                width={24}
+                height={24}
+                className="w-6 h-6 rounded-full"
+                sizes="24px"
+              />
+            </div>
+            <h2 className="font-bold text-white text-sm">{vaultData.name}</h2>
+            <h2 className="font-bold text-white py-1 ">
+            {vaultData.type}
+          </h2>
+          </div>
+          
+        </div>
+      </div>
+
       {walletAddress && isDeposit && (
         <div className="block lg:hidden mt-6 lg:mt-0">
           <VaultStats
@@ -575,9 +640,10 @@ const VaultsDetailContainer: React.FC<{
                   setIsTransactionProcessing(false);
                   setLastDepositInfo(null);
                   setLastWithdrawInfo(null);
+                  setIsFailedOnCOnfirmation(false);
 
                   if (vaultID) {
-                    localStorage.removeItem(vaultID.toString());
+                    updateLocalStorageObject(vaultID.toString(), null);
                   }
                   // setTransactionCompleted(true);
                 }}
@@ -615,8 +681,11 @@ const VaultsDetailContainer: React.FC<{
                   vaultAPY={vaultAPYs.find(
                     (a) => a.vaultId === vaultID.toString(),
                   )}
-                  totalAssets={vaultTotalAsset}
-                  isLoading={loading || !vaultAPYs.length}
+                  totalAssets={finalVaultTotalAsset}
+                  isLoading={
+                    loading ||
+                    !vaultAPYs.find((a) => a.vaultId === vaultID.toString())
+                  }
                   isDeposit={isDeposit}
                   isReward={true}
                 />
@@ -628,8 +697,12 @@ const VaultsDetailContainer: React.FC<{
                     vaultAPY={vaultAPYs.find(
                       (a) => a.vaultId === vaultID.toString(),
                     )}
-                    totalAssets={vaultTotalAsset}
+                    totalAssets={finalVaultTotalAsset}
                     titleColor="#535E73"
+                    isLoading={
+                      loading ||
+                      !vaultAPYs.find((a) => a.vaultId === vaultID.toString())
+                    }
                     isDeposit={isDeposit}
                     isReward={true}
                   />

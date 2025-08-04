@@ -13,6 +13,8 @@ import CloseModalIcon from "../svg/CloseModalIcon";
 import AutoDropdownIcon from "../svg/AutoDropdownIcon";
 import { DEFAULT_SETTINGS } from "@/types/types";
 
+const presetValues = [0.1, 0.5, 1.0];
+
 export default function SlippageSettingsDropdown({
   setInputBalance,
   vaultId,
@@ -26,8 +28,6 @@ export default function SlippageSettingsDropdown({
   const [customInputValue, setCustomInputValue] = useState("");
   const [showCustomInput, setShowCustomInput] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const presetValues = [0.1, 0.5, 1.0];
 
   useEffect(() => {
     if (CheckTheTxIsInProgress(vaultId)) return;
@@ -50,7 +50,7 @@ export default function SlippageSettingsDropdown({
         dropdownRef.current &&
         !dropdownRef.current.contains(e.target as Node)
       ) {
-        if (customInputValue === "" && !isAuto) {
+        if (customInputValue === "" && slippageValue === 0.5) {
           toggleAuto(vaultId);
         }
         setIsOpen(false);
@@ -63,7 +63,7 @@ export default function SlippageSettingsDropdown({
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isOpen]);
+  }, [isOpen, slippageValue, customInputValue, toggleAuto, vaultId]);
 
   const handlePresetSelect = (value: number) => {
     if (CheckTheTxIsInProgress(vaultId)) return;
@@ -88,42 +88,34 @@ export default function SlippageSettingsDropdown({
       presetValues.includes(slippageValue) ? "" : slippageValue.toFixed(2),
     );
   };
+
   const handleCustomInputChange = (value: string) => {
     if (CheckTheTxIsInProgress(vaultId)) return;
     if (/[^0-9.]/.test(value) || (value.match(/\./g) || []).length > 1) return;
 
-    if (value === "" || value.endsWith(".")) {
-      setCustomInputValue(value);
-      return;
-    }
-
-    const numValue = parseFloat(value);
-
-    if (isNaN(numValue)) {
-      setCustomInputValue(value);
-      return;
-    }
-
-    if (numValue <= 100) {
-      setCustomInputValue(value);
-
-      if (numValue >= 0.1) {
-        if (isAuto) toggleAuto(vaultId);
-        setSlippage(vaultId, numValue);
-      }
-    }
+    setCustomInputValue(value);
   };
+
   const handleCustomInputBlur = () => {
-    if (customInputValue === "" || parseFloat(customInputValue) === 0) {
+    const numValue = parseFloat(customInputValue);
+
+    if (isNaN(numValue) || numValue === 0) {
       if (!isAuto) {
         toggleAuto(vaultId);
       }
       setCustomInputValue("");
       return;
     }
-    const numValue = parseFloat(customInputValue);
-    if (!isNaN(numValue) && numValue >= 0.1) {
+
+    if (numValue >= 0.1 && numValue <= 100) {
       setCustomInputValue(numValue.toFixed(2));
+      if (isAuto) toggleAuto(vaultId);
+      setSlippage(vaultId, numValue);
+    } else {
+      if (!isAuto) {
+        toggleAuto(vaultId);
+      }
+      setCustomInputValue("");
     }
   };
   const isPresetActive = (v: number) =>

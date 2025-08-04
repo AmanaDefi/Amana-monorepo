@@ -3,11 +3,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import { Modal } from "../base/Modal";
 import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
+import { useFundWalletStore } from "@/store/fundWalletStore";
 import {
   SUPPORTED_CHAINS,
   CHAIN_ICONS,
   APPROVED_TOKENS,
   CHAIN_ID,
+  solanaChain,
 } from "@/constants/chainConfig";
 import { Token, VaultData, Balance } from "@/types/types";
 import { Chain } from "viem";
@@ -21,8 +23,8 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { AppButton } from "@/components/button/AppButton";
 import { zetachain } from "viem/chains";
-import { useWallets } from "@privy-io/react-auth";
 import { useAuthStore } from "@/store/authStore";
+import { useWallets } from "@privy-io/react-auth";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -109,10 +111,12 @@ const TokenBalanceItem = React.memo(
     onClick,
     onBalanceUpdate,
     index,
+    isTopUpModal,
   }: {
     token: Token;
     selectedChain: Chain;
     isSelected: boolean;
+    isTopUpModal?: boolean;
     onClick: () => void;
     onBalanceUpdate: (
       token: Token,
@@ -123,10 +127,25 @@ const TokenBalanceItem = React.memo(
     refreshTrigger?: number;
     index: number;
   }) => {
+    const { publicKey } = useWallet();
+    const { wallets } = useWallets();
+    const filteredWallets = wallets.filter(
+      (wallet) => wallet.meta.id !== "app.phantom",
+    );
+    const activeAccount = filteredWallets[0];
+
+    const walletAddressForBalance = isTopUpModal
+      ? selectedChain.name === "Solana"
+        ? publicKey?.toString()
+        : activeAccount?.address
+      : undefined;
+
     const { balance, isLoading } = useMultichainTokenBalanceForModal(
       token,
       selectedChain,
+      walletAddressForBalance,
     );
+
     const price = useTokenPriceBySymbol(token.symbol) || 0;
 
     useEffect(() => {
@@ -168,6 +187,8 @@ const TokenBalanceItem = React.memo(
 
       return `$${balanceUSD.toFixed(2)}`;
     }, [balanceUSD, balance]);
+
+
 
     return (
       <motion.div
@@ -280,13 +301,18 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
     setSelectedChainFromModal,
     setSelectedTokenFromModal,
   } = useChainTokenModalStore();
+
+  const {
+    step: fundWalletStep,
+    setStep: setFundWalletStep,
+    setChain: setFundWalletChain,
+    setCurrency: setFundWalletCurrency,
+    walletAddress: fundWalletAddress,
+    setWalletAddress,
+  } = useFundWalletStore();
+
   const { publicKey } = useWallet();
-  const { walletAddress, activeChain, selectedChain, bitcoinWallet } = useMultiChain();
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const activeAccount = filteredWallets[0];
+  const { activeChain, selectedChain, activeEvmWallet: activeAccount, bitcoinWallet } = useMultiChain();
 
   const { openStep } = useAuthStore();
   const { setChain } = useAuthStore();
@@ -306,6 +332,9 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
     >
   >(new Map());
 
+  const isTopUpModal = fundWalletStep === "selectChain";
+  const isModalOpen = isOpen || isTopUpModal;
+
   const [selectedChainLocal, setSelectedChainLocal] = useState<Chain | null>(
     selectedChainFromModal || null,
   );
@@ -313,43 +342,49 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
     selectedTokenFromModal || null,
   );
 
-  useEffect(() => {
-    console.log('[ChainsModal][DEBUG] Rendered with:', {
-      selectedChainLocal,
-      selectedChainFromModal,
-      selectedTokenLocal,
-      selectedTokenFromModal,
-      bitcoinWallet,
-      publicKey,
-      walletAddress,
-      activeAccount,
-    });
-  }, [selectedChainLocal, selectedChainFromModal, selectedTokenLocal, selectedTokenFromModal, bitcoinWallet, publicKey, walletAddress, activeAccount]);
-
+ 
 
   useEffect(() => {
     if (selectedChainLocal?.id === CHAIN_ID.bitcoin) {
       console.log('[ChainsModal][DEBUG] Bitcoin chain selected:', {
         bitcoinWallet,
         publicKey,
-        walletAddress,
+        setWalletAddress,
         activeAccount,
       });
     }
-  }, [selectedChainLocal, bitcoinWallet, publicKey, walletAddress, activeAccount]);
+  }, [selectedChainLocal, bitcoinWallet, publicKey, setWalletAddress, activeAccount]);
 
   const getTokensForChain = useCallback(
     (chain: Chain): Token[] => {
       const currentVaultData = vaultDataForModal || propVaultData;
+      if (isTopUpModal) {
+        const allTokens = APPROVED_TOKENS[chain.id] || [];
 
+        if (chain.id === 7000 || chain.id === 7001) {
+          const tokenAddresses = [
+            "0x0000000000000000000000000000000000000001",
+            "0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891", // ETH.ETH
+            "0x0cbe0dF132a6c6B4a2974Fa1b7Fb953CF0Cc798a", // USDC.ETH
+            "0x7c8dDa80bbBE1254a7aACf3219EBe1481c6E01d7", // USDT.ETH
+          ];
+
+          return allTokens.filter((token) =>
+            tokenAddresses.includes(token.address),
+          );
+        }
+
+        return allTokens;
+      }
       if (chain.id === 7000 || chain.id === 7001) {
         return currentVaultData?.inputToken
           ? [currentVaultData.inputToken]
           : [];
       }
+
       return APPROVED_TOKENS[chain.id] || [];
     },
-    [vaultDataForModal, propVaultData],
+    [vaultDataForModal, propVaultData, isTopUpModal],
   );
 
   const availableTokens = useMemo(() => {
@@ -361,14 +396,56 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
     setTokenBalances(new Map());
   }, [selectedChainLocal?.id]);
 
-  useEffect(() => {
-    if (isOpen) {
+useEffect(() => {
+  if (isModalOpen) {
+    if (isTopUpModal) {
+      const { chain: fundWalletChain, currency: fundWalletCurrency } =
+        useFundWalletStore.getState();
+
+      if (fundWalletChain) {
+        setSelectedChainLocal(fundWalletChain);
+      } else {
+        setSelectedChainLocal(null);
+      }
+
+      if (fundWalletCurrency) {
+        setSelectedTokenLocal(fundWalletCurrency);
+      } else {
+        setSelectedTokenLocal(null);
+      }
+    } else {
       setSelectedChainLocal(selectedChainFromModal || SUPPORTED_CHAINS[0]);
       setSelectedTokenLocal(selectedTokenFromModal || null);
-      setSearchQuery("");
-      setTokenBalances(new Map());
     }
-  }, [isOpen, selectedChainFromModal, selectedTokenFromModal]);
+    setSearchQuery("");
+    setTokenBalances(new Map());
+  }
+}, [isModalOpen, isTopUpModal, selectedChainFromModal, selectedTokenFromModal]);
+
+  useEffect(() => {
+    if (isTopUpModal && selectedChainLocal) {
+      let walletAddr = null;
+      if (selectedChainLocal.name === "Solana" && publicKey) {
+        walletAddr = publicKey.toString();
+      } else if (
+        selectedChainLocal.name !== "Solana" &&
+        activeAccount?.address &&
+        activeAccount.walletClientType !== "privy"
+      ) {
+        walletAddr = activeAccount.address;
+      }
+
+      if (walletAddr) {
+        setWalletAddress(walletAddr);
+      }
+    }
+  }, [
+    isTopUpModal,
+    selectedChainLocal,
+    publicKey,
+    activeAccount,
+    setWalletAddress,
+  ]);
 
   useEffect(() => {
     if (selectedChainLocal) {
@@ -376,15 +453,15 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
         availableTokens,
         bitcoinWallet,
         publicKey,
-        walletAddress,
+        setWalletAddress,
         activeAccount,
       });
     }
-  }, [selectedChainLocal, availableTokens, bitcoinWallet, publicKey, walletAddress, activeAccount]);
+  }, [selectedChainLocal, availableTokens, bitcoinWallet, publicKey, setWalletAddress, activeAccount]);
 
   const handleBalanceUpdate = useCallback(
     (token: Token, balance: Balance, price: number, isLoading: boolean) => {
-      const tokenKey = `${token.address.toLowerCase()}-${selectedChainLocal?.id}`;
+      const tokenKey = `${token.address.toLowerCase()}-${selectedChainLocal?.id}-${token.symbol}`;
 
       setTokenBalances((prev) => {
         const newMap = new Map(prev);
@@ -395,21 +472,21 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
     [selectedChainLocal],
   );
 
-  const filteredTokens = useMemo(() => {
-    if (!searchQuery) return availableTokens;
+ const filteredTokens = useMemo(() => {
+   if (!searchQuery) return availableTokens;
 
-    const query = searchQuery.toLowerCase();
-    return availableTokens.filter(
-      (token) =>
-        token.symbol.toLowerCase().includes(query) ||
-        token.address.toLowerCase().includes(query),
-    );
-  }, [availableTokens, searchQuery]);
+   const query = searchQuery.toLowerCase();
+   return availableTokens.filter(
+     (token) =>
+       token.symbol.toLowerCase().startsWith(query) ||
+       token.address.toLowerCase().includes(query),
+   );
+ }, [availableTokens, searchQuery]);
 
   const sortedTokens = useMemo(() => {
     return [...filteredTokens].sort((a, b) => {
-      const keyA = `${a.address.toLowerCase()}-${selectedChainLocal?.id}`;
-      const keyB = `${b.address.toLowerCase()}-${selectedChainLocal?.id}`;
+      const keyA = `${a.address.toLowerCase()}-${selectedChainLocal?.id}-${a.symbol}`;
+      const keyB = `${b.address.toLowerCase()}-${selectedChainLocal?.id}-${b.symbol}`;
 
       const dataA = tokenBalances.get(keyA);
       const dataB = tokenBalances.get(keyB);
@@ -427,36 +504,56 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
         return balanceB - balanceA;
       }
 
-      return a.symbol.localeCompare(b.symbol);
+      return balanceB - balanceA;
     });
   }, [filteredTokens, tokenBalances, selectedChainLocal]);
 
   const handleTokenSelect = (token: Token) => {
     if (selectedChainLocal) {
-      setSelectedTokenLocal(token);
-      setSelectedTokenFromModal(token);
+      if (isTopUpModal) {
+        setFundWalletChain(selectedChainLocal);
+        setFundWalletCurrency(token);
+        if (
+          fundWalletAddress &&
+          activeAccount?.walletClientType !== "privy" &&
+          selectedChainLocal.name !== "Solana"
+        ) {
+          activeAccount.switchChain(selectedChainLocal.id);
+        }
 
-      if (onSelectChainAndTokenCallback) {
-        onSelectChainAndTokenCallback(selectedChainLocal, token);
-      } else if (onSelectChainCallback) {
-        onSelectChainCallback(selectedChainLocal);
+        const shouldGoToConfirm =
+          fundWalletAddress && activeAccount?.walletClientType !== "privy";
+        setFundWalletStep(shouldGoToConfirm ? "confirm" : "setValues");
+      } else {
+        setSelectedTokenLocal(token);
+        setSelectedTokenFromModal(token);
+
+        if (onSelectChainAndTokenCallback) {
+          onSelectChainAndTokenCallback(selectedChainLocal, token);
+        } else if (onSelectChainCallback) {
+          onSelectChainCallback(selectedChainLocal);
+        }
+        closeModal();
       }
-      closeModal();
     }
   };
 
   const handleChainOnlySelect = (chain: Chain) => {
-    setSelectedChainLocal(chain);
-    setSelectedChainFromModal(chain);
+    if (isTopUpModal) {
+      setSelectedChainLocal(chain);
+    } else {
+      setSelectedChainLocal(chain);
+      setSelectedChainFromModal(chain);
 
-    if (onSelectChainAndTokenCallback) {
-      setSelectedTokenLocal(null);
-      setSelectedTokenFromModal(null);
-    } else if (onSelectChainCallback) {
-      setSelectedTokenLocal(null);
-      setSelectedTokenFromModal(null);
-      onSelectChainCallback(chain);
-      closeModal();
+      if (onSelectChainAndTokenCallback) {
+        setSelectedTokenLocal(null);
+        setSelectedTokenFromModal(null);
+      } else if (onSelectChainCallback) {
+        setSelectedTokenLocal(null);
+        setSelectedTokenFromModal(null);
+        onSelectChainCallback(chain);
+        closeModal();
+      }
     }
   };
 
@@ -466,13 +563,20 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
     );
   };
 
-  const chainList = SUPPORTED_CHAINS;
+  const chainList = useMemo(() => {
+    if (isTopUpModal) {
+      const evmChains = SUPPORTED_CHAINS.filter(
+        (chain) => chain.id !== CHAIN_ID["solana"],
+      );
+      return [...evmChains, solanaChain];
+    }
+    return SUPPORTED_CHAINS;
+  }, [isTopUpModal]);
 
   const handleWalletConnect = () => {
     setChain(selectedChainLocal);
-    if (activeChain?.id === zetachain.id) {
-      openStep(window?.innerWidth < 768 ? "mobileOptionsA" : "optionsA");
-    } else {
+
+    const handleChainSwitching = () => {
       if (
         (selectedChain === "solana" &&
           activeChain?.id !== CHAIN_ID["solana"]) ||
@@ -480,59 +584,84 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
       ) {
         if (selectedChain === "evm" && activeAccount?.address) {
           const confirmResult = confirm("Your EVM wallet will be disconnected");
-          if (!confirmResult) return;
+          if (!confirmResult) return false;
         } else if (selectedChain === "solana") {
           const confirmResult = confirm(
             "Your Solana wallet will be disconnected",
           );
-          if (!confirmResult) return;
+          if (!confirmResult) return false;
         }
       }
+      return true;
+    };
+
+    if (
+      isTopUpModal ||
+      (selectedChainLocal?.id !== zetachain.id && selectedChainLocal)
+    ) {
+      if (!handleChainSwitching()) return;
       openStep("connectInChosenChain");
+    } else {
+      openStep(window?.innerWidth < 768 ? "mobileOptionsA" : "optionsA");
+    }
+  };
+const isWalletConnected = useMemo(() => {
+  if (!selectedChainLocal) return false;
+
+  const isSolana = selectedChainLocal.name === "Solana";
+
+  if (isSolana) {
+    return !!publicKey;
+  } else {
+    // EVM chains
+    if (isTopUpModal) {
+      return !!activeAccount && activeAccount.walletClientType !== "privy";
+    }
+    return !!activeAccount;
+  }
+}, [selectedChainLocal, publicKey, activeAccount, isTopUpModal]);
+
+  const handleModalClose = () => {
+    if (isTopUpModal) {
+      const shouldGoToConfirm =
+        fundWalletAddress && activeAccount?.walletClientType !== "privy";
+      setFundWalletStep(shouldGoToConfirm ? "confirm" : "setValues");
+    } else {
+      closeModal();
     }
   };
 
-  // PATCH: Always use bitcoinWallet.publicKey for Bitcoin, fallback to provider publicKey
-  const getEffectivePublicKey = () => {
-    if (selectedChainLocal?.id === CHAIN_ID.bitcoin) {
-      if (bitcoinWallet?.publicKey) return bitcoinWallet.publicKey;
-      // Fallback: try to get from provider (window.unisat)
-      if (typeof window !== 'undefined' && window.unisat && window.unisat.getPublicKey) {
-        try {
-          window.unisat.getPublicKey().then((pubKey) => {
-            console.warn('[ChainsModal][PATCH] Bitcoin wallet publicKey was missing/null, fetched from provider:', pubKey);
-          });
-        } catch (e) {
-          console.error('[ChainsModal][PATCH] Failed to fetch publicKey from provider:', e);
-        }
+// PATCH: Always use bitcoinWallet.publicKey for Bitcoin, fallback to provider publicKey
+const getEffectivePublicKey = () => {
+  if (selectedChainLocal?.id === CHAIN_ID.bitcoin) {
+    if (bitcoinWallet?.publicKey) return bitcoinWallet.publicKey;
+    // Fallback: try to get from provider (window.unisat)
+    if (typeof window !== 'undefined' && window.unisat && window.unisat.getPublicKey) {
+      try {
+        window.unisat.getPublicKey().then((pubKey) => {
+          console.warn('[ChainsModal][PATCH] Bitcoin wallet publicKey was missing/null, fetched from provider:', pubKey);
+        });
+      } catch (e) {
+        console.error('[ChainsModal][PATCH] Failed to fetch publicKey from provider:', e);
       }
     }
-    return publicKey;
-  };
-  const effectivePublicKey = getEffectivePublicKey();
-  console.log({ walletAddress, publicKey });
-
-  const isWalletConnected = useMemo(() => {
-    if (!selectedChainLocal) return false;
-
-    if (selectedChainLocal.name === "Solana") {
-      return !!publicKey;
-    } else {
-      return !!activeAccount;
-    }
-  }, [selectedChainLocal, publicKey, activeAccount]);
+  }
+  return publicKey;
+};
+const effectivePublicKey = getEffectivePublicKey();
+console.log({ setWalletAddress, publicKey });
 
   return (
     <Modal
-      isOpen={isOpen}
-      onClose={closeModal}
+      isOpen={isModalOpen}
+      onClose={handleModalClose}
       paddingClass="p-[24px] md:pt-[50px] md:pl-[45px] md:pr-[36px] md:pb-[50px]"
       roundedClass="rounded-[24px]"
       maxWidth="w-full max-w-[328px] md:max-w-[760px]"
       minHeight="min-h-[600px] md:min-h-[714px]"
       customCloseButton={
         <motion.button
-          onClick={closeModal}
+          onClick={handleModalClose}
           className="absolute top-[20px] right-[16px] z-10 rounded-[8px] flex items-center justify-center w-10 h-10 hover:bg-gray-700 transition-colors"
           aria-label="Close"
           whileHover={{ scale: 1.1, rotate: 90 }}
@@ -648,7 +777,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
             transition={{ duration: 0.5, delay: 0.2 }}
           />
 
-          {onSelectChainAndTokenCallback ? (
+          {onSelectChainAndTokenCallback || isTopUpModal ? (
             <motion.div className="flex-1" variants={itemVariants}>
               {!selectedChainLocal ? (
                 <motion.div
@@ -788,6 +917,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
                               onClick={() => handleTokenSelect(token)}
                               onBalanceUpdate={handleBalanceUpdate}
                               index={index}
+                              isTopUpModal={isTopUpModal}
                             />
                           ))}
                         </motion.div>

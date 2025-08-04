@@ -293,13 +293,15 @@ export const useInstructionStepLogic = ({
         Object.keys(activeFeedback).length > 0 ||
         isFirstStepActive) &&
       !isFailedOnConfirmation &&
-      hasNoErrors(activeFeedback)
+      hasNoErrors(activeFeedback) &&
+      !finishedTransaction
     );
   }, [
     isTransactionProcessing,
     activeFeedback,
     isFirstStepActive,
     isFailedOnConfirmation,
+    finishedTransaction,
   ]);
 
   const steps = useMemo(() => {

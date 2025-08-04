@@ -42,6 +42,9 @@ export function useNumberInput({
 
     if (isZeroValue(value)) {
       setInternalValue("");
+      onChange({
+        currentTarget: { value: "" },
+      } as React.ChangeEvent<HTMLInputElement>);
     } else {
       setInternalValue(value);
     }
@@ -68,14 +71,16 @@ export function useNumberInput({
     const inputValue = e.currentTarget.value;
     const newAmount = checkAmount(inputValue, value);
 
+    if (newAmount === "") {
+      onChange(e);
+      setInternalValue(newAmount);
+      return;
+    }
+
     if (!newAmount && newAmount !== "") return;
 
     if (isFocused) {
       setInternalValue(newAmount);
-
-      if (newAmount === "" || newAmount === "0.") {
-        return;
-      }
 
       if (!isNaN(Number(newAmount)) && newAmount !== "") {
         onChange(e);

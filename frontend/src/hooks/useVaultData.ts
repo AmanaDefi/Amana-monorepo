@@ -43,8 +43,7 @@ import {
   convertGraphVaultToVaultData,
   convertGraphVaultToTotalAssets,
 } from "@/utils/graphUtils";
-import { EXCLUDED_VAULTS } from "@/constants";
-import { getRawBlockTransactions } from "viem/zksync";
+import { EXCLUDED_VAULTS, DEFAULT_SORT_CONFIG } from "@/constants";
 import {
   useStableVaultsSortedFromGraph,
   useNonStableVaultsSortedFromGraph,
@@ -53,14 +52,15 @@ import { formatUnits } from "viem";
 import { isStablecoin } from "@/utils/utils";
 import { useTokenPrices } from "@/providers/TokenPriceProvider";
 import { getOnlyTokenSymbol } from "@/utils/utils";
+import { useExternalTVL } from "@/hooks/useExternalTVL";
 
 // Universal token price lookup helper
-const getTokenPrice = (symbol: string, priceContext: any): number => {
+export const getTokenPrice = (symbol: string, priceContext: any): number => {
   if (!priceContext || !symbol) return 0;
-  
+
   // For stablecoins, return 1 USD
   if (isStablecoin(symbol)) return 1;
-  
+
   const normalizedSymbol = symbol.includes('(') ?
     symbol.replace(/\s*\((.*?)\)\s*/, '.$1') : symbol;
 
@@ -97,12 +97,7 @@ export const useVaultData = () => {
     VaultTotalAssetsinToken[]
   >([]);
 
-  const { walletAddress } = useMultiChain();
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const wallet = filteredWallets[0];
+  const { walletAddress, activeEvmWallet: wallet } = useMultiChain();
 
   const stableSetVaultAPYs = useCallback((vaultAPYs: VaultAPY[]) => {
     setVaultAPYs(vaultAPYs);
@@ -136,15 +131,7 @@ export const useVaultData = () => {
     error: subgraphError,
   } = useVaultsFromGraph();
 
-  // Debug: Log vaults with missing or zero subgraph APY
-  if (subgraphData?.vaults) {
-    console.log('[DEBUG] subgraphData.vaults loaded:', subgraphData.vaults.length);
-    subgraphData.vaults.forEach(vault => {
-      if (!vault.apy7d || parseFloat(vault.apy7d) === 0) {
-        console.log('[DEBUG] Subgraph APY missing or zero for vault:', vault.id, vault.name, vault.protocolName);
-      }
-    });
-  }
+
 
   const useGraphData = !subgraphError && subgraphData !== undefined;
 
@@ -185,7 +172,7 @@ export const useVaultData = () => {
 
   // Token prices from context for universal price lookup
   const priceContextMain = useTokenPrices();
-  
+
   // Legacy token prices for APY calculations (memoized)
   const rawCrvTokenPrice = useTokenPriceBySymbol("CRV");
   const rawCvxTokenPrice = useTokenPriceBySymbol("CVX");
@@ -216,11 +203,26 @@ export const useVaultData = () => {
     ],
   );
 
+  // Get vault IDs for external TVL data
+  const vaultIds = useMemo(() => vaults.map(vault => vault.id), [vaults]);
+
+  // Integrate external TVL data
+  const {
+    enhancedTotalAssets,
+    isLoading: externalTVLLoading,
+    error: externalTVLError,
+    refreshTVL: refreshExternalTVL
+  } = useExternalTVL({
+    vaultIds,
+    existingTotalAssets: vaultTotalAssets,
+    enabled: true
+  });
+
   const isDataReady = useMemo(() => {
     if (useGraphData) {
       const hasVaults = vaults.length > 0;
       const hasAPY = shouldUseGraphAPY ? vaultAPYs.length > 0 : true;
-      const hasTVL = shouldUseGraphTVL ? vaultTotalAssets.length > 0 : true;
+      const hasTVL = shouldUseGraphTVL ? enhancedTotalAssets.length > 0 : true;
 
       return !subgraphLoading && hasVaults && hasAPY && hasTVL;
     }
@@ -233,7 +235,7 @@ export const useVaultData = () => {
     shouldUseGraphAPY,
     vaultAPYs.length,
     shouldUseGraphTVL,
-    vaultTotalAssets.length,
+    enhancedTotalAssets.length,
   ]);
 
   // APY calculations (only if not using subgraph and there are vaults)
@@ -302,7 +304,7 @@ export const useVaultData = () => {
     vaults,
     vaultAPYs,
     userVaultBalances,
-    vaultTotalAssets,
+    vaultTotalAssets: enhancedTotalAssets,
     vaultTotalAssetsinToken,
     hasError,
     error: subgraphError,
@@ -315,6 +317,8 @@ export const useVaultData = () => {
       isDataReady,
       finalLoading,
       hasError,
+      externalTVLLoading,
+      externalTVLError,
       dataSource: {
         vaults: useGraphData ? "subgraph" : "static",
         apy: shouldUseGraphAPY ? "subgraph" : "blockchain",
@@ -328,14 +332,9 @@ export const useVaultData = () => {
 export const useVaultDataPaginated = (
   page: number = 1,
   pageSize: number = 10,
-  sortBy: string = "tvl",
-  sortOrder: "asc" | "desc" = "desc",
+  sortBy: string = DEFAULT_SORT_CONFIG.sortBy,
+  sortOrder: "asc" | "desc" = DEFAULT_SORT_CONFIG.sortOrder,
 ) => {
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const wallet = filteredWallets[0];
   const [loading, setLoading] = useState<boolean>(true);
   const [vaultAPYs, setVaultAPYs] = useState<VaultAPY[]>([]);
   const [userVaultBalances, setUserVaultBalances] = useState<
@@ -348,7 +347,7 @@ export const useVaultDataPaginated = (
     VaultTotalAssetsinToken[]
   >([]);
 
-  const { walletAddress } = useMultiChain();
+  const { walletAddress, activeEvmWallet: wallet } = useMultiChain();
 
   // Stable callback functions
   const stableSetVaultAPYs = useCallback((vaultAPYs: VaultAPY[]) => {
@@ -399,7 +398,7 @@ export const useVaultDataPaginated = (
       case "risk":
         return "riskLevel";
       default:
-        return "tvl";
+        return DEFAULT_SORT_CONFIG.sortBy === "apy" ? "apy7d" : "tvl";
     }
   }, [sortBy]);
 
@@ -429,9 +428,9 @@ export const useVaultDataPaginated = (
     isLoading: subgraphLoading,
     error: subgraphError,
   } = useVaultsPaginatedFromGraph(
-    isTVLSort ? 0 : effectiveFirst, 
-    isTVLSort ? 0 : effectiveSkip, 
-    graphSortBy, 
+    isTVLSort ? 0 : effectiveFirst,
+    isTVLSort ? 0 : effectiveSkip,
+    graphSortBy,
     sortOrder
   );
 
@@ -440,7 +439,7 @@ export const useVaultDataPaginated = (
 
   // Token prices from context for universal price lookup
   const priceContext = useTokenPrices();
-  
+
   // Legacy token prices for APY calculations (memoized)
   const rawCrvTokenPrice = useTokenPriceBySymbol("CRV");
   const rawCvxTokenPrice = useTokenPriceBySymbol("CVX");
@@ -549,6 +548,21 @@ export const useVaultDataPaginated = (
     });
   }, [useGraphData, subgraphData]);
 
+  // Get vault IDs for external TVL data
+  const vaultIds = useMemo(() => vaults.map(vault => vault.id), [vaults]);
+
+  // Integrate external TVL data
+  const {
+    enhancedTotalAssets,
+    isLoading: externalTVLLoading,
+    error: externalTVLError,
+    refreshTVL: refreshExternalTVL
+  } = useExternalTVL({
+    vaultIds,
+    existingTotalAssets: vaultTotalAssets,
+    enabled: true
+  });
+
   // Determine if all data is ready
   const isDataReady = useMemo(() => {
     // If using subgraph
@@ -556,7 +570,7 @@ export const useVaultDataPaginated = (
       // Data is ready if request is completed (even if result is empty)
       const dataLoaded = !subgraphLoading && !countLoading;
       const hasAPY = shouldUseGraphAPY ? vaultAPYs.length >= 0 : true;
-      const hasTVL = shouldUseGraphTVL ? vaultTotalAssets.length >= 0 : true;
+      const hasTVL = shouldUseGraphTVL ? enhancedTotalAssets.length >= 0 : true;
 
       return dataLoaded && hasAPY && hasTVL;
     }
@@ -571,7 +585,7 @@ export const useVaultDataPaginated = (
     shouldUseGraphAPY,
     vaultAPYs.length,
     shouldUseGraphTVL,
-    vaultTotalAssets.length,
+    enhancedTotalAssets.length,
   ]);
 
   // APY calculations (only if not using subgraph and there are vaults)
@@ -645,7 +659,7 @@ export const useVaultDataPaginated = (
     vaults,
     vaultAPYs,
     userVaultBalances,
-    vaultTotalAssets,
+    vaultTotalAssets: enhancedTotalAssets,
     vaultTotalAssetsinToken,
     hasError,
     error: subgraphError,
@@ -667,6 +681,8 @@ export const useVaultDataPaginated = (
       isDataReady,
       finalLoading,
       hasError,
+      externalTVLLoading,
+      externalTVLError,
       dataSource: {
         vaults: useGraphData ? "subgraph" : "static",
         apy: shouldUseGraphAPY ? "subgraph" : "blockchain",
@@ -680,16 +696,11 @@ export const useVaultDataWithSearch = (
   searchTerm: string = "",
   page: number = 1,
   pageSize: number = 10,
-  sortBy: string = "tvl",
-  sortOrder: "asc" | "desc" = "desc",
+  sortBy: string = DEFAULT_SORT_CONFIG.sortBy,
+  sortOrder: "asc" | "desc" = DEFAULT_SORT_CONFIG.sortOrder,
   networkFilter: string = "",
   protocolFilter: string = "",
 ) => {
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const wallet = filteredWallets[0];
   const [loading, setLoading] = useState<boolean>(true);
   const [vaultAPYs, setVaultAPYs] = useState<VaultAPY[]>([]);
   const [userVaultBalances, setUserVaultBalances] = useState<
@@ -703,7 +714,7 @@ export const useVaultDataWithSearch = (
   >([]);
   const [timedOut, setTimedOut] = useState(false);
 
-  const { walletAddress } = useMultiChain();
+  const { walletAddress, activeEvmWallet: wallet } = useMultiChain();
 
   // Stable callback functions
   const stableSetVaultAPYs = useCallback((vaultAPYs: VaultAPY[]) => {
@@ -755,7 +766,7 @@ export const useVaultDataWithSearch = (
       case "risk":
         return "riskLevel";
       default:
-        return "tvl";
+        return DEFAULT_SORT_CONFIG.sortBy === "apy" ? "apy7d" : "tvl";
     }
   }, [sortBy]);
 
@@ -1054,7 +1065,7 @@ export const useVaultDataWithSearch = (
 
   // Token prices from context for universal price lookup
   const priceContextWS = useTokenPrices();
-  
+
   // Legacy token prices for calculations and USD normalization
   const rawCrvTokenPriceWS = useTokenPriceBySymbol("CRV");
   const rawCvxTokenPriceWS = useTokenPriceBySymbol("CVX");
@@ -1093,7 +1104,16 @@ export const useVaultDataWithSearch = (
       const hasAPY = shouldUseGraphAPY ? vaultAPYs.length >= 0 : true;
       const hasTVL = shouldUseGraphTVL ? vaultTotalAssets.length >= 0 : true;
 
-      return dataLoaded && hasAPY && hasTVL;
+      // When sorting by APY and not using graph APY, ensure APY calculations are complete
+      let apyCalculationsReady = true;
+      if (sortBy.toLowerCase() === "apy" && !shouldUseGraphAPY && vaults.length > 0) {
+        // Check if we have APY data for all vaults that need it
+        apyCalculationsReady = !vaults.some(
+          (v) => !vaultAPYs.find((a) => a.vaultId === v.id)
+        );
+      }
+
+      return dataLoaded && hasAPY && hasTVL && apyCalculationsReady;
     }
 
     // If not using subgraph - no vaults
@@ -1107,6 +1127,9 @@ export const useVaultDataWithSearch = (
     vaultAPYs.length,
     shouldUseGraphTVL,
     vaultTotalAssets.length,
+    sortBy,
+    vaults.length,
+    vaultAPYs,
   ]);
 
   // APY calculations (only if not using subgraph and there are vaults)
@@ -1216,7 +1239,7 @@ export const useVaultDataWithSearch = (
 
     const stableArr = stableVaultsData2?.vaults || [];
     const nonStableArr = nonStableVaultsData2?.vaults || [];
-    
+
     return mergeSortedVaultsByTVL(stableArr, nonStableArr, tokenPrices, sortOrder);
   }, [shouldUseCustomTVLSort, stableVaultsData2, nonStableVaultsData2, tokenPrices, sortOrder]);
 
@@ -1252,15 +1275,15 @@ export const useVaultDataWithSearch = (
     if (!isTVLSort || shouldUseCustomTVLSort) return undefined;
     if (!subgraphData?.vaults) return undefined;
 
-    const withUSD = subgraphData.vaults.map((v: any) => ({ 
-      v, 
-      usd: convertVaultToUSD(v, tokenPrices) 
+    const withUSD = subgraphData.vaults.map((v: any) => ({
+      v,
+      usd: convertVaultToUSD(v, tokenPrices)
     }));
-    
+
     withUSD.sort((a, b) =>
       sortOrder === "asc" ? a.usd - b.usd : b.usd - a.usd,
     );
-    
+
     return withUSD.map((item) => item.v);
   }, [isTVLSort, shouldUseCustomTVLSort, subgraphData, sortOrder, tokenPrices]);
 
@@ -1276,6 +1299,21 @@ export const useVaultDataWithSearch = (
         .filter((v: any) => !EXCLUDED_VAULTS.includes(v.id))
         .map(convertGraphVaultToVaultData)
       : vaults;
+
+  // Get vault IDs for external TVL data
+  const vaultIds = useMemo(() => vaultsResult.map(vault => vault.id), [vaultsResult]);
+
+  // Integrate external TVL data
+  const {
+    enhancedTotalAssets,
+    isLoading: externalTVLLoading,
+    error: externalTVLError,
+    refreshTVL: refreshExternalTVL
+  } = useExternalTVL({
+    vaultIds,
+    existingTotalAssets: vaultTotalAssets,
+    enabled: true
+  });
 
   // Determine if we still miss APY for some vault (avoid infinite loops)
   const needsAPYUpdate = useMemo(() => {
@@ -1315,7 +1353,7 @@ export const useVaultDataWithSearch = (
     vaults: vaultsResult,
     vaultAPYs,
     userVaultBalances,
-    vaultTotalAssets,
+    vaultTotalAssets: enhancedTotalAssets,
     vaultTotalAssetsinToken,
     hasError,
     error: subgraphError,
@@ -1349,6 +1387,8 @@ export const useVaultDataWithSearch = (
       hasNetworkFilter,
       hasProtocolFilter,
       timedOut,
+      externalTVLLoading,
+      externalTVLError,
       dataSource: {
         vaults: useGraphData ? "subgraph" : "static",
         apy: shouldUseGraphAPY ? "subgraph" : "blockchain",
@@ -1377,8 +1417,8 @@ const convertVaultToUSD = (vault: any, tokenPrices: any): number => {
 };
 
 const mergeSortedVaultsByTVL = (
-  stableVaults: any[], 
-  nonStableVaults: any[], 
+  stableVaults: any[],
+  nonStableVaults: any[],
   tokenPrices: any,
   sortOrder: "asc" | "desc" = "desc"
 ): any[] => {
@@ -1388,7 +1428,7 @@ const mergeSortedVaultsByTVL = (
 
   const result: any[] = [];
   let i = 0, j = 0;
-  const compareFunc = sortOrder === "desc" 
+  const compareFunc = sortOrder === "desc"
     ? (a: number, b: number) => a >= b
     : (a: number, b: number) => a <= b;
 
@@ -1416,7 +1456,7 @@ const createTotalAssetsFromVaults = (vaults: any[]): VaultTotalAssets[] => {
 };
 
 const mergeVaultTotalAssets = (
-  prevAssets: VaultTotalAssets[], 
+  prevAssets: VaultTotalAssets[],
   newAssets: VaultTotalAssets[]
 ): VaultTotalAssets[] => {
   const existingIds = new Set(newAssets.map(a => a.vaultId));
@@ -1439,7 +1479,7 @@ const useTVLSorting = (
     isLoading: stableLoading,
     error: stableError,
   } = useStableVaultsSortedFromGraph();
-  
+
   const {
     data: nonStableVaultsData,
     isLoading: nonStableLoading,

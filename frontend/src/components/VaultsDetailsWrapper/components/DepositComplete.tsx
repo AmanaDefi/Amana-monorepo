@@ -86,6 +86,11 @@ const DepositComplete = ({
 
   const firstCardContent = getFirstCardContent();
 
+  const formatAmount = (amount: string) =>
+    parseFloat(amount)
+      .toFixed(5)
+      .replace(/\.?0+$/, "");
+
   return (
     <div className="flex flex-col gap-6 font-gotham">
       <div className="rounded-[16px] before-gradient-border px-4 py-8 bg-[#14171F]">
@@ -105,48 +110,71 @@ const DepositComplete = ({
                 <>
                   <div className="absolute top-0 left-0">
                     <img
-                      src={selectedToken?.imgURL || "/USDC.png"}
-                      alt={inputTokenSymbol}
+                      src={
+                        isDeposit
+                          ? selectedToken?.imgURL || "/USDC.png"
+                          : vaultData.inputToken.imgURL || "/USDC.png"
+                      }
+                      alt={isDeposit ? inputTokenSymbol : outputTokenSymbol}
                       className="w-[30px] h-[30px] md:w-10 md:h-10 object-cover"
                     />
                   </div>
                   <div className="absolute bottom-0 right-0">
                     <img
-                      src={vaultData.inputToken.imgURL || "/USDC.png"}
-                      alt={outputTokenSymbol}
+                      src={
+                        isDeposit
+                          ? vaultData.inputToken.imgURL || "/USDC.png"
+                          : selectedToken?.imgURL || "/USDC.png"
+                      }
+                      alt={isDeposit ? outputTokenSymbol : inputTokenSymbol}
                       className="w-[30px] h-[30px] md:w-10 md:h-10 object-cover"
                     />
                   </div>
                 </>
               ) : (
                 <span className="text-white font-bold text-lg">
-                  {inputTokenSymbol.slice(0, 2)}
+                  {isDeposit
+                    ? inputTokenSymbol.slice(0, 2)
+                    : outputTokenSymbol.slice(0, 2)}
                 </span>
               )}
             </div>
             <div className="flex flex-col font-bold text-sm justify-between">
               {getTransactionLabel()}
               <div className="font-normal flex flex-row gap-1 items-center text-xs md:text-sm flex-wrap">
-                <p>{inputTokenSymbol}</p>
+                <p>{isDeposit ? inputTokenSymbol : outputTokenSymbol}</p>
                 <ArrowRightIcon width={12} height={10} />
-                <p>{outputTokenSymbol}</p>
+                <p>{isDeposit ? outputTokenSymbol : inputTokenSymbol}</p>
               </div>
             </div>
           </div>
           {isSuccess && (
             <div className="flex flex-col items-end justify-between text-xs md:text-base font-regular md:font-medium">
-              <p className="text-white-400">
-                -{depositedInputAmount} {inputTokenSymbol}
-              </p>
-              <p className="text-white-400">
-                +{depositedOutputAmount} {outputTokenSymbol}
-              </p>
+              {isDeposit ? (
+                <>
+                  <p className="text-white-400">
+                    -{formatAmount(depositedInputAmount)} {inputTokenSymbol}
+                  </p>
+                  <p className="text-white-400">
+                    +{depositedOutputAmount} {outputTokenSymbol}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-white-400">
+                    -{formatAmount(depositedInputAmount)} {outputTokenSymbol}
+                  </p>
+                  <p className="text-white-400">
+                    +{depositedOutputAmount} {inputTokenSymbol}
+                  </p>
+                </>
+              )}
             </div>
           )}
         </div>
       </div>
       <div className="flex flex-row gap-2 md:gap-[47px]">
-        <div className="py-4 md:py-[21px] px-4 md:px-[20px] shadow-xl font-gotham before-gradient-border bg-[#14171F] min-h-[171px] md:min-h-[222px] w-full  md:max-w-[240px] xl:min-w-[240px] rounded-[16px] flex flex-col justify-between">
+        <div className="py-4 md:py-[21px] px-4 md:px-[20px] shadow-xl font-gotham before-gradient-border bg-[#14171F] min-h-[171px] md:min-h-[222px] w-full md:min-w-[240px] rounded-[16px] flex flex-col justify-between">
           <div>
             <div className="flex flex-row gap-4 text-sm md:text-lg font-bold items-center">
               <EarnIcon
@@ -169,7 +197,7 @@ const DepositComplete = ({
             {firstCardContent.buttonText}
           </Button>
         </div>
-        <div className="py-4 md:py-[23px] px-4 md:px-[15px] shadow-xl font-gotham before-gradient-border bg-[#14171F] min-h-[171px] md:min-h-[222px] w-full md:max-w-[240px] xl:min-w-[240px] rounded-[16px] flex flex-col justify-between">
+        <div className="py-4 md:py-[23px] px-4 md:px-[15px] shadow-xl font-gotham before-gradient-border bg-[#14171F] min-h-[171px] md:min-h-[222px] w-full md:min-w-[240px] rounded-[16px] flex flex-col justify-between">
           <div>
             <div className="flex flex-row gap-4 text-sm md:text-lg font-bold items-center">
               <DiscordLogo

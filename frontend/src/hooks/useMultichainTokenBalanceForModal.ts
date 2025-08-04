@@ -18,16 +18,15 @@ const DEFAULT_BALANCE: Balance = { value: 0n, formatted: "0" };
 export const useMultichainTokenBalanceForModal = (
   token: Token | undefined,
   targetChain: Chain | undefined,
+  customWalletAddress?: string,
 ) => {
   const currentToken = useMemo(() => token, [token]);
   const currentChain = useMemo(() => targetChain, [targetChain]);
-  const { wallets } = useWallets();
-  const filteredWallets = wallets.filter(
-    (wallet) => wallet.meta.id !== "app.phantom",
-  );
-  const activeWallet = filteredWallets[0];
 
-  const { walletAddress, selectedChain } = useMultiChain();
+  const { walletAddress: defaultWalletAddress, selectedChain } =
+    useMultiChain();
+
+  const walletAddress = customWalletAddress || defaultWalletAddress;
 
   const { balance: solanaBalance, refetch: refetchSolBalance } =
     useSolanaBalance();
@@ -41,13 +40,15 @@ export const useMultichainTokenBalanceForModal = (
   const MAX_RETRIES = 3;
 
   // Auto-set Solana balance for Solana chains
-  useEffect(() => {
-    if (selectedChain === "solana") {
-      setBalance(solanaBalance);
-    }
-  }, [solanaBalance, selectedChain]);
+ useEffect(() => {
+   if (currentChain?.name === "Solana" && currentToken?.isNative) {
+     setBalance(solanaBalance);
+   }
+ }, [currentChain?.name, currentToken?.isNative, solanaBalance.formatted]);
 
   const internalFetchBalance = useCallback(async () => {
+    console.log("internalFetchBalance");
+
     // Early validation
     if (!currentToken || !walletAddress || !currentChain?.id) {
       setBalance(DEFAULT_BALANCE);
@@ -58,44 +59,47 @@ export const useMultichainTokenBalanceForModal = (
     try {
       setIsLoading(true);
       setError(null);
+      
 
       // Handle native tokens
-      if (currentToken.isNative) {
-        if (selectedChain === "evm") {
-          try {
-            const { getPublicClient } = await import("@/utils/getPublicClient");
-            const { formatEther } = await import("viem");
+     if (
+       currentToken.isNative ||
+       (currentToken.symbol === "ZETA" &&
+         (currentChain?.id === 7000 || currentChain?.id === 7001))
+     ) {
+       if (currentChain.name === "Solana") {
+         refetchSolBalance();
+       } else {
+         try {
+           const { getPublicClient } = await import("@/utils/getPublicClient");
+           const { formatEther } = await import("viem");
 
-            const publicClient = getPublicClient(
-              currentChain.id,
-            );
+           const publicClient = getPublicClient(currentChain.id);
 
-            if (publicClient) {
-              const nativeBalance = await publicClient.getBalance({
-                address: walletAddress as `0x${string}`,
-              });
+           if (publicClient) {
+             const nativeBalance = await publicClient.getBalance({
+               address: walletAddress as `0x${string}`,
+             });
 
-              const formattedBalance = formatEther(nativeBalance);
+             const formattedBalance = formatEther(nativeBalance);
 
-              setBalance({
-                value: nativeBalance,
-                formatted: formattedBalance,
-              });
-            } else {
-              setBalance(DEFAULT_BALANCE);
-            }
-          } catch (error) {
-            console.error("Error fetching EVM native balance:", error);
-            setBalance(DEFAULT_BALANCE);
-          }
-        } else if (selectedChain === "solana") {
-          refetchSolBalance();
-        }
+             setBalance({
+               value: nativeBalance,
+               formatted: formattedBalance,
+             });
+           } else {
+             setBalance(DEFAULT_BALANCE);
+           }
+         } catch (error) {
+           console.error("Error fetching EVM native balance:", error);
+           setBalance(DEFAULT_BALANCE);
+         }
+       }
 
-        setIsLoading(false);
-        retryCountRef.current = 0;
-        return;
-      }
+       setIsLoading(false);
+       retryCountRef.current = 0;
+       return;
+     }
 
       // Handle non-native tokens
       let newBalance: Balance | null = null;
@@ -145,7 +149,6 @@ export const useMultichainTokenBalanceForModal = (
               walletAddress,
               currentToken.address,
               currentChain,
-              activeWallet,
             );
 
             newBalance = {
@@ -175,16 +178,10 @@ export const useMultichainTokenBalanceForModal = (
       setIsLoading(false);
       setError(error instanceof Error ? error.message : "Unknown error");
     }
-  }, [
-    currentToken,
-    walletAddress,
-    currentChain,
-    activeWallet,
-    selectedChain,
-    refetchSolBalance,
-  ]);
+  }, [currentToken, walletAddress, currentChain, refetchSolBalance]);
 
   useEffect(() => {
+    console.log("set balance use effect");
     const currentChainId = currentChain?.id;
     const hasChainSwitched =
       prevChainIdRef.current !== undefined &&
@@ -205,6 +202,7 @@ export const useMultichainTokenBalanceForModal = (
   }, [currentToken, walletAddress, currentChain, internalFetchBalance]);
 
   const manualRefetchBalance = useCallback(() => {
+    console.log("manualRefetchBalance");
     if (currentToken && walletAddress && currentChain?.id) {
       retryCountRef.current = 0;
       internalFetchBalance();
