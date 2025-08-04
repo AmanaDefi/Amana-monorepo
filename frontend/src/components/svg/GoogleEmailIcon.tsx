@@ -11,7 +11,7 @@ const GoogleEmailIcon: React.FC<React.SVGProps<SVGSVGElement>> = ({
     className={className}
     {...props}
   >
-    <g clip-path="url(#clip0_1755_14604)">
+    <g clipPath="url(#clip0_1755_14604)">
       <path
         d="M4.3199 13.9309V6.75613L2.04402 4.72047L0.00317383 3.59082V12.6648C0.00317383 13.3654 0.583739 13.9309 1.29822 13.9309H4.3199Z"
         fill="#4285F4"

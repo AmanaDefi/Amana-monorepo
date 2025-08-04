@@ -50,7 +50,7 @@ export default function SlippageSettingsDropdown({
         dropdownRef.current &&
         !dropdownRef.current.contains(e.target as Node)
       ) {
-        if (customInputValue === "" && !isAuto) {
+        if (customInputValue === "" && slippageValue === 0.5) {
           toggleAuto(vaultId);
         }
         setIsOpen(false);
@@ -63,7 +63,7 @@ export default function SlippageSettingsDropdown({
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isOpen]);
+  }, [isOpen, slippageValue, customInputValue, toggleAuto, vaultId]);
 
   const handlePresetSelect = (value: number) => {
     if (CheckTheTxIsInProgress(vaultId)) return;

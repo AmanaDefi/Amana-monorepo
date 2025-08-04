@@ -125,19 +125,6 @@ const ProfitChart: React.FC<ProfitChartProps> = ({
     tap: { scale: 0.95 },
   };
 
-  const lineVariants: Variants = {
-    hidden: { scaleY: 0, opacity: 0 },
-    visible: (i: number) => ({
-      scaleY: 1,
-      opacity: 1,
-      transition: {
-        delay: i * 0.1,
-        duration: 0.6,
-        ease: [0.25, 0.1, 0.25, 1],
-      },
-    }),
-  };
-
   const comingSoonVariants: Variants = {
     hidden: { opacity: 0, scale: 0.8 },
     visible: {
@@ -225,23 +212,18 @@ const ProfitChart: React.FC<ProfitChartProps> = ({
           </motion.div>
         </AnimatePresence>
 
+        {/* Fixed animated lines with Tailwind */}
         <div className="absolute inset-0 pointer-events-none flex justify-between items-end">
           {[50, 70, 80, 90, 100].map((heightPercent, i) => (
-            <motion.div
+            <div
               key={i}
-              className="relative w-[1px]"
-              style={{ height: `${heightPercent}%` }}
-              variants={lineVariants}
-              custom={i}
-            >
-              <div
-                className="absolute bottom-0 left-0 w-full h-full"
-                style={{
-                  background:
-                    "linear-gradient(to top, rgba(255,255,255), rgba(255,255,255,0.15) 70%, rgba(255,255,255,0))",
-                }}
-              />
-            </motion.div>
+              className="w-[1px] bg-gradient-to-t from-white via-white/15 to-transparent opacity-0 animate-fade-in-up"
+              style={{
+                height: `${heightPercent}%`,
+                animationDelay: `${i * 100}ms`,
+                animationFillMode: "forwards",
+              }}
+            />
           ))}
         </div>
       </motion.div>
@@ -269,6 +251,25 @@ const ProfitChart: React.FC<ProfitChartProps> = ({
           </motion.button>
         ))}
       </motion.div>
+
+      <style jsx>{`
+        @keyframes fade-in-up {
+          from {
+            opacity: 0;
+            transform: scaleY(0);
+            transform-origin: bottom;
+          }
+          to {
+            opacity: 1;
+            transform: scaleY(1);
+            transform-origin: bottom;
+          }
+        }
+
+        .animate-fade-in-up {
+          animation: fade-in-up 0.6s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+        }
+      `}</style>
     </motion.div>
   );
 };

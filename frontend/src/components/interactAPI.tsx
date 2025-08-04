@@ -32,7 +32,7 @@ import Link from "next/link";
 import { useWallet, WalletContextState } from "@solana/wallet-adapter-react";
 import { trackEvent } from "@/utils/trackEvent";
 import Blockpi from "@/service/blockpi";
-import { showWarningToast } from "@/toasts";
+import { showErrorToast, showWarningToast } from "@/toasts";
 import {
   CheckTheTxIsInProgress,
   getLocalStorageObject,
@@ -212,6 +212,14 @@ const handleDepositTransaction = async (
             ),
         });
       }
+      if (
+        error?.message?.toLowerCase().includes(
+          "wallet timeout",
+        ) &&
+        activeAccount.walletClientType !== "privy"
+      ) {
+        showErrorToast("It looks like the confirmation request in your wallet has timed out. You can still approve it, but our app won't be able to track its progress from here.");
+      }
     } catch (analyticsError) {}
 
     return false;
@@ -310,7 +318,7 @@ const handleWithdrawTransaction = async (
     }
 
     return true;
-  } catch (error) {
+  } catch (error: any) {
     try {
       trackEvent("Withdraw Failed", {
         vault: vaultData.id.toString(),
@@ -321,6 +329,15 @@ const handleWithdrawTransaction = async (
         "📊 [ANALYTICS] Failed to track withdraw failure event:",
         analyticsError,
       );
+    }
+
+    if (
+      error?.message?.toLowerCase().includes(
+        "wallet timeout",
+      ) &&
+      activeAccount.walletClientType !== "privy"
+    ) {
+      showErrorToast("It looks like the confirmation request in your wallet has timed out. You can still approve it, but our app won't be able to track its progress from here.");
     }
 
     return false;

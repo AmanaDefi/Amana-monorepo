@@ -439,3 +439,34 @@ dataSources:
         - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
           handler: handleWithdrawnLegacy
       file: ./src/mapping.ts   
+
+  - kind: ethereum
+    name: Compound_Base_Eth_Vault
+    network: zetachain
+    source:
+      address: "0xe256F20037aa74CC213e532D49FcB932A5D764D3"
+      abi: AmanaVault
+      startBlock: 9741969
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Vault
+      abis:
+        - name: AmanaVault
+          file: ./abis/AmanaVault.json
+      eventHandlers:
+        - event: VaultInitialized(uint8,uint256)
+          handler: handleVaultInitialized
+        - event: StrategyUpdated(indexed address)
+          handler: handleStrategyUpdated
+        - event: Deposited(indexed address,uint256,uint256,indexed uint256)
+          handler: handleDeposited
+        - event: Withdrawn(indexed address,uint256,uint256,indexed uint256)
+          handler: handleWithdrawn
+        - event: Deposited(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleDepositedLegacy
+        - event: Withdrawn(indexed address,uint256,uint256,indexed bytes32)
+          handler: handleWithdrawnLegacy
+      file: ./src/mapping.ts 

@@ -384,6 +384,7 @@ export const calculateDepositOutput = async (
 
   // Step 3: Calculate shares and output amount
   const sharesAmount = await getSharesFromStrategyDeposit(amountAfterFee, vaultData, activeWallet);
+  console.log("sharesAmount", sharesAmount);
   const outputAmount = await getAssetsFromShares(parseUnits(sharesAmount, vaultData.inputToken.decimals), vaultData, activeWallet);
 
   // Step 4: Calculate deposit slippage (in vault asset)

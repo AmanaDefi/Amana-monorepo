@@ -49,15 +49,18 @@ const LoadingRow = () => (
       duration: 0.5,
       repeat: Infinity,
       repeatType: "reverse",
-      type: "spring" as const,
-      stiffness: 200,
+      ease: "easeInOut",
     }}
   >
     <div className="flex items-center justify-start gap-1 md:gap-2">
       <motion.div
         className="h-3 w-3 md:h-6 md:w-6 bg-gradient-to-r from-gray-700 to-gray-600 rounded"
         animate={{ opacity: [0.5, 1, 0.5] }}
-        transition={{ duration: 1.5, repeat: Infinity, type: "spring" }}
+        transition={{
+          duration: 1.5,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
       />
       <motion.div
         className="w-4 h-4 md:w-8 md:h-8 rounded-full bg-gradient-to-r from-gray-700 to-gray-600"
@@ -66,7 +69,7 @@ const LoadingRow = () => (
           duration: 1.5,
           repeat: Infinity,
           delay: 0.1,
-          type: "spring" as const,
+          ease: "easeInOut", 
         }}
       />
       <motion.div
@@ -76,7 +79,7 @@ const LoadingRow = () => (
           duration: 1.5,
           repeat: Infinity,
           delay: 0.2,
-          type: "spring" as const,
+          ease: "easeInOut", 
         }}
       />
     </div>
@@ -88,7 +91,7 @@ const LoadingRow = () => (
           duration: 1.5,
           repeat: Infinity,
           delay: 0.3,
-          type: "spring" as const,
+          ease: "easeInOut", 
         }}
       />
     </div>
@@ -100,7 +103,7 @@ const LoadingRow = () => (
           duration: 1.5,
           repeat: Infinity,
           delay: 0.4,
-          type: "spring" as const,
+          ease: "easeInOut", 
         }}
       />
       <motion.div
@@ -110,7 +113,7 @@ const LoadingRow = () => (
           duration: 1.5,
           repeat: Infinity,
           delay: 0.5,
-          type: "spring" as const,
+          ease: "easeInOut", 
         }}
       />
     </div>

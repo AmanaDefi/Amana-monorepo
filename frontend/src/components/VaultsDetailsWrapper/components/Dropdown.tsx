@@ -74,13 +74,13 @@ const Dropdown: FC<Props> = ({
       <AnimatePresence initial={false}>
         {isOpen && (
           <motion.div
-            className="md:hidden overflow-hidden"
+            className="md:hidden"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1, marginTop: 16 }}
             exit={{ height: 0, opacity: 0, marginTop: 0 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
           >
-            <div className="bg-transparent min-h-[180px] rounded-none p-0 md:p-4 max-h-[300px] overflow-y-auto">
+            <div className="bg-transparent min-h-[180px] rounded-none p-0 md:p-4 max-h-[250px] overflow-y-auto">
               {children}
             </div>
           </motion.div>
@@ -90,7 +90,7 @@ const Dropdown: FC<Props> = ({
       <AnimatePresence initial={false}>
         {isOpen && (
           <motion.div
-            className="hidden md:block overflow-hidden"
+            className="hidden md:block"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1, marginTop: 24 }}
             exit={{ height: 0, opacity: 0, marginTop: 0 }}

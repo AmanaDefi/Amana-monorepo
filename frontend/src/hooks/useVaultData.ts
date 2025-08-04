@@ -52,6 +52,7 @@ import { formatUnits } from "viem";
 import { isStablecoin } from "@/utils/utils";
 import { useTokenPrices } from "@/providers/TokenPriceProvider";
 import { getOnlyTokenSymbol } from "@/utils/utils";
+import { useExternalTVL } from "@/hooks/useExternalTVL";
 
 // Universal token price lookup helper
 export const getTokenPrice = (symbol: string, priceContext: any): number => {
@@ -130,15 +131,7 @@ export const useVaultData = () => {
     error: subgraphError,
   } = useVaultsFromGraph();
 
-  // Debug: Log vaults with missing or zero subgraph APY
-  if (subgraphData?.vaults) {
-    console.log('[DEBUG] subgraphData.vaults loaded:', subgraphData.vaults.length);
-    subgraphData.vaults.forEach(vault => {
-      if (!vault.apy7d || parseFloat(vault.apy7d) === 0) {
-        console.log('[DEBUG] Subgraph APY missing or zero for vault:', vault.id, vault.name, vault.protocolName);
-      }
-    });
-  }
+
 
   const useGraphData = !subgraphError && subgraphData !== undefined;
 
@@ -210,11 +203,26 @@ export const useVaultData = () => {
     ],
   );
 
+  // Get vault IDs for external TVL data
+  const vaultIds = useMemo(() => vaults.map(vault => vault.id), [vaults]);
+
+  // Integrate external TVL data
+  const {
+    enhancedTotalAssets,
+    isLoading: externalTVLLoading,
+    error: externalTVLError,
+    refreshTVL: refreshExternalTVL
+  } = useExternalTVL({
+    vaultIds,
+    existingTotalAssets: vaultTotalAssets,
+    enabled: true
+  });
+
   const isDataReady = useMemo(() => {
     if (useGraphData) {
       const hasVaults = vaults.length > 0;
       const hasAPY = shouldUseGraphAPY ? vaultAPYs.length > 0 : true;
-      const hasTVL = shouldUseGraphTVL ? vaultTotalAssets.length > 0 : true;
+      const hasTVL = shouldUseGraphTVL ? enhancedTotalAssets.length > 0 : true;
 
       return !subgraphLoading && hasVaults && hasAPY && hasTVL;
     }
@@ -227,7 +235,7 @@ export const useVaultData = () => {
     shouldUseGraphAPY,
     vaultAPYs.length,
     shouldUseGraphTVL,
-    vaultTotalAssets.length,
+    enhancedTotalAssets.length,
   ]);
 
   // APY calculations (only if not using subgraph and there are vaults)
@@ -296,7 +304,7 @@ export const useVaultData = () => {
     vaults,
     vaultAPYs,
     userVaultBalances,
-    vaultTotalAssets,
+    vaultTotalAssets: enhancedTotalAssets,
     vaultTotalAssetsinToken,
     hasError,
     error: subgraphError,
@@ -309,6 +317,8 @@ export const useVaultData = () => {
       isDataReady,
       finalLoading,
       hasError,
+      externalTVLLoading,
+      externalTVLError,
       dataSource: {
         vaults: useGraphData ? "subgraph" : "static",
         apy: shouldUseGraphAPY ? "subgraph" : "blockchain",
@@ -538,6 +548,21 @@ export const useVaultDataPaginated = (
     });
   }, [useGraphData, subgraphData]);
 
+  // Get vault IDs for external TVL data
+  const vaultIds = useMemo(() => vaults.map(vault => vault.id), [vaults]);
+
+  // Integrate external TVL data
+  const {
+    enhancedTotalAssets,
+    isLoading: externalTVLLoading,
+    error: externalTVLError,
+    refreshTVL: refreshExternalTVL
+  } = useExternalTVL({
+    vaultIds,
+    existingTotalAssets: vaultTotalAssets,
+    enabled: true
+  });
+
   // Determine if all data is ready
   const isDataReady = useMemo(() => {
     // If using subgraph
@@ -545,7 +570,7 @@ export const useVaultDataPaginated = (
       // Data is ready if request is completed (even if result is empty)
       const dataLoaded = !subgraphLoading && !countLoading;
       const hasAPY = shouldUseGraphAPY ? vaultAPYs.length >= 0 : true;
-      const hasTVL = shouldUseGraphTVL ? vaultTotalAssets.length >= 0 : true;
+      const hasTVL = shouldUseGraphTVL ? enhancedTotalAssets.length >= 0 : true;
 
       return dataLoaded && hasAPY && hasTVL;
     }
@@ -560,7 +585,7 @@ export const useVaultDataPaginated = (
     shouldUseGraphAPY,
     vaultAPYs.length,
     shouldUseGraphTVL,
-    vaultTotalAssets.length,
+    enhancedTotalAssets.length,
   ]);
 
   // APY calculations (only if not using subgraph and there are vaults)
@@ -634,7 +659,7 @@ export const useVaultDataPaginated = (
     vaults,
     vaultAPYs,
     userVaultBalances,
-    vaultTotalAssets,
+    vaultTotalAssets: enhancedTotalAssets,
     vaultTotalAssetsinToken,
     hasError,
     error: subgraphError,
@@ -656,6 +681,8 @@ export const useVaultDataPaginated = (
       isDataReady,
       finalLoading,
       hasError,
+      externalTVLLoading,
+      externalTVLError,
       dataSource: {
         vaults: useGraphData ? "subgraph" : "static",
         apy: shouldUseGraphAPY ? "subgraph" : "blockchain",
@@ -1273,6 +1300,21 @@ export const useVaultDataWithSearch = (
         .map(convertGraphVaultToVaultData)
       : vaults;
 
+  // Get vault IDs for external TVL data
+  const vaultIds = useMemo(() => vaultsResult.map(vault => vault.id), [vaultsResult]);
+
+  // Integrate external TVL data
+  const {
+    enhancedTotalAssets,
+    isLoading: externalTVLLoading,
+    error: externalTVLError,
+    refreshTVL: refreshExternalTVL
+  } = useExternalTVL({
+    vaultIds,
+    existingTotalAssets: vaultTotalAssets,
+    enabled: true
+  });
+
   // Determine if we still miss APY for some vault (avoid infinite loops)
   const needsAPYUpdate = useMemo(() => {
     if (vaultsResult.length === 0) return false;
@@ -1311,7 +1353,7 @@ export const useVaultDataWithSearch = (
     vaults: vaultsResult,
     vaultAPYs,
     userVaultBalances,
-    vaultTotalAssets,
+    vaultTotalAssets: enhancedTotalAssets,
     vaultTotalAssetsinToken,
     hasError,
     error: subgraphError,
@@ -1345,6 +1387,8 @@ export const useVaultDataWithSearch = (
       hasNetworkFilter,
       hasProtocolFilter,
       timedOut,
+      externalTVLLoading,
+      externalTVLError,
       dataSource: {
         vaults: useGraphData ? "subgraph" : "static",
         apy: shouldUseGraphAPY ? "subgraph" : "blockchain",
