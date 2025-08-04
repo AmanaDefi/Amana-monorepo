@@ -564,3 +564,10 @@ export function isAegisStrategy(name: string): boolean {
 export function isBalancerStrategy(name: string): boolean {
   return name.toLowerCase().includes("balancer");
 }
+
+export function isCompoundStrategy(name: string): boolean {
+  return [
+    "CompoundEthStrategy",
+    "ERC20_Compound_Strategy"
+  ].includes(name);
+}

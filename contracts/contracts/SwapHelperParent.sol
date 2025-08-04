@@ -539,7 +539,7 @@ abstract contract SwapHelperParent is
                     ISwapRouter.ExactInputParams({
                         path: encodedPath,
                         recipient: receiver,
-                        deadline: block.timestamp + maxDeadline,
+                        // deadline: block.timestamp + maxDeadline,
                         amountIn: amount,
                         amountOutMinimum: minimumOut
                     })
@@ -617,7 +617,7 @@ abstract contract SwapHelperParent is
                     ISwapRouter.ExactOutputParams({
                         path: encodedPath,
                         recipient: receiver,
-                        deadline: block.timestamp,
+                        // deadline: block.timestamp,
                         amountOut: amountOut,
                         amountInMaximum: maxAmountIn
                     })

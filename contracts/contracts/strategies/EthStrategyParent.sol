@@ -59,9 +59,11 @@ abstract contract EthStrategyParent is StrategyParent {
         if (IStrategy(txn.newStrategy).amanaVault() != amanaVault) {
             revert InvalidAmanaVault();
         }
+        harvest();
+        
         uint256 amountWithdrawn = _withdrawFundsFromYieldSource(
-            1e18,
-            txn.assetAmount
+            totalUnderlyingAssets(),
+            txn.minimumOut
         );
 
         IStrategy(txn.newStrategy).depositFromOldStrategy{

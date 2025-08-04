@@ -413,6 +413,36 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
     };
   }
 
+  // Compound Eth Vault -> Base
+  if (addr == "0xe256f20037aa74cc213e532d49fcb932a5d764d3") {
+    return {
+      type: "Lending Pool",
+      name: "Eth",
+      description: "Supplying ETH to a Compound lending pool allows users to earn interest by providing liquidity to borrowers. The pool utilizes an algorithmic interest rate model to optimize capital efficiency while enabling seamless borrowing. Risks include smart contract vulnerabilities, fluctuating interest rates, potential liquidity shortages, and governance decisions that may impact collateral requirements or yield dynamics.",
+      imgURL: "/base.png",
+      depositFeePaidFromGasTank: true,
+      assetSymbol: "ETH.BASE",
+      assetDecimals: 18,
+      assetImgURL: "/ETH.png",
+      assetPrice: BigDecimal.fromString("1.0"),
+      strategyNetwork: "Base",
+      strategyChainId: 8453,
+      protocolName: "Compound",
+      protocolImgURL: "/compound.png",
+      protocolDescription: "Compound is a decentralized lending and borrowing protocol that enables users to supply assets and earn interest while allowing others to borrow against collateral. It features algorithmically adjusted interest rates based on supply and demand, ensuring efficient capital utilization. Users benefit from permissionless access and automated yield accrual. Risks include smart contract vulnerabilities, liquidation risks, and governance decisions that may impact protocol parameters.",
+      networkDescription: "Base is an Ethereum Layer 2 scaling solution designed for fast, low-cost transactions while maintaining security and EVM compatibility. Built on Optimistic Rollup technology, it reduces gas fees and increases transaction throughput, making it an efficient platform for deploying dApps while benefiting from Ethereum's decentralized security.",
+      riskLevel: 2,
+      rewardsContractAddress: "0x123964802e6ABabBE1Bc9547D72Ef1B69B00A6b1",
+      protocolPoints: 0,
+      protocolPointsDescription: null,
+      cooldownPeriod: 0,
+      minDeposit: 1,
+      maxWithdraw: 1000000,
+      outputTokenSymbol: "cBaseETH",
+      outputTokenImage: "/compound.png",
+    };
+  }
+
   // Default fallback
   return {
     type: "Unknown",

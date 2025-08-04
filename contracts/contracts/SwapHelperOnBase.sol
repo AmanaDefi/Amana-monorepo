@@ -18,6 +18,7 @@ contract SwapHelperOnBase is SwapHelperParent {
     address constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
     address constant axlOP = 0x994ac01750047B9d35431a7Ae4Ed312ee955E030;
     address constant yUSD = 0x4772D2e014F9fC3a820C444e3313968e9a5C8121;
+    address constant COMP = 0x9e1028F5F1D5eDE59748FFceE5532509976840E0;
 
     bytes32 constant wellUsdPriceFeedId =
         0x3cf6bab8bf8041dc8ee2a3edebe16b5f9f4ff3cce46006aeb15c885ba4779d0b;
@@ -27,6 +28,8 @@ contract SwapHelperOnBase is SwapHelperParent {
         0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace;
     bytes32 constant opUsdPriceFeedId =
         0x385f64d993f7b77d8182ed5003d97c60aa3361f3cecfe711544d2d59165e9bdf;
+    bytes32 constant compUsdPriceFeedId =
+        0x4a8e42861cabc5ecb50996f92e7cfa2bce3fd0a2423b0c44c9b423fb2bd25478;
 
     uint24 constant V3_FEE_TIER_LOW = 500;
     uint24 constant V3_FEE_TIER_HIGH = 3000;
@@ -68,6 +71,10 @@ contract SwapHelperOnBase is SwapHelperParent {
             return morphoUsdPriceFeedId;
         } else if (token == axlOP) {
             return opUsdPriceFeedId;
+        } else if (token == WETH_ADDRESS) {
+            return ethUsdPriceFeedId;
+        } else if (token == COMP) {
+            return compUsdPriceFeedId;
         } else {
             return bytes32(0); // Return zero bytes if no price feed exists
         }
@@ -244,6 +251,58 @@ contract SwapHelperOnBase is SwapHelperParent {
             );
         amountOut = amounts[amounts.length - 1];
         return amountOut;
+    }
+
+    function swapViaUniswap(
+        address inputToken,
+        uint256 amount,
+        address outputToken,
+        uint16 slippageBps,
+        address receiver,
+        uint256 maxDeadline,
+        bytes calldata
+    ) external returns (uint256 amountOut) {
+        require(
+            IERC20(inputToken).balanceOf(address(this)) >= amount,
+            "Insufficient balance"
+        );
+        uint256 minimumOut = calculateMinAmountOut(
+            inputToken,
+            outputToken,
+            amount,
+            slippageBps
+        );
+        (address[] memory path, uint24[] memory feeTiers, bytes memory encodedPath) = getPathV3(inputToken, outputToken, UNISWAP_V3_FACTORY);
+        
+        if (encodedPath.length > 0) {
+            IERC20(inputToken).approve(UNISWAP_V3_ROUTER, amount);
+            ISwapRouter.ExactInputParams memory params = ISwapRouter
+                .ExactInputParams({
+                    path: encodedPath,
+                    recipient: receiver,
+                    // deadline: block.timestamp + maxDeadline,
+                    amountIn: amount,
+                    amountOutMinimum: minimumOut
+                });
+            amountOut = ISwapRouter(UNISWAP_V3_ROUTER).exactInput(params);
+        } else {
+             // Uniswap V2 Swap
+            path = getPathV2(inputToken, outputToken, UNISWAP_V2_FACTORY);
+            if (path.length < 2) return 0;
+
+            IERC20(inputToken).approve(UNISWAP_V2_ROUTER, amount);
+
+            uint256[] memory amounts = IUniswapV2Router02(UNISWAP_V2_ROUTER)
+                .swapExactTokensForTokens(
+                    amount,
+                    minimumOut,
+                    path,
+                    receiver,
+                    block.timestamp + maxDeadline
+                );
+
+            return amounts[amounts.length - 1];
+        }
     }
 
     function swapViaBalancerPool(
