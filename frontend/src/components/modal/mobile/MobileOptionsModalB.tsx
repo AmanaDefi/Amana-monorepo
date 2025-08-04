@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuthStore } from "@/store/authStore";
+import { useAuthStore, handleAuthSuccess } from "@/store/authStore";
 import PopularOptions from "../shared/PopularOptions";
 import ModalButton from "../shared/ModalButton";
 import EmailOptionsIcon from "@/components/svg/EmailOptionsIcon";
@@ -27,9 +27,7 @@ const MobileOptionsModalB = () => {
       if (publicKey) {
         disconnect();
       }
-      if (!result.wasAlreadyAuthenticated) {
-        successAuth();
-      }
+      handleAuthSuccess(result, successAuth);
     },
   });
 
@@ -38,6 +36,7 @@ const MobileOptionsModalB = () => {
       provider: "google",
     });
   };
+
   return (
     <MobileModal
       isOpen={step === "mobileOptionsB"}
