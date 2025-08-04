@@ -95,12 +95,31 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     if (successAuthTimeout) {
       clearTimeout(successAuthTimeout);
+      successAuthTimeout = null;
     }
 
     set({ _isProcessingAuth: true });
 
-    successAuthTimeout = setTimeout(() => {
-      if (fromAllWallets) {
+    if (fromAllWallets) {
+      set({
+        step: null,
+        isLoading: false,
+        error: null,
+        username: "",
+        otp: "",
+        _isProcessingAuth: false,
+      });
+    } else {
+      if (!activeAccount || activeAccount?.walletClientType === "privy") {
+        set({
+          step: "success",
+          isLoading: false,
+          error: null,
+          username: "",
+          otp: "",
+          _isProcessingAuth: false,
+        });
+      } else {
         set({
           step: null,
           isLoading: false,
@@ -109,30 +128,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           otp: "",
           _isProcessingAuth: false,
         });
-      } else {
-        if (!activeAccount || activeAccount?.walletClientType === "privy") {
-          set({
-            step: "success",
-            isLoading: false,
-            error: null,
-            username: "",
-            otp: "",
-            _isProcessingAuth: false,
-          });
-        } else {
-          set({
-            step: null,
-            isLoading: false,
-            error: null,
-            username: "",
-            otp: "",
-            _isProcessingAuth: false,
-          });
-        }
       }
-
-      successAuthTimeout = null;
-    }, 100);
+    }
   },
   updateField: (name, value) => set((state) => ({ ...state, [name]: value })),
   setLoading: (isLoading) => set({ isLoading }),
