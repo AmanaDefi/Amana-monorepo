@@ -116,22 +116,22 @@ contract CompoundERC20Strategy_w_swap is ERC20StrategyParent {
         // swap one form of USDC for another
         IERC20(inputToken).safeTransfer(swapHelper, amount);
 
-        uint256 maxDeadline = 1 hours;
+        uint256 maxDeadline = block.timestamp + 1 hours;
         uint16 slippage = 50;
         // Retry with increasing slippage up to 10% (1000 bps)
         uint256 amountAfterSwap;
         while (slippage <= 1000) {
             try
-                ISwapHelper(swapHelper).swap(
+                ISwapHelper(swapHelper).swapBestExactIn(
                     address(inputToken),
+                    address(lendingPoolTokenAddress),
                     amount,
-                    lendingPoolTokenAddress,
                     slippage,
                     address(this),
-                    maxDeadline,
-                    ""
+                    maxDeadline
                 )
             returns (uint256 result) {
+                console.log("amountOut", result);
                 amountAfterSwap = result;
             } catch {
                 emit SwapFailed(
@@ -143,6 +143,7 @@ contract CompoundERC20Strategy_w_swap is ERC20StrategyParent {
 
             slippage += 100; // increase slippage by 1% (100 bps)
         }
+        console.log("amountAfterSwap", amountAfterSwap);
         approveOrIncreaseAllowance(
             IERC20(lendingPoolTokenAddress),
             address(receiptToken),
