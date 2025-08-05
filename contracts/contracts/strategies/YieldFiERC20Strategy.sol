@@ -164,6 +164,7 @@ contract YieldFiERC20Strategy is ERC20StrategyParent {
             "Current balance: %s YUSD",
             IERC20(receiptTokenAddress).balanceOf(address(this))
         );
+        console.log("address(this): %s", address(this));
         IManager(manager).redeem(
             address(this),
             receiptTokenAddress,
@@ -171,7 +172,7 @@ contract YieldFiERC20Strategy is ERC20StrategyParent {
             vyusdToWithdraw,
             address(this),
             address(this),
-            abi.encodeWithSelector(this.execWithdraw.selector)
+            abi.encodeWithSignature("execWithdraw()")
         );
         console.log("Redemption Request sent");
         console.log(

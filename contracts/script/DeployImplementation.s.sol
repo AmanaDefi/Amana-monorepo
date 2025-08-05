@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 import "forge-std/Script.sol";
-import {AaveERC20Strategy} from "../contracts/strategies/AaveERC20Strategy.sol";
+import {YieldFiERC20Strategy} from "../contracts/strategies/YieldFiERC20Strategy.sol";
 import {console} from "forge-std/console.sol";
 
 contract DeployImplementation is Script {
@@ -23,7 +23,7 @@ contract DeployImplementation is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // ✅ Deploy the new implementation
-        AaveERC20Strategy newImpl = new AaveERC20Strategy();
+        YieldFiERC20Strategy newImpl = new YieldFiERC20Strategy();
         console.log(" New implementation deployed at:", address(newImpl));
         vm.stopBroadcast();
     }
