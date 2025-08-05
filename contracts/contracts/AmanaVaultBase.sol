@@ -287,6 +287,10 @@ abstract contract AmanaVaultBase is
         SafeERC20.safeTransfer(IERC20(_token), owner(), balance);
     }
 
+    function deposit(uint256, address) public pure override returns (uint256) {
+        // We disable this inherited function to prevent direct deposits
+    }
+
     /** @dev See {IERC4626-deposit}. */
     function deposit(
         uint256 assets,
@@ -301,6 +305,10 @@ abstract contract AmanaVaultBase is
         uint256 shares = previewDeposit(assets);
         _deposit(_msgSender(), receiver, assets, shares, minimumOut);
         return shares;
+    }
+
+    function mint(uint256, address) public pure override returns (uint256) {
+        // We disable this inherited function to prevent direct minting
     }
 
     function mint(
@@ -372,6 +380,14 @@ abstract contract AmanaVaultBase is
 
     function redeem(
         uint256 shares,
+        address receiver,
+        address owner
+    ) public pure override returns (uint256) {
+        // We disable this inherited function to prevent direct redemptions
+    }
+
+    function redeem(
+        uint256 shares,
         uint256 minimumOut,
         address receiver,
         address owner
@@ -388,6 +404,14 @@ abstract contract AmanaVaultBase is
             address(asset()),
             0
         );
+    }
+
+    function withdraw(
+        uint256,
+        address,
+        address
+    ) public pure override returns (uint256) {
+        // We disable this inherited function to prevent direct withdrawals
     }
 
     /** @dev See {IERC4626-withdraw}. */
