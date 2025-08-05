@@ -16,6 +16,7 @@ export interface TemporaryBitcoinWallet {
   network: 'mainnet' | 'testnet';
   walletType: 'unisat' | 'xverse' | 'leather';
   signTransaction: (tx: any) => Promise<string>;
+  signPsbt: (psbtBase64: string) => Promise<string>; // Add signPsbt method
   signMessage: (message: string) => Promise<string>;
   getBalance: () => Promise<number>;
   provider: any;
@@ -170,7 +171,8 @@ export const useTemporaryBitcoinWallet = () => {
       publicKey: publicKey || '',
       network: network === 'livenet' ? 'mainnet' : 'testnet',
       walletType: 'unisat',
-      signTransaction: window.unisat.signPsbt || window.unisat.signTx,
+      signTransaction: window.unisat.signTx || window.unisat.signPsbt, // Keep for backward compatibility
+      signPsbt: window.unisat.signPsbt, // Add dedicated signPsbt method
       signMessage: window.unisat.signMessage,
       getBalance: async () => {
         const balance = await window.unisat?.getBalance();
@@ -207,6 +209,7 @@ export const useTemporaryBitcoinWallet = () => {
       network: 'mainnet', // Xverse typically uses mainnet
       walletType: 'xverse',
       signTransaction: provider.signTransaction,
+      signPsbt: provider.signPsbt || provider.signTransaction, // Fallback to signTransaction if signPsbt not available
       signMessage: provider.signMessage,
       getBalance: async () => {
         const balance = await provider.getBalance();
@@ -235,6 +238,7 @@ export const useTemporaryBitcoinWallet = () => {
       network: 'mainnet',
       walletType: 'leather',
       signTransaction: (tx: any) => provider.request('signTx', { tx }),
+      signPsbt: (psbtBase64: string) => provider.request('signPsbt', { psbt: psbtBase64 }), // Add signPsbt for Leather
       signMessage: (message: string) => provider.request('signMessage', { message }),
       getBalance: async () => {
         const balance = await provider.request('getBalance');

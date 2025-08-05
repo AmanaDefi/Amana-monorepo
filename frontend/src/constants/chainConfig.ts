@@ -273,9 +273,7 @@ const bitcoinChain = {
   rpcUrls: {
     default: {
       http: [
-        deployEnv === "testnet"
-          ? "https://blockstream.info/testnet/api"
-          : "https://blockstream.info/api"
+        "/api/bitcoin" // Use our Next.js proxy to avoid CORS issues
       ],
     },
   },

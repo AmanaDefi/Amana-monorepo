@@ -135,6 +135,16 @@ const VaultsDetailContainer: React.FC<{
   const { switchToChain, walletAddress, activeChain, activeEvmWallet: user } =
     useMultiChain();
 
+  // Debug logging for chain and wallet state
+  useEffect(() => {
+    console.log("🔍 [VaultsDetailContainer] MultiChain state:", {
+      walletAddress,
+      activeChainId: activeChain?.id,
+      activeChainName: activeChain?.name,
+      isBitcoinChain: activeChain?.id === CHAIN_ID.bitcoin,
+    });
+  }, [walletAddress, activeChain]);
+
   const vaultIdStr = Array.isArray(vaultID) ? vaultID[0] : vaultID;
 
   useEffect(() => {

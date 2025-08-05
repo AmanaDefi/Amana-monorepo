@@ -560,8 +560,19 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
 
   // NEW: Bitcoin wallet state synchronization
   useEffect(() => {
+    console.log('[MultiChainProvider][DEBUG] Bitcoin sync effect triggered:', {
+      isBitcoinConnected,
+      bitcoinWalletAddress: bitcoinWallet?.address,
+      currentSelectedChain: selectedChain,
+      currentActiveChain: activeChain?.id,
+    });
+
     if (isBitcoinConnected && bitcoinWallet?.address) {
-      console.log('[MultiChainProvider][DEBUG] Bitcoin wallet connected', { bitcoinWallet });
+      console.log('[MultiChainProvider][DEBUG] Bitcoin wallet connected', { 
+        bitcoinWallet,
+        currentSelectedChain: selectedChain,
+        currentActiveChain: activeChain?.id,
+      });
       // Set wallet address and chain
       setWalletAddress(bitcoinWallet.address);
       setSelectedChain("bitcoin");

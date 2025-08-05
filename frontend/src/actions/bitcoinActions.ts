@@ -17,7 +17,10 @@ const ECPair = ECPairFactory(ecc);
 
 // 1. Switch to mainnet
 const BITCOIN_NETWORK = bitcoin.networks.bitcoin;
-const BITCOIN_API_BASE = 'https://blockstream.info/api';
+// Use Next.js API route to proxy Bitcoin API calls (bypasses CORS)
+const BITCOIN_API_BASE = '/api/bitcoin';
+
+console.log('🔧 Bitcoin API Base URL:', BITCOIN_API_BASE);
 
 // Bitcoin TSS Gateway address (official ZetaChain)
 export const BITCOIN_TSS_GATEWAY = "bc1qm24wp577nk8aacckv8np465z3dvmu7ry45el6y";
@@ -90,7 +93,10 @@ interface BitcoinWallet {
   address: string;
   publicKey: string;
   network: 'mainnet' | 'testnet';
+  walletType: 'unisat' | 'xverse' | 'leather';
+  signTransaction: (tx: any) => Promise<string>;
   signPsbt: (psbtBase64: string) => Promise<string>; // returns signed tx hex
+  signMessage: (message: string) => Promise<string>;
   getBalance: () => Promise<number>;
   provider: any;
 }
@@ -150,7 +156,7 @@ export const executeBitcoinDeposit = async ({
     const transactionId = generateBitcoinTransactionId(bitcoinWallet.address);
     
     // Prepare slippage for vault deposit
-    const slippage = getCurrentSlippage();
+    const slippage = getCurrentSlippage(vaultData.id);
     const slippageValue = (slippage * 100).toFixed(0);
 
     // Calculate path using ZRC-20 BTC.BTC address (1:1 with native BTC)
@@ -168,7 +174,7 @@ export const executeBitcoinDeposit = async ({
       zrc20BtcToken,
       vaultData.inputToken,
       vaultData.id,
-      getCurrentSlippage() * 100
+      getCurrentSlippage(vaultData.id ) * 100
     );
 
     const swapPath = encodedPath ?? "0x";
@@ -192,7 +198,7 @@ export const executeBitcoinDeposit = async ({
         slippageValue,                 // slippage
         ethers.hexlify(ethers.toUtf8Bytes(bitcoinWallet.address)), // nonEvmAddress (Bitcoin address as bytes)
         swapPath,                      // swapData (calculated swap path for ZRC-20 BTC → vault token)
-        keccak256(toUtf8Bytes("TX_DEPOSIT_INITIATED")) as `0x${string}`
+        keccak256(toUtf8Bytes("DepositInitiated")) as `0x${string}`
       ]
     );
 
@@ -666,7 +672,7 @@ const createCommitTransaction = async (
       changeOutput: changeSat,
       fee: commitFee
     });
-    return {
+  return {
       psbt,
       controlBlock: witness[witness.length - 1],
       internalKey: xOnlyPubkey,
@@ -783,8 +789,8 @@ const createRevealTransactionWithRealCommitTxId = async (
       outputValue,
       recipient: BITCOIN_TSS_GATEWAY
     });
-    
-    return {
+  
+  return {
       psbt,
       commitTxId
     };
@@ -835,14 +841,49 @@ export const executeCommitTransaction = async (
   try {
     logger.log('INFO', "🚀 [CommitTx] Starting commit transaction signing process...");
     if (!wallet?.signPsbt) {
-      throw new Error("Wallet missing signPsbt method");
+      logger.log('ERROR', "[CommitTx] Wallet missing signPsbt method", {
+        walletType: wallet?.walletType || 'unknown',
+        availableMethods: Object.keys(wallet || {}),
+        hasSignTransaction: !!wallet?.signTransaction
+      });
+      throw new Error(`Wallet missing signPsbt method. Available methods: ${Object.keys(wallet || {}).join(', ')}`);
     }
     if (!commitTx?.psbt) {
       throw new Error("Invalid commit transaction: missing PSBT");
     }
     logger.log('INFO', "[CommitTx] Attempting to sign commit PSBT with wallet...");
     const psbtBase64 = commitTx.psbt.toBase64();
-    const signedTxHex = await wallet.signPsbt(psbtBase64);
+    let signedTxHex: string;
+    // Sign PSBT with Unisat wallet - try with explicit options for Unisat
+    if (wallet.walletType === 'unisat') {
+      try {
+        logger.log('DEBUG', "[CommitTx] Attempting Unisat signPsbt with autoFinalized=true...");
+        signedTxHex = await (wallet.provider as any).signPsbt(psbtBase64, { autoFinalized: true });
+      } catch (unisatError: any) {
+        logger.log('WARN', "[CommitTx] Unisat autoFinalized failed, trying default:", unisatError.message);
+        signedTxHex = await wallet.signPsbt(psbtBase64);
+      }
+    } else {
+      signedTxHex = await wallet.signPsbt(psbtBase64);
+    }
+    logger.log('DEBUG', "[CommitTx] Signed result type:", typeof signedTxHex);
+    // If the result is a PSBT, finalize and extract the raw tx
+    if (signedTxHex.startsWith('cHNidP8') || signedTxHex.startsWith('70736274ff')) {
+      logger.log('DEBUG', "[CommitTx] Result is PSBT, finalizing and extracting raw tx...");
+      const signedPsbt = bitcoin.Psbt.fromBase64(signedTxHex, { network: BITCOIN_NETWORK });
+      if (signedPsbt.data.inputs.some((input, idx) => !signedPsbt.data.inputs[idx].finalScriptWitness && !signedPsbt.data.inputs[idx].finalScriptSig)) {
+        signedPsbt.finalizeAllInputs();
+      }
+      signedTxHex = signedPsbt.extractTransaction().toHex();
+      logger.log('DEBUG', "[CommitTx] Extracted raw tx from PSBT.");
+    } else {
+      logger.log('DEBUG', "[CommitTx] Result is raw tx hex.");
+    }
+    logger.log('DEBUG', "[CommitTx] Final transaction hex length:", signedTxHex.length);
+    // Validate transaction hex format
+    if (!/^[0-9a-fA-F]+$/.test(signedTxHex)) {
+      throw new Error(`Invalid transaction hex format. Length: ${signedTxHex.length}, Preview: ${signedTxHex.substring(0, 50)}...`);
+    }
     logger.log('INFO', "[CommitTx] Commit PSBT signed successfully.");
     logger.log('DEBUG', "[CommitTx] Signed transaction hex length:", signedTxHex.length);
     logger.log('INFO', "[CommitTx] Broadcasting commit transaction...");
@@ -880,29 +921,36 @@ export const executeRevealTransaction = async (
   });
   try {
     logger.log('INFO', "🚀 [RevealTx] Starting reveal transaction signing process...");
-    
     if (!wallet?.signPsbt) {
-      throw new Error("Wallet missing signPsbt method");
+      logger.log('ERROR', "[RevealTx] Wallet missing signPsbt method", {
+        walletType: wallet?.walletType || 'unknown',
+        availableMethods: Object.keys(wallet || {}),
+        hasSignTransaction: !!wallet?.signTransaction
+      });
+      throw new Error(`Wallet missing signPsbt method. Available methods: ${Object.keys(wallet || {}).join(', ')}`);
     }
-
     if (!revealTx?.psbt) {
       throw new Error("Invalid reveal transaction: missing PSBT");
     }
-
     logger.log('INFO', "[RevealTx] Attempting to sign reveal PSBT with wallet...");
-    
     const psbtBase64 = revealTx.psbt.toBase64();
-    const signedTxHex = await wallet.signPsbt(psbtBase64);
-    
-    logger.log('INFO', "[RevealTx] Reveal PSBT signed successfully.");
-    logger.log('DEBUG', "[RevealTx] Signed transaction hex length:", signedTxHex.length);
-
+    let signedTxHex: string = await wallet.signPsbt(psbtBase64);
+    // If the result is a PSBT, finalize and extract the raw tx
+    if (signedTxHex.startsWith('cHNidP8') || signedTxHex.startsWith('70736274ff')) {
+      logger.log('DEBUG', "[RevealTx] Result is PSBT, finalizing and extracting raw tx...");
+      const signedPsbt = bitcoin.Psbt.fromBase64(signedTxHex, { network: BITCOIN_NETWORK });
+      if (signedPsbt.data.inputs.some((input, idx) => !signedPsbt.data.inputs[idx].finalScriptWitness && !signedPsbt.data.inputs[idx].finalScriptSig)) {
+        signedPsbt.finalizeAllInputs();
+      }
+      signedTxHex = signedPsbt.extractTransaction().toHex();
+      logger.log('DEBUG', "[RevealTx] Extracted raw tx from PSBT.");
+    } else {
+      logger.log('DEBUG', "[RevealTx] Result is raw tx hex.");
+    }
     logger.log('INFO', "[RevealTx] Broadcasting reveal transaction...");
     const result = await broadcastBitcoinTransaction(signedTxHex);
     logger.log('INFO', "[RevealTx] Reveal transaction broadcasted.", result);
-    
     return result;
-    
   } catch (error: any) {
     logger.log('ERROR', "[RevealTx] Reveal transaction failed!", {
       error: error,
@@ -940,8 +988,9 @@ const broadcastBitcoinTransaction = async (signedTxHex: string): Promise<{ txid:
   logger.log('DEBUG', "[Broadcast] Transaction hex length:", signedTxHex.length);
   
   try {
-    // In a real implementation, this would broadcast to Bitcoin network
-    // via a Bitcoin RPC node or broadcasting service like Blockstream
+    logger.log('DEBUG', "[Broadcast] Broadcasting to:", `${BITCOIN_API_BASE}/tx`);
+    logger.log('DEBUG', "[Broadcast] Transaction hex preview:", signedTxHex.substring(0, 100) + '...');
+    
     const response = await fetch(`${BITCOIN_API_BASE}/tx`, {
       method: 'POST',
       headers: {
@@ -950,21 +999,35 @@ const broadcastBitcoinTransaction = async (signedTxHex: string): Promise<{ txid:
       body: signedTxHex,
     });
     
+    logger.log('DEBUG', "[Broadcast] Response status:", response.status);
+    logger.log('DEBUG', "[Broadcast] Response headers:", Object.fromEntries(response.headers.entries()));
+    
     if (!response.ok) {
-      throw new Error(`Broadcast failed: ${response.statusText}`);
+      const errorText = await response.text();
+      logger.log('ERROR', "[Broadcast] API Error Response:", errorText);
+      throw new Error(`Broadcast failed: ${response.status} ${response.statusText} - ${errorText}`);
     }
     
     const txid = await response.text();
     logger.log('INFO', "🚀 [Broadcast] Bitcoin transaction broadcasted successfully:", txid);
-    return { txid };
+    
+    // Validate transaction ID format (should be 64 hex characters)
+    if (!/^[a-fA-F0-9]{64}$/.test(txid.trim())) {
+      logger.log('WARN', "[Broadcast] Received invalid transaction ID format:", txid);
+    }
+    
+    return { txid: txid.trim() };
     
   } catch (error: any) {
-    logger.log('ERROR', "[Broadcast] Failed to broadcast transaction:", error.message);
+    logger.log('ERROR', "[Broadcast] Failed to broadcast transaction:", {
+      error: error.message,
+      signedTxHexLength: signedTxHex.length,
+      apiBase: BITCOIN_API_BASE,
+    });
     
-    // Fallback to mock for development
-    const mockTxId = `btc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    logger.log('WARN', "[Broadcast] Using mock transaction ID for development:", mockTxId);
-    return { txid: mockTxId };
+    // ❌ REMOVE MOCK FALLBACK - This was causing the issue!
+    // Instead, throw the error so we can debug the real problem
+    throw new Error(`Bitcoin broadcast failed: ${error.message}`);
   }
 };
 
@@ -1088,11 +1151,14 @@ export const debugBitcoinIntegration = async () => {
 
     // Test 5: Bitcoin deposit flow validation
     bitcoinLogger.log('INFO', 'Testing Bitcoin deposit flow...');
-    const mockBitcoinWallet = {
+    const mockBitcoinWallet: BitcoinWallet = {
       address: 'bc1qtest123...',
       publicKey: 'test-pubkey',
       network: 'mainnet' as const,
+      walletType: 'unisat',
+      signTransaction: async () => 'mock-signature',
       signPsbt: async () => 'mock-signature',
+      signMessage: async () => 'mock-signature',
       getBalance: async () => 100000000, // 1 BTC in satoshis
       provider: null
     };
@@ -1156,7 +1222,7 @@ export const getBitcoinPathDataAndMinSharesOut = async (
       zrc20BtcToken,
       vaultData.inputToken,
       vaultData.id,
-      getCurrentSlippage() * 100
+      getCurrentSlippage(vaultData.id) * 100
     );
 
     const swapPath = encodedPath ?? "0x";
@@ -1232,7 +1298,7 @@ export const estimateBitcoinDepositOutput = async (
       conversionSteps,
       fees: {
         network: '~0.0001 BTC (Bitcoin Network)',
-        slippage: `${getCurrentSlippage() * 100}% (DEX Slippage)`
+        slippage: `${getCurrentSlippage(vaultData.id) * 100}% (DEX Slippage)`
       }
     };
 

@@ -159,9 +159,9 @@ const getUserStepStatus = (
   isWaitingTooLong?: boolean;
 } => {
   // PATCH: Add logging for Bitcoin after skipping approveDeposit
-  if (activeChainId === CHAIN_ID.bitcoin) {
-    console.log('[useInstructionStepLogic][PATCH] Bitcoin stepper at step', step);
-  }
+  // if (activeChainId === CHAIN_ID.bitcoin) {
+  //   console.log('[useInstructionStepLogic][PATCH] Bitcoin stepper at step', step);
+  // }
   const relevantActions: Action[] = [];
 
   for (const actionKey in Action) {

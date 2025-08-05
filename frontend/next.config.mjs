@@ -15,6 +15,39 @@ const nextConfig = {
     return config;
   },
 
+  // Use rewrites to proxy Bitcoin API calls (more reliable than custom API routes)
+  async rewrites() {
+    return [
+      {
+        source: '/api/bitcoin/:path*',
+        destination: 'https://blockstream.info/api/:path*',
+      },
+    ];
+  },
+
+  // Add CORS headers for API routes
+  async headers() {
+    return [
+      {
+        source: '/api/(.*)',
+        headers: [
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*',
+          },
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'GET, POST, PUT, DELETE, OPTIONS',
+          },
+          {
+            key: 'Access-Control-Allow-Headers',
+            value: 'Content-Type, Authorization',
+          },
+        ],
+      },
+    ];
+  },
+
   images: {
     remotePatterns: [
       {
