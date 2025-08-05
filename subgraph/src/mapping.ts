@@ -417,7 +417,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
   if (addr == "0xe256f20037aa74cc213e532d49fcb932a5d764d3") {
     return {
       type: "Lending Pool",
-      name: "Eth",
+      name: "ETH",
       description: "Supplying ETH to a Compound lending pool allows users to earn interest by providing liquidity to borrowers. The pool utilizes an algorithmic interest rate model to optimize capital efficiency while enabling seamless borrowing. Risks include smart contract vulnerabilities, fluctuating interest rates, potential liquidity shortages, and governance decisions that may impact collateral requirements or yield dynamics.",
       imgURL: "/base.png",
       depositFeePaidFromGasTank: true,
