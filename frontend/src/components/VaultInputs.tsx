@@ -1358,12 +1358,20 @@ useEffect(() => {
     const expectedOutputUSD = parseFloat(
       conversionOutput.outputAmountInUSDFormatted.replace(/[^0-9.]/g, ""),
     );
-    const slippageDecimal = userSlippage / 100;
+
+    const effectiveSlippage = isAuto
+      ? (conversionOutput.swapSlippagePercentage || 0) +
+        (conversionOutput.depositSlippagePercentage || 0)
+      : userSlippage;
+    
+    const slippageDecimal = effectiveSlippage / 100;
 
     const calculatedMinReceived = expectedOutputUSD * (1 - slippageDecimal);
 
     return formatUSDValue(calculatedMinReceived);
-  }, [conversionOutput.outputAmountInUSDFormatted, userSlippage]);
+  }, [conversionOutput.outputAmountInUSDFormatted, userSlippage, isAuto, 
+  conversionOutput.swapSlippagePercentage, 
+  conversionOutput.depositSlippagePercentage]);
 
   return (
     <>
