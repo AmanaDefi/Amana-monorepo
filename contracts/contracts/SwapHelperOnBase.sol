@@ -8,7 +8,6 @@ import "./interfaces/IBalancerRouter.sol";
 import "./interfaces/I4626Vault.sol";
 import "./CurvePoolRegistry.sol";
 import "./interfaces/IAerodromePoolFactory.sol";
-import "./interfaces/IAerodromePool.sol";
 import "./interfaces/IAerodromeRouter.sol";
 import "./interfaces/IAerodromeSlipstreamFactory.sol";
 import "./interfaces/IAerodromeSlipstreamQuoter.sol";
