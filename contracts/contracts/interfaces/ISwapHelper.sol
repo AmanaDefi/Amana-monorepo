@@ -146,15 +146,6 @@ interface ISwapHelper {
         bytes calldata data
     ) external returns (uint256 amountOut);
 
-    function swapViaSlipstream(
-        address inputToken,
-        uint256 amount,
-        address outputToken,
-        uint16 slippageBps,
-        address receiver,
-        uint256 maxDeadline
-    ) external returns (uint256 amountOut);
-
     /// @notice Swap exact-in choosing among: V3 direct, V2 direct, V3->V2 via WETH using Universal Router.
     /// @param tokenIn  ERC20 input
     /// @param tokenOut ERC20 output
@@ -162,7 +153,7 @@ interface ISwapHelper {
     /// @param slippageBps Min-out = bestQuote * (1 - slippageBps/1e4)
     /// @param recipient Receiver of output tokens
     /// @param deadline  UniversalRouter deadline
-    function swapBestExactIn(
+    function swapViaAerodromeSlipstream(
         address tokenIn,
         address tokenOut,
         uint256 amountIn,
