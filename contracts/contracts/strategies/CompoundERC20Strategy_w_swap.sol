@@ -4,9 +4,9 @@ pragma solidity 0.8.26;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../interfaces/ICompoundVault.sol";
-import "./ERC20StrategyParent.sol";
 import "../interfaces/ISwapHelper.sol";
 import "../interfaces/ICometRewards.sol";
+import "./ERC20StrategyParent.sol";
 
 // BASE USDS receiptToken: 0x2c776041CCFe903071AF44aa147368a9c8EEA518
 // BASE rewardsTokenAddress: 0x9e1028F5F1D5eDE59748FFceE5532509976840E0
