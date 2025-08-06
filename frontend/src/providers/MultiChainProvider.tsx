@@ -20,7 +20,7 @@ import { Balance } from "@/types/types";
 import { Chain, formatEther } from "viem";
 import { getPublicClient } from "@/utils/getPublicClient";
 import { usePathname, useRouter } from "next/navigation";
-import { useAccount, useConnect, useDisconnect } from "wagmi";
+import { useAccount, useConnect, useDisconnect, useSwitchChain } from "wagmi";
 import { ConnectedWallet, usePrivy, useWallets } from "@privy-io/react-auth";
 import { zetachain } from "viem/chains";
 import { useFundWalletStore } from "@/store/fundWalletStore";
@@ -89,6 +89,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const { disconnectAsync } = useDisconnect();
 
   const { isConnected: wagmiIsConnected, address: wagmiAddress } = useAccount();
+  const { switchChain: wagmiSwitchChain } = useSwitchChain();
 
   const {
     step,
@@ -690,11 +691,20 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         walletClientType: "external",
         chainId: activeChain?.id ? `eip155:${activeChain.id}` : "eip155:1",
         meta: { id: "wagmi" },
+        switchChain: async (chainId: number) => {
+          return wagmiSwitchChain({ chainId });
+        },
       } as ConnectedWallet;
     }
 
     return privyWallet;
-  }, [wagmiIsConnected, wagmiAddress, privyWallet, activeChain?.id]);
+  }, [
+    wagmiIsConnected,
+    wagmiAddress,
+    privyWallet,
+    activeChain?.id,
+    wagmiSwitchChain,
+  ]);
 
   return (
     <MultiChainContext.Provider
