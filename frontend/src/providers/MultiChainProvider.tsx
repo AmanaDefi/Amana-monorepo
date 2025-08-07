@@ -325,64 +325,64 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     successAuth,
   ]);
 
-  // КРИТИЧНИЙ useEffect для wagmi (повернений з старої версії)
-  useEffect(() => {
-    productionLog("WAGMI Effect Triggered", {
-      wagmiIsConnected,
-      wagmiAddress,
-      currentWalletAddress: walletAddress,
-      step,
-      privyWalletAddress: privyWallet?.address,
-      solanaConnected: connected,
-      condition1:
-        wagmiIsConnected && wagmiAddress && walletAddress !== wagmiAddress,
-      condition2: !wagmiIsConnected && walletAddress === wagmiAddress,
-    });
-
-    if (wagmiIsConnected && wagmiAddress && !step) {
-      if (walletAddress !== wagmiAddress) {
-        productionLog("WAGMI: Setting wallet address", {
-          from: walletAddress,
-          to: wagmiAddress,
-          reason: "wagmi connected with different address",
-        });
-        setWalletAddress(wagmiAddress);
-        setSelectedChain("evm");
-        if (activeChain?.id !== zetachain.id) {
-          setActiveChain(zetachain);
-        }
-        successAuth(wagmiAddress, activeEvmWallet, true);
-      }
-    } else if (
-      !wagmiIsConnected &&
-      walletAddress === wagmiAddress &&
-      !privyWallet?.address &&
-      !connected
-    ) {
-      productionLog("WAGMI: Clearing wallet address", {
-        reason: "wagmi disconnected",
-        wagmiAddress,
-        walletAddress,
-        hasPrivyWallet: !!privyWallet?.address,
-        solanaConnected: connected,
-      });
-      setWalletAddress(null);
-      setSelectedChain(null);
-      setActiveChain(null);
-
-      const { logout: authLogout } = useAuthStore.getState();
-      authLogout();
-    }
-  }, [
+useEffect(() => {
+  productionLog("WAGMI Effect Triggered", {
     wagmiIsConnected,
     wagmiAddress,
-    walletAddress,
+    currentWalletAddress: walletAddress,
     step,
-    activeChain?.id,
-    privyWallet?.address,
-    connected,
-    successAuth,
-  ]);
+    privyWalletAddress: privyWallet?.address,
+    solanaConnected: connected,
+    condition1:
+      wagmiIsConnected && wagmiAddress && walletAddress !== wagmiAddress,
+    condition2: !wagmiIsConnected && walletAddress === wagmiAddress,
+  });
+
+  if (wagmiIsConnected && wagmiAddress && !step) {
+    if (walletAddress !== wagmiAddress) {
+      productionLog("WAGMI: Setting wallet address", {
+        from: walletAddress,
+        to: wagmiAddress,
+        reason: "wagmi connected with different address",
+      });
+      setWalletAddress(wagmiAddress);
+      setSelectedChain("evm");
+      if (activeChain?.id !== zetachain.id) {
+        setActiveChain(zetachain);
+      }
+      successAuth(wagmiAddress, activeEvmWallet, true);
+    }
+  }
+  // else if (
+  //   !wagmiIsConnected &&
+  //   walletAddress === wagmiAddress &&
+  //   !privyWallet?.address &&
+  //   !connected
+  // ) {
+  //   productionLog("WAGMI: Clearing wallet address", {
+  //     reason: "wagmi disconnected",
+  //     wagmiAddress,
+  //     walletAddress,
+  //     hasPrivyWallet: !!privyWallet?.address,
+  //     solanaConnected: connected,
+  //   });
+  //   setWalletAddress(null);
+  //   setSelectedChain(null);
+  //   setActiveChain(null);
+  //
+  //   const { logout: authLogout } = useAuthStore.getState();
+  //   authLogout();
+  // }
+}, [
+  wagmiIsConnected,
+  wagmiAddress,
+  walletAddress,
+  step,
+  activeChain?.id,
+  privyWallet?.address,
+  connected,
+  successAuth,
+]);
 
   useEffect(() => {
     if (privyWallet?.address && connected && !latestChainRef.current && !step) {
@@ -439,10 +439,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
           disconnectConnectors();
         }
       }
-    } else if (!privyWallet?.address && !connected && !wagmiIsConnected) {
-      productionLog("No wallets connected, clearing state");
-      setWalletAddress(null);
-    }
+    } 
   }, [
     privyWallet,
     connected,
