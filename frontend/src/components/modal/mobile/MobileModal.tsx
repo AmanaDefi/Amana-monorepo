@@ -52,6 +52,15 @@ export const MobileModal = ({
             <div className="fixed inset-x-0 bottom-0 flex justify-center">
               <DialogPanel as={Fragment}>
                 <div className="relative w-full">
+                  {showHeader && showInfoBlock && (
+                    <div className="absolute top-[24px] left-[24px] z-20 pl-2">
+                      <MobileInfoBlock isLeft>
+                        💡 Connecting your wallet is like “logging in” to Web3.
+                        Select your wallet from the options to get started
+                      </MobileInfoBlock>
+                    </div>
+                  )}
+
                   <motion.div
                     key="mobile-modal"
                     initial={{ y: "100%", opacity: 0 }}
@@ -64,16 +73,6 @@ export const MobileModal = ({
                     }}
                     className={`relative w-full ${height} ${maxHeight} bg-[#14171F] ${roundedClass} text-white shadow-xl font-gotham before-modal-gradient-border overflow-visible block lg:hidden`}
                   >
-                    {showHeader && showInfoBlock && (
-                      <div className="absolute top-[24px] left-[24px] z-20 pl-2">
-                        <MobileInfoBlock isLeft>
-                          💡 Connecting your wallet is like “logging in” to
-                          Web3. Select your wallet from the options to get
-                          started
-                        </MobileInfoBlock>
-                      </div>
-                    )}
-
                     {customCloseButton ||
                       (showHeader && (
                         <MobileModalHeader

@@ -1,60 +1,64 @@
-import React from "react";
-
-const glowStyles = `
-  .glow-icon {
-    pointer-events: none;
-    position: absolute;
-    z-index: -1;
-    border-radius: 50%;
-    background: linear-gradient(90deg, #1a368f 33.64%, #1B46E0 100%);
-    filter: blur(200px);
-    transform: rotate(66.86deg);
-  }
-
-  .glow-icon--top-right {
-    top: 80px;
-    right: -500px;
-    width: 433px;
-    height: 600px;
-  }
-
-  .glow-icon--bottom-left {
-    bottom: -300px;
-    left: -220px;
-    width: 433px;
-    height: 600px;
-  }
-
-  .glow-icon--top-mobile {
-    top: -500px;
-    right: -120px;
-    width: 433px;
-    height: 580px;
-  }
-
-  .glow-icon--bottom-mobile {
-    bottom: -300px;
-    left: -220px;
-    width: 433px;
-    height: 580px;
-  }
-`;
-
 const GlowIcon = ({
   position = "top-right",
 }: {
   position?: "top-right" | "bottom-left" | "top-mobile" | "bottom-mobile";
 }) => {
-  React.useEffect(() => {
-    if (!document.getElementById("glow-styles")) {
-      const styleElement = document.createElement("style");
-      styleElement.id = "glow-styles";
-      styleElement.textContent = glowStyles;
-      document.head.appendChild(styleElement);
-    }
-  }, []);
+  const commonClasses =
+    "pointer-events-none blur-[200px] absolute z-[-1] rounded-full";
+  const styles =
+    position === "top-right"
+      ? "top-[100px] right-[-80px] w-[433px] h-[600px]"
+      : position === "bottom-left"
+        ? "bottom-[-300px] left-[-220px] w-[433px] h-[600px]"
+        : position === "top-mobile"
+          ? "top-[-200px] right-[-120px] w-[433px] h-[580px]"
+          : "bottom-[-300px] left-[-220px] w-[433px] h-[580px]";
 
-  return <div className={`glow-icon glow-icon--${position}`} />;
+  return (
+    <svg
+      viewBox="0 0 533 637"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={`${commonClasses} ${styles}`}
+    >
+      <g filter="url(#filter0_f)">
+        <circle
+          cx="449.827"
+          cy="187.827"
+          r="249"
+          transform="rotate(66.8568 449.827 187.827)"
+          fill="url(#paint0_linear)"
+          fillOpacity="1"
+        />
+      </g>
+      <defs>
+        <filter
+          id="filter0_f"
+          x="0.762579"
+          y="-261.237"
+          width="898.128"
+          height="898.128"
+          filterUnits="userSpaceOnUse"
+          colorInterpolationFilters="sRGB"
+        >
+          <feFlood floodOpacity="0" result="BackgroundImageFix" />
+          <feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
+          <feGaussianBlur stdDeviation="100" result="effect1_foregroundBlur" />
+        </filter>
+        <linearGradient
+          id="paint0_linear"
+          x1="200.827"
+          y1="187.827"
+          x2="998.664"
+          y2="187.827"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop offset="0.336407" stopColor="#1a368f" />
+          <stop offset="1" stopColor="#1B46E0" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
 };
 
 export default GlowIcon;
