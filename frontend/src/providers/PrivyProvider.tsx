@@ -68,6 +68,9 @@ export default function CustomPrivyProvider({ children }: PropsWithChildren) {
       arbitrum,
       arbitrumSepolia,
     ],
+    storage: createStorage({
+      storage: typeof window !== "undefined" ? localStorage : undefined,
+    }),
     transports: [
       zetachain,
       bsc,
