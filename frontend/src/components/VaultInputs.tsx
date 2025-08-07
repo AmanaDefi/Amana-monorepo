@@ -175,7 +175,7 @@ export default function VaultInputs({
 
   const selectChain = useMemo(() => selectedChain, [selectedChain]);
 
-  const { slippageValue: userSlippage } = useSlippage(vaultId);
+  const { slippageValue: userSlippage, isAuto } = useSlippage(vaultId);
 
   const handleSelectChainAngToken = (chain: Chain, token: Token) => {
     setInputToken(token);
@@ -1281,6 +1281,32 @@ useEffect(() => {
     initialConversionOutput,
     isDeposit,
     vaultData,
+    userSlippage,
+  ]);
+
+  useEffect(() => {
+    // Force recalculation when slippage changes, but only if we have a valid input
+    if (
+      debouncedInputBalance.formatted &&
+      Number(debouncedInputBalance.formatted) > 0 &&
+      !CheckTheTxIsInProgress(vaultData?.id)
+    ) {
+      setLoadingOutputToken(true);
+      clearDepositCalculationCache();
+      if (isDeposit) {
+        getDepositOutputAmount(debouncedInputBalance.value);
+      } else {
+        getWithdrawOutputAmount(debouncedInputBalance.value);
+      }
+    }
+  }, [
+    userSlippage,
+    isAuto,
+    debouncedInputBalance.formatted,
+    debouncedInputBalance.value,
+    isDeposit,
+    vaultData?.id,
+    clearDepositCalculationCache,
   ]);
 
   // Clear cache when important parameters change
@@ -1363,12 +1389,20 @@ useEffect(() => {
     const expectedOutputUSD = parseFloat(
       conversionOutput.outputAmountInUSDFormatted.replace(/[^0-9.]/g, ""),
     );
-    const slippageDecimal = userSlippage / 100;
+
+    const effectiveSlippage = isAuto
+      ? (conversionOutput.swapSlippagePercentage || 0) +
+        (conversionOutput.depositSlippagePercentage || 0)
+      : userSlippage;
+    
+    const slippageDecimal = effectiveSlippage / 100;
 
     const calculatedMinReceived = expectedOutputUSD * (1 - slippageDecimal);
 
     return formatUSDValue(calculatedMinReceived);
-  }, [conversionOutput.outputAmountInUSDFormatted, userSlippage]);
+  }, [conversionOutput.outputAmountInUSDFormatted, userSlippage, isAuto, 
+  conversionOutput.swapSlippagePercentage, 
+  conversionOutput.depositSlippagePercentage]);
 
   return (
     <>

@@ -1,7 +1,7 @@
 import ArrowRightIcon from "@/components/svg/ArrowRightIcon";
 import { EarnIcon } from "@/components/svg/sidebar/EarnIcon";
 import Button from "@/components/common/Button";
-import DiscordLogo from "@public/logo/discord.svg";
+import LinktreeLogo from "@public/logo/linktree.svg";
 import { VaultData, Token, Balance } from "@/types/types";
 import { useRouter } from "next/navigation";
 import { useTransactionStore } from "@/store/transactionStore";
@@ -41,6 +41,14 @@ const DepositComplete = ({
   const handleExploreClick = () => {
     onClose();
     router.push("/");
+  };
+
+  const handleSocialsClick = () => {
+    window.open(
+      "https://linktr.ee/amana_defi",
+      "_blank",
+      "noopener,noreferrer",
+    );
   };
 
   const getTitleSuccess = () =>
@@ -200,18 +208,22 @@ const DepositComplete = ({
         <div className="py-4 md:py-[23px] px-4 md:px-[15px] shadow-xl font-gotham before-gradient-border bg-[#14171F] min-h-[171px] md:min-h-[222px] w-full md:min-w-[240px] rounded-[16px] flex flex-col justify-between">
           <div>
             <div className="flex flex-row gap-4 text-sm md:text-lg font-bold items-center">
-              <DiscordLogo
-                height={34}
-                className="w-5 h-5 md:w-[34px] md:h-[34px]"
+              <LinktreeLogo
+                height={30}
+                className="w-5 h-5 md:w-[30px] md:h-[30px]"
               />
               <p>Socials</p>
             </div>
             <p className="text-xs md:text-[16px] font-normal mt-[15px] md:mt-[13px] max-w-[131px] md:max-w-[210px]">
-              Subscribe to our socials.
+              Check out our social.
             </p>
           </div>
 
-          <Button variant="custom" className="!w-full !h-8 md:!h-10">
+          <Button
+            onClick={handleSocialsClick}
+            variant="custom"
+            className="!w-full !h-8 md:!h-10"
+          >
             Check
           </Button>
         </div>
