@@ -180,6 +180,8 @@ export const executeBitcoinDeposit = async ({
     const swapPath = encodedPath ?? "0x";
     const minSharesOut = amountOut;
 
+    console.log("🔍 [BITCOIN DEPOSIT DEBUG] Min Shares Out:", minSharesOut);
+
     bitcoinLogger.log('INFO', 'Bitcoin deposit path calculated', {
       swapPath: swapPath !== "0x" ? 'Swap required' : 'Direct deposit',
       minSharesOut: minSharesOut.toString(),
@@ -201,6 +203,28 @@ export const executeBitcoinDeposit = async ({
         keccak256(toUtf8Bytes("DepositInitiated")) as `0x${string}`
       ]
     );
+
+    // Log detailed payload information
+    console.log("🔍 [BITCOIN PAYLOAD DEBUG] Vault Payload Details:", {
+      vaultAddress: vaultData.id,
+      payloadHex: vaultPayload,
+      payloadLength: vaultPayload.length,
+      decodedParams: {
+        withdrawZRC20: ZeroAddress,
+        inputToken: ZC_BTC_BTC_ADDRESS,
+        withdrawAssetAmount: "0",
+        minimumOut: minSharesOut.toString(),
+        slippage: slippageValue,
+        nonEvmAddress: ethers.hexlify(ethers.toUtf8Bytes(bitcoinWallet.address)),
+        bitcoinAddressOriginal: bitcoinWallet.address,
+        swapPath: swapPath,
+        swapPathLength: swapPath.length,
+        eventSignature: keccak256(toUtf8Bytes("DepositInitiated")),
+        eventSignatureOriginal: "DepositInitiated"
+      }
+    });
+
+    console.log("🔍 [BITCOIN INSCRIPTION DEBUG] Full Inscription Content:", vaultPayload);
 
     console.log("🟠 Vault Payload Created:", {
       vaultAddress: vaultData.id,
@@ -378,9 +402,19 @@ export const createZetaChainBitcoinInscription = async ({
     // ZetaChain inscription format
     const header = new Uint8Array(4);
     header[0] = 0x5a; // 'Z' for ZetaChain
-    header[1] = 0x00; // ABI encoding format
-    header[2] = 0x00; // DepositAndCall operation (0x00 << 4)
+    header[1] = 0x00; // bit 0~3: version 0, bit 4~7: ABI encoding format (0b0000)
+    header[2] = 0x10; // bit 0~3: reserved bytes (0b0000), bit 4~7: DepositAndCall operation (0b0001)
     header[3] = 0x07; // Flags: recipient + payload + revert (0x07)
+
+    console.log("🔍 [BITCOIN INSCRIPTION DEBUG] Header Construction:", {
+      headerHex: ethers.hexlify(header),
+      headerBytes: Array.from(header),
+      byte0: "0x5a (ZetaChain identifier)",
+      byte1: "0x00 (version 0 + ABI encoding)",
+      byte2: "0x10 (reserved 0 + DepositAndCall opcode)",
+      byte3: "0x07 (flags: recipient + payload + revert)",
+      expectedHeader: "5a001007"
+    });
 
     // ABI encode the inscription data
     // PATCH: Use 'bytes' for Bitcoin addresses to avoid EVM address validation errors
@@ -854,7 +888,6 @@ export const executeCommitTransaction = async (
     logger.log('INFO', "[CommitTx] Attempting to sign commit PSBT with wallet...");
     const psbtBase64 = commitTx.psbt.toBase64();
     let signedTxHex: string;
-    // Sign PSBT with Unisat wallet - try with explicit options for Unisat
     if (wallet.walletType === 'unisat') {
       try {
         logger.log('DEBUG', "[CommitTx] Attempting Unisat signPsbt with autoFinalized=true...");
@@ -867,20 +900,34 @@ export const executeCommitTransaction = async (
       signedTxHex = await wallet.signPsbt(psbtBase64);
     }
     logger.log('DEBUG', "[CommitTx] Signed result type:", typeof signedTxHex);
-    // If the result is a PSBT, finalize and extract the raw tx
-    if (signedTxHex.startsWith('cHNidP8') || signedTxHex.startsWith('70736274ff')) {
-      logger.log('DEBUG', "[CommitTx] Result is PSBT, finalizing and extracting raw tx...");
+    logger.log('DEBUG', "[CommitTx] First 40 chars of result:", signedTxHex.slice(0, 40));
+    // Robust PSBT/raw tx detection
+    const isPsbtBase64 = signedTxHex.startsWith('cHNidP8');
+    const isPsbtHex = signedTxHex.startsWith('70736274ff');
+    if (isPsbtBase64) {
+      logger.log('DEBUG', "[CommitTx] Result is PSBT (base64), finalizing and extracting raw tx...");
       const signedPsbt = bitcoin.Psbt.fromBase64(signedTxHex, { network: BITCOIN_NETWORK });
       if (signedPsbt.data.inputs.some((input, idx) => !signedPsbt.data.inputs[idx].finalScriptWitness && !signedPsbt.data.inputs[idx].finalScriptSig)) {
         signedPsbt.finalizeAllInputs();
       }
       signedTxHex = signedPsbt.extractTransaction().toHex();
       logger.log('DEBUG', "[CommitTx] Extracted raw tx from PSBT.");
-    } else {
+    } else if (isPsbtHex) {
+      logger.log('DEBUG', "[CommitTx] Result is PSBT (hex), finalizing and extracting raw tx...");
+      const psbtBuffer = Buffer.from(signedTxHex, 'hex');
+      const signedPsbt = bitcoin.Psbt.fromBuffer(psbtBuffer, { network: BITCOIN_NETWORK });
+      if (signedPsbt.data.inputs.some((input, idx) => !signedPsbt.data.inputs[idx].finalScriptWitness && !signedPsbt.data.inputs[idx].finalScriptSig)) {
+        signedPsbt.finalizeAllInputs();
+      }
+      signedTxHex = signedPsbt.extractTransaction().toHex();
+      logger.log('DEBUG', "[CommitTx] Extracted raw tx from PSBT (hex).");
+    } else if (/^[0-9a-fA-F]+$/.test(signedTxHex)) {
       logger.log('DEBUG', "[CommitTx] Result is raw tx hex.");
+    } else {
+      logger.log('ERROR', "[CommitTx] Unknown result format from wallet. Aborting.", signedTxHex.slice(0, 40));
+      throw new Error('Unknown result format from wallet. Not PSBT or raw tx hex.');
     }
     logger.log('DEBUG', "[CommitTx] Final transaction hex length:", signedTxHex.length);
-    // Validate transaction hex format
     if (!/^[0-9a-fA-F]+$/.test(signedTxHex)) {
       throw new Error(`Invalid transaction hex format. Length: ${signedTxHex.length}, Preview: ${signedTxHex.substring(0, 50)}...`);
     }
@@ -935,17 +982,31 @@ export const executeRevealTransaction = async (
     logger.log('INFO', "[RevealTx] Attempting to sign reveal PSBT with wallet...");
     const psbtBase64 = revealTx.psbt.toBase64();
     let signedTxHex: string = await wallet.signPsbt(psbtBase64);
-    // If the result is a PSBT, finalize and extract the raw tx
-    if (signedTxHex.startsWith('cHNidP8') || signedTxHex.startsWith('70736274ff')) {
-      logger.log('DEBUG', "[RevealTx] Result is PSBT, finalizing and extracting raw tx...");
+    logger.log('DEBUG', "[RevealTx] First 40 chars of result:", signedTxHex.slice(0, 40));
+    const isPsbtBase64 = signedTxHex.startsWith('cHNidP8');
+    const isPsbtHex = signedTxHex.startsWith('70736274ff');
+    if (isPsbtBase64) {
+      logger.log('DEBUG', "[RevealTx] Result is PSBT (base64), finalizing and extracting raw tx...");
       const signedPsbt = bitcoin.Psbt.fromBase64(signedTxHex, { network: BITCOIN_NETWORK });
       if (signedPsbt.data.inputs.some((input, idx) => !signedPsbt.data.inputs[idx].finalScriptWitness && !signedPsbt.data.inputs[idx].finalScriptSig)) {
         signedPsbt.finalizeAllInputs();
       }
       signedTxHex = signedPsbt.extractTransaction().toHex();
       logger.log('DEBUG', "[RevealTx] Extracted raw tx from PSBT.");
-    } else {
+    } else if (isPsbtHex) {
+      logger.log('DEBUG', "[RevealTx] Result is PSBT (hex), finalizing and extracting raw tx...");
+      const psbtBuffer = Buffer.from(signedTxHex, 'hex');
+      const signedPsbt = bitcoin.Psbt.fromBuffer(psbtBuffer, { network: BITCOIN_NETWORK });
+      if (signedPsbt.data.inputs.some((input, idx) => !signedPsbt.data.inputs[idx].finalScriptWitness && !signedPsbt.data.inputs[idx].finalScriptSig)) {
+        signedPsbt.finalizeAllInputs();
+      }
+      signedTxHex = signedPsbt.extractTransaction().toHex();
+      logger.log('DEBUG', "[RevealTx] Extracted raw tx from PSBT (hex).");
+    } else if (/^[0-9a-fA-F]+$/.test(signedTxHex)) {
       logger.log('DEBUG', "[RevealTx] Result is raw tx hex.");
+    } else {
+      logger.log('ERROR', "[RevealTx] Unknown result format from wallet. Aborting.", signedTxHex.slice(0, 40));
+      throw new Error('Unknown result format from wallet. Not PSBT or raw tx hex.');
     }
     logger.log('INFO', "[RevealTx] Broadcasting reveal transaction...");
     const result = await broadcastBitcoinTransaction(signedTxHex);

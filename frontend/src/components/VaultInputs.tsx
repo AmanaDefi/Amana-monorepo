@@ -1800,15 +1800,15 @@ useEffect(() => {
                 ? (selectedChain?.id === CHAIN_ID.bitcoin ? bitcoinBalanceFormatted : tokenBalance.formatted)
                 : (vaultTotalAssetinToken?.totalAssetsinToken?.toString() ?? "0.00");
               
-              console.log("🔍 [VaultInputs] Balance display debug:", {
-                isDeposit,
-                selectedChainId: selectedChain?.id,
-                isBitcoinChain: selectedChain?.id === CHAIN_ID.bitcoin,
-                bitcoinBalanceFormatted,
-                tokenBalanceFormatted: tokenBalance.formatted,
-                vaultTotalAssets: vaultTotalAssetinToken?.totalAssetsinToken?.toString(),
-                finalInputBalanceValue: inputBalanceValue,
-              });
+              // console.log("🔍 [VaultInputs] Balance display debug:", {
+              //   isDeposit,
+              //   selectedChainId: selectedChain?.id,
+              //   isBitcoinChain: selectedChain?.id === CHAIN_ID.bitcoin,
+              //   bitcoinBalanceFormatted,
+              //   tokenBalanceFormatted: tokenBalance.formatted,
+              //   vaultTotalAssets: vaultTotalAssetinToken?.totalAssetsinToken?.toString(),
+              //   finalInputBalanceValue: inputBalanceValue,
+              // });
               
               return null;
             })()}
