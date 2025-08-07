@@ -71,7 +71,7 @@ const MobileAllWallets = () => {
           setWalletAddress(result.accounts[0]);
           return fundWalletConnect();
         }
-        return successAuth(walletAddress, activeAccount || undefined, true);
+        return successAuth(result.accounts[0], activeAccount, true);
       },
     },
   });

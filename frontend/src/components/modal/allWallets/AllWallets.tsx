@@ -76,7 +76,7 @@ const AllWAllets = () => {
           return fundWalletConnect();
         }
 
-        return successAuth(null, activeAccount || undefined, true);
+        return successAuth(result.accounts[0], activeAccount, true);
       },
     },
   });

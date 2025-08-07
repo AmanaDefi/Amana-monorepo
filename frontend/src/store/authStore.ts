@@ -131,6 +131,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         username: "",
         otp: "",
         _isProcessingAuth: false,
+        isAuthenticated: true,
+        userAddress: walletAddress || activeAccount?.address || null,
       });
     } else {
       if (!activeAccount || activeAccount?.walletClientType === "privy") {
@@ -149,6 +151,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             username: "",
             otp: "",
             _isProcessingAuth: false,
+            isAuthenticated: true,
+            userAddress: walletAddr || null,
           });
         } else {
           if (walletAddr) {
@@ -166,6 +170,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             username: "",
             otp: "",
             _isProcessingAuth: false,
+            isAuthenticated: true,
+            userAddress: walletAddr || null,
           });
         }
       } else {
@@ -176,6 +182,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           username: "",
           otp: "",
           _isProcessingAuth: false,
+          isAuthenticated: true,
+          userAddress: walletAddress || activeAccount?.address || null,
         });
       }
     }
