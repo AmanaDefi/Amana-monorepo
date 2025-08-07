@@ -1042,13 +1042,11 @@ useEffect(() => {
 
   const timeoutRef = useRef<NodeJS.Timeout>();
 
-  const checkSlippageExceedingLimit = () => {
-    // Calculate total slippage (swap + deposit)
+  const checkSlippageExceedingLimit = useCallback(() => {
     const totalSlippagePercentage =
       (conversionOutput.swapSlippagePercentage || 0) +
       (conversionOutput.depositSlippagePercentage || 0);
 
-    // If slippage is over 100%, hide the display completely
     if (totalSlippagePercentage > 100) {
       setIsSlippageExceedingLimit(false);
       setOutputBoxErrorMessage("");
@@ -1057,15 +1055,17 @@ useEffect(() => {
 
     const roundedTotalSlippage = parseFloat(totalSlippagePercentage.toFixed(2));
     const roundedUserSlippage = parseFloat(userSlippage.toFixed(2));
-  
+
     if (
       userSlippage &&
-      roundedTotalSlippage > 0 && 
+      roundedTotalSlippage > 0 &&
       roundedUserSlippage < roundedTotalSlippage &&
+      debouncedInputBalance.value > 0n &&
+      !loadingOutputToken &&
       !(
         isDeposit &&
         !vaultData.depositFeePaidFromGasTank &&
-        inputBalance.value > 0n &&
+        debouncedInputBalance.value > 0n &&
         Number(
           conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, ""),
         ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, ""))
@@ -1077,9 +1077,33 @@ useEffect(() => {
       );
     } else {
       setIsSlippageExceedingLimit(false);
-      setOutputBoxErrorMessage("");
+      if (outputBoxErrorMessage.includes("exceeds your maximum slippage")) {
+        setOutputBoxErrorMessage("");
+      }
     }
-  };
+  }, [
+    conversionOutput.swapSlippagePercentage,
+    conversionOutput.depositSlippagePercentage,
+    userSlippage,
+    debouncedInputBalance.value,
+    loadingOutputToken,
+    isDeposit,
+    vaultData.depositFeePaidFromGasTank,
+    conversionOutput.inputAmountInUSDFormatted,
+    conversionOutput.gasFeeInUSD,
+    outputBoxErrorMessage,
+  ]);
+
+  useEffect(() => {
+    if (
+      (conversionOutput.swapSlippagePercentage !== undefined ||
+        conversionOutput.depositSlippagePercentage !== undefined) &&
+      debouncedInputBalance.value > 0n &&
+      !loadingOutputToken
+    ) {
+      checkSlippageExceedingLimit();
+    }
+  }, [userSlippage, isAuto, checkSlippageExceedingLimit]);
 
   // Ensure immediately change the conversion to 0 if user input is not valid
   useEffect(() => {
@@ -1294,18 +1318,9 @@ useEffect(() => {
   ]);
 
   // Check slippage limits when conversion output changes
-  useEffect(() => {
-    checkSlippageExceedingLimit();
-  }, [
-    conversionOutput.swapSlippagePercentage,
-    conversionOutput.depositSlippagePercentage,
-    userSlippage,
-    debouncedInputBalance.value,
-    conversionOutput.inputAmountInUSDFormatted,
-    conversionOutput.gasFeeInUSD,
-    isDeposit,
-    vaultData.depositFeePaidFromGasTank,
-  ]);
+ useEffect(() => {
+   checkSlippageExceedingLimit();
+ }, [checkSlippageExceedingLimit]);
 
   // Create an adapter function for InputTokenWithError in Deposit mode
   const handleDepositTokenSelect = (token: Token) => {
