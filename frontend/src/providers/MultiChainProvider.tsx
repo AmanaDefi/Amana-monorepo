@@ -220,7 +220,21 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     activeChain?.id,
   ]);
 
+  // ВИПРАВЛЕНА disconnectConnectors з детальним логуванням
   const disconnectConnectors = useCallback(async () => {
+    productionLog("🚨 disconnectConnectors CALLED", {
+      walletsCount: wallets?.length,
+      connectedWallets: wallets?.map((w) => ({
+        id: w.meta.id,
+        connectedAt: w.connectedAt,
+      })),
+      // Stack trace щоб побачити ХТОО викликає
+      calledFrom: new Error().stack
+        ?.split("\n")
+        .slice(1, 5)
+        .map((line) => line.trim()),
+    });
+
     if (!!wallets?.length) {
       wallets.forEach(async (wallet) => {
         try {
@@ -234,6 +248,10 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
           );
 
           if (connector) {
+            productionLog("🔌 Actually disconnecting connector", {
+              connectorId: connector.id,
+              walletId: wallet.meta.id,
+            });
             await disconnectAsync({ connector });
             await connector.disconnect();
             wallet.disconnect();
@@ -325,70 +343,53 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     successAuth,
   ]);
 
-useEffect(() => {
-  productionLog("WAGMI Effect Triggered", {
+  useEffect(() => {
+    productionLog("WAGMI Effect Triggered", {
+      wagmiIsConnected,
+      wagmiAddress,
+      currentWalletAddress: walletAddress,
+      step,
+      privyWalletAddress: privyWallet?.address,
+      solanaConnected: connected,
+      condition1:
+        wagmiIsConnected && wagmiAddress && walletAddress !== wagmiAddress,
+      condition2: !wagmiIsConnected && walletAddress === wagmiAddress,
+    });
+
+    if (wagmiIsConnected && wagmiAddress && !step) {
+      if (walletAddress !== wagmiAddress) {
+        productionLog("WAGMI: Setting wallet address", {
+          from: walletAddress,
+          to: wagmiAddress,
+          reason: "wagmi connected with different address",
+        });
+        setWalletAddress(wagmiAddress);
+        setSelectedChain("evm");
+        if (activeChain?.id !== zetachain.id) {
+          setActiveChain(zetachain);
+        }
+        successAuth(wagmiAddress, activeEvmWallet, true);
+      }
+    }
+  }, [
     wagmiIsConnected,
     wagmiAddress,
-    currentWalletAddress: walletAddress,
+    walletAddress,
     step,
-    privyWalletAddress: privyWallet?.address,
-    solanaConnected: connected,
-    condition1:
-      wagmiIsConnected && wagmiAddress && walletAddress !== wagmiAddress,
-    condition2: !wagmiIsConnected && walletAddress === wagmiAddress,
-  });
+    activeChain?.id,
+    privyWallet?.address,
+    connected,
+    successAuth,
+  ]);
 
-  if (wagmiIsConnected && wagmiAddress && !step) {
-    if (walletAddress !== wagmiAddress) {
-      productionLog("WAGMI: Setting wallet address", {
-        from: walletAddress,
-        to: wagmiAddress,
-        reason: "wagmi connected with different address",
-      });
-      setWalletAddress(wagmiAddress);
-      setSelectedChain("evm");
-      if (activeChain?.id !== zetachain.id) {
-        setActiveChain(zetachain);
-      }
-      successAuth(wagmiAddress, activeEvmWallet, true);
-    }
-  }
-  // else if (
-  //   !wagmiIsConnected &&
-  //   walletAddress === wagmiAddress &&
-  //   !privyWallet?.address &&
-  //   !connected
-  // ) {
-  //   productionLog("WAGMI: Clearing wallet address", {
-  //     reason: "wagmi disconnected",
-  //     wagmiAddress,
-  //     walletAddress,
-  //     hasPrivyWallet: !!privyWallet?.address,
-  //     solanaConnected: connected,
-  //   });
-  //   setWalletAddress(null);
-  //   setSelectedChain(null);
-  //   setActiveChain(null);
-  //
-  //   const { logout: authLogout } = useAuthStore.getState();
-  //   authLogout();
-  // }
-}, [
-  wagmiIsConnected,
-  wagmiAddress,
-  walletAddress,
-  step,
-  activeChain?.id,
-  privyWallet?.address,
-  connected,
-  successAuth,
-]);
-
+  // ПРОБЛЕМНИЙ useEffect з детальним логуванням
   useEffect(() => {
     if (privyWallet?.address && connected && !latestChainRef.current && !step) {
-      productionLog("Disconnecting Solana due to Privy wallet", {
-        privyAddress: privyWallet?.address,
-        solanaConnected: connected,
+      productionLog("🔥 DISCONNECT TRIGGER 1", {
+        privyWalletAddress: privyWallet?.address,
+        connected,
+        latestChainRef: latestChainRef.current,
+        step,
       });
       disconnect();
       disconnectConnectors();
@@ -396,6 +397,10 @@ useEffect(() => {
     if (privyWallet?.address) {
       if (!step) {
         if (wallets.length > 1 && user?.wallet) {
+          productionLog("🔥 DISCONNECT TRIGGER 2", {
+            walletsLength: wallets.length,
+            userWallet: !!user?.wallet,
+          });
           disconnectConnectors();
         }
 
@@ -433,13 +438,17 @@ useEffect(() => {
         }
 
         if (connected) {
+          productionLog("🔥 DISCONNECT TRIGGER 3", {
+            connected,
+            privyWalletAddress: privyWallet?.address,
+          });
           disconnect().catch((err) => {
             console.error("error disconnect Solana:", err);
           });
           disconnectConnectors();
         }
       }
-    } 
+    }
   }, [
     privyWallet,
     connected,
