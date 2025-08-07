@@ -17,6 +17,7 @@ import {
 import Link from "next/link";
 import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/solid";
 import { hasNoErrors, parseTransactionMessage } from "@/utils/utils";
+import { CHAIN_ID } from "@/constants/chainConfig";
 
 interface DepositInstructionProps {
   transactionStepFeedback?: TransactionStepMessages;
@@ -44,6 +45,55 @@ const getStepIcon = (step: DepositStep): React.ReactNode => {
       return <FinalConfirmationIcon {...iconProps} />;
     default:
       return <SelectTokenIcon {...iconProps} />;
+  }
+};
+
+// Bitcoin sub-step types
+enum BitcoinSubStep {
+  COMMIT = 'commit',
+  REVEAL = 'reveal'
+}
+
+const getBitcoinSubStepStatus = (
+  subStep: BitcoinSubStep,
+  activeFeedback: TransactionStepMessages,
+  isDeposit: boolean,
+): { status: TransactionStepStatus; description: string; txHash?: string } => {
+  if (subStep === BitcoinSubStep.COMMIT) {
+    const commitFeedback = activeFeedback[Action.depositApprove];
+    return {
+      status: commitFeedback?.status || TransactionStepStatus.pending,
+      description: commitFeedback?.description || 'Sign commit transaction (creates inscription)',
+      txHash: commitFeedback?.txHash
+    };
+  } else {
+    const revealFeedback = activeFeedback[Action.deposit];
+    return {
+      status: revealFeedback?.status || TransactionStepStatus.pending,
+      description: revealFeedback?.description || 'Sign reveal transaction (sends BTC to gateway)',
+      txHash: revealFeedback?.txHash
+    };
+  }
+};
+
+const getBitcoinSubStepIcon = (status: TransactionStepStatus, stepNumber: number = 1) => {
+  switch (status) {
+    case TransactionStepStatus.completed:
+      return <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+        <span className="text-white text-xs">✓</span>
+      </div>;
+    case TransactionStepStatus.processing:
+      return <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+        <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+      </div>;
+    case TransactionStepStatus.error:
+      return <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+        <span className="text-white text-xs">✗</span>
+      </div>;
+    default:
+      return <div className="w-4 h-4 bg-gray-500 rounded-full flex items-center justify-center">
+        <span className="text-white text-xs">{stepNumber}</span>
+      </div>;
   }
 };
 
@@ -304,6 +354,12 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
           const { textBeforeHash, hashValue } =
             parseTransactionMessage(fullDescription);
 
+          // Check if this is Bitcoin CONFIRM_DEPOSIT step and should show sub-steps
+          const isBitcoinConfirmDeposit = 
+            props.activeChainId === CHAIN_ID.bitcoin && 
+            step === DepositStep.CONFIRM_DEPOSIT && 
+            stepState === "active" || stepState === "processing";
+
           return (
             <motion.div
               key={`step-${step}`}
@@ -422,6 +478,57 @@ const DepositInstruction: React.FC<DepositInstructionProps> = (props) => {
                     )}
                 </AnimatePresence>
               </div>
+              
+              {/* Bitcoin sub-steps for CONFIRM_DEPOSIT */}
+              {isBitcoinConfirmDeposit && (
+                <motion.div
+                  className="ml-11 mt-4 space-y-3"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  {/* Commit sub-step */}
+                  <motion.div className="flex items-center gap-3">
+                    {getBitcoinSubStepIcon(getBitcoinSubStepStatus(BitcoinSubStep.COMMIT, activeFeedback, isDeposit).status, 1)}
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-300">
+                        {getBitcoinSubStepStatus(BitcoinSubStep.COMMIT, activeFeedback, isDeposit).description}
+                      </p>
+                    </div>
+                    {getBitcoinSubStepStatus(BitcoinSubStep.COMMIT, activeFeedback, isDeposit).txHash && (
+                      <Link
+                        href={getBitcoinSubStepStatus(BitcoinSubStep.COMMIT, activeFeedback, isDeposit).txHash!}
+                        className="flex items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <ArrowTopRightOnSquareIcon width="16" height="16" />
+                      </Link>
+                    )}
+                  </motion.div>
+                  
+                  {/* Reveal sub-step */}
+                  <motion.div className="flex items-center gap-3">
+                    {getBitcoinSubStepIcon(getBitcoinSubStepStatus(BitcoinSubStep.REVEAL, activeFeedback, isDeposit).status, 2)}
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-300">
+                        {getBitcoinSubStepStatus(BitcoinSubStep.REVEAL, activeFeedback, isDeposit).description}
+                      </p>
+                    </div>
+                    {getBitcoinSubStepStatus(BitcoinSubStep.REVEAL, activeFeedback, isDeposit).txHash && (
+                      <Link
+                        href={getBitcoinSubStepStatus(BitcoinSubStep.REVEAL, activeFeedback, isDeposit).txHash!}
+                        className="flex items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <ArrowTopRightOnSquareIcon width="16" height="16" />
+                      </Link>
+                    )}
+                  </motion.div>
+                </motion.div>
+              )}
             </motion.div>
           );
         })}

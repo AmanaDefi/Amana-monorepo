@@ -119,9 +119,9 @@ const getStepDescription = (
   if (activeChainId === CHAIN_ID.bitcoin) {
     switch (step) {
       case DepositStep.CONFIRM_DEPOSIT:
-        return 'Commit (sign and broadcast the commit transaction)';
+        return 'Confirm Bitcoin Deposit (Commit & Reveal)';
       case DepositStep.CROSS_CHAIN_TRANSFER:
-        return 'Reveal (sign and broadcast the reveal transaction)';
+        return 'Cross-chain transfer and investment of funds';
       case DepositStep.FINAL_CONFIRMATION:
         return 'Deposit Complete (BTC sent to vault)';
       default:

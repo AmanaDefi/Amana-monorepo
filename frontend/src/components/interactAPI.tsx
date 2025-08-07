@@ -373,7 +373,7 @@ export default function InteractionContainer({
   setLabel,
   label,
   outputAmountFormatted,
-  bitcoinWallet, // <-- Add this line
+  bitcoinWallet,
 }: {
   step: number;
   setStep: Function;
@@ -394,7 +394,7 @@ export default function InteractionContainer({
   setLabel: Dispatch<SetStateAction<string>>;
   label: string;
   outputAmountFormatted: string;
-  bitcoinWallet?: any; // <-- Add this line
+  bitcoinWallet?: any;
 }): JSX.Element {
   const { walletAddress } = useMultiChain();
   // Core transaction state
@@ -953,7 +953,7 @@ function Interaction({
   isDeposit,
   hideStepsDisplay = false,
   outputAmountFormatted,
-  bitcoinWallet
+  bitcoinWallet,
 }: {
   setStep: Function;
   setAction: Function;
@@ -1464,6 +1464,8 @@ function Interaction({
               (activeAccount?.address && activeChain?.id === CHAIN_ID["solana"]) 
             ))
           );
+
+
 
           const isDisabled = !isConnectWalletShown
             ? isButtonDisabled ||

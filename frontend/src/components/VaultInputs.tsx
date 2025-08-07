@@ -287,6 +287,8 @@ export default function VaultInputs({
     initialConversionOutput,
   );
 
+
+
   const inputTokenPrice = useTokenPriceBySymbol(inputToken?.symbol);
   const vaultTokenPrice = useTokenPriceBySymbol(vaultData.inputToken?.symbol);
 
@@ -936,6 +938,8 @@ useEffect(() => {
     walletAddress,
     vaultTokenDecimals: vaultData.inputToken.decimals,
   });
+
+
 
   const tokenList = useMemo(() => {
     let tokens: Token[] = [];
@@ -2020,6 +2024,7 @@ useEffect(() => {
           conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, ""),
         ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, ""))
       ) && (
+        <>
         <InteractionContainer
           step={step}
           setStep={setStep}
@@ -2040,8 +2045,9 @@ useEffect(() => {
           setLabel={setLabel}
           label={label}
           outputAmountFormatted={conversionOutput.outputAmountFormatted}
-          bitcoinWallet={bitcoinWallet}
+            bitcoinWallet={bitcoinWallet}
         />
+        </>
       )}
     </>
   );
