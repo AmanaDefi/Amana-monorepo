@@ -1055,10 +1055,13 @@ useEffect(() => {
       return;
     }
 
+    const roundedTotalSlippage = parseFloat(totalSlippagePercentage.toFixed(2));
+    const roundedUserSlippage = parseFloat(userSlippage.toFixed(2));
+  
     if (
       userSlippage &&
-      totalSlippagePercentage > 0 &&
-      userSlippage < totalSlippagePercentage &&
+      roundedTotalSlippage > 0 && 
+      roundedUserSlippage < roundedTotalSlippage &&
       !(
         isDeposit &&
         !vaultData.depositFeePaidFromGasTank &&
@@ -1070,7 +1073,7 @@ useEffect(() => {
     ) {
       setIsSlippageExceedingLimit(true);
       setOutputBoxErrorMessage(
-        `Total slippage of ${totalSlippagePercentage.toFixed(2)}% exceeds your maximum slippage setting of ${userSlippage}%`,
+        `Total slippage of ${roundedTotalSlippage.toFixed(2)}% exceeds your maximum slippage setting of ${roundedUserSlippage.toFixed(2)}%`,
       );
     } else {
       setIsSlippageExceedingLimit(false);
