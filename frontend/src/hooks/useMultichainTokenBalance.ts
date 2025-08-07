@@ -39,7 +39,7 @@ export const useMultichainTokenBalance = (token: Token | undefined) => {
     setError(null);
 
     try {
-      if (currentToken.isNative) {
+     if (currentToken.isNative) {
         let updatedBalance = DEFAULT_BALANCE;
         if (activeChain?.id !== CHAIN_ID["solana"]) {
           try {

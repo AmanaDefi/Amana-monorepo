@@ -384,6 +384,7 @@ export default function VaultInputs({
         inputBal: JSON.stringify(EMPTY_BALANCE, bigIntReplacer),
       });
       setDisplayValue("0.00");
+
     }
   }, [selectChain?.id, vaultData.id]);
 
@@ -1426,6 +1427,7 @@ useEffect(() => {
                   vaultId={vaultId}
                   vaultData={vaultData}
                   onSelectChainAndToken={handleSelectChainAngToken}
+                  disabled={loadingOutputToken}
                 />
               </div>
             )}
@@ -1499,6 +1501,7 @@ useEffect(() => {
                   vaultId={vaultId}
                   vaultData={vaultData}
                   onSelectChainAndToken={handleSelectChainAngToken}
+                  disabled={loadingOutputToken}
                 />
               )}
             </div>
@@ -1547,6 +1550,7 @@ useEffect(() => {
                   onSelectChainAndToken={handleSelectChainAngToken}
                   vaultId={vaultId}
                   vaultData={vaultData}
+                  disabled={loadingOutputToken}
                 />
               </div>
             )}
@@ -1588,6 +1592,7 @@ useEffect(() => {
                   vaultId={vaultId}
                   vaultData={vaultData}
                   onSelectChainAndToken={handleSelectChainAngToken}
+                  disabled={loadingOutputToken}
                 />
               )}
             </div>
