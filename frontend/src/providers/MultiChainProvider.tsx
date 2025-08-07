@@ -661,28 +661,36 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     wagmiIsConnected,
   ]);
 
-  useEffect(() => {
-    if (
-      !wagmiIsConnected &&
-      !wagmiAddress &&
-      walletAddress &&
-      !privyWallet?.address &&
-      !connected
-    ) {
-      setWalletAddress(null);
-      setSelectedChain(null);
-      setActiveChain(null);
+ useEffect(() => {
+   if (wagmiIsConnected && wagmiAddress && walletAddress !== wagmiAddress) {
+     setWalletAddress(wagmiAddress);
+     setSelectedChain("evm");
+     if (activeChain?.id !== zetachain.id) {
+       setActiveChain(zetachain);
+     }
+     successAuth(wagmiAddress, activeEvmWallet, true);
 
-      const { logout: authLogout } = useAuthStore.getState();
-      authLogout();
-    }
-  }, [
-    wagmiIsConnected,
-    wagmiAddress,
-    walletAddress,
-    privyWallet?.address,
-    connected,
-  ]);
+   } else if (!wagmiIsConnected && walletAddress === wagmiAddress) {
+     setWalletAddress(null);
+     setSelectedChain(null);
+     setActiveChain(null);
+
+     const { logout: authLogout } = useAuthStore.getState();
+     authLogout();
+   }
+
+ }, [
+   wagmiIsConnected,
+   wagmiAddress,
+   walletAddress,
+   privyWallet?.address,
+   connected,
+   activeChain,
+   successAuth,
+   setWalletAddress,
+   setSelectedChain,
+   setActiveChain,
+ ]);
 
   const activeEvmWallet = useMemo(() => {
     if (wagmiIsConnected && wagmiAddress) {
