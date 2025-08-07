@@ -76,6 +76,7 @@ const MobileAllWallets = () => {
     },
   });
 
+
   const fundWalletConnect = () => {
     setStep("confirm");
   };
@@ -84,12 +85,12 @@ const MobileAllWallets = () => {
     if (isConnectingWallet) {
       await disconnectAsync();
     }
+
     if (activeAccount?.walletClientType === "privy") {
       const confirmResult = confirm(
         "You smart wallet account will be disconnected",
       );
       if (!confirmResult) return;
-
       await logout();
     }
 
@@ -99,6 +100,7 @@ const MobileAllWallets = () => {
 
     setActiveConnector(connector);
     localStorage.setItem("connectorId", connector.id);
+
     connect(
       {
         connector,
@@ -109,20 +111,21 @@ const MobileAllWallets = () => {
       },
       {
         onError: (error) => {
-          console.log(error);
+          console.error("Wagmi connect onError:", error.message);
 
           if (error.name === "ConnectorAlreadyConnectedError") {
             connector.disconnect();
             disconnectAsync({ connector });
             setActiveConnector(null);
-
             showInfoToast("Please try to connect wallet again");
           }
+        },
+        onSuccess: (result) => {
+          console.log("Wagmi connect onSuccess:", result);
         },
       },
     );
   };
-
   const handleClose = () => {
     if (fundWalletStep === "connectWallet") {
       setStep("setValues");
@@ -197,6 +200,7 @@ const MobileAllWallets = () => {
       </div>
     </div>
   );
+  
 
   return (
     <MobileModal

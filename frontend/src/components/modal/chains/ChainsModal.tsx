@@ -498,6 +498,9 @@ useEffect(() => {
         const shouldGoToConfirm =
           fundWalletAddress && activeAccount?.walletClientType !== "privy";
         setFundWalletStep(shouldGoToConfirm ? "confirm" : "setValues");
+
+        handleModalClose();
+
       } else {
         setSelectedTokenLocal(token);
         setSelectedTokenFromModal(token);
