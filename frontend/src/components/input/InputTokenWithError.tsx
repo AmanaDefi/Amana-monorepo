@@ -316,7 +316,7 @@ export default function InputTokenWithError({
                 className="justify-end"
                 onSelectChain={onSelectChain}
                 onSelectChainAndToken={onSelectChainAndToken}
-                disabled={isTxInProgress}
+                disabled={isTxInProgress || loadingOutputToken}
               />
             ) : (
               <div

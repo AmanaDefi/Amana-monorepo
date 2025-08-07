@@ -24,6 +24,7 @@ interface ChainSelectorProps {
   vaultId?: string;
   isFromTopUp?: boolean;
   vaultData?: VaultData;
+  disabled?: boolean;
 }
 
 export default function ChainSelector({
@@ -35,6 +36,7 @@ export default function ChainSelector({
   vaultId,
   isFromTopUp,
   vaultData,
+  disabled = false,
 }: ChainSelectorProps) {
   const {
     activeChain,
@@ -45,7 +47,8 @@ export default function ChainSelector({
   const { openModal, setSelectedChainFromModal } = useChainTokenModalStore();
   const { setStep } = useFundWalletStore();
 
-  const isTxInProgress = vaultId ? CheckTheTxIsInProgress(vaultId) : false;
+  const isTxInProgress =
+    (vaultId ? CheckTheTxIsInProgress(vaultId) : false) || disabled;
 
   const handleOpenModal = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -158,9 +161,7 @@ export default function ChainSelector({
                 key={icon.symbol}
                 disabled={isTxInProgress}
                 className={`w-[30px] h-[30px] rounded-full overflow-hidden transition-transform duration-200 relative border border-white bg-[#3E73C4] ${
-                  isTxInProgress
-                    ? "cursor-not-allowed"
-                    : "hover:scale-125"
+                  isTxInProgress ? "cursor-not-allowed" : "hover:scale-125"
                 }`}
                 style={{ zIndex: index }}
               >
