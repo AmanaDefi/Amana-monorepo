@@ -135,7 +135,7 @@ export const useVaultData = () => {
     console.log('[DEBUG] subgraphData.vaults loaded:', subgraphData.vaults.length);
     subgraphData.vaults.forEach(vault => {
       if (!vault.apy7d || parseFloat(vault.apy7d) === 0) {
-        console.log('[DEBUG] Subgraph APY missing or zero for vault:', vault.id, vault.name, vault.protocolName);
+        // console.log('[DEBUG] Subgraph APY missing or zero for vault:', vault.id, vault.name, vault.protocolName);
       }
     });
   }
