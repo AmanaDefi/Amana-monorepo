@@ -225,6 +225,8 @@ export enum Tabs {
 }
 
 export interface ITxLocalStorage {
+  vaultId?: string;
+
   tab: Tabs;
 
   action: Action;

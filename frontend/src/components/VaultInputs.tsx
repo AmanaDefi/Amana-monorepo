@@ -580,10 +580,16 @@ useEffect(() => {
         );
 
         setSteps(newStepsConfig);
-        updateLocalStorageObject(vaultData.id, { steps: newStepsConfig });
+        updateLocalStorageObject(vaultData.id, {
+          vaultId: vaultData.id,
+          steps: newStepsConfig,
+        });
       } else {
         setSteps([]);
-        updateLocalStorageObject(vaultData.id, { steps: [] });
+        updateLocalStorageObject(vaultData.id, {
+          vaultId: vaultData.id,
+          steps: [],
+        });
       }
     };
 
@@ -638,6 +644,7 @@ useEffect(() => {
     setInputBalance(EMPTY_BALANCE);
     setDisplayValue("0.00");
     updateLocalStorageObject(vaultData.id, {
+      vaultId: vaultData.id,
       tab: newTab,
       inputBal: JSON.stringify(EMPTY_BALANCE, bigIntReplacer),
     });
@@ -666,6 +673,7 @@ useEffect(() => {
         );
         setSteps(steps);
         updateLocalStorageObject(vaultData.id, {
+          vaultId: vaultData.id,
           steps: steps,
           selectedToken: JSON.stringify(inputToken, bigIntReplacer),
         });

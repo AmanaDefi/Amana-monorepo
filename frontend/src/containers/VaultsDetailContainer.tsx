@@ -217,14 +217,16 @@ const VaultsDetailContainer: React.FC<{
     }
   }, [vaultID, activeChain]);
 
-  useEffect(() => {
-    const checkTransactionState = () => {
-      if (!vaultID) return;
+useEffect(() => {
+  const checkTransactionState = () => {
+    const currentVaultId = vaultData?.id || vaultID?.toString();
+    if (!currentVaultId) return;
 
-      const isTxInProgress = CheckTheTxIsInProgress(vaultID.toString());
-      const vaultTxData = getLocalStorageObject(vaultID.toString());
+    const isTxInProgress = CheckTheTxIsInProgress(currentVaultId);
+    const vaultTxData = getLocalStorageObject(currentVaultId);
 
-      if (isTxInProgress && vaultTxData) {
+    if (isTxInProgress && vaultTxData) {
+      if (vaultTxData.vaultId === currentVaultId || !vaultTxData.vaultId) {
         setTransactionStepFeedback(vaultTxData?.transactionStepFeedback ?? {});
         setLastTransactionStepFeedback(
           vaultTxData?.lastTransactionStepFeedback ?? {},
@@ -240,10 +242,17 @@ const VaultsDetailContainer: React.FC<{
         setIsTransactionProcessing(false);
         setIsFailedOnCOnfirmation(false);
       }
-    };
+    } else {
+      setTransactionStepFeedback({});
+      setLastTransactionStepFeedback({});
+      setFinishedTransaction(false);
+      setIsTransactionProcessing(false);
+      setIsFailedOnCOnfirmation(false);
+    }
+  };
 
-    checkTransactionState();
-  }, [vaultID, user, wallet]);
+  checkTransactionState();
+}, [vaultID, vaultData?.id, user, wallet]);
 
   const currentVault = useMemo(() => {
     return vaultData ? [vaultData] : null;
