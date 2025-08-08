@@ -1043,13 +1043,15 @@ useEffect(() => {
   const timeoutRef = useRef<NodeJS.Timeout>();
 
   const checkSlippageExceedingLimit = useCallback(() => {
+    // Calculate total slippage (swap + deposit)
     const totalSlippagePercentage =
       (conversionOutput.swapSlippagePercentage || 0) +
       (conversionOutput.depositSlippagePercentage || 0);
 
+    // If slippage is over 100%, treat it as an error but don't show the specific "exceeds" message
     if (totalSlippagePercentage > 100) {
       setIsSlippageExceedingLimit(false);
-      setOutputBoxErrorMessage("");
+      setOutputBoxErrorMessage("Transaction slippage is too high.");
       return;
     }
 
@@ -1060,12 +1062,10 @@ useEffect(() => {
       userSlippage &&
       roundedTotalSlippage > 0 &&
       roundedUserSlippage < roundedTotalSlippage &&
-      debouncedInputBalance.value > 0n &&
-      !loadingOutputToken &&
       !(
         isDeposit &&
         !vaultData.depositFeePaidFromGasTank &&
-        debouncedInputBalance.value > 0n &&
+        inputBalance.value > 0n &&
         Number(
           conversionOutput.inputAmountInUSDFormatted?.replace(/[^0-9.]/g, ""),
         ) < Number(conversionOutput.gasFeeInUSD?.replace(/[^0-9.]/g, ""))
@@ -1085,14 +1085,17 @@ useEffect(() => {
     conversionOutput.swapSlippagePercentage,
     conversionOutput.depositSlippagePercentage,
     userSlippage,
-    debouncedInputBalance.value,
-    loadingOutputToken,
     isDeposit,
     vaultData.depositFeePaidFromGasTank,
+    inputBalance.value,
     conversionOutput.inputAmountInUSDFormatted,
     conversionOutput.gasFeeInUSD,
     outputBoxErrorMessage,
   ]);
+  useEffect(() => {
+  
+    checkSlippageExceedingLimit();
+  }, [checkSlippageExceedingLimit]);
 
   useEffect(() => {
     if (
