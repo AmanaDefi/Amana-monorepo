@@ -173,7 +173,7 @@ export const Deposit = () => {
         maxWidth="max-w-[526px]"
       >
         <button
-          onClick={handleClose}
+          onClick={closeAll}
           className="rounded-[8px] absolute top-5 right-4 flex items-center justify-center w-10 h-10"
           aria-label="Close"
         >
