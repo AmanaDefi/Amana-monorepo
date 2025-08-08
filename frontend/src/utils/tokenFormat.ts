@@ -18,7 +18,9 @@ export const formatTokenBalance = (
     return isStablecoin ? "< 0.01" : "< 0.0001";
   }
 
-  return parseFloat(formatted).toString();
+  return parseFloat(formatted)
+    .toFixed(10)
+    .replace(/\.?0+$/, "");
 };
 
 // Format token balance in USD terms

@@ -729,7 +729,9 @@ useEffect(() => {
       }
 
       if (!value?.includes(".")) {
-        value = String(Number(value));
+        value = Number(value)
+          .toFixed(10)
+          .replace(/\.?0+$/, "");
       } else {
         const [integers, decimals] = value.split(".");
         const cleanIntegers = String(Number(integers));
