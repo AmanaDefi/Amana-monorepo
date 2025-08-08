@@ -20,7 +20,7 @@ import { Balance } from "@/types/types";
 import { Chain, formatEther } from "viem";
 import { getPublicClient } from "@/utils/getPublicClient";
 import { usePathname, useRouter } from "next/navigation";
-import { useAccount, useConnect, useDisconnect, useSwitchChain } from "wagmi";
+import { useAccount, useConnect, useDisconnect } from "wagmi";
 import { ConnectedWallet, usePrivy, useWallets } from "@privy-io/react-auth";
 import { zetachain } from "viem/chains";
 import { useFundWalletStore } from "@/store/fundWalletStore";
@@ -100,7 +100,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const { disconnectAsync } = useDisconnect();
 
   const { isConnected: wagmiIsConnected, address: wagmiAddress } = useAccount();
-  const { switchChain: wagmiSwitchChain } = useSwitchChain();
+  // const { switchChain: wagmiSwitchChain } = useSwitchChain();
 
   const {
     step,
@@ -220,15 +220,14 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     activeChain?.id,
   ]);
 
-  // ВИПРАВЛЕНА disconnectConnectors з детальним логуванням
   const disconnectConnectors = useCallback(async () => {
-    productionLog("🚨 disconnectConnectors CALLED", {
+    productionLog("disconnectConnectors CALLED", {
       walletsCount: wallets?.length,
       connectedWallets: wallets?.map((w) => ({
         id: w.meta.id,
         connectedAt: w.connectedAt,
       })),
-      // Stack trace щоб побачити ХТОО викликає
+      // Stack trace 
       calledFrom: new Error().stack
         ?.split("\n")
         .slice(1, 5)
@@ -382,15 +381,8 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     successAuth,
   ]);
 
-  // ПРОБЛЕМНИЙ useEffect з детальним логуванням
   useEffect(() => {
     if (privyWallet?.address && connected && !latestChainRef.current && !step) {
-      productionLog("🔥 DISCONNECT TRIGGER 1", {
-        privyWalletAddress: privyWallet?.address,
-        connected,
-        latestChainRef: latestChainRef.current,
-        step,
-      });
       disconnect();
       disconnectConnectors();
     }
@@ -438,10 +430,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         }
 
         if (connected) {
-          productionLog("🔥 DISCONNECT TRIGGER 3", {
-            connected,
-            privyWalletAddress: privyWallet?.address,
-          });
           disconnect().catch((err) => {
             console.error("error disconnect Solana:", err);
           });
@@ -787,9 +775,9 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         walletClientType: "external",
         chainId: activeChain?.id ? `eip155:${activeChain.id}` : "eip155:1",
         meta: { id: "wagmi" },
-        switchChain: async (chainId: number) => {
-          return wagmiSwitchChain({ chainId });
-        },
+        // switchChain: async (chainId: number) => {
+        //   return wagmiSwitchChain({ chainId });
+        // },
       } as ConnectedWallet;
     }
 
@@ -803,7 +791,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     wagmiAddress,
     privyWallet,
     activeChain?.id,
-    wagmiSwitchChain,
+    // wagmiSwitchChain,
   ]);
 
   return (
