@@ -405,6 +405,7 @@ export default function InteractionContainer({
     setCurrentInputBalance,
     setCurrentErrorMessage,
     setCrosschainInvestHash: setStoreCrosschainInvestHash,
+    setCurrentVaultId,
   } = useTransactionStore();
 
   // BlockPI-only feedback system
@@ -942,6 +943,7 @@ export default function InteractionContainer({
         isDeposit={isDeposit}
         hideStepsDisplay={hideStepsDisplay}
         outputAmountFormatted={outputAmountFormatted}
+        setCurrentVaultId={setCurrentVaultId}
       />
     </div>
   );
@@ -983,6 +985,7 @@ function Interaction({
   hideStepsDisplay = false,
   lastEventTxHash,
   outputAmountFormatted,
+  setCurrentVaultId,
 }: {
   setStep: Function;
   setAction: Function;
@@ -1021,6 +1024,7 @@ function Interaction({
   isDeposit: boolean;
   hideStepsDisplay?: boolean;
   outputAmountFormatted: string;
+  setCurrentVaultId: (vaultId: string | null) => void;
 }): JSX.Element {
   const walletContext = useWallet();
   const prevLebel = useRef(label);
@@ -1157,7 +1161,8 @@ function Interaction({
 
     if (
       action == Action.withdraw &&
-      actions[step + 1] == Action.withdrawconfirmed && success
+      actions[step + 1] == Action.withdrawconfirmed &&
+      success
     ) {
       const isUserOnZetachain = isZetachain(activeChain?.id);
       const isVaultOnZetachain = isZetachain(vaultData.protocol.chainId);
@@ -1243,6 +1248,7 @@ function Interaction({
 
     // Show warning toast to inform users not to leave the page during transaction processing
     if (currenAction === Action.deposit || currenAction === Action.withdraw) {
+      setCurrentVaultId(vaultData.id);
       showWarningToast(
         "📌 Please stay on this page to monitor progress across all networks!",
       );
@@ -1345,6 +1351,7 @@ function Interaction({
     setLastTransactionStepFeedback({});
     setTransactionStepFeedback({});
     setFinishedTransaction(false);
+    setCurrentVaultId(null);
 
     setTransactionCompleted(true);
 
@@ -1361,7 +1368,7 @@ function Interaction({
     }, 100);
 
     refreshBalance();
-  }, [refreshBalance, vaultData?.id]);
+  }, [refreshBalance, vaultData?.id, setCurrentVaultId]);
 
   const handleWalletConnect = () => {
     setChain(activeChain);
@@ -1602,7 +1609,7 @@ function Interaction({
             setInputBalance,
             setLastEventTxHash,
             setFailedOnConfirmation,
-            priceContext
+            priceContext,
           );
           return result;
         };
