@@ -417,8 +417,8 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
   if (addr == "0xe256f20037aa74cc213e532d49fcb932a5d764d3") {
     return {
       type: "Lending Pool",
-      name: "Eth",
-      description: "Supplying ETH to a Compound lending pool allows users to earn interest by providing liquidity to borrowers. The pool utilizes an algorithmic interest rate model to optimize capital efficiency while enabling seamless borrowing. Risks include smart contract vulnerabilities, fluctuating interest rates, potential liquidity shortages, and governance decisions that may impact collateral requirements or yield dynamics.",
+      name: "WETH",
+      description: "Supplying WETH to a Compound lending pool allows users to earn interest by providing liquidity to borrowers. The pool utilizes an algorithmic interest rate model to optimize capital efficiency while enabling seamless borrowing. Risks include smart contract vulnerabilities, fluctuating interest rates, potential liquidity shortages, and governance decisions that may impact collateral requirements or yield dynamics.",
       imgURL: "/base.png",
       depositFeePaidFromGasTank: true,
       assetSymbol: "ETH.BASE",
@@ -444,16 +444,16 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
   }
 
   // Compound USDS Vault -> Base
-  if (addr == "0xe256f20037aa74cc213e532d49fcb932a5d764d3") {
+  if (addr == "0x0f97ff46faea697c088b0d3d722d3838f29f9efc") {
     return {
       type: "Lending Pool",
-      name: "Eth",
-      description: "Supplying ETH to a Compound lending pool allows users to earn interest by providing liquidity to borrowers. The pool utilizes an algorithmic interest rate model to optimize capital efficiency while enabling seamless borrowing. Risks include smart contract vulnerabilities, fluctuating interest rates, potential liquidity shortages, and governance decisions that may impact collateral requirements or yield dynamics.",
+      name: "USDS",
+      description: "Supplying USDS to a Compound lending pool allows users to earn interest by providing liquidity to borrowers. The pool utilizes an algorithmic interest rate model to optimize capital efficiency while enabling seamless borrowing. Risks include smart contract vulnerabilities, fluctuating interest rates, potential liquidity shortages, and governance decisions that may impact collateral requirements or yield dynamics.",
       imgURL: "/base.png",
       depositFeePaidFromGasTank: true,
-      assetSymbol: "ETH.BASE",
-      assetDecimals: 18,
-      assetImgURL: "/ETH.png",
+      assetSymbol: "USDC.BASE",
+      assetDecimals: 6,
+      assetImgURL: "/USDS.png",
       assetPrice: BigDecimal.fromString("1.0"),
       strategyNetwork: "Base",
       strategyChainId: 8453,
@@ -468,7 +468,7 @@ function getVaultMetadata(vaultAddress: string): VaultMetadata {
       cooldownPeriod: 0,
       minDeposit: 1,
       maxWithdraw: 1000000,
-      outputTokenSymbol: "cBaseETH",
+      outputTokenSymbol: "cBaseUSDS",
       outputTokenImage: "/compound.png",
     };
   }
