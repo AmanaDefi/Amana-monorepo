@@ -547,6 +547,7 @@ export default function InteractionContainer({
       });
 
       updateLocalStorageObject(vaultData.id, {
+        vaultId: vaultData.id,
         transactionStepFeedback: updatedFeedback,
       });
 
@@ -699,6 +700,7 @@ export default function InteractionContainer({
           if (!actionKey) return;
           useTransactionStore.setState((prev) => {
             updateLocalStorageObject(vaultData.id, {
+              vaultId: vaultData.id,
               transactionStepFeedback: {
                 ...prev.transactionStepFeedback,
                 [actionKey]: {
@@ -743,6 +745,7 @@ export default function InteractionContainer({
             // Only update step, avoid updating action to prevent useEffect retrigger
             setStep(stepIndex);
             updateLocalStorageObject(vaultData.id, {
+              vaultId: vaultData.id,
               step: stepIndex,
             });
           }
@@ -770,6 +773,7 @@ export default function InteractionContainer({
           useTransactionStore.setState((prev) => {
             setLastTransactionStepFeedback(prev.transactionStepFeedback);
             updateLocalStorageObject(vaultData.id, {
+              vaultId: vaultData.id,
               transactionStepFeedback: prev.transactionStepFeedback,
               lastTransactionStepFeedback: prev.transactionStepFeedback,
             });
@@ -1023,6 +1027,7 @@ function Interaction({
         txHash: txHash || updated[actionKey]?.txHash, // Preserve existing txHash if none provided
       };
       updateLocalStorageObject(vaultData.id, {
+        vaultId: vaultData.id,
         transactionStepFeedback: updated,
       });
 
@@ -1048,6 +1053,7 @@ function Interaction({
         setAction(actions[nextStep]);
         setStep(nextStep);
         updateLocalStorageObject(vaultData.id, {
+          vaultId: vaultData.id,
           isTransactionProcessing: false,
           action: actions[nextStep],
           step: nextStep,
@@ -1138,6 +1144,7 @@ function Interaction({
       setAction(actions[nextStep]);
       setStep(nextStep);
       updateLocalStorageObject(vaultData.id, {
+        vaultId: vaultData.id,
         action: actions[nextStep],
         step: nextStep,
         isTransactionProcessing: false,
@@ -1187,6 +1194,7 @@ function Interaction({
 
     setIsTransactionProcessing(true);
     updateLocalStorageObject(vaultData.id, {
+      vaultId: vaultData.id,
       isTransactionProcessing: true,
     });
 
@@ -1212,6 +1220,7 @@ function Interaction({
     } else {
       setIsTransactionStarted(true);
       updateLocalStorageObject(vaultData.id, {
+        vaultId: vaultData.id,
         isTransactionStarted: true,
       });
     }
