@@ -1187,61 +1187,68 @@ useEffect(() => {
   ]);
 
   // Reset input state after transaction completes or fails
-  useEffect(() => {
-    if (transactionCompleted) {
-      if (vaultData?.id && APY7DValue) {
-        setCurrentAPY(vaultData.id, Number(APY7DValue));
-      }
+useEffect(() => {
+  if (transactionCompleted) {
+    if (vaultData?.id && APY7DValue) {
+      const currentAPYValue = Number(APY7DValue);
 
-      if (isDeposit) {
-        setLastDepositInfo({
-          inputAmount: displayValue,
-          outputAmount: conversionOutput.outputAmountFormatted,
-          inputSymbol: inputToken?.symbol || "",
-          outputSymbol: vaultData.symbol,
-        });
-      } else {
-        setLastWithdrawInfo({
-          inputAmount: displayValue,
-          outputAmount: conversionOutput.outputAmountFormatted,
-          inputSymbol: vaultData.symbol,
-          outputSymbol: inputToken?.symbol || vaultData.inputToken.symbol,
-        });
-      }
+      if (currentAPYValue > 0 && !isNaN(currentAPYValue)) {
+        const existingAPY = useAPYStore.getState().getCurrentAPY(vaultData.id);
 
-      setInputBalance(EMPTY_BALANCE);
-      setDisplayValue("0.00");
-      setConversionOutput(initialConversionOutput);
-      setOutputBoxErrorMessage("");
-      setIsSlippageExceedingLimit(false);
-
-      // Reset transactionCompleted to false after processing
-      setTimeout(() => {
-        setTransactionCompleted(false);
-        if (isDeposit) {
-          setLastDepositInfo(null);
-        } else {
-          setLastWithdrawInfo(null);
+        if (existingAPY !== currentAPYValue) {
+          setCurrentAPY(vaultData.id, currentAPYValue);
         }
-      }, 1000);
+      }
     }
-  }, [
-    transactionCompleted,
-    initialConversionOutput,
-    setInputBalance,
-    vaultData.id,
-    displayValue,
-    conversionOutput.outputAmountFormatted,
-    inputToken?.symbol,
-    vaultData.symbol,
-    setTransactionCompleted,
-    setLastDepositInfo,
-    setLastWithdrawInfo,
-    isDeposit,
-    vaultData.inputToken.symbol,
-    APY7DValue,
-    setCurrentAPY,
-  ]);
+
+    if (isDeposit) {
+      setLastDepositInfo({
+        inputAmount: displayValue,
+        outputAmount: conversionOutput.outputAmountFormatted,
+        inputSymbol: inputToken?.symbol || "",
+        outputSymbol: vaultData.symbol,
+      });
+    } else {
+      setLastWithdrawInfo({
+        inputAmount: displayValue,
+        outputAmount: conversionOutput.outputAmountFormatted,
+        inputSymbol: vaultData.symbol,
+        outputSymbol: inputToken?.symbol || vaultData.inputToken.symbol,
+      });
+    }
+
+    setInputBalance(EMPTY_BALANCE);
+    setDisplayValue("0.00");
+    setConversionOutput(initialConversionOutput);
+    setOutputBoxErrorMessage("");
+    setIsSlippageExceedingLimit(false);
+
+    // Reset transactionCompleted to false after processing
+    setTimeout(() => {
+      setTransactionCompleted(false);
+      if (isDeposit) {
+        setLastDepositInfo(null);
+      } else {
+        setLastWithdrawInfo(null);
+      }
+    }, 1000);
+  } 
+}, [
+  transactionCompleted,
+  initialConversionOutput,
+  setInputBalance,
+  vaultData.id,
+  displayValue,
+  conversionOutput.outputAmountFormatted,
+  inputToken?.symbol,
+  vaultData.symbol,
+  setTransactionCompleted,
+  setLastDepositInfo,
+  setLastWithdrawInfo,
+  isDeposit,
+  vaultData.inputToken.symbol,
+  APY7DValue,
+]);
 
   useEffect(() => {
     if (!finishedTransaction) {
