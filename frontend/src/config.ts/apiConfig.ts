@@ -12,3 +12,7 @@ export const GRAPH_URL =
   process.env.NEXT_PUBLIC_GRAPH_URL_DEV ||
   "https://api.studio.thegraph.com/query/113761/amana-zetachain/version/latest";
 export const GRAPH_API_KEY = process.env.NEXT_PUBLIC_GRAPH_API_KEY;
+
+// Exponential Risk Ratings API
+export const EXPONENTIAL_API_URL = "https://api.exponential.fi/api/pool-risk/search";
+export const EXPONENTIAL_API_KEY = process.env.NEXT_PUBLIC_EXPONENTIAL_API_KEY;

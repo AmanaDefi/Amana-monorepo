@@ -17,10 +17,10 @@ import { useMyVaults } from "@/hooks/useMyVaults";
 import { EmptyState } from "../DashboardWrapper/components/Tabs";
 import { BreathingValue } from "../PendingDots";
 import { useResponsiveItemsPerPageByGrid } from "@/hooks/useResponsiveItemsPerPage";
+import { useRiskRatings } from "@/hooks/useRiskRatings";
 
-export const calculateRiskLevel = (vault: VaultData): number => {
-  return 1;
-};
+// Deprecated: risk is sourced exclusively from Exponential API
+export const calculateRiskLevel = (_vault: VaultData, _riskLevel?: number): number => 1;
 
 interface VaultsGridProps {
   loading: boolean;
@@ -172,6 +172,10 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     return vaults;
   }, [MyVaults, vaults, isShownMyVaults]);
 
+  // Fetch Exponential risk ratings for only the current page WITHOUT depending on risk-based sorting
+  // Use a pre-sorted slice to avoid circular dependency (riskMap uses ratings)
+  // We'll compute the fetch list right after filteredVaults and before risk-based sorting
+
   const apyMap = useMemo(() => {
     const map = new Map<string, number>();
     vaultAPYs.forEach((apy) => {
@@ -180,13 +184,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     return map;
   }, [vaultAPYs]);
 
-  const riskMap = useMemo(() => {
-    const map = new Map<string, number>();
-    vaultsList.forEach((vault) => {
-      map.set(vault.id, calculateRiskLevel(vault));
-    });
-    return map;
-  }, [vaultsList]);
+  // riskMap depends on ratings; compute after ratings hook
 
   const shouldUseSubgraphSearch = hasSearchTerm && onSearchChange;
   const shouldUseSubgraphNetworkFilter =
@@ -255,6 +253,34 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     isShownMyVaults,
     userVaultBalances,
   ]);
+
+  // Determine the current page slice independent of risk ratings
+  const currentPageSlice = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredVaults.slice(startIndex, endIndex);
+  }, [filteredVaults, currentPage, itemsPerPage]);
+
+  // Fetch ratings only for the current page slice
+  const { riskRatings, isLoading: riskLoading, getRiskLevel } = useRiskRatings({
+    vaults: currentPageSlice,
+    enabled: true,
+  });
+  console.log('[VaultsWrapper] useRiskRatings:', {
+    vaultCount: currentPageSlice.length,
+    ratingsCount: riskRatings.size,
+    isLoading: riskLoading,
+  });
+
+  // Build risk map AFTER ratings are available
+  const riskMap = useMemo(() => {
+    const map = new Map<string, number>();
+    currentPageSlice.forEach((vault) => {
+      const level = getRiskLevel(vault.id) ?? calculateRiskLevel(vault);
+      map.set(vault.id, level);
+    });
+    return map;
+  }, [currentPageSlice, getRiskLevel]);
 
   const sortedVaults = useMemo(() => {
     const getSortValue = (vault: VaultData) => {

@@ -69,7 +69,8 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
       (balance) => balance.vaultId === vault.id,
     );
 
-    const riskLevel = calculateRiskLevel(vault);
+    // Risk level is now derived in parent wrapper to avoid per-card fetching loops
+    // Risk level from mock is deprecated; FE should read Exponential pool rating
 
     const historicalData = getHistoricalAPY(vault.id);
     const percentageChange = getPercentageChange(vault.id);

@@ -17,20 +17,14 @@ import PointsIcon from "@/components/svg/PointsIcon";
 import ResponsiveTooltip from "@/components/common/Tooltip";
 
 import { useLayoutStore } from "@/store/store";
+import { useRiskRatings } from "@/hooks/useRiskRatings";
 // import { formatTokenBalance } from '@/utils/utils';
 
-// Risk levels mapping
-export const RISK_LEVELS: Record<number, { level: string; color: string }> = {
-  1: { level: "A", color: "bg-green-500" },
-  2: { level: "B", color: "bg-yellow-500" },
-  3: { level: "C", color: "bg-red-500" },
-};
+// Deprecated mock risk levels removed – Exponential pool rating is source of truth
+export const RISK_LEVELS: Record<number, { level: string; color: string }> = {} as any;
 
-// Calculate risk level based on protocol (this is just an example, you'd want to use real risk metrics)
-const calculateRiskLevel = (vault: VaultData): number => {
-  // Temporarily setting all vaults to low risk (1) until proper risk calculation is implemented
-  return 1;
-};
+// No-op; UI should use Exponential pool rating directly
+const calculateRiskLevel = (_vault: VaultData, _riskLevel?: number): number => 1;
 
 // Helper function to check if a token is a stablecoin
 const isStablecoin = (symbol: string): boolean => {
@@ -94,6 +88,17 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   const { walletAddress } = useMultiChain();
   const filterRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Add risk ratings hook
+  console.log('[VaultsGrid] Initializing with vaults:', vaults.length);
+  const { riskRatings, isLoading: riskLoading, getRiskLevel } = useRiskRatings({
+    vaults,
+    enabled: true,
+  });
+  console.log('[VaultsGrid] Risk ratings hook initialized:', {
+    riskRatingsSize: riskRatings.size,
+    isLoading: riskLoading
+  });
 
   // State for filters and sorting""
   const [searchTerm, setSearchTerm] = useState("");
@@ -457,7 +462,8 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
 
           const vaultTotalAssetsData = vaultTotalAssets.find((asset: VaultTotalAssets) => asset.vaultId === vault.id);
 
-          const riskLevel = calculateRiskLevel(vault);
+          const exponentialRiskLevel = getRiskLevel(vault.id);
+          const riskLevel = calculateRiskLevel(vault, exponentialRiskLevel || undefined);
           const capacityPercentage = calculateCapacityPercentage(vault.id);
 
           return (
@@ -486,15 +492,21 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 mr-[10px]">
-                  <span className="text-gray-400 text-xs">Risk:</span>
-                  <div
-                    className={`w-3 h-3 rounded-full ${RISK_LEVELS[riskLevel].color}`}
-                  ></div>
-                  <span className="text-white text-xs">
-                    {RISK_LEVELS[riskLevel].level}
-                  </span>
-                </div>
+                {exponentialRiskLevel !== null && (
+                  <div className="flex items-center gap-1 mr-[10px]">
+                    <span className="text-gray-400 text-xs">Risk:</span>
+                    {riskLoading ? (
+                      <div className="w-3 h-3 rounded-full bg-gray-400 animate-pulse"></div>
+                    ) : (
+                      <div
+                        className={`w-3 h-3 rounded-full ${RISK_LEVELS[riskLevel].color}`}
+                      ></div>
+                    )}
+                    <span className="text-white text-xs">
+                      {riskLoading ? "..." : RISK_LEVELS[riskLevel].level}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Card Content */}
