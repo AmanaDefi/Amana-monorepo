@@ -50,7 +50,7 @@ export default function CustomPrivyProvider({ children }: PropsWithChildren) {
   ];
 
   const wagmiConfig = createConfig({
-    ssr: true,
+    ssr: false,
     connectors: providers,
     chains: [
       zetachain,
