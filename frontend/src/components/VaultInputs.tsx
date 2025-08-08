@@ -1188,7 +1188,11 @@ useEffect(() => {
 
   // Reset input state after transaction completes or fails
 useEffect(() => {
-  if (transactionCompleted) {
+  if (!transactionCompleted) return;
+
+  console.log("[VaultInputs] Transaction completed, processing...");
+
+  const timeoutId = setTimeout(() => {
     if (vaultData?.id && APY7DValue) {
       const currentAPYValue = Number(APY7DValue);
 
@@ -1232,24 +1236,10 @@ useEffect(() => {
         setLastWithdrawInfo(null);
       }
     }, 1000);
-  } 
-}, [
-  transactionCompleted,
-  initialConversionOutput,
-  setInputBalance,
-  vaultData.id,
-  displayValue,
-  conversionOutput.outputAmountFormatted,
-  inputToken?.symbol,
-  vaultData.symbol,
-  setTransactionCompleted,
-  setLastDepositInfo,
-  setLastWithdrawInfo,
-  isDeposit,
-  vaultData.inputToken.symbol,
-  APY7DValue,
-]);
+  }, 100); 
 
+  return () => clearTimeout(timeoutId);
+}, [transactionCompleted]);
   useEffect(() => {
     if (!finishedTransaction) {
       setActiveTransactionVault(null);

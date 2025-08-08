@@ -2,6 +2,7 @@ import { Balance, TransactionStepMessages } from "@/types/types";
 import { create } from "zustand";
 
 interface TransactionState {
+  currentVaultId: string | null;
   finishedTransaction: boolean;
   lastTransactionStepFeedback: TransactionStepMessages;
   transactionStepFeedback: TransactionStepMessages;
@@ -34,6 +35,7 @@ interface TransactionState {
     timestamp: number;
   } | null;
 
+  setCurrentVaultId: (vaultId: string | null) => void;
   setIsTransactionProcessing: (isTransactionProcessing: boolean) => void;
   setFinishedTransaction: (finishedTransaction: boolean) => void;
   setTransactionStepFeedback: (
@@ -83,6 +85,7 @@ interface TransactionState {
 }
 
 export const useTransactionStore = create<TransactionState>((set) => ({
+  currentVaultId: null,
   finishedTransaction: false,
   lastTransactionStepFeedback: {},
   transactionStepFeedback: {},
@@ -97,6 +100,7 @@ export const useTransactionStore = create<TransactionState>((set) => ({
   lastDepositCalculation: null,
   isFailedOnConfirmation: false,
 
+  setCurrentVaultId: (currentVaultId) => set({ currentVaultId }),
   setIsTransactionProcessing: (isTransactionProcessing) =>
     set({ isTransactionProcessing }),
   setFinishedTransaction: (finishedTransaction) => set({ finishedTransaction }),
@@ -112,12 +116,14 @@ export const useTransactionStore = create<TransactionState>((set) => ({
 
   isButtonDisabled: true,
   setIsButtonDisabled: (disabled) => set({ isButtonDisabled: disabled }),
-  setIsFailedOnCOnfirmation: (isFailedOnConfirmation) => set({ isFailedOnConfirmation }),
+  setIsFailedOnCOnfirmation: (isFailedOnConfirmation) =>
+    set({ isFailedOnConfirmation }),
 
   setLastDepositInfo: (info) => set({ lastDepositInfo: info }),
   setLastWithdrawInfo: (info) => set({ lastWithdrawInfo: info }),
-  setLastDepositCalculation: (calculation) => set({ lastDepositCalculation: calculation }),
-  
+  setLastDepositCalculation: (calculation) =>
+    set({ lastDepositCalculation: calculation }),
+
   // Clear deposit calculation cache
   clearDepositCalculationCache: () => set({ lastDepositCalculation: null }),
 }));

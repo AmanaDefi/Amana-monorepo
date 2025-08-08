@@ -129,6 +129,8 @@ const VaultsDetailContainer: React.FC<{
     lastWithdrawInfo,
     isFailedOnConfirmation,
     setIsFailedOnCOnfirmation,
+    currentVaultId, 
+    setCurrentVaultId,
   } = useTransactionStore();
 
   const { switchToChain, walletAddress, activeChain, activeEvmWallet: user } =
@@ -407,10 +409,28 @@ useEffect(() => {
 
   const isWithdraw = !isDeposit;
 
-  const shouldShowTransactionComplete =
-    finishedTransaction &&
-    (Object.keys(lastTransactionStepFeedback).length > 0 ||
-      Object.keys(transactionStepFeedback).length > 0);
+const shouldShowTransactionComplete = useMemo(() => {
+  if (!finishedTransaction) return false;
+
+  if (currentVaultId !== vaultData?.id) {
+    console.log(
+      `[VaultContainer] Ignoring transaction complete for vault ${currentVaultId}, current vault is ${vaultData?.id}`,
+    );
+    return false;
+  }
+
+  return (
+    Object.keys(lastTransactionStepFeedback).length > 0 ||
+    Object.keys(transactionStepFeedback).length > 0
+  );
+}, [
+  finishedTransaction,
+  currentVaultId,
+  vaultData?.id,
+  lastTransactionStepFeedback,
+  transactionStepFeedback,
+]);
+  
   const currentTransactionInfo = isDeposit ? lastDepositInfo : lastWithdrawInfo;
 
   return vaultData ? (
@@ -630,6 +650,7 @@ useEffect(() => {
                   setLastDepositInfo(null);
                   setLastWithdrawInfo(null);
                   setIsFailedOnCOnfirmation(false);
+                  setCurrentVaultId(null);
 
                   if (vaultID) {
                     updateLocalStorageObject(vaultID.toString(), null);
