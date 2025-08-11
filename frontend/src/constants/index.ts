@@ -1006,7 +1006,12 @@ export const EXCLUDED_VAULTS = [
   "0x8b934de59fde50a91daa7e788389f8fcad35a14f",
   "0x86351ca28ffadc520c940fa6b5dbe441289b55cb", //YieldFi from path in web
   "0xcf18fc631e05ba7dcbcadcd212176c381256faa8", //YieldFi from constants (doesn't detected)
-  "0x5e3adc840b55fe0b99c0418ac69113e1f0296992" // cbBTC vault
+  "0x5e3adc840b55fe0b99c0418ac69113e1f0296992", // cbBTC vault
+  "0x32fecdef376e2ad74c53663bde933116c09408f3",
+  "0x5cd6e196ca1d85b8edfdf162d3a0c77268f42c69",
+  "0x0f6514e3e4760efc8f34fc67a05c4987367af14e",
+  "0x8426929d568b1cbc281f5787556f84c5b101399d",
+  "0x4cb4dfc521a5c44817a1fda79fb7eafaf6f1952e"
 ];
 
 export const GLOBAL_SLIPPAGE_SETTINGS_KEY = "globalSlippageSettings";
