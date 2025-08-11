@@ -427,12 +427,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
           disconnectConnectors();
         }
       }
-    } else if (
-      !privyWallet?.address &&
-      !connected &&
-      !wagmiConnected &&
-      !authUserAddress
-    ) {
+    } else if (!privyWallet?.address && !connected && !wagmiConnected) {
       // setWalletAddress(null);
       setWalletAddressWithLog(null, "privy-clear");
     }
@@ -782,37 +777,37 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         setSelectedTokenFromModal(null);
       }
 
-      if (
-        !isVaultAddressPath.test(path) &&
-        privyWallet?.walletClientType === "privy" &&
-        activeChain?.id !== zetachain.id
-      ) {
-        console.log("[DEBUG] Setting zetachain for privy wallet");
-        setActiveChain(zetachain);
-        latestChainRef.current = zetachain.id.toString();
-      }
+      // if (
+      //   !isVaultAddressPath.test(path) &&
+      //   privyWallet?.walletClientType === "privy" &&
+      //   activeChain?.id !== zetachain.id
+      // ) {
+      //   console.log("[DEBUG] Setting zetachain for privy wallet");
+      //   setActiveChain(zetachain);
+      //   latestChainRef.current = zetachain.id.toString();
+      // }
 
-      if (
-        !isVaultAddressPath.test(path) &&
-        privyWallet?.address &&
-        privyWallet?.walletClientType !== "privy" &&
-        activeChain?.id === CHAIN_ID["solana"] &&
-        privyWallet?.meta?.id !== "app.phantom"
-      ) {
-        console.log("[DEBUG] Switching non-privy wallet to zetachain");
-        switchToChain(zetachain);
-        latestChainRef.current = zetachain.id.toString();
-      }
+      // if (
+      //   !isVaultAddressPath.test(path) &&
+      //   privyWallet?.address &&
+      //   privyWallet?.walletClientType !== "privy" &&
+      //   activeChain?.id === CHAIN_ID["solana"] &&
+      //   privyWallet?.meta?.id !== "app.phantom"
+      // ) {
+      //   console.log("[DEBUG] Switching non-privy wallet to zetachain");
+      //   switchToChain(zetachain);
+      //   latestChainRef.current = zetachain.id.toString();
+      // }
 
-      if (
-        !isVaultAddressPath.test(path) &&
-        publicKey &&
-        activeChain?.id !== CHAIN_ID["solana"]
-      ) {
-        console.log("[DEBUG] Switching to Solana for public key");
-        switchToChain(chainConfigs[CHAIN_ID.solana]);
-        latestChainRef.current = CHAIN_ID["solana"].toString();
-      }
+      // if (
+      //   !isVaultAddressPath.test(path) &&
+      //   publicKey &&
+      //   activeChain?.id !== CHAIN_ID["solana"]
+      // ) {
+      //   console.log("[DEBUG] Switching to Solana for public key");
+      //   switchToChain(chainConfigs[CHAIN_ID.solana]);
+      //   latestChainRef.current = CHAIN_ID["solana"].toString();
+      // }
 
       if (privyWallet?.meta?.id === "app.phantom") {
         console.log("[DEBUG] Handling phantom wallet chain switch");
@@ -830,15 +825,15 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   }, [
     path,
     selectedChainFromModal,
-    switchToChain,
+    // switchToChain,
     setSelectedChainFromModal,
     setSelectedTokenFromModal,
-    privyWallet?.walletClientType,
-    privyWallet?.address,
+    // privyWallet?.walletClientType,
+    // privyWallet?.address,
     privyWallet?.meta?.id,
     privyWallet?.chainId,
-    activeChain?.id,
-    publicKey?.toBase58(),
+    // activeChain?.id,
+    // publicKey?.toBase58(),
   ]);
 
   useEffect(() => {
