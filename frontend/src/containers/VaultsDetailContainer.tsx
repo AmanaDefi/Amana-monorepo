@@ -237,6 +237,23 @@ useEffect(() => {
         setIsTransactionProcessing(
           vaultTxData?.isTransactionProcessing ?? false,
         );
+      }
+    } else if (vaultTxData) {
+      if (vaultTxData.finishedTransaction) {
+        setTransactionStepFeedback({});
+        setLastTransactionStepFeedback(
+          vaultTxData?.lastTransactionStepFeedback ?? {},
+        );
+        setFinishedTransaction(true);
+        setIsTransactionProcessing(false);
+        setIsFailedOnCOnfirmation(false);
+
+        if (vaultTxData.lastDepositInfo) {
+          setLastDepositInfo(vaultTxData.lastDepositInfo);
+        }
+        if (vaultTxData.lastWithdrawInfo) {
+          setLastWithdrawInfo(vaultTxData.lastWithdrawInfo);
+        }
       } else {
         setTransactionStepFeedback({});
         setLastTransactionStepFeedback({});

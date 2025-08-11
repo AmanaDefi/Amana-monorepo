@@ -657,7 +657,25 @@ export default function InteractionContainer({
           setAction(finalAction);
           setStep(nextStep);
           setFinishedTransaction(true);
-          updateLocalStorageObject(vaultData.id, null);
+           useTransactionStore.setState((prev) => {
+             updateLocalStorageObject(vaultData.id, {
+               vaultId: vaultData.id,
+               finishedTransaction: true,
+               transactionStepFeedback: {},
+               lastTransactionStepFeedback: transactionStepFeedback,
+               isTransactionProcessing: false,
+               isTransactionStarted: false,
+               lastDepositInfo:
+                 transactionType === "deposit" ? prev.lastDepositInfo : null,
+               lastWithdrawInfo:
+                 transactionType === "withdrawal"
+                   ? prev.lastWithdrawInfo
+                   : null,
+             });
+
+             return prev;
+           });
+
 
           setTransactionCompleted(true);
 
@@ -798,9 +816,17 @@ export default function InteractionContainer({
             setLastTransactionStepFeedback(prev.transactionStepFeedback);
             updateLocalStorageObject(vaultData.id, {
               vaultId: vaultData.id,
-              transactionStepFeedback: prev.transactionStepFeedback,
+              finishedTransaction: true,
+              transactionStepFeedback: {},
               lastTransactionStepFeedback: prev.transactionStepFeedback,
+              isTransactionProcessing: false,
+              isTransactionStarted: false,
+              lastDepositInfo:
+                transactionType === "deposit" ? prev.lastDepositInfo : null,
+              lastWithdrawInfo:
+                transactionType === "withdrawal" ? prev.lastWithdrawInfo : null,
             });
+
 
             return { transactionStepFeedback: prev.transactionStepFeedback };
           });
@@ -808,7 +834,6 @@ export default function InteractionContainer({
           setFinishedTransaction(true);
           setIsTransactionProcessing(false);
 
-          updateLocalStorageObject(vaultData.id, null);
           setIsFailedOnCOnfirmation(false);
 
           setTransactionCompleted(true);
@@ -826,7 +851,18 @@ export default function InteractionContainer({
         } else {
           useTransactionStore.setState((prev) => {
             setLastTransactionStepFeedback(prev.transactionStepFeedback);
-            updateLocalStorageObject(vaultData.id, null);
+            updateLocalStorageObject(vaultData.id, {
+              vaultId: vaultData.id,
+              finishedTransaction: true,
+              transactionStepFeedback: {},
+              lastTransactionStepFeedback: prev.transactionStepFeedback,
+              isTransactionProcessing: false,
+              isTransactionStarted: false,
+              lastDepositInfo:
+                transactionType === "deposit" ? prev.lastDepositInfo : null,
+              lastWithdrawInfo:
+                transactionType === "withdrawal" ? prev.lastWithdrawInfo : null,
+            });
 
             return { transactionStepFeedback: prev.transactionStepFeedback };
           });
@@ -1359,8 +1395,6 @@ function Interaction({
     setIsTransactionStarted(false);
     setCrosschainInvestHash("");
     setcrossChainTxId("");
-
-    updateLocalStorageObject(vaultData.id, null);
 
     // Reactivate component after clearing
     setTimeout(() => {

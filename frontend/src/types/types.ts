@@ -242,6 +242,20 @@ export interface ITxLocalStorage {
   crossChainTxId: string;
   depositTx: PreparedTransaction;
 
+  lastDepositInfo?: {
+    inputAmount: string;
+    outputAmount: string;
+    inputSymbol: string;
+    outputSymbol: string;
+  } | null;
+
+  lastWithdrawInfo?: {
+    inputAmount: string;
+    outputAmount: string;
+    inputSymbol: string;
+    outputSymbol: string;
+  } | null;
+
   isTransactionStarted: boolean;
   isTransactionProcessing: boolean;
   finishedTransaction: boolean;
