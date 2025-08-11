@@ -427,7 +427,12 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
           disconnectConnectors();
         }
       }
-    } else if (!privyWallet?.address && !connected && !wagmiConnected) {
+    } else if (
+      !privyWallet?.address &&
+      !connected &&
+      !wagmiConnected &&
+      !authUserAddress
+    ) {
       // setWalletAddress(null);
       setWalletAddressWithLog(null, "privy-clear");
     }
