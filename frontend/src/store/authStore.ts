@@ -130,6 +130,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         error: null,
         username: "",
         otp: "",
+        userAddress: walletAddress,
         _isProcessingAuth: false,
       });
     } else {
@@ -148,6 +149,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             error: null,
             username: "",
             otp: "",
+            userAddress: walletAddr,
             _isProcessingAuth: false,
           });
         } else {
@@ -165,6 +167,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             error: null,
             username: "",
             otp: "",
+            userAddress: walletAddr,
             _isProcessingAuth: false,
           });
         }
@@ -175,6 +178,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           error: null,
           username: "",
           otp: "",
+          userAddress: walletAddress,
           _isProcessingAuth: false,
         });
       }
@@ -199,6 +203,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       clearTimeout(successAuthTimeout);
       successAuthTimeout = null;
     }
+
     set({
       isAuthenticated: false,
       userAddress: null,
@@ -206,6 +211,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       username: "",
       otp: "",
       _isProcessingAuth: false,
+      step: null,
+      chosenChain: null,
+      isLoading: false,
+      error: null,
     });
   },
 }));

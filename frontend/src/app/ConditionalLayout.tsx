@@ -23,6 +23,10 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
   const isAboutPage = pathname === "/about";
 
   useEffect(() => {
+      if (process.env.NODE_ENV === "development") {
+        const VConsole = require("vconsole");
+        new VConsole();
+      }
     const checkIsMobile = () => {
       setIsMobile(window?.innerWidth < 1024);
     };

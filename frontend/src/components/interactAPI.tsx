@@ -50,6 +50,7 @@ import {
   useTokenPrices,
   TokenPriceContextType,
 } from "@/providers/TokenPriceProvider";
+import { useAccount } from "wagmi";
 
 function isHex(value: string): value is `0x${string}` {
   return typeof value === "string" && value.startsWith("0x");
@@ -980,7 +981,11 @@ function Interaction({
   const walletContext = useWallet();
   const prevLebel = useRef(label);
   const { openStep, setChain } = useAuthStore();
-  const { selectedChain, activeEvmWallet: activeAccount } = useMultiChain();
+  const {
+    selectedChain,
+    activeEvmWallet: activeAccount,
+    walletAddress,
+  } = useMultiChain();
   const [isMobile, setIsMobile] = useState(false);
   const { setIsFailedOnCOnfirmation } = useTransactionStore();
   const priceContext = useTokenPrices();
@@ -1177,6 +1182,8 @@ function Interaction({
     }
   }
 
+  const { address: wagmiAddress, isConnected: wagmiConnected } = useAccount();
+
   async function handleMainAction(directAction?: Action) {
     const currenAction = directAction ?? action;
     setIsFailedOnCOnfirmation(false);
@@ -1372,12 +1379,15 @@ function Interaction({
             !!errorMessage;
 
           const isConnectWalletSHown =
-            (!activeAccount && !walletContext.publicKey) ||
+            (!activeAccount &&
+              !walletContext.publicKey &&
+              (!wagmiConnected || !walletAddress)) ||
             (activeAccount?.walletClientType === "privy" &&
               activeChain?.id !== zetachain.id) ||
             (walletContext.publicKey &&
               activeChain?.id !== CHAIN_ID["solana"]) ||
-            (activeAccount?.address && activeChain?.id === CHAIN_ID["solana"]);
+            ((activeAccount?.address || wagmiAddress) &&
+              activeChain?.id === CHAIN_ID["solana"]);
 
           const isDisabled = !isConnectWalletSHown
             ? isButtonDisabled ||
