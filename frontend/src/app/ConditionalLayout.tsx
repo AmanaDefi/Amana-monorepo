@@ -23,10 +23,13 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
   const isAboutPage = pathname === "/about";
 
   useEffect(() => {
-      if (process.env.NODE_ENV === "development") {
-        const VConsole = require("vconsole");
-        new VConsole();
-      }
+    import("vconsole") 
+  .then(({ default: VConsole }) => {
+    const vConsole = new VConsole();
+  })
+  .catch((error) => {
+    console.error("Failed to load vConsole:", error);
+  });
     const checkIsMobile = () => {
       setIsMobile(window?.innerWidth < 1024);
     };
