@@ -17,10 +17,10 @@ export const VAULT_TO_DEFILLAMA_POOL: Record<string, string> = {
   '0x5e3adc840b55fe0b99c0418ac69113e1f0296992': '14769af2-5b5c-40cd-8452-2f4ddde854b8',
   // Convex USDC/USDf
   '0xe501cbd03fa739273f49a8b54dd49de1248101f6': '977bc628-7476-43cf-abb8-68934bf56171',
-  // Compound ETH on Base
-  '0xe256f20037aa74cc213e532d49fcb932a5d764d3': '7993b97d-12c3-4a36-b6b6-5b37bac4f8ae',
-  // Compound USDC on Base
-  '0x8a4cd74d6b0f2c0f8785d989c433db84b293b86f': '0c8567f8-ba5b-41ad-80de-00a71895eb19',
-  // // Compound USDC,e on Base
-  // '0x8a4cd74d6b0f2c0f8785d989c433db84b293b86f': '0c8567f8-ba5b-41ad-80de-00a71895eb19',
+     // Compound ETH on Base
+     '0xe256f20037aa74cc213e532d49fcb932a5d764d3': '7993b97d-12c3-4a36-b6b6-5b37bac4f8ae',
+     // Compound USDC on Base
+     '0x8a4cd74d6b0f2c0f8785d989c433db84b293b86f': '0c8567f8-ba5b-41ad-80de-00a71895eb19',
+     // Compound USDS Vault -> Base
+     '0x0f97ff46faea697c088b0d3d722d3838f29f9efc': 'a17d8b32-48cb-4446-aad7-ed4278f144e0',
 }; 
