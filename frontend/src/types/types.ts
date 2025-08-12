@@ -225,6 +225,8 @@ export enum Tabs {
 }
 
 export interface ITxLocalStorage {
+  vaultId?: string;
+
   tab: Tabs;
 
   action: Action;
@@ -239,6 +241,20 @@ export interface ITxLocalStorage {
   lastEventTxHash: string;
   crossChainTxId: string;
   depositTx: PreparedTransaction;
+
+  lastDepositInfo?: {
+    inputAmount: string;
+    outputAmount: string;
+    inputSymbol: string;
+    outputSymbol: string;
+  } | null;
+
+  lastWithdrawInfo?: {
+    inputAmount: string;
+    outputAmount: string;
+    inputSymbol: string;
+    outputSymbol: string;
+  } | null;
 
   isTransactionStarted: boolean;
   isTransactionProcessing: boolean;
