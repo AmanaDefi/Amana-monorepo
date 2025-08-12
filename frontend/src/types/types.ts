@@ -249,6 +249,8 @@ export interface ITxLocalStorage {
   transactionCompleted: boolean;
   selectedChain?: string;
 
+  userVaultBalance?: string;
+
   slippage?: {
     value: number;
     isAuto: boolean;
