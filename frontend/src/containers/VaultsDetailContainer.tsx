@@ -129,8 +129,6 @@ const VaultsDetailContainer: React.FC<{
     lastWithdrawInfo,
     isFailedOnConfirmation,
     setIsFailedOnCOnfirmation,
-    currentVaultId, 
-    setCurrentVaultId,
   } = useTransactionStore();
 
   const { switchToChain, walletAddress, activeChain, activeEvmWallet: user } =
@@ -219,16 +217,14 @@ const VaultsDetailContainer: React.FC<{
     }
   }, [vaultID, activeChain]);
 
-useEffect(() => {
-  const checkTransactionState = () => {
-    const currentVaultId = vaultData?.id || vaultID?.toString();
-    if (!currentVaultId) return;
+  useEffect(() => {
+    const checkTransactionState = () => {
+      if (!vaultID) return;
 
-    const isTxInProgress = CheckTheTxIsInProgress(currentVaultId);
-    const vaultTxData = getLocalStorageObject(currentVaultId);
+      const isTxInProgress = CheckTheTxIsInProgress(vaultID.toString());
+      const vaultTxData = getLocalStorageObject(vaultID.toString());
 
-    if (isTxInProgress && vaultTxData) {
-      if (vaultTxData.vaultId === currentVaultId || !vaultTxData.vaultId) {
+      if (isTxInProgress && vaultTxData) {
         setTransactionStepFeedback(vaultTxData?.transactionStepFeedback ?? {});
         setLastTransactionStepFeedback(
           vaultTxData?.lastTransactionStepFeedback ?? {},
@@ -237,23 +233,6 @@ useEffect(() => {
         setIsTransactionProcessing(
           vaultTxData?.isTransactionProcessing ?? false,
         );
-      }
-    } else if (vaultTxData) {
-      if (vaultTxData.finishedTransaction) {
-        setTransactionStepFeedback({});
-        setLastTransactionStepFeedback(
-          vaultTxData?.lastTransactionStepFeedback ?? {},
-        );
-        setFinishedTransaction(true);
-        setIsTransactionProcessing(false);
-        setIsFailedOnCOnfirmation(false);
-
-        if (vaultTxData.lastDepositInfo) {
-          setLastDepositInfo(vaultTxData.lastDepositInfo);
-        }
-        if (vaultTxData.lastWithdrawInfo) {
-          setLastWithdrawInfo(vaultTxData.lastWithdrawInfo);
-        }
       } else {
         setTransactionStepFeedback({});
         setLastTransactionStepFeedback({});
@@ -261,17 +240,10 @@ useEffect(() => {
         setIsTransactionProcessing(false);
         setIsFailedOnCOnfirmation(false);
       }
-    } else {
-      setTransactionStepFeedback({});
-      setLastTransactionStepFeedback({});
-      setFinishedTransaction(false);
-      setIsTransactionProcessing(false);
-      setIsFailedOnCOnfirmation(false);
-    }
-  };
+    };
 
-  checkTransactionState();
-}, [vaultID, vaultData?.id, user, wallet]);
+    checkTransactionState();
+  }, [vaultID, user, wallet]);
 
   const currentVault = useMemo(() => {
     return vaultData ? [vaultData] : null;
@@ -426,28 +398,10 @@ useEffect(() => {
 
   const isWithdraw = !isDeposit;
 
-const shouldShowTransactionComplete = useMemo(() => {
-  if (!finishedTransaction) return false;
-
-  if (currentVaultId !== vaultData?.id) {
-    console.log(
-      `[VaultContainer] Ignoring transaction complete for vault ${currentVaultId}, current vault is ${vaultData?.id}`,
-    );
-    return false;
-  }
-
-  return (
-    Object.keys(lastTransactionStepFeedback).length > 0 ||
-    Object.keys(transactionStepFeedback).length > 0
-  );
-}, [
-  finishedTransaction,
-  currentVaultId,
-  vaultData?.id,
-  lastTransactionStepFeedback,
-  transactionStepFeedback,
-]);
-  
+  const shouldShowTransactionComplete =
+    finishedTransaction &&
+    (Object.keys(lastTransactionStepFeedback).length > 0 ||
+      Object.keys(transactionStepFeedback).length > 0);
   const currentTransactionInfo = isDeposit ? lastDepositInfo : lastWithdrawInfo;
 
   return vaultData ? (
@@ -667,7 +621,6 @@ const shouldShowTransactionComplete = useMemo(() => {
                   setLastDepositInfo(null);
                   setLastWithdrawInfo(null);
                   setIsFailedOnCOnfirmation(false);
-                  setCurrentVaultId(null);
 
                   if (vaultID) {
                     updateLocalStorageObject(vaultID.toString(), null);
