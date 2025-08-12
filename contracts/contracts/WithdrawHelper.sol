@@ -387,61 +387,61 @@ contract WithdrawHelper is
         emit DivestSent(vaultNonce, msg.sender, user, assets);
     }
 
-    function handleSwitchCallToStrategy(
-        address strategyAddress,
-        address newStrategyAddress,
-        uint256 gasLimitForCall,
-        uint256 gasLimitForWithdrawAndCall,
-        address vaultAsset,
-        uint256 minAmountOut,
-        uint256 minSharesOut,
-        uint256 vaultNonce
-    ) external {
-        _handleGasFee(gasLimitForCall + gasLimitForWithdrawAndCall, vaultAsset); // we combine these two limits as this tx involves a divest and an invest
+    // function handleSwitchCallToStrategy(
+    //     address strategyAddress,
+    //     address newStrategyAddress,
+    //     uint256 gasLimitForCall,
+    //     uint256 gasLimitForWithdrawAndCall,
+    //     address vaultAsset,
+    //     uint256 minAmountOut,
+    //     uint256 minSharesOut,
+    //     uint256 vaultNonce
+    // ) external {
+    //     _handleGasFee(gasLimitForCall + gasLimitForWithdrawAndCall, vaultAsset); // we combine these two limits as this tx involves a divest and an invest
 
-        bytes memory recipient = abi.encodePacked(strategyAddress);
+    //     bytes memory recipient = abi.encodePacked(strategyAddress);
 
-        // bool isSwitch = true;
+    //     // bool isSwitch = true;
 
-        bytes memory outgoingMessage = abi.encode(
-            uint8(TxType.Switch),
-            minAmountOut,
-            minSharesOut,
-            newStrategyAddress,
-            vaultNonce
-        );
+    //     bytes memory outgoingMessage = abi.encode(
+    //         uint8(TxType.Switch),
+    //         minAmountOut,
+    //         minSharesOut,
+    //         newStrategyAddress,
+    //         vaultNonce
+    //     );
 
-        RevertOptions memory revertOptions = RevertOptions(
-            address(this), // revert address
-            true, // callOnRevert
-            address(this), // abortAddress
-            abi.encode(
-                "_switchStrategyFailed",
-                strategyAddress,
-                0,
-                address(0),
-                address(0),
-                address(0),
-                vaultAsset,
-                msg.sender,
-                vaultNonce,
-                bytes("0x")
-            ),
-            uint256(0) // onRevertGasLimit - NA on ZEVM
-        );
+    //     RevertOptions memory revertOptions = RevertOptions(
+    //         address(this), // revert address
+    //         true, // callOnRevert
+    //         address(this), // abortAddress
+    //         abi.encode(
+    //             "_switchStrategyFailed",
+    //             strategyAddress,
+    //             0,
+    //             address(0),
+    //             address(0),
+    //             address(0),
+    //             vaultAsset,
+    //             msg.sender,
+    //             vaultNonce,
+    //             bytes("0x")
+    //         ),
+    //         uint256(0) // onRevertGasLimit - NA on ZEVM
+    //     );
 
-        CallOptions memory callOptions = CallOptions(
-            gasLimitForCall + gasLimitForWithdrawAndCall,
-            false
-        );
-        IGatewayZEVM(GATEWAY_ADDRESS).call(
-            recipient,
-            address(vaultAsset),
-            outgoingMessage,
-            callOptions,
-            revertOptions
-        );
-    }
+    //     CallOptions memory callOptions = CallOptions(
+    //         gasLimitForCall + gasLimitForWithdrawAndCall,
+    //         false
+    //     );
+    //     IGatewayZEVM(GATEWAY_ADDRESS).call(
+    //         recipient,
+    //         address(vaultAsset),
+    //         outgoingMessage,
+    //         callOptions,
+    //         revertOptions
+    //     );
+    // }
 
     /**
      * @dev Approves or increases the allowance of a token for a spender.
