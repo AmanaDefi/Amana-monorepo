@@ -258,6 +258,20 @@ export default function VaultInputs({
             JSON.parse(TxInfo?.inputBal, bigIntReviver)?.formatted ?? "0.00",
           );
         }
+        if (TxInfo?.conversionOutput) {
+          try {
+            const savedConversionOutput = JSON.parse(
+              TxInfo.conversionOutput,
+              bigIntReviver,
+            );
+            setConversionOutput(savedConversionOutput);
+          } catch (error) {
+            console.error(
+              "Error parsing conversionOutput from localStorage",
+              error,
+            );
+          }
+        }
       }
     }
   }, [vaultData.id]);
@@ -1186,6 +1200,14 @@ useEffect(() => {
     setActiveTransactionVault,
   ]);
 
+  useEffect(() => {
+    if (vaultData?.id && conversionOutput.outputAmountFormatted !== "0.00") {
+      updateLocalStorageObject(vaultData.id, {
+        conversionOutput: JSON.stringify(conversionOutput, bigIntReplacer),
+      });
+    }
+  }, [conversionOutput.outputAmountFormatted, vaultData?.id]);
+
   // Reset input state after transaction completes or fails
 useEffect(() => {
   if (!transactionCompleted) return;
@@ -1248,45 +1270,72 @@ useEffect(() => {
 
   // Debounce the input balance in order to calculate the output amount
   useEffect(() => {
+    const isTxInProgress = CheckTheTxIsInProgress(vaultData?.id);
     setIsSlippageExceedingLimit(false);
     setOutputBoxErrorMessage("");
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
     if (!inputBalance.formatted || Number(inputBalance.formatted) <= 0) {
-      setConversionOutput(initialConversionOutput);
+      if (!isTxInProgress) {
+        setConversionOutput(initialConversionOutput);
+      } 
       setLoadingOutputToken(false);
       return;
     }
   }, [inputBalance, initialConversionOutput]);
 
-  useEffect(() => {
-    if (vaultData?.id) {
-      const isTxIsInProggress = CheckTheTxIsInProgress(vaultData?.id);
-      if (isTxIsInProggress) return;
-    }
-    if (
-      !debouncedInputBalance.formatted ||
-      Number(debouncedInputBalance.formatted) <= 0
-    ) {
-      setLoadingOutputToken(false);
-      setConversionOutput(initialConversionOutput);
-      return;
-    }
+useEffect(() => {
+  const vaultIdStr = vaultData?.id;
+  if (!vaultIdStr) return;
 
-    setLoadingOutputToken(true);
-    if (isDeposit) getDepositOutputAmount(debouncedInputBalance.value);
-    else getWithdrawOutputAmount(debouncedInputBalance.value);
-  }, [
-    debouncedInputBalance,
-    inputToken,
-    getDepositOutputAmount,
-    getWithdrawOutputAmount,
-    initialConversionOutput,
-    isDeposit,
-    vaultData,
-    userSlippage,
-  ]);
+  const isTxInProgress = CheckTheTxIsInProgress(vaultIdStr);
+  const vaultTxData = getLocalStorageObject(vaultIdStr);
+
+
+  if (isTxInProgress && vaultTxData?.conversionOutput) {
+    try {
+      const savedConversionOutput = JSON.parse(
+        vaultTxData.conversionOutput,
+        bigIntReviver,
+      );
+      const savedInputBalance = JSON.parse(vaultTxData.inputBal, bigIntReviver);
+
+      if (savedInputBalance?.formatted === debouncedInputBalance.formatted) {
+        setConversionOutput(savedConversionOutput);
+        setLoadingOutputToken(false);
+        return;
+      }
+    } catch (error) {
+      console.error(
+        "Failed to restore conversion output from localStorage:",
+        error,
+      );
+    }
+  }
+
+  if (
+    !debouncedInputBalance.formatted ||
+    Number(debouncedInputBalance.formatted) <= 0
+  ) {
+    setLoadingOutputToken(false);
+    setConversionOutput(initialConversionOutput);
+    return;
+  }
+
+  setLoadingOutputToken(true);
+  if (isDeposit) getDepositOutputAmount(debouncedInputBalance.value);
+  else getWithdrawOutputAmount(debouncedInputBalance.value);
+}, [
+  debouncedInputBalance,
+  inputToken,
+  getDepositOutputAmount,
+  getWithdrawOutputAmount,
+  initialConversionOutput,
+  isDeposit,
+  vaultData,
+  userSlippage,
+]);
 
   useEffect(() => {
     // Force recalculation when slippage changes, but only if we have a valid input
@@ -1456,7 +1505,7 @@ useEffect(() => {
                 />
               </div>
             )}
-
+      
             <InputTokenWithError
               onSelectChain={onSelectChain}
               onSelectChainAndToken={handleSelectChainAngToken}
@@ -1530,6 +1579,7 @@ useEffect(() => {
                 />
               )}
             </div>
+            
 
             <InputTokenWithError
               onSelectChain={onSelectChain}

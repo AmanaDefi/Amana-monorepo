@@ -236,6 +236,7 @@ export interface ITxLocalStorage {
   selectedToken: string; //JSON.stringify fo save BigInt
   inputBal: string; //JSON.stringify fo save BigInt
   displayValue: string;
+  conversionOutput: string;
 
   crosschainInvestHash: string;
   lastEventTxHash: string;
