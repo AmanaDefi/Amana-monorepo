@@ -3,7 +3,7 @@
 import { useCreateWallet, useLoginWithOAuth } from "@privy-io/react-auth";
 
 import { Modal } from "../base/Modal";
-import { useAuthStore } from "@/store/authStore";
+import { useAuthStore, handleAuthSuccess } from "@/store/authStore";
 import ConnectWallet from "../shared/ConnectWallet";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import PopularOptions from "../shared/PopularOptions";
@@ -29,9 +29,7 @@ const OptionsModalB = () => {
       if (publicKey) {
         disconnect();
       }
-      if (!result.wasAlreadyAuthenticated) {
-        successAuth();
-      }
+      handleAuthSuccess(result, successAuth);
     },
   });
 

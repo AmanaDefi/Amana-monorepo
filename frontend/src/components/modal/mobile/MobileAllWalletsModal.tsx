@@ -183,6 +183,21 @@ const MobileAllWallets = () => {
     ? fundWalletStep && chain.id !== CHAIN_ID["solana"]
     : true;
 
+  const EmptyWalletMessage = ({ type }: { type: "EVM" | "Solana" }) => (
+    <div className="flex items-center justify-center p-6 bg-gray-800/30 rounded-lg border border-gray-700/50 max-w-[488px]">
+      <div className="text-center">
+        <p className="text-gray-400 text-sm">
+          No {type} wallet extensions found.
+        </p>
+        <p className="text-gray-500 text-xs mt-1">
+          {type === "Solana"
+            ? "Install Phantom or Solflare to get started"
+            : "Install MetaMask or Coinbase Wallet to get started"}
+        </p>
+      </div>
+    </div>
+  );
+
   return (
     <MobileModal
       isOpen={
@@ -201,41 +216,59 @@ const MobileAllWallets = () => {
           className="overflow-auto flex flex-1 scrollbar-thin flex-col items-center"
         >
           <div className="flex flex-col gap-4 items-center justify-center">
-            {shouldShowEVM &&
-              filteredEvmConnectors.map((connector) => (
-                <ModalButton
-                  key={connector.id}
-                  label={connector.name}
-                  icon={
-                    <ConnectorIcon
-                      connectorId={connector.id}
-                      name={connector.name}
-                      connectorIcon={connector.icon}
+            {shouldShowEVM && (
+              <>
+                <p className="text-base text-[#3E73C4]">EVM chains connectors</p>
+                {filteredEvmConnectors.length > 0 ? (
+                  filteredEvmConnectors.map((connector) => (
+                    <ModalButton
+                      key={connector.id}
+                      label={connector.name}
+                      icon={
+                        <ConnectorIcon
+                          connectorId={connector.id}
+                          name={connector.name}
+                          connectorIcon={connector.icon}
+                        />
+                      }
+                      onClick={() => {
+                        handleExternalWalletConnect(connector);
+                      }}
                     />
-                  }
-                  onClick={() => {
-                    handleExternalWalletConnect(connector);
-                  }}
-                />
-              ))}
+                  ))
+                ) : (
+                  <EmptyWalletMessage type="EVM" />
+                )}
+              </>
+            )}
 
-            {shouldShowSolana &&
-              solanaConnectors.map((connector) => (
-                <ModalButton
-                  key={connector.name}
-                  label={connector.name}
-                  icon={
-                    <ConnectorIcon
-                      connectorId={connector.name}
-                      name={connector.name}
-                      connectorIcon={connector.icon}
+            {shouldShowSolana && (
+              <>
+                <p className="text-base text-[#3E73C4]">
+                  Solana chain connectors
+                </p>
+                {solanaConnectors.length > 0 ? (
+                  solanaConnectors.map((connector) => (
+                    <ModalButton
+                      key={connector.name}
+                      label={connector.name}
+                      icon={
+                        <ConnectorIcon
+                          connectorId={connector.name}
+                          name={connector.name}
+                          connectorIcon={connector.icon}
+                        />
+                      }
+                      onClick={() => {
+                        handleSolanaConnect(connector);
+                      }}
                     />
-                  }
-                  onClick={() => {
-                    handleSolanaConnect(connector);
-                  }}
-                />
-              ))}
+                  ))
+                ) : (
+                  <EmptyWalletMessage type="Solana" />
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -1,30 +1,25 @@
 "use client";
 
-import { useAuthStore } from "@/store/authStore";
+import { useAuthStore, handleAuthSuccess } from "@/store/authStore";
 import { Modal } from "../base/Modal";
 import { motion } from "framer-motion";
 import Button from "@/components/common/Button";
 import CloseModalIcon from "@/components/svg/CloseModalIcon";
 import ProfileDropdownIcon from "@/components/svg/ProfileDropdownIcon";
-import OnboardingIcon from "@/components/svg/OnboardingIcon";
-import { useLoginWithPasskey } from "@privy-io/react-auth";
+import { useLoginWithPasskey, ConnectedWallet } from "@privy-io/react-auth";
 import CheckPasskeyIcon from "@/components/svg/CheckPasskeyIcon";
 import { useWallet } from "@solana/wallet-adapter-react";
 
 export const SignatureCheck = () => {
   const { step, closeAll, successAuth, openStep } = useAuthStore();
-  const {
-    disconnect,
-    publicKey
-  } = useWallet();
+  const { disconnect, publicKey } = useWallet();
+
   const { loginWithPasskey } = useLoginWithPasskey({
     onComplete: (result) => {
       if (publicKey) {
         disconnect();
       }
-      if (!result.wasAlreadyAuthenticated) {
-        successAuth();
-      }
+      handleAuthSuccess(result, successAuth);
     },
     onError: (err) => {
       openStep("notVerify");
