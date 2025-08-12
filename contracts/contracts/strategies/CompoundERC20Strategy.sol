@@ -8,15 +8,15 @@ import "../interfaces/ISwapHelper.sol";
 import "../interfaces/ICometRewards.sol";
 import "./ERC20StrategyParent.sol";
 
-// Polygon USDT receiptToken: 0xaeB318360f27748Acb200CE616E389A6C9409a07
-// Polygon rewardsTokenAddress token: 0x8505b9d2254A7Ae468c0E9dd10Ccea3A837aef5c
-// Polygon Rewards contract: 0x45939657d1CA34A8FA39A924B71D28Fe8431e581
-// Polygon USDT input token:
+// BASE USDC receiptToken: 0xb125E6687d4313864e53df431d5425969c15Eb2F
+// BASE rewardsTokenAddress: 0x9e1028F5F1D5eDE59748FFceE5532509976840E0
+// BASE Rewards contract: 0x123964802e6ABabBE1Bc9547D72Ef1B69B00A6b1
+// BASE USDC base token: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
 
-/// @title ERC20_4626_Strategy
-/// @notice Base contract for USDC strategies using Aave and ZetaChain.
-/// @dev Handles USDC investments and divestments for strategies on EVM-compatible chains.
-contract ERC20_Compound_Strategy is ERC20StrategyParent {
+/// @title CompoundERC20Strategy
+/// @notice Base contract for Compound strategies using ERC20 tokens.
+/// @dev Handles Compound investments and divestments for strategies on EVM-compatible chains.
+contract CompoundERC20Strategy is ERC20StrategyParent {
     using SafeERC20 for IERC20;
 
     ICompoundVault public receiptToken;
@@ -80,9 +80,9 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
             address(this)
         );
         if (
-            compBalance >
-            minClaimableReward *
-                10 ** (IERC20Metadata(rewardsTokenAddress).decimals() - 3)
+            compBalance > 0
+            // minClaimableReward *
+            //     10 ** (IERC20Metadata(rewardsTokenAddress).decimals() - 3)
         ) {
             uint256 usdcReceived = swapToInputToken(
                 rewardsTokenAddress,
@@ -90,9 +90,9 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
                 harvestSwapSlippage
             );
             if (
-                usdcReceived >
-                minClaimableReward *
-                    10 ** (IERC20Metadata(address(inputToken)).decimals() - 3)
+                usdcReceived > 0
+                // minClaimableReward *
+                //     10 ** (IERC20Metadata(address(inputToken)).decimals() - 3)
             ) {
                 _depositFundsIntoYieldSource(usdcReceived, 0);
                 emit RewardsHarvested(
@@ -168,5 +168,42 @@ contract ERC20_Compound_Strategy is ERC20StrategyParent {
         ICometRewards.RewardOwed memory reward = cometRewardsContract
             .getRewardOwed(address(receiptToken), address(this));
         return reward.owed;
+    }
+
+    function swapToInputToken(
+        address token,
+        uint256 amountIn,
+        uint16 initialSlippageBps
+    ) internal override returns (uint256 amountOut) {
+        if (amountIn == 0) return 0;
+
+        IERC20(token).safeTransfer(swapHelper, amountIn);
+
+        uint256 maxDeadline = 1 hours;
+        uint16 slippage = initialSlippageBps;
+        // Retry with increasing slippage up to 10% (1000 bps)
+        while (slippage <= 1000) {
+            try
+                ISwapHelper(swapHelper).swapViaUniswap(
+                    token,
+                    amountIn,
+                    address(inputToken),
+                    slippage,
+                    address(this),
+                    maxDeadline,
+                    ""
+                )
+            returns (uint256 result) {
+                emit RewardsHarvested(token, amountIn, result);
+                return result;
+            } catch {
+                emit SwapFailed(token, amountIn, "Swap attempt failed");
+            }
+
+            slippage += 100; // increase slippage by 1% (100 bps)
+        }
+
+        // Swap failed even after max attempts
+        return 0;
     }
 }

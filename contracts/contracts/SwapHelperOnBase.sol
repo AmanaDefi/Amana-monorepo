@@ -8,7 +8,12 @@ import "./interfaces/IAerodromePoolFactory.sol";
 import "./interfaces/IAerodromeRouter.sol";
 import "./interfaces/IBalancerRouter.sol";
 import "./interfaces/I4626Vault.sol";
+import "./interfaces/IAerodromeSlipstreamFactory.sol";
+import "./interfaces/IAerodromeSlipstreamQuoter.sol";
+import "./interfaces/IAerodromeSlipstreamRouter.sol";
+
 import "./CurvePoolRegistry.sol";
+
 
 // PriceOracle address: 0x7C136bC8A5Ce2245C3357bc4A7B97C1A9A2b480c
 
@@ -19,6 +24,7 @@ contract SwapHelperOnBase is SwapHelperParent {
     address constant axlOP = 0x994ac01750047B9d35431a7Ae4Ed312ee955E030;
     address constant yUSD = 0x4772D2e014F9fC3a820C444e3313968e9a5C8121;
     address constant COMP = 0x9e1028F5F1D5eDE59748FFceE5532509976840E0;
+    address constant USDS = 0x820C137fa70C8691f0e44Dc420a5e53c168921Dc;
 
     bytes32 constant wellUsdPriceFeedId =
         0x3cf6bab8bf8041dc8ee2a3edebe16b5f9f4ff3cce46006aeb15c885ba4779d0b;
@@ -36,20 +42,27 @@ contract SwapHelperOnBase is SwapHelperParent {
 
     address constant WETH_ADDRESS = 0x4200000000000000000000000000000000000006;
 
-    address constant AERODROME_ROUTER =
-        0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43; // Aerodrome Router on Base
-    address constant AERODROME_FACTORY =
-        0x420DD381b31aEf6683db6B902084cB0FFECe40Da; // Aerodrome PoolFactory on Base
     address constant BALANCER_ROUTER =
         0x3f170631ed9821Ca51A59D996aB095162438DC10; // Balancer Vault on Base
     address constant BALANCER_VAULT =
         0xbA1333333333a1BA1108E8412f11850A5C319bA9; // Balancer Vault on Base
+    
+    address constant AERODROME_ROUTER =
+        0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43; // Aerodrome Router on Base
+    address constant AERODROME_FACTORY =
+        0x420DD381b31aEf6683db6B902084cB0FFECe40Da; // Aerodrome PoolFactory on Base
+    address constant SLIPSTREAM_FACTORY =
+        0x5e7BB104d84c7CB9B682AaC2F3d509f5F406809A; // Slipstream Factory on Base
+    address constant SLIPSTREAM_QUOTER =
+        0x254cF9E1E6e233aa1AC962CB9B05b2cfeAaE15b0; // Slipstream Quoter on Base
+    address constant SLIPSTREAM_ROUTER =
+        0xBE6D8f0d05cC4be24d5167a3eF062215bE6D18a5; // Slipstream Router on Base
 
     function initialize(address _priceOracle) external initializer {
         __SwapHelperParent_init(
             _priceOracle,
-            address(0), // ← Uniswap V2 Router on Base
-            address(0), // ← Uniswap V2 Factory on Base
+            0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24, // ← Uniswap V2 Router on Base
+            0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6, // ← Uniswap V2 Factory on Base
             0x2626664c2603336E57B271c5C0b26F421741e481, // ← Uniswap V3 Router on Base
             0x33128a8fC17869897dcE68Ed026d694621f6FDfD, // ← Uniswap V3 Factory on Base
             0x5524124b8F36e682f3A23D069399247806e8B627, // ← Curve Registry on Base
@@ -86,7 +99,7 @@ contract SwapHelperOnBase is SwapHelperParent {
      * @return True if the token is a stablecoin, false otherwise.
      */
     function isStablecoin(address token) internal pure override returns (bool) {
-        return (token == USDC || token == yUSD);
+        return (token == USDC || token == yUSD || token == USDS);
     }
 
     /**
@@ -225,10 +238,7 @@ contract SwapHelperOnBase is SwapHelperParent {
             WETH_ADDRESS, // Using WETH as the intermediate token
             isStable // Assuming we want to swap through non-stable pools
         );
-        if (path.length < 2) {
-            // No valid path found
-            return 0;
-        }
+        if (path.length < 2) return 0;
         IERC20(inputToken).approve(AERODROME_ROUTER, amount);
         IAerodromeRouter.Route[] memory routes = new IAerodromeRouter.Route[](
             path.length - 1
@@ -273,7 +283,6 @@ contract SwapHelperOnBase is SwapHelperParent {
             slippageBps
         );
         (address[] memory path, uint24[] memory feeTiers, bytes memory encodedPath) = getPathV3(inputToken, outputToken, UNISWAP_V3_FACTORY);
-        
         if (encodedPath.length > 0) {
             IERC20(inputToken).approve(UNISWAP_V3_ROUTER, amount);
             ISwapRouter.ExactInputParams memory params = ISwapRouter
@@ -353,27 +362,62 @@ contract SwapHelperOnBase is SwapHelperParent {
         );
     }
 
-    // function getAmountOutCurveOrUniswap(
-    //     address inputToken,
-    //     address outputToken,
-    //     uint256 amount
-    // ) public view returns (uint256) {
-    //     (address curvePool, , ) = getCurvePool(inputToken, outputToken);
-    //     if (curvePool != address(0)) {
-    //         return
-    //             getCurveAmountOut(curvePool, inputToken, outputToken, amount);
-    //     } else {
-    //         (
-    //             address[] memory path,
-    //             uint24[] memory feeTiers,
-    //             bytes memory encodedPath
-    //         ) = getPath(inputToken, outputToken);
 
-    //         if (encodedPath.length > 0) {
-    //             return getAmountOutV3(amount, path, feeTiers);
-    //         } else {
-    //             revert IErrors.InsufficientLiquidity();
-    //         }
-    //     }
-    // }
+
+    /// @notice Swap exact-in choosing among: V3 direct, V2 direct, V3->V2 via WETH.
+    /// @param tokenIn  ERC20 input
+    /// @param tokenOut ERC20 output
+    /// @param amountIn Exact input amount (must be approved to this contract)
+    /// @param slippageBps Min-out = bestQuote * (1 - slippageBps/1e4)
+    /// @param recipient Receiver of output tokens
+    /// @param deadline  UniversalRouter deadline
+    function swapViaAerodromeSlipstream(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn,
+        uint16  slippageBps,
+        address recipient,
+        uint256 deadline
+    ) external returns (uint256 amountOut) {
+        require(tokenIn != tokenOut, "identical tokens");
+        require(amountIn > 0, "zero amount");
+
+        (uint256 amountOutV3, int24 tickSpacingV3) = _quoteV3(tokenIn, tokenOut, amountIn);
+        require(amountOutV3 > 0, "no route");
+        
+        IERC20(tokenIn).approve(address(SLIPSTREAM_ROUTER), amountIn);
+        uint256 minOut = (amountOutV3 * (10000 - slippageBps)) / 10000;
+        bytes memory path = abi.encodePacked(tokenIn, uint24(tickSpacingV3), tokenOut);
+        amountOut = IAerodromeSlipstreamRouter(SLIPSTREAM_ROUTER).exactInput(IAerodromeSlipstreamRouter.ExactInputParams({
+            path: path,
+            recipient: recipient,
+            deadline: deadline,
+            amountIn: amountIn,
+            amountOutMinimum: minOut
+        }));
+    }
+
+    function _quoteV3(address tokenIn, address tokenOut, uint256 amountIn)
+        internal
+        returns (uint256 amountOut, int24 tickSpacing)
+    {
+        int24[] memory tickSpacings = IAerodromeSlipstreamFactory(SLIPSTREAM_FACTORY).tickSpacings();
+        for (uint256 i = 0; i < tickSpacings.length; i++) {
+            address pool = IAerodromeSlipstreamFactory(SLIPSTREAM_FACTORY).getPool(tokenIn, tokenOut, tickSpacings[i]);
+            if (pool != address(0)) {
+                uint256 out;
+                try IAerodromeSlipstreamQuoter(SLIPSTREAM_QUOTER).quoteExactInputSingle(IAerodromeSlipstreamQuoter.QuoteExactInputSingleParams({
+                    tokenIn: tokenIn,
+                    tokenOut: tokenOut,
+                    tickSpacing: tickSpacings[i],
+                    amountIn: amountIn,
+                    sqrtPriceLimitX96: 0
+                })) returns (uint256 resultOut, uint160, uint32, uint256) {
+                    out = resultOut;
+                } catch { out = 0; }
+                return (out, tickSpacings[i]);                
+            }
+        }
+        return (0, 0);
+    }
 }
