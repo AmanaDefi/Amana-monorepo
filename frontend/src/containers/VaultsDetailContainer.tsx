@@ -227,24 +227,6 @@ useEffect(() => {
     const isTxInProgress = CheckTheTxIsInProgress(currentVaultId);
     const vaultTxData = getLocalStorageObject(currentVaultId);
 
-    if (!isTxInProgress && vaultTxData?.finishedTransaction) {
-      setTransactionStepFeedback({});
-      setLastTransactionStepFeedback(
-        vaultTxData?.lastTransactionStepFeedback ?? {},
-      );
-      setFinishedTransaction(true);
-      setIsTransactionProcessing(false);
-      setIsFailedOnCOnfirmation(false);
-
-      if (vaultTxData.lastDepositInfo) {
-        setLastDepositInfo(vaultTxData.lastDepositInfo);
-      }
-      if (vaultTxData.lastWithdrawInfo) {
-        setLastWithdrawInfo(vaultTxData.lastWithdrawInfo);
-      }
-      return; 
-    }
-
     if (isTxInProgress && vaultTxData) {
       if (vaultTxData.vaultId === currentVaultId || !vaultTxData.vaultId) {
         setTransactionStepFeedback(vaultTxData?.transactionStepFeedback ?? {});
@@ -435,19 +417,13 @@ useEffect(() => {
 
   const handleBack = () => {
     const isTxInProgress = CheckTheTxIsInProgress(vaultID.toString());
-
-    const vaultTxData = getLocalStorageObject(vaultID.toString());
-    const hasCompletedTransaction =
-      vaultTxData?.finishedTransaction &&
-      Object.keys(vaultTxData?.lastTransactionStepFeedback || {}).length > 0;
-
-    if (!isTxInProgress && !hasCompletedTransaction) {
+    if (!isTxInProgress) {
       updateLocalStorageObject(vaultID.toString(), null);
     }
-
     router.push(backPath);
     setIsFailedOnCOnfirmation(false);
   };
+
   const isWithdraw = !isDeposit;
 
 const shouldShowTransactionComplete = useMemo(() => {
