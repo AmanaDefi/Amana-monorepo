@@ -10,6 +10,10 @@ import {
   ZC_USDC_POL_ADDRESS,
   ZC_SOL_SOL_ADDRESS,
   ZC_USDC_SOL_ADDRESS,
+  ZC_USDC_BSC_ADDRESS,
+  ZC_USDT_ARB_ADDRESS,
+  ZC_USDT_SOL_ADDRESS,
+  ZC_BTC_BTC_ADDRESS,
 } from "../../../constants";
 
 export const vaultTestMatrix = [
@@ -18,7 +22,7 @@ export const vaultTestMatrix = [
     vaultConfig: {
       name: "AaveV3EthVault",
       symbol: "AVU",
-      asset: ZC_USDC_ARB_ADDRESS, // direct deposit will use this
+      asset: ZC_USDC_ETH_ADDRESS, // direct deposit will use this
       feeRate: 1000,
       gasLimitWithdrawAndCall: 500_000,
       gasLimitCall: 500_000,
@@ -29,7 +33,7 @@ export const vaultTestMatrix = [
     strategyConfig: {
       address: "0xD8493CbAd089aDdFFB72a44850161f4DDD92f2CE", // arbitrary
       chainId: 42161,
-      gasToken: ZC_ETH_ARB_ADDRESS,
+      gasToken: ZC_ETH_ETH_ADDRESS,
       gasTankAmount: ethers.utils.parseUnits("10", 18),
     },
     txConfig: {
@@ -40,7 +44,7 @@ export const vaultTestMatrix = [
       originNonEvmUserAddress: "0x62ca5055fd4bd065301d278209c2cf6bd7750fc4aa7c1fdabe186d71cca91963",
       originZRC20Input: ZC_SOL_SOL_ADDRESS, // zrc20 equivalent of the asset on origin chain - if you change this, watch decimals below
 
-      otherZRC20Input: ZC_USDC_POL_ADDRESS,
+      otherZRC20Input: ZC_USDT_ARB_ADDRESS,
 
       crossChainDepositAmount1: ethers.utils.parseUnits("10", 6),
       crossChainDepositAmount2: ethers.utils.parseUnits("5", 6),

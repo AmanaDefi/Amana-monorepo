@@ -260,7 +260,7 @@ describe("AmanaConnectedChainVault Tests", function () {
 
     let totalShares = await amanaVault.balanceOf(await user1.getAddress());
     const withdrawToken = txConfig.originZRC20Input;
-    await amanaVault.connect(user1).redeemToAnyToken(totalShares, minAmountOut, await user1.getAddress(), await user1.getAddress(), withdrawToken, 500);
+    await amanaVault.connect(user1).redeemToAnyToken(totalShares, minAmountOut, await user1.getAddress(), await user1.getAddress(), withdrawToken, 10000);
     const expectedAmountWithdrawn = await amanaVault.convertToAssets(totalShares);
     await simulateConfirmRedeemToAnyToken(amanaVault, gatewaySigner, expectedAmountWithdrawn, totalShares, emittedAmount, 2, vaultConfig.asset, strategyConfig.address, strategyConfig.chainId);
 
@@ -299,7 +299,7 @@ describe("AmanaConnectedChainVault Tests", function () {
     const withdrawToken = ethers.constants.AddressZero;
     await amanaVault.connect(user1).redeemToAnyToken(totalShares, minAmountOut, await user1.getAddress(), await user1.getAddress(), withdrawToken, 10000);
     const expectedAmountWithdrawn = await amanaVault.convertToAssets(totalShares);
-    await simulateConfirmRedeemToAnyToken(amanaVault, gatewaySigner, txConfig.crossChainDepositAmount1, expectedAmountWithdrawn, txConfig.crossChainDepositAmount1, 2, vaultConfig.asset, strategyConfig.address, strategyConfig.chainId);
+    await simulateConfirmRedeemToAnyToken(amanaVault, gatewaySigner, expectedAmountWithdrawn, totalShares, emittedAmount, 2, vaultConfig.asset, strategyConfig.address, strategyConfig.chainId);
 
     totalShares = await amanaVault.balanceOf(await user1.getAddress());
     const userBalance2 = await ethers.provider.getBalance(await user1.getAddress());
@@ -1449,4 +1449,3 @@ describe("AmanaConnectedChainVault Tests", function () {
 
 
 });
-

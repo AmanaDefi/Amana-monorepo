@@ -27,6 +27,9 @@ contract SwapHelperZetachain is SwapHelperParent {
 
     address constant WZETA_TOKEN = 0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf; // mainnet and testnet
 
+    address constant BTC_BTC_ADDRESS =
+        0x13A0c5930C028511Dc02665E7285134B6d11A5f4; // mainnet only
+
     address constant ETH_ETH_ADDRESS =
         0xd97B1de3619ed2c6BEb3860147E30cA8A7dC9891; // mainnet only
     address constant USDC_ETH_ADDRESS =
@@ -86,6 +89,8 @@ contract SwapHelperZetachain is SwapHelperParent {
         0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d;
     bytes32 constant avaxUsdPriceFeedId =
         0x93da3352f9f1d105fdfe4971cfa80e9dd777bfc5d0f683ebb6e1294b92137bb7;
+    bytes32 constant btcUsdPriceFeedId =
+        0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43;
 
     function initialize(address _priceOracle) external initializer {
         __SwapHelperParent_init(
@@ -123,6 +128,8 @@ contract SwapHelperZetachain is SwapHelperParent {
             return solUsdPriceFeedId;
         } else if (token == AVAX_AVAX_ADDRESS) {
             return avaxUsdPriceFeedId;
+        } else if (token == BTC_BTC_ADDRESS) {
+            return btcUsdPriceFeedId;
         } else {
             return bytes32(0); // Return zero bytes if no price feed exists
         }
@@ -519,11 +526,11 @@ contract SwapHelperZetachain is SwapHelperParent {
         if (path.length > 0 && router != address(0)) {
             IZRC20(zrc20).approve(router, amount);
 
-            ISwapRouter.ExactInputParams memory params = ISwapRouter
-                .ExactInputParams({
+            ISwapRouter.ExactInputParamsV1 memory params = ISwapRouter
+                .ExactInputParamsV1({
                     path: path,
                     recipient: vault,
-                    // deadline: block.timestamp + maxDeadline,
+                    deadline: block.timestamp + maxDeadline,
                     amountIn: amount,
                     amountOutMinimum: minimumOut
                 });
