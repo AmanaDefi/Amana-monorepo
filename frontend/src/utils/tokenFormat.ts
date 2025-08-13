@@ -11,14 +11,16 @@ export const formatTokenBalance = (
   // Check if token is a stablecoin using centralized function
   const isStablecoin = isStablecoinSymbol(symbol);
 
-  const decimals = isStablecoin ? 2 : 4;
+  const decimals = isStablecoin ? 6 : 6;
   const formatted = num.toFixed(decimals);
 
-  if (parseFloat(formatted) === 0 && num > 0) {
-    return isStablecoin ? "< 0.01" : "< 0.0001";
-  }
+  // if (parseFloat(formatted) === 0 && num > 0) {
+  //   return isStablecoin ? "< 0.01" : "< 0.0001";
+  // }
 
-  return parseFloat(formatted).toString();
+  return parseFloat(formatted)
+    .toFixed(10)
+    .replace(/\.?0+$/, "");
 };
 
 // Format token balance in USD terms

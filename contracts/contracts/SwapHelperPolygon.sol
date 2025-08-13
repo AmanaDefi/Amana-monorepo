@@ -30,7 +30,7 @@ contract SwapHelperPolygon is SwapHelperParent {
             _priceOracle,
             0xedf6066a2b290C185783862C7F4776A2C8077AD1, // Uniswap V2 Router
             0x9e5A52f57b3038F1B8EeE45F28b3C1967e22799C, // Uniswap V2 Factory
-            0xE592427A0AEce92De3Edee1F18E0157C05861564, // Uniswap V3 Router
+            0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45, // Uniswap V3 Router
             0x1F98431c8aD98523631AE4a59f267346ea31F984, // Uniswap V3 Factory
             address(0),
             WMATIC_ADDRESS // ← passed into the parent as the intermediate token

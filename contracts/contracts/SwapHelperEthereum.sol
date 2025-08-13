@@ -54,7 +54,7 @@ contract SwapHelperEthereum is SwapHelperParent {
             _priceOracle,
             0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D, // Uniswap V2 Router
             0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f, // Uniswap V2 Factory
-            0xE592427A0AEce92De3Edee1F18E0157C05861564, // Uniswap V3 Router
+            0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45, // Uniswap V3 Router
             0x1F98431c8aD98523631AE4a59f267346ea31F984, // Uniswap V3 Factory
             0xF98B45FA17DE75FB1aD0e7aFD971b0ca00e379fC, // Curve Registry
             WETH_TOKEN // ← passed into the parent as the intermediate token
