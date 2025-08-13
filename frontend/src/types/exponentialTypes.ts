@@ -77,7 +77,7 @@ export const EXPONENTIAL_TO_RISK_LEVEL: Record<string, number> = {
 
 // Blockchain name mapping
 export const BLOCKCHAIN_MAPPING: Record<string, string> = {
-  'Base': 'ethereum', // Base is an L2 on Ethereum
+  'Base': 'base', 
   'Ethereum': 'ethereum',
   'Polygon': 'polygon',
   'BSC': 'bsc',

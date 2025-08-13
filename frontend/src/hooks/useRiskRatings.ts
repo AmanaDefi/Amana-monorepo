@@ -46,20 +46,31 @@ export const useRiskRatings = ({
       return;
     }
 
-    console.log(`[useRiskRatings] Starting fetch for ${vaults.length} vaults`);
+    // Debug mode: limit to single vault id if configured
+    let targetVaults = vaults;
+    if (RISK_RATING_CONFIG.debugOnlyVaultId) {
+      targetVaults = vaults.filter(v => v.id.toLowerCase() === RISK_RATING_CONFIG.debugOnlyVaultId);
+      if (targetVaults.length === 0) {
+        console.log('[useRiskRatings] Debug filter active; current page has no matching vault. Skipping.');
+        return;
+      }
+    }
+
+    console.log(`[useRiskRatings] Starting fetch for ${targetVaults.length} vaults`);
     console.log('[useRiskRatings] Configuration:', {
       enabled,
       showProtocolRisk,
       showAssetRisk,
-      vaultCount: vaults.length
+      vaultCount: targetVaults.length,
+      debugOnlyVaultId: RISK_RATING_CONFIG.debugOnlyVaultId || null,
     });
     
     setIsLoading(true);
     setError(null);
 
     try {
-      console.log(`[useRiskRatings] Fetching risk ratings for ${vaults.length} vaults`);
-      const ratings = await apiService.exponential.getBatchRiskRatings(vaults);
+      console.log(`[useRiskRatings] Fetching risk ratings for ${targetVaults.length} vaults`);
+      const ratings = await apiService.exponential.getBatchRiskRatings(targetVaults);
       console.log('[useRiskRatings] Received ratings:', ratings);
       console.log('[useRiskRatings] Ratings summary:', {
         total: ratings.size,
@@ -79,17 +90,10 @@ export const useRiskRatings = ({
 
   const getRiskLevel = useCallback((vaultId: string): number | null => {
     const rating = riskRatings.get(vaultId);
-    if (!rating) {
-      console.log(`[useRiskRatings] No rating found for vault ${vaultId}`);
-      return null;
-    }
+    if (!rating) return null;
 
     // Convert Exponential rating to your A/B/C format
-    const riskLevel = EXPONENTIAL_TO_RISK_LEVEL[rating.poolRating] || null;
-    console.log(`[useRiskRatings] Risk level for vault ${vaultId}:`, {
-      poolRating: rating.poolRating,
-      mappedLevel: riskLevel
-    });
+    const riskLevel = EXPONENTIAL_TO_RISK_LEVEL[rating?.poolRating || 'A'] || null;
     return riskLevel;
   }, [riskRatings]);
 

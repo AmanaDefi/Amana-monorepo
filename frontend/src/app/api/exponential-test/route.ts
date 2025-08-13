@@ -1,54 +1,63 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Simple debug route to verify Exponential API integration for a single known vault
-// Vault: Fluid USDC (Base)
-// - Vault (pool token) address (id in subgraph): 0x5cd6e196ca1d85b8edfdf162d3a0c77268f42c69
-// - Underlying USDC (Base): 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
-// - Protocol: fluid
-// - Blockchain mapping used by app: Base -> 'ethereum'
+export async function GET(request: NextRequest) {
+  const EXPONENTIAL_API_URL = process.env.NEXT_PUBLIC_EXPONENTIAL_API_URL || 'https://api.exponential.fi/api/pool-risk/search';
+  const EXPONENTIAL_API_KEY = process.env.NEXT_PUBLIC_EXPONENTIAL_API_KEY;
 
-export async function GET(_req: NextRequest) {
+  if (!EXPONENTIAL_API_KEY) {
+    return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
+  }
+
+  // Test the Aave USDT BNB vault that's currently being debugged
+  const testRequest = {
+    token_address: '0xa9251ca9DE909CB71783723713B21E4233fbf1B1', // aBnbUSDT pool token
+    blockchain: 'bsc',
+    protocol: 'aave',
+  };
+
+  console.log('[Exponential Test] Making request:', testRequest);
+
   try {
-    const apiKey = process.env.NEXT_PUBLIC_EXPONENTIAL_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: 'Missing NEXT_PUBLIC_EXPONENTIAL_API_KEY' },
-        { status: 500 }
-      );
-    }
-
-    const requestBody = {
-      blockchain: 'ethereum',
-      token_address: '0x5cd6e196ca1d85b8edfdf162d3a0c77268f42c69',
-      protocol: 'fluid',
-      assets: ['0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'],
-    } as const;
-
-    const res = await fetch('https://api.exponential.fi/api/pool-risk/search', {
+    const response = await fetch(EXPONENTIAL_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-API-KEY': apiKey,
+        'X-API-KEY': EXPONENTIAL_API_KEY,
       },
-      body: JSON.stringify(requestBody),
-      // Next automatically disables compression headers that browsers refuse
+      body: JSON.stringify(testRequest),
     });
 
-    const contentType = res.headers.get('content-type') || '';
-    const responseBody = contentType.includes('application/json')
-      ? await res.json()
-      : await res.text();
+    console.log('[Exponential Test] Response status:', response.status);
+    console.log('[Exponential Test] Response headers:', Object.fromEntries(response.headers.entries()));
+
+    const data = await response.text();
+    console.log('[Exponential Test] Raw response:', data);
+
+    let jsonData;
+    try {
+      jsonData = JSON.parse(data);
+    } catch (e) {
+      console.log('[Exponential Test] Failed to parse JSON:', e);
+      return NextResponse.json({ 
+        error: 'Invalid JSON response',
+        rawResponse: data,
+        status: response.status 
+      }, { status: 500 });
+    }
 
     return NextResponse.json({
-      ok: res.ok,
-      status: res.status,
-      request: requestBody,
-      response: responseBody,
+      success: true,
+      status: response.status,
+      data: jsonData,
+      request: testRequest,
     });
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: error?.message || 'Unexpected error' },
-      { status: 500 }
-    );
+
+  } catch (error) {
+    console.error('[Exponential Test] Error:', error);
+    return NextResponse.json({ 
+      error: 'Request failed',
+      details: error instanceof Error ? error.message : 'Unknown error',
+      request: testRequest,
+    }, { status: 500 });
   }
 }

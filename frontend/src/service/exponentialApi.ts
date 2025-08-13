@@ -166,12 +166,20 @@ function createExponentialAPI() {
       inputTokenAddress: vault.inputToken.address,
     });
 
-    return {
+    // If we have a pool token mapping, don't send assets field
+    // This might help get the pool_rating instead of just asset ratings
+    const request: ExponentialRiskRequest = {
       token_address: tokenAddress,
       blockchain,
       protocol,
-      assets: [vault.inputToken.address],
     };
+
+    // Only add assets if we don't have a pool token mapping
+    if (!mapping?.poolToken) {
+      request.assets = [vault.inputToken.address];
+    }
+
+    return request;
   }
 
   function mapExponentialResponseToRiskRating(

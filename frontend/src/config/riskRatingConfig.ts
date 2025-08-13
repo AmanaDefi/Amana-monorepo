@@ -23,10 +23,14 @@ export const RISK_RATING_CONFIG = {
   batchDelay: 1500,
   
   // API timeout (ms)
-  timeout: 10000,
+  timeout: 30000,
   
   // Global cooldown applied when upstream reports rate limiting
   globalCooldownOnRateLimitMs: 60 * 60 * 1000, // 1 hour
+
+  // Debug: fetch only a specific vaultId (lowercased). Set to null to disable.
+  // Fluid USDC (Base) Amana vault id from subgraph mapping.ts
+  debugOnlyVaultId: '0xe5fa0e4ba13d516908c5313b3375b7ede24bfe7a',
 } as const;
 
 // Feature flags for different risk rating displays
