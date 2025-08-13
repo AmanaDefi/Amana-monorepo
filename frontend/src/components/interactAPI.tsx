@@ -572,7 +572,6 @@ export default function InteractionContainer({
     setIsTransactionStarted(false);
     setCrosschainInvestHash("");
     setcrossChainTxId("");
-    updateLocalStorageObject(vaultData.id, null);
 
     // 5. Save the final feedback state for display
     setLastTransactionStepFeedback(feedbackSnapshot);
@@ -657,7 +656,6 @@ export default function InteractionContainer({
           setAction(finalAction);
           setStep(nextStep);
           setFinishedTransaction(true);
-          updateLocalStorageObject(vaultData.id, null);
 
           setTransactionCompleted(true);
 
@@ -834,7 +832,6 @@ if (result.success) {
 
   setFinishedTransaction(true);
   setIsTransactionProcessing(false);
-  updateLocalStorageObject(vaultData.id, null);
   setIsFailedOnCOnfirmation(false);
   setTransactionCompleted(true);
 
@@ -851,7 +848,6 @@ if (result.success) {
           useTransactionStore.setState((prev) => {
             setLastTransactionStepFeedback(prev.transactionStepFeedback);
             updateLocalStorageObject(vaultData.id, null);
-
             return { transactionStepFeedback: prev.transactionStepFeedback };
           });
 
@@ -1384,8 +1380,6 @@ function Interaction({
     setCrosschainInvestHash("");
     setcrossChainTxId("");
 
-    updateLocalStorageObject(vaultData.id, null);
-
     // Reactivate component after clearing
     setTimeout(() => {
       isComponentActiveRef.current = true;
@@ -1620,6 +1614,16 @@ function Interaction({
             inputSymbol: inputToken?.symbol || "",
             outputSymbol: vaultData.symbol,
           });
+          updateLocalStorageObject(vaultData.id, {
+            finalTransactionData: {
+              inputAmount: inputBalance.formatted,
+              outputAmount: outputAmountFormatted,
+              inputSymbol: inputToken?.symbol || "",
+              outputSymbol: vaultData.symbol,
+              isDeposit: true,
+              timestamp: Date.now(),
+            },
+          });
           const result = await handleDepositTransaction(
             vaultData,
             inputBalance,
@@ -1644,6 +1648,16 @@ function Interaction({
             outputAmount: outputAmountFormatted,
             inputSymbol: inputToken?.symbol || "",
             outputSymbol: vaultData.symbol,
+          });
+          updateLocalStorageObject(vaultData.id, {
+            finalTransactionData: {
+              inputAmount: inputBalance.formatted,
+              outputAmount: outputAmountFormatted,
+              inputSymbol: inputToken?.symbol || "",
+              outputSymbol: vaultData.symbol,
+              isDeposit: false, 
+              timestamp: Date.now(),
+            },
           });
           const result = await handleWithdrawTransaction(
             vaultData,

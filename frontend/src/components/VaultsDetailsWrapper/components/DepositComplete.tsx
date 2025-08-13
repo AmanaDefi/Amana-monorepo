@@ -6,6 +6,7 @@ import { VaultData, Token, Balance } from "@/types/types";
 import { useRouter } from "next/navigation";
 import { useTransactionStore } from "@/store/transactionStore";
 import { hasNoErrors } from "@/utils/utils";
+import { updateLocalStorageObject } from "@/utils/localStorageUtils";
 
 interface DepositCompleteProps {
   vaultData: VaultData;
@@ -39,6 +40,7 @@ const DepositComplete = ({
   const isSuccess = hasNoErrors(lastTransactionStepFeedback);
 
   const handleExploreClick = () => {
+    updateLocalStorageObject(vaultData.id, null);
     onClose();
     router.push("/");
   };

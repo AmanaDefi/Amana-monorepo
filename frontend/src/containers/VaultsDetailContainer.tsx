@@ -197,6 +197,25 @@ const VaultsDetailContainer: React.FC<{
   );
 
   useEffect(() => {
+    if (vaultData?.id) {
+      const currentStoreVaultId = useTransactionStore.getState().currentVaultId;
+
+      if (currentStoreVaultId && currentStoreVaultId !== vaultData.id) {
+        console.log(
+          `Clearing transaction state: switching from ${currentStoreVaultId} to ${vaultData.id}`,
+        );
+
+        setFinishedTransaction(false);
+        setLastDepositInfo(null);
+        setLastWithdrawInfo(null);
+        setLastTransactionStepFeedback({});
+        setTransactionStepFeedback({});
+        setCurrentVaultId(null);
+      }
+    }
+  }, [vaultData?.id]);
+
+  useEffect(() => {
     const currentVaultId = vaultData?.id || vaultID?.toString();
     if (currentVaultId) {
       const vaultTxData = getLocalStorageObject(currentVaultId);
@@ -499,18 +518,10 @@ const VaultsDetailContainer: React.FC<{
   const shouldShowTransactionComplete = useMemo(() => {
     if (!finishedTransaction) return false;
 
-    // if (currentVaultId !== vaultData?.id) {
-    //   console.log(
-    //     `[VaultContainer] Ignoring transaction complete for vault ${currentVaultId}, current vault is ${vaultData?.id}`,
-    //   );
-    //   return false;
-    // }
-
     return (
       Object.keys(lastTransactionStepFeedback).length > 0 ||
       Object.keys(transactionStepFeedback).length > 0
     );
-    
   }, [
     finishedTransaction,
     currentVaultId,
@@ -519,8 +530,23 @@ const VaultsDetailContainer: React.FC<{
     transactionStepFeedback,
   ]);
 
-  const currentTransactionInfo = isDeposit ? lastDepositInfo : lastWithdrawInfo;
-  
+  const getTransactionData = () => {
+    const storage = getLocalStorageObject(vaultID.toString());
+    const txData = storage?.finalTransactionData;
+
+    if (!txData)
+      return {
+        inputAmount: "0",
+        outputAmount: "0",
+        inputSymbol: "",
+        outputSymbol: "",
+      };
+
+    return txData;
+  };
+
+  const txData = getTransactionData();
+
   return vaultData ? (
     <div className=" font-gotham">
       {!walletAddress && <InvestBlock />}
@@ -747,20 +773,16 @@ const VaultsDetailContainer: React.FC<{
                   }
                   // setTransactionCompleted(true);
                 }}
-                depositedInputAmount={
-                  currentTransactionInfo?.inputAmount || "0"
-                }
-                depositedOutputAmount={
-                  currentTransactionInfo?.outputAmount || "0"
-                }
+                depositedInputAmount={txData.inputAmount}
+                depositedOutputAmount={txData.outputAmount}
                 depositedInputSymbol={
-                  currentTransactionInfo?.inputSymbol ||
+                  txData.inputSymbol ||
                   (isDeposit
                     ? selectedToken?.symbol || vaultData.inputToken.symbol
                     : vaultData.symbol)
                 }
                 depositedOutputSymbol={
-                  currentTransactionInfo?.outputSymbol ||
+                  txData.outputSymbol ||
                   (isDeposit
                     ? vaultData.symbol
                     : selectedToken?.symbol || vaultData.inputToken.symbol)

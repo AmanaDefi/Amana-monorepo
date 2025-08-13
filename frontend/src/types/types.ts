@@ -258,4 +258,13 @@ export interface ITxLocalStorage {
 
   transactionStepFeedback: TransactionStepMessages;
   lastTransactionStepFeedback: TransactionStepMessages;
+
+  finalTransactionData?: {
+    inputAmount: string;
+    outputAmount: string;
+    inputSymbol: string;
+    outputSymbol: string;
+    isDeposit: boolean;
+    timestamp: number;
+  };
 }

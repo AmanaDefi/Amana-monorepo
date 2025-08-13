@@ -1248,16 +1248,6 @@ useEffect(() => {
     setConversionOutput(initialConversionOutput);
     setOutputBoxErrorMessage("");
     setIsSlippageExceedingLimit(false);
-
-    // Reset transactionCompleted to false after processing
-    setTimeout(() => {
-      setTransactionCompleted(false);
-      if (isDeposit) {
-        setLastDepositInfo(null);
-      } else {
-        setLastWithdrawInfo(null);
-      }
-    }, 1000);
   }, 100); 
 
   return () => clearTimeout(timeoutId);
