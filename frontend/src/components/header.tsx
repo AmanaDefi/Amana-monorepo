@@ -18,6 +18,7 @@ import BurgerMenuIcon from "./svg/BurgerMenu";
 import MobileMenuModal from "./modal/MobileMenuModal";
 import { CHAIN_ID } from "@/constants/chainConfig";
 import ButtonSkeleton from "./button/Skeleton";
+import NewsBanner from "./common/NewsBanner";
 
 interface HeaderProps {
   activeSection?: string;
@@ -218,6 +219,9 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
           </div>
         </div>
       </header>
+
+      {/* Amana News banner - globally visible under the header */}
+      <NewsBanner />
 
       <ProfileDropdown
         isOpen={isProfileDropdownOpen}
