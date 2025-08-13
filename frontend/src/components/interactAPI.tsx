@@ -696,84 +696,88 @@ export default function InteractionContainer({
                 Action.withdrew,
               ];
 
- const onStepComplete = (stepIndex: number, stepData: any) => {
-   const actionKey = actionMapping[stepIndex];
-   if (!actionKey) return;
+        const onStepComplete = (stepIndex: number, stepData: any) => {
+          const actionKey = actionMapping[stepIndex];
+          if (!actionKey) return;
 
-   if (!isComponentActiveRef.current) {
-     console.log(
-       `[BlockPI] Ignoring step update for vault ${vaultData.id} - component inactive`,
-     );
-     return;
-   }
+          if (!isComponentActiveRef.current) {
+            console.log(
+              `[BlockPI] Ignoring step update for vault ${vaultData.id} - component inactive`,
+            );
+            return;
+          }
 
-   const currentVaultData = getLocalStorageObject(vaultData.id);
-   if (currentVaultData?.vaultId && currentVaultData.vaultId !== vaultData.id) {
-     console.log(
-       `[BlockPI] Ignoring step update - vault ID mismatch: expected ${vaultData.id}, got ${currentVaultData.vaultId}`,
-     );
-     return;
-   }
+          const currentVaultData = getLocalStorageObject(vaultData.id);
+          if (
+            currentVaultData?.vaultId &&
+            currentVaultData.vaultId !== vaultData.id
+          ) {
+            console.log(
+              `[BlockPI] Ignoring step update - vault ID mismatch: expected ${vaultData.id}, got ${currentVaultData.vaultId}`,
+            );
+            return;
+          }
 
-   const currentTxHash = getLocalStorageObject(
-     vaultData.id,
-   )?.crosschainInvestHash;
-   if (currentTxHash && currentTxHash !== crosschainInvestHash) {
-     console.log(
-       `[BlockPI] Ignoring step update - hash mismatch for vault ${vaultData.id}`,
-     );
-     return;
-   }
+          const currentTxHash = getLocalStorageObject(
+            vaultData.id,
+          )?.crosschainInvestHash;
+          if (currentTxHash && currentTxHash !== crosschainInvestHash) {
+            console.log(
+              `[BlockPI] Ignoring step update - hash mismatch for vault ${vaultData.id}`,
+            );
+            return;
+          }
 
-   useTransactionStore.setState((prev) => {
-     updateLocalStorageObject(vaultData.id, {
-       vaultId: vaultData.id,
-       transactionStepFeedback: {
-         ...prev.transactionStepFeedback,
-         [actionKey]: {
-           label: transactionType === "deposit" ? "Deposit" : "Withdraw",
-           description: stepData.description,
-           status:
-             stepData.status === "completed"
-               ? TransactionStepStatus.completed
-               : stepData.status === "error"
-                 ? TransactionStepStatus.error
-                 : TransactionStepStatus.processing,
-           txHash: stepData.txHash,
-           isWaitingTooLong: stepData.isWaitingTooLong,
-         },
-       },
-     });
+          useTransactionStore.setState((prev) => {
+            updateLocalStorageObject(vaultData.id, {
+              vaultId: vaultData.id,
+              transactionStepFeedback: {
+                ...prev.transactionStepFeedback,
+                [actionKey]: {
+                  label: transactionType === "deposit" ? "Deposit" : "Withdraw",
+                  description: stepData.description,
+                  status:
+                    stepData.status === "completed"
+                      ? TransactionStepStatus.completed
+                      : stepData.status === "error"
+                        ? TransactionStepStatus.error
+                        : TransactionStepStatus.processing,
+                  txHash: stepData.txHash,
+                  isWaitingTooLong: stepData.isWaitingTooLong,
+                },
+              },
+            });
 
-     return {
-       transactionStepFeedback: {
-         ...prev.transactionStepFeedback,
-         [actionKey]: {
-           label: transactionType === "deposit" ? "Deposit" : "Withdraw",
-           description: stepData.description,
-           status:
-             stepData.status === "completed"
-               ? TransactionStepStatus.completed
-               : stepData.status === "error"
-                 ? TransactionStepStatus.error
-                 : TransactionStepStatus.processing,
-           txHash: stepData.txHash,
-           isWaitingTooLong: stepData.isWaitingTooLong,
-         },
-       },
-     };
-   });
+            return {
+              transactionStepFeedback: {
+                ...prev.transactionStepFeedback,
+                [actionKey]: {
+                  label: transactionType === "deposit" ? "Deposit" : "Withdraw",
+                  description: stepData.description,
+                  status:
+                    stepData.status === "completed"
+                      ? TransactionStepStatus.completed
+                      : stepData.status === "error"
+                        ? TransactionStepStatus.error
+                        : TransactionStepStatus.processing,
+                  txHash: stepData.txHash,
+                  isWaitingTooLong: stepData.isWaitingTooLong,
+                },
+              },
+            };
+          });
 
-   // CRITICAL FIX: Only update step/action for completed steps, and avoid triggering useEffect
-   if (stepData.status === "completed" && stepIndex < actionMapping.length) {
-     // Only update step, avoid updating action to prevent useEffect retrigger
-     setStep(stepIndex);
-     updateLocalStorageObject(vaultData.id, {
-       vaultId: vaultData.id,
-       step: stepIndex,
-     });
-   }
- };
+          if (
+            stepData.status === "completed" &&
+            stepIndex < actionMapping.length
+          ) {
+            setStep(stepIndex);
+            updateLocalStorageObject(vaultData.id, {
+              vaultId: vaultData.id,
+              step: stepIndex,
+            });
+          }
+        };
 
         const result = await blockpi.trackTransactionSequenceWithProgress(
           crosschainInvestHash,
@@ -787,42 +791,62 @@ export default function InteractionContainer({
           vaultData.protocol.chainId,
         );
 
-        if (result.success) {
-          const finalAction =
-            transactionType === "deposit" ? Action.deposited : Action.withdrew;
+if (result.success) {
+  const finalAction =
+    transactionType === "deposit" ? Action.deposited : Action.withdrew;
 
-          setAction(finalAction);
-          setStep(actionMapping.length - 1);
+  useTransactionStore.setState((prev) => {
+    const updatedFeedback = { ...prev.transactionStepFeedback };
 
-          useTransactionStore.setState((prev) => {
-            setLastTransactionStepFeedback(prev.transactionStepFeedback);
-            updateLocalStorageObject(vaultData.id, {
-              vaultId: vaultData.id,
-              transactionStepFeedback: prev.transactionStepFeedback,
-              lastTransactionStepFeedback: prev.transactionStepFeedback,
-            });
+    if (!updatedFeedback[finalAction]) {
+      const finalDescription = isDeposit
+        ? "Final confirmation completed, shares issued by vault"
+        : "Withdrawal confirmation completed, funds returned";
 
-            return { transactionStepFeedback: prev.transactionStepFeedback };
-          });
+      const finalTxHash =
+        Object.values(prev.transactionStepFeedback)
+          .reverse()
+          .find(
+            (step) =>
+              step &&
+              step.status === TransactionStepStatus.completed &&
+              step.txHash,
+          )?.txHash || crosschainInvestHash;
 
-          setFinishedTransaction(true);
-          setIsTransactionProcessing(false);
+      updatedFeedback[finalAction] = {
+        label: transactionType === "deposit" ? "Deposit" : "Withdraw",
+        description: finalDescription,
+        status: TransactionStepStatus.completed,
+        txHash: finalTxHash,
+      };
+    }
 
-          updateLocalStorageObject(vaultData.id, null);
-          setIsFailedOnCOnfirmation(false);
+    setLastTransactionStepFeedback(updatedFeedback);
 
-          setTransactionCompleted(true);
+    updateLocalStorageObject(vaultData.id, {
+      vaultId: vaultData.id,
+      transactionStepFeedback: updatedFeedback,
+      lastTransactionStepFeedback: updatedFeedback,
+    });
 
-          // Also call manual refresh for good measure
-          setTimeout(() => {
-            refreshBalance();
-          }, 2000);
+    return { transactionStepFeedback: updatedFeedback };
+  });
 
-          trackEvent("Transaction Crosschain Complete", {
-            vaultSymbol: vaultData.symbol,
-            vault: vaultData.id,
-            type: transactionType,
-          });
+  setFinishedTransaction(true);
+  setIsTransactionProcessing(false);
+  updateLocalStorageObject(vaultData.id, null);
+  setIsFailedOnCOnfirmation(false);
+  setTransactionCompleted(true);
+
+  setTimeout(() => {
+    refreshBalance();
+  }, 2000);
+
+  trackEvent("Transaction Crosschain Complete", {
+    vaultSymbol: vaultData.symbol,
+    vault: vaultData.id,
+    type: transactionType,
+  });
         } else {
           useTransactionStore.setState((prev) => {
             setLastTransactionStepFeedback(prev.transactionStepFeedback);

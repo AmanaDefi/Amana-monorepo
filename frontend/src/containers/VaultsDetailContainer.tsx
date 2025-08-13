@@ -297,11 +297,18 @@ const VaultsDetailContainer: React.FC<{
           setIsFailedOnCOnfirmation(false);
         }
       } else {
-        setTransactionStepFeedback({});
-        setLastTransactionStepFeedback({});
-        setFinishedTransaction(false);
-        setIsTransactionProcessing(false);
-        setIsFailedOnCOnfirmation(false);
+        const hasCompletedTransaction =
+          finishedTransaction &&
+          (Object.keys(lastTransactionStepFeedback).length > 0 ||
+            Object.keys(transactionStepFeedback).length > 0);
+
+        if (!hasCompletedTransaction) {
+          setTransactionStepFeedback({});
+          setLastTransactionStepFeedback({});
+          setFinishedTransaction(false);
+          setIsTransactionProcessing(false);
+          setIsFailedOnCOnfirmation(false);
+        }
       }
     };
 
@@ -513,7 +520,7 @@ const VaultsDetailContainer: React.FC<{
   ]);
 
   const currentTransactionInfo = isDeposit ? lastDepositInfo : lastWithdrawInfo;
-
+  
   return vaultData ? (
     <div className=" font-gotham">
       {!walletAddress && <InvestBlock />}
