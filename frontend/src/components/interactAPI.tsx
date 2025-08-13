@@ -1362,31 +1362,31 @@ function Interaction({
     await interactionPostHook(!!success, !currenAction);
   }
 
-  const handleDone = useCallback(() => {
-    // Mark component as inactive to prevent any ongoing BlockPI updates
-    isComponentActiveRef.current = false;
-    isTrackingActiveRef.current = false;
+  // const handleDone = useCallback(() => {
+  //   // Mark component as inactive to prevent any ongoing BlockPI updates
+  //   isComponentActiveRef.current = false;
+  //   isTrackingActiveRef.current = false;
 
-    // Clear component state
-    setLastTransactionStepFeedback({});
-    setTransactionStepFeedback({});
-    setFinishedTransaction(false);
-    setCurrentVaultId(null);
+  //   // Clear component state
+  //   setLastTransactionStepFeedback({});
+  //   setTransactionStepFeedback({});
+  //   setFinishedTransaction(false);
+  //   setCurrentVaultId(null);
 
-    setTransactionCompleted(true);
+  //   setTransactionCompleted(true);
 
-    setIsTransactionProcessing(false);
-    setIsTransactionStarted(false);
-    setCrosschainInvestHash("");
-    setcrossChainTxId("");
+  //   setIsTransactionProcessing(false);
+  //   setIsTransactionStarted(false);
+  //   setCrosschainInvestHash("");
+  //   setcrossChainTxId("");
 
-    // Reactivate component after clearing
-    setTimeout(() => {
-      isComponentActiveRef.current = true;
-    }, 100);
+  //   // Reactivate component after clearing
+  //   setTimeout(() => {
+  //     isComponentActiveRef.current = true;
+  //   }, 100);
 
-    refreshBalance();
-  }, [refreshBalance, vaultData?.id, setCurrentVaultId]);
+  //   refreshBalance();
+  // }, [refreshBalance, vaultData?.id, setCurrentVaultId]);
 
   const handleWalletConnect = () => {
     setChain(activeChain);
@@ -1424,7 +1424,7 @@ function Interaction({
         </>
       )}
 
-      {finishedTransaction &&
+      {/* {finishedTransaction &&
       (Object.keys(lastTransactionStepFeedback).length > 0 ||
         Object.keys(transactionStepFeedback).length > 0) ? (
         <Button
@@ -1434,51 +1434,49 @@ function Interaction({
         >
           Done
         </Button>
-      ) : (
-        (() => {
-          const isDisabledByProcessing = isTransactionProcessing;
-          const isDisabledByHash =
-            crosschainInvestHash?.length > 0 && !finishedTransaction;
+      ) : ( */}
+      {(() => {
+        const isDisabledByProcessing = isTransactionProcessing;
+        const isDisabledByHash =
+          crosschainInvestHash?.length > 0 && !finishedTransaction;
 
-          const isDisabledByValidation =
-            !inputToken ||
-            !inputBalance.formatted ||
-            Number(inputBalance.formatted) <= 0 ||
-            !!errorMessage;
+        const isDisabledByValidation =
+          !inputToken ||
+          !inputBalance.formatted ||
+          Number(inputBalance.formatted) <= 0 ||
+          !!errorMessage;
 
-          const isConnectWalletSHown =
-            (!activeAccount && !walletContext.publicKey) ||
-            (activeAccount?.walletClientType === "privy" &&
-              activeChain?.id !== zetachain.id) ||
-            (walletContext.publicKey &&
-              activeChain?.id !== CHAIN_ID["solana"]) ||
-            (activeAccount?.address && activeChain?.id === CHAIN_ID["solana"]);
+        const isConnectWalletSHown =
+          (!activeAccount && !walletContext.publicKey) ||
+          (activeAccount?.walletClientType === "privy" &&
+            activeChain?.id !== zetachain.id) ||
+          (walletContext.publicKey && activeChain?.id !== CHAIN_ID["solana"]) ||
+          (activeAccount?.address && activeChain?.id === CHAIN_ID["solana"]);
 
-          const isDisabled = !isConnectWalletSHown
-            ? isButtonDisabled ||
-              isDisabledByProcessing ||
-              isDisabledByHash ||
-              isDisabledByValidation
-            : false;
+        const isDisabled = !isConnectWalletSHown
+          ? isButtonDisabled ||
+            isDisabledByProcessing ||
+            isDisabledByHash ||
+            isDisabledByValidation
+          : false;
 
-          return (
-            <Button
-              variant="special"
-              disabled={isDisabled}
-              className="w-full mt-10 md:mt-[47px] !text-[16px] !font-bold !font-gotham !max-h-[48px] md:!max-h-[54px]"
-              onClick={() => {
-                !isConnectWalletSHown
-                  ? handleMainAction()
-                  : handleWalletConnect();
-              }}
-            >
-              {!isConnectWalletSHown
-                ? (label ?? (isDeposit ? "Invest" : "Withdraw"))
-                : "Connect wallet"}
-            </Button>
-          );
-        })()
-      )}
+        return (
+          <Button
+            variant="special"
+            disabled={isDisabled}
+            className="w-full mt-10 md:mt-[47px] !text-[16px] !font-bold !font-gotham !max-h-[48px] md:!max-h-[54px]"
+            onClick={() => {
+              !isConnectWalletSHown
+                ? handleMainAction()
+                : handleWalletConnect();
+            }}
+          >
+            {!isConnectWalletSHown
+              ? (label ?? (isDeposit ? "Invest" : "Withdraw"))
+              : "Connect wallet"}
+          </Button>
+        );
+      })()}
     </>
   );
 

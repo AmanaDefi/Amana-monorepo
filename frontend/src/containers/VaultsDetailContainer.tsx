@@ -197,25 +197,6 @@ const VaultsDetailContainer: React.FC<{
   );
 
   useEffect(() => {
-    if (vaultData?.id) {
-      const currentStoreVaultId = useTransactionStore.getState().currentVaultId;
-
-      if (currentStoreVaultId && currentStoreVaultId !== vaultData.id) {
-        console.log(
-          `Clearing transaction state: switching from ${currentStoreVaultId} to ${vaultData.id}`,
-        );
-
-        setFinishedTransaction(false);
-        setLastDepositInfo(null);
-        setLastWithdrawInfo(null);
-        setLastTransactionStepFeedback({});
-        setTransactionStepFeedback({});
-        setCurrentVaultId(null);
-      }
-    }
-  }, [vaultData?.id]);
-
-  useEffect(() => {
     const currentVaultId = vaultData?.id || vaultID?.toString();
     if (currentVaultId) {
       const vaultTxData = getLocalStorageObject(currentVaultId);
@@ -319,7 +300,8 @@ const VaultsDetailContainer: React.FC<{
         const hasCompletedTransaction =
           finishedTransaction &&
           (Object.keys(lastTransactionStepFeedback).length > 0 ||
-            Object.keys(transactionStepFeedback).length > 0);
+            Object.keys(transactionStepFeedback).length > 0) &&
+          currentVaultId === vaultData?.id;;
 
         if (!hasCompletedTransaction) {
           setTransactionStepFeedback({});
@@ -500,9 +482,10 @@ const VaultsDetailContainer: React.FC<{
     [handleChainSelect, handleTokenSelect],
   );
 
-  const isProcessingTx =
-    isTransactionProcessing ||
-    (!finishedTransaction && Object.keys(transactionStepFeedback).length > 0);
+  const isProcessingTx = currentVaultId === vaultData?.id &&
+    (isTransactionProcessing ||
+      (!finishedTransaction &&
+        Object.keys(transactionStepFeedback).length > 0));
 
   const handleBack = () => {
     const isTxInProgress = CheckTheTxIsInProgress(vaultID.toString());
@@ -517,6 +500,10 @@ const VaultsDetailContainer: React.FC<{
 
   const shouldShowTransactionComplete = useMemo(() => {
     if (!finishedTransaction) return false;
+
+    if (currentVaultId && currentVaultId !== vaultData?.id) {
+      return false;
+    }
 
     return (
       Object.keys(lastTransactionStepFeedback).length > 0 ||
@@ -731,14 +718,24 @@ const VaultsDetailContainer: React.FC<{
 
       <div className="block md:hidden mt-4">
         <MobileDepositInstruction
-          transactionStepFeedback={transactionStepFeedback}
-          lastTransactionStepFeedback={lastTransactionStepFeedback}
-          finishedTransaction={finishedTransaction}
+          transactionStepFeedback={
+            currentVaultId === vaultData?.id ? transactionStepFeedback : {}
+          }
+          lastTransactionStepFeedback={
+            currentVaultId === vaultData?.id ? lastTransactionStepFeedback : {}
+          }
+          finishedTransaction={
+            currentVaultId === vaultData?.id ? finishedTransaction : false
+          }
           activeChainId={activeChain?.id}
           vaultStrategyChainId={vaultData?.protocol?.chainId}
           isDeposit={isDeposit}
-          isProcessing={isTransactionProcessing}
-          isFailedOnConfirmation={isFailedOnConfirmation}
+          isProcessing={
+            currentVaultId === vaultData?.id ? isTransactionProcessing : false
+          }
+          isFailedOnConfirmation={
+            currentVaultId === vaultData?.id ? isFailedOnConfirmation : false
+          }
         />
       </div>
 
@@ -759,17 +756,19 @@ const VaultsDetailContainer: React.FC<{
                 isDeposit={isDeposit}
                 isFailedOnConfirmation={isFailedOnConfirmation}
                 onClose={() => {
-                  setFinishedTransaction(false);
-                  setLastTransactionStepFeedback({});
-                  setTransactionStepFeedback({});
-                  setIsTransactionProcessing(false);
-                  setLastDepositInfo(null);
-                  setLastWithdrawInfo(null);
-                  setIsFailedOnCOnfirmation(false);
-                  setCurrentVaultId(null);
+                  if (currentVaultId === vaultData?.id || !currentVaultId) {
+                    setFinishedTransaction(false);
+                    setLastTransactionStepFeedback({});
+                    setTransactionStepFeedback({});
+                    setIsTransactionProcessing(false);
+                    setLastDepositInfo(null);
+                    setLastWithdrawInfo(null);
+                    setIsFailedOnCOnfirmation(false);
+                    setCurrentVaultId(null);
 
-                  if (vaultID) {
-                    updateLocalStorageObject(vaultID.toString(), null);
+                    if (vaultID) {
+                      updateLocalStorageObject(vaultID.toString(), null);
+                    }
                   }
                   // setTransactionCompleted(true);
                 }}
@@ -903,14 +902,30 @@ const VaultsDetailContainer: React.FC<{
             }
           >
             <DepositInstruction
-              transactionStepFeedback={transactionStepFeedback}
-              lastTransactionStepFeedback={lastTransactionStepFeedback}
-              finishedTransaction={finishedTransaction}
+              transactionStepFeedback={
+                currentVaultId === vaultData?.id ? transactionStepFeedback : {}
+              }
+              lastTransactionStepFeedback={
+                currentVaultId === vaultData?.id
+                  ? lastTransactionStepFeedback
+                  : {}
+              }
+              finishedTransaction={
+                currentVaultId === vaultData?.id ? finishedTransaction : false
+              }
               activeChainId={activeChain?.id}
               vaultStrategyChainId={vaultData?.protocol?.chainId}
               isDeposit={isDeposit}
-              isProcessing={isTransactionProcessing}
-              isFailedOnConfirmation={isFailedOnConfirmation}
+              isProcessing={
+                currentVaultId === vaultData?.id
+                  ? isTransactionProcessing
+                  : false
+              }
+              isFailedOnConfirmation={
+                currentVaultId === vaultData?.id
+                  ? isFailedOnConfirmation
+                  : false
+              }
             />
           </Dropdown>
           <Dropdown
