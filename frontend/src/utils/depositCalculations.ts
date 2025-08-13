@@ -349,6 +349,7 @@ export const calculateDepositOutput = async (
 
   if (zcInputToken?.address.toLowerCase() !== vaultData.inputToken.address.toLowerCase()) {
     needsTokenSwap = true;
+    console.log("amountAfterSwap before swap", amountAfterSwap);
     const swapResult = await getPathDataAndAmountOut(
       inputAmount,
       zcInputToken,
@@ -358,11 +359,15 @@ export const calculateDepositOutput = async (
     );
     amountAfterSwap = swapResult.amountOut;
     // Calculate swap slippage in vault asset
+    // Convert input amount to vault asset units using USD price ratio
+    // Equivalent vault tokens = inputAmount * (inputTokenPrice / vaultTokenPrice)
     let inputAmountInVaultAsset: bigint;
-    if (isStablecoin(zcInputToken.symbol)) {
-      inputAmountInVaultAsset = BigInt(Math.floor((Number(inputAmount) / 10 ** (zcInputToken.decimals ?? 18)) / vaultTokenPrice * 10 ** vaultData.inputToken.decimals));
-    } else {
-      inputAmountInVaultAsset = BigInt(Math.floor((Number(inputAmount) / 10 ** (zcInputToken.decimals ?? 18)) * inputTokenPrice * 10 ** vaultData.inputToken.decimals));
+    {
+      const normalizedInputAmount = Number(inputAmount) / 10 ** (zcInputToken.decimals ?? 18);
+      const priceRatio = inputTokenPrice / vaultTokenPrice; // how many vault tokens per input token
+      inputAmountInVaultAsset = BigInt(
+        Math.floor(normalizedInputAmount * priceRatio * 10 ** vaultData.inputToken.decimals),
+      );
     }
     swapSlippage = inputAmountInVaultAsset > amountAfterSwap ? inputAmountInVaultAsset - amountAfterSwap : 0n;
   }

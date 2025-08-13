@@ -920,10 +920,10 @@ useEffect(() => {
 
   const getDepositOutputAmount = useCallback(
     async (inputAmountValue: bigint) => {
-      if (isDeposit && Number(inputAmountValue) > Number(tokenBalance.value)) {
-        setLoadingOutputToken(false);
-        return;
-      }
+      // if (isDeposit && Number(inputAmountValue) > Number(tokenBalance.value)) {
+      //   setLoadingOutputToken(false);
+      //   return;
+      // }
 
       if (!inputToken || !activeChain) {
         return;
