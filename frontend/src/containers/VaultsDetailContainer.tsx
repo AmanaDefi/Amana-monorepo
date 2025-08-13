@@ -94,7 +94,6 @@ const VaultsDetailContainer: React.FC<{
   const [selectedToken, setSelectedToken] = useState<Token | undefined>();
   const [isDeposit, setIsDeposit] = useState<boolean>(initialIsDeposit);
   const [showMobileInvestment, setShowMobileInvestment] = useState(false);
-  const [walletTokenBalance, setWalletTokenBalance] = useState<string>("0");
   const { balance: hookWalletBalance, fetchBalance } =
     useMultichainTokenBalance(selectedToken);
   const giftButtonRef = useRef<HTMLButtonElement>(null);
@@ -198,35 +197,30 @@ const VaultsDetailContainer: React.FC<{
   );
 
   useEffect(() => {
-    if (selectedToken) {
-      const localStorageKey = `walletTokenBalance_${selectedToken.symbol}`;
-      const storedBalance = localStorage.getItem(localStorageKey);
-      if (storedBalance) {
-        setWalletTokenBalance(storedBalance);
-      }
-
-      if (
-        hookWalletBalance.formatted &&
-        hookWalletBalance.formatted !== walletTokenBalance
-      ) {
-        setWalletTokenBalance(hookWalletBalance.formatted);
-        localStorage.setItem(
-          `walletTokenBalance_${selectedToken.symbol}`,
-          hookWalletBalance.formatted,
-        );
-      }
-    } else {
-      const storedTokenString = localStorage.getItem("lastSelectedToken");
-      if (storedTokenString) {
+    const currentVaultId = vaultData?.id || vaultID?.toString();
+    if (currentVaultId) {
+      const vaultTxData = getLocalStorageObject(currentVaultId);
+      if (vaultTxData?.selectedToken) {
         try {
-          const storedToken = JSON.parse(storedTokenString, bigIntReviver);
-          setSelectedToken(storedToken);
+          const txToken = JSON.parse(vaultTxData.selectedToken, bigIntReviver);
+          setSelectedToken(txToken);
+          return;
         } catch (error) {
-          console.error("Failed to parse stored token:", error);
+          console.error("Failed to parse transaction selectedToken:", error);
         }
       }
     }
-  }, [hookWalletBalance.formatted, selectedToken, walletTokenBalance]);
+
+    const storedTokenString = localStorage.getItem("lastSelectedToken");
+    if (storedTokenString) {
+      try {
+        const storedToken = JSON.parse(storedTokenString, bigIntReviver);
+        setSelectedToken(storedToken);
+      } catch (error) {
+        console.error("Failed to parse stored token:", error);
+      }
+    }
+  }, [vaultData?.id, vaultID]);
 
   useEffect(() => {
     const vaultIdStr = Array.isArray(vaultID) ? vaultID[0] : vaultID;
@@ -351,6 +345,15 @@ const VaultsDetailContainer: React.FC<{
     }
   }, [vaultID, vaultFromGraph]);
 
+  useEffect(() => {
+    if (finishedTransaction && selectedToken) {
+      const timeoutId = setTimeout(() => {
+        fetchBalance();
+      }, 3000);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [finishedTransaction, selectedToken, fetchBalance]);
+
   // Set user vault balance from graph data
   useEffect(() => {
     const userBalance = userVaultBalances?.find(
@@ -440,17 +443,27 @@ const VaultsDetailContainer: React.FC<{
     user,
   );
 
-  const handleTokenSelect = useCallback((token: Token | undefined) => {
-    setSelectedToken(token);
-    if (token) {
-      localStorage.setItem(
-        "lastSelectedToken",
-        JSON.stringify(token, bigIntReplacer),
-      );
-    } else {
-      localStorage.removeItem("lastSelectedToken");
-    }
-  }, []);
+  const handleTokenSelect = useCallback(
+    (token: Token | undefined) => {
+      setSelectedToken(token);
+      if (token) {
+        localStorage.setItem(
+          "lastSelectedToken",
+          JSON.stringify(token, bigIntReplacer),
+        );
+
+        const currentVaultId = vaultData?.id || vaultID?.toString();
+        if (currentVaultId) {
+          updateLocalStorageObject(currentVaultId, {
+            selectedToken: JSON.stringify(token, bigIntReplacer),
+          });
+        }
+      } else {
+        localStorage.removeItem("lastSelectedToken");
+      }
+    },
+    [vaultData?.id, vaultID],
+  );
 
   const handleChainAndTokenSelect = useCallback(
     async (chain: Chain, token: Token) => {
@@ -479,17 +492,18 @@ const VaultsDetailContainer: React.FC<{
   const shouldShowTransactionComplete = useMemo(() => {
     if (!finishedTransaction) return false;
 
-    if (currentVaultId !== vaultData?.id) {
-      console.log(
-        `[VaultContainer] Ignoring transaction complete for vault ${currentVaultId}, current vault is ${vaultData?.id}`,
-      );
-      return false;
-    }
+    // if (currentVaultId !== vaultData?.id) {
+    //   console.log(
+    //     `[VaultContainer] Ignoring transaction complete for vault ${currentVaultId}, current vault is ${vaultData?.id}`,
+    //   );
+    //   return false;
+    // }
 
     return (
       Object.keys(lastTransactionStepFeedback).length > 0 ||
       Object.keys(transactionStepFeedback).length > 0
     );
+    
   }, [
     finishedTransaction,
     currentVaultId,
@@ -675,7 +689,7 @@ const VaultsDetailContainer: React.FC<{
             vaultAPYs={vaultAPYs}
             transactionCompleted={finishedTransaction}
             selectedToken={selectedToken}
-            walletBalance={walletTokenBalance}
+            walletBalance={hookWalletBalance.formatted || "0"}
             onDepositDataUpdate={handleDepositDataUpdate}
             isDeposit={isDeposit}
           />
@@ -839,7 +853,7 @@ const VaultsDetailContainer: React.FC<{
                 vaultAPYs={vaultAPYs}
                 transactionCompleted={finishedTransaction}
                 selectedToken={selectedToken}
-                walletBalance={walletTokenBalance}
+                walletBalance={hookWalletBalance.formatted || "0"}
                 onDepositDataUpdate={handleDepositDataUpdate}
                 isDeposit={isDeposit}
               />
