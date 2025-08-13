@@ -482,10 +482,9 @@ const VaultsDetailContainer: React.FC<{
     [handleChainSelect, handleTokenSelect],
   );
 
-  const isProcessingTx = currentVaultId === vaultData?.id &&
-    (isTransactionProcessing ||
-      (!finishedTransaction &&
-        Object.keys(transactionStepFeedback).length > 0));
+  const isProcessingTx =
+    isTransactionProcessing ||
+    (!finishedTransaction && Object.keys(transactionStepFeedback).length > 0);
 
   const handleBack = () => {
     const isTxInProgress = CheckTheTxIsInProgress(vaultID.toString());
@@ -719,22 +718,32 @@ const VaultsDetailContainer: React.FC<{
       <div className="block md:hidden mt-4">
         <MobileDepositInstruction
           transactionStepFeedback={
-            currentVaultId === vaultData?.id ? transactionStepFeedback : {}
+            !currentVaultId || currentVaultId === vaultData?.id
+              ? transactionStepFeedback
+              : {}
           }
           lastTransactionStepFeedback={
-            currentVaultId === vaultData?.id ? lastTransactionStepFeedback : {}
+            !currentVaultId || currentVaultId === vaultData?.id
+              ? lastTransactionStepFeedback
+              : {}
           }
           finishedTransaction={
-            currentVaultId === vaultData?.id ? finishedTransaction : false
+            !currentVaultId || currentVaultId === vaultData?.id
+              ? finishedTransaction
+              : false
           }
           activeChainId={activeChain?.id}
           vaultStrategyChainId={vaultData?.protocol?.chainId}
           isDeposit={isDeposit}
           isProcessing={
-            currentVaultId === vaultData?.id ? isTransactionProcessing : false
+            !currentVaultId || currentVaultId === vaultData?.id
+              ? isTransactionProcessing
+              : false
           }
           isFailedOnConfirmation={
-            currentVaultId === vaultData?.id ? isFailedOnConfirmation : false
+            !currentVaultId || currentVaultId === vaultData?.id
+              ? isFailedOnConfirmation
+              : false
           }
         />
       </div>
@@ -903,26 +912,30 @@ const VaultsDetailContainer: React.FC<{
           >
             <DepositInstruction
               transactionStepFeedback={
-                currentVaultId === vaultData?.id ? transactionStepFeedback : {}
+                !currentVaultId || currentVaultId === vaultData?.id
+                  ? transactionStepFeedback
+                  : {}
               }
               lastTransactionStepFeedback={
-                currentVaultId === vaultData?.id
+                !currentVaultId || currentVaultId === vaultData?.id
                   ? lastTransactionStepFeedback
                   : {}
               }
               finishedTransaction={
-                currentVaultId === vaultData?.id ? finishedTransaction : false
+                !currentVaultId || currentVaultId === vaultData?.id
+                  ? finishedTransaction
+                  : false
               }
               activeChainId={activeChain?.id}
               vaultStrategyChainId={vaultData?.protocol?.chainId}
               isDeposit={isDeposit}
               isProcessing={
-                currentVaultId === vaultData?.id
+                !currentVaultId || currentVaultId === vaultData?.id
                   ? isTransactionProcessing
                   : false
               }
               isFailedOnConfirmation={
-                currentVaultId === vaultData?.id
+                !currentVaultId || currentVaultId === vaultData?.id
                   ? isFailedOnConfirmation
                   : false
               }
