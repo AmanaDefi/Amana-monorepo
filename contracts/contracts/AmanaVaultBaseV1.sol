@@ -595,4 +595,67 @@ abstract contract AmanaVaultBaseV1 is
         (bool secondApproveSuccess, ) = address(token).call(approveCalldata);
         require(secondApproveSuccess, "Second approve failed");
     }
+
+    // Legacy ERC4626 function overrides - these are disabled to prevent bypassing slippage protection
+    // Users must use the new functions with minimumOut parameter for proper slippage protection
+
+    /**
+     * @dev Legacy deposit function - DISABLED
+     * @notice This function is disabled. Use deposit(uint256 assets, uint256 minimumOut, address receiver) instead.
+     * @param assets Amount of assets to deposit
+     * @param receiver Address to receive shares
+     * @return shares Amount of shares minted
+     */
+    function deposit(
+        uint256 assets,
+        address receiver
+    ) public virtual override returns (uint256 shares) {
+        revert("Use deposit(uint256 assets, uint256 minimumOut, address receiver) instead");
+    }
+
+    /**
+     * @dev Legacy mint function - DISABLED
+     * @notice This function is disabled. Use mint(uint256 shares, uint256 minimumOut, address receiver) instead.
+     * @param shares Amount of shares to mint
+     * @param receiver Address to receive shares
+     * @return assets Amount of assets deposited
+     */
+    function mint(
+        uint256 shares,
+        address receiver
+    ) public virtual override returns (uint256 assets) {
+        revert("Use mint(uint256 shares, uint256 minimumOut, address receiver) instead");
+    }
+
+    /**
+     * @dev Legacy withdraw function - DISABLED
+     * @notice This function is disabled. Use withdraw(uint256 assets, uint256 minimumOut, address receiver, address owner) instead.
+     * @param assets Amount of assets to withdraw
+     * @param receiver Address to receive assets
+     * @param owner Address that owns the shares
+     * @return shares Amount of shares burned
+     */
+    function withdraw(
+        uint256 assets,
+        address receiver,
+        address owner
+    ) public virtual override returns (uint256 shares) {
+        revert("Use withdraw(uint256 assets, uint256 minimumOut, address receiver, address owner) instead");
+    }
+
+    /**
+     * @dev Legacy redeem function - DISABLED
+     * @notice This function is disabled. Use redeem(uint256 shares, uint256 minimumOut, address receiver, address owner) instead.
+     * @param shares Amount of shares to redeem
+     * @param receiver Address to receive assets
+     * @param owner Address that owns the shares
+     * @return assets Amount of assets withdrawn
+     */
+    function redeem(
+        uint256 shares,
+        address receiver,
+        address owner
+    ) public virtual override returns (uint256 assets) {
+        revert("Use redeem(uint256 shares, uint256 minimumOut, address receiver, address owner) instead");
+    }
 }
