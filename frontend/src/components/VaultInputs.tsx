@@ -588,10 +588,16 @@ useEffect(() => {
         );
 
         setSteps(newStepsConfig);
-        updateLocalStorageObject(vaultData.id, { steps: newStepsConfig });
+        updateLocalStorageObject(vaultData.id, {
+          vaultId: vaultData.id,
+          steps: newStepsConfig,
+        });
       } else {
         setSteps([]);
-        updateLocalStorageObject(vaultData.id, { steps: [] });
+        updateLocalStorageObject(vaultData.id, {
+          vaultId: vaultData.id,
+          steps: [],
+        });
       }
     };
 
@@ -646,6 +652,7 @@ useEffect(() => {
     setInputBalance(EMPTY_BALANCE);
     setDisplayValue("0.00");
     updateLocalStorageObject(vaultData.id, {
+      vaultId: vaultData.id,
       tab: newTab,
       inputBal: JSON.stringify(EMPTY_BALANCE, bigIntReplacer),
     });
@@ -674,6 +681,7 @@ useEffect(() => {
         );
         setSteps(steps);
         updateLocalStorageObject(vaultData.id, {
+          vaultId: vaultData.id,
           steps: steps,
           selectedToken: JSON.stringify(inputToken, bigIntReplacer),
         });
@@ -1210,62 +1218,59 @@ useEffect(() => {
   ]);
 
   // Reset input state after transaction completes or fails
-  useEffect(() => {
-    if (transactionCompleted) {
-      if (vaultData?.id && APY7DValue) {
-        setCurrentAPY(vaultData.id, Number(APY7DValue));
-      }
+useEffect(() => {
+  if (!transactionCompleted) return;
 
-      if (isDeposit) {
-        setLastDepositInfo({
-          inputAmount: displayValue,
-          outputAmount: conversionOutput.outputAmountFormatted,
-          inputSymbol: inputToken?.symbol || "",
-          outputSymbol: vaultData.symbol,
-        });
-      } else {
-        setLastWithdrawInfo({
-          inputAmount: displayValue,
-          outputAmount: conversionOutput.outputAmountFormatted,
-          inputSymbol: vaultData.symbol,
-          outputSymbol: inputToken?.symbol || vaultData.inputToken.symbol,
-        });
-      }
+  console.log("[VaultInputs] Transaction completed, processing...");
 
-      setInputBalance(EMPTY_BALANCE);
-      setDisplayValue("0.00");
-      setConversionOutput(initialConversionOutput);
-      setOutputBoxErrorMessage("");
-      setIsSlippageExceedingLimit(false);
+  const timeoutId = setTimeout(() => {
+    if (vaultData?.id && APY7DValue) {
+      const currentAPYValue = Number(APY7DValue);
 
-      // Reset transactionCompleted to false after processing
-      setTimeout(() => {
-        setTransactionCompleted(false);
-        if (isDeposit) {
-          setLastDepositInfo(null);
-        } else {
-          setLastWithdrawInfo(null);
+      if (currentAPYValue > 0 && !isNaN(currentAPYValue)) {
+        const existingAPY = useAPYStore.getState().getCurrentAPY(vaultData.id);
+
+        if (existingAPY !== currentAPYValue) {
+          setCurrentAPY(vaultData.id, currentAPYValue);
         }
-      }, 1000);
+      }
     }
-  }, [
-    transactionCompleted,
-    initialConversionOutput,
-    setInputBalance,
-    vaultData.id,
-    displayValue,
-    conversionOutput.outputAmountFormatted,
-    inputToken?.symbol,
-    vaultData.symbol,
-    setTransactionCompleted,
-    setLastDepositInfo,
-    setLastWithdrawInfo,
-    isDeposit,
-    vaultData.inputToken.symbol,
-    APY7DValue,
-    setCurrentAPY,
-  ]);
 
+    if (isDeposit) {
+      setLastDepositInfo({
+        inputAmount: displayValue,
+        outputAmount: conversionOutput.outputAmountFormatted,
+        inputSymbol: inputToken?.symbol || "",
+        outputSymbol: vaultData.symbol,
+      });
+    } else {
+      setLastWithdrawInfo({
+        inputAmount: displayValue,
+        outputAmount: conversionOutput.outputAmountFormatted,
+        inputSymbol: vaultData.symbol,
+        outputSymbol: inputToken?.symbol || vaultData.inputToken.symbol,
+      });
+    }
+
+    setInputBalance(EMPTY_BALANCE);
+    setDisplayValue("0.00");
+    setConversionOutput(initialConversionOutput);
+    setOutputBoxErrorMessage("");
+    setIsSlippageExceedingLimit(false);
+
+    // Reset transactionCompleted to false after processing
+    setTimeout(() => {
+      setTransactionCompleted(false);
+      if (isDeposit) {
+        setLastDepositInfo(null);
+      } else {
+        setLastWithdrawInfo(null);
+      }
+    }, 1000);
+  }, 100); 
+
+  return () => clearTimeout(timeoutId);
+}, [transactionCompleted]);
   useEffect(() => {
     if (!finishedTransaction) {
       setActiveTransactionVault(null);

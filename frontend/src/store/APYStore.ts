@@ -9,6 +9,8 @@ interface APYState {
 
   setCurrentAPY: (vaultId: string, apy: number) => void;
 
+  getCurrentAPY: (vaultId: string) => number | undefined;
+
   setActiveTransactionVault: (vaultId: string | null) => void;
 
   getAPYDirection: (vaultId: string) => "up" | "down" | "unchanged";
@@ -41,6 +43,11 @@ export const useAPYStore = create<APYState>((set, get) => ({
         [vaultId]: apy,
       },
     }));
+  },
+
+  getCurrentAPY: (vaultId: string) => {
+    const { currentAPY } = get();
+    return currentAPY[vaultId];
   },
 
   setActiveTransactionVault: (vaultId: string | null) => {

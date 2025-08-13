@@ -405,6 +405,7 @@ export default function InteractionContainer({
     setCurrentInputBalance,
     setCurrentErrorMessage,
     setCrosschainInvestHash: setStoreCrosschainInvestHash,
+    setCurrentVaultId,
   } = useTransactionStore();
 
   // BlockPI-only feedback system
@@ -547,6 +548,7 @@ export default function InteractionContainer({
       });
 
       updateLocalStorageObject(vaultData.id, {
+        vaultId: vaultData.id,
         transactionStepFeedback: updatedFeedback,
       });
 
@@ -694,59 +696,84 @@ export default function InteractionContainer({
                 Action.withdrew,
               ];
 
-        const onStepComplete = (stepIndex: number, stepData: any) => {
-          const actionKey = actionMapping[stepIndex];
-          if (!actionKey) return;
-          useTransactionStore.setState((prev) => {
-            updateLocalStorageObject(vaultData.id, {
-              transactionStepFeedback: {
-                ...prev.transactionStepFeedback,
-                [actionKey]: {
-                  label: transactionType === "deposit" ? "Deposit" : "Withdraw",
-                  description: stepData.description,
-                  status:
-                    stepData.status === "completed"
-                      ? TransactionStepStatus.completed
-                      : stepData.status === "error"
-                        ? TransactionStepStatus.error
-                        : TransactionStepStatus.processing,
-                  txHash: stepData.txHash,
-                  isWaitingTooLong: stepData.isWaitingTooLong,
-                },
-              },
-            });
+ const onStepComplete = (stepIndex: number, stepData: any) => {
+   const actionKey = actionMapping[stepIndex];
+   if (!actionKey) return;
 
-            return {
-              transactionStepFeedback: {
-                ...prev.transactionStepFeedback,
-                [actionKey]: {
-                  label: transactionType === "deposit" ? "Deposit" : "Withdraw",
-                  description: stepData.description,
-                  status:
-                    stepData.status === "completed"
-                      ? TransactionStepStatus.completed
-                      : stepData.status === "error"
-                        ? TransactionStepStatus.error
-                        : TransactionStepStatus.processing,
-                  txHash: stepData.txHash,
-                  isWaitingTooLong: stepData.isWaitingTooLong,
-                },
-              },
-            };
-          });
+   if (!isComponentActiveRef.current) {
+     console.log(
+       `[BlockPI] Ignoring step update for vault ${vaultData.id} - component inactive`,
+     );
+     return;
+   }
 
-          // CRITICAL FIX: Only update step/action for completed steps, and avoid triggering useEffect
-          if (
-            stepData.status === "completed" &&
-            stepIndex < actionMapping.length
-          ) {
-            // Only update step, avoid updating action to prevent useEffect retrigger
-            setStep(stepIndex);
-            updateLocalStorageObject(vaultData.id, {
-              step: stepIndex,
-            });
-          }
-        };
+   const currentVaultData = getLocalStorageObject(vaultData.id);
+   if (currentVaultData?.vaultId && currentVaultData.vaultId !== vaultData.id) {
+     console.log(
+       `[BlockPI] Ignoring step update - vault ID mismatch: expected ${vaultData.id}, got ${currentVaultData.vaultId}`,
+     );
+     return;
+   }
+
+   const currentTxHash = getLocalStorageObject(
+     vaultData.id,
+   )?.crosschainInvestHash;
+   if (currentTxHash && currentTxHash !== crosschainInvestHash) {
+     console.log(
+       `[BlockPI] Ignoring step update - hash mismatch for vault ${vaultData.id}`,
+     );
+     return;
+   }
+
+   useTransactionStore.setState((prev) => {
+     updateLocalStorageObject(vaultData.id, {
+       vaultId: vaultData.id,
+       transactionStepFeedback: {
+         ...prev.transactionStepFeedback,
+         [actionKey]: {
+           label: transactionType === "deposit" ? "Deposit" : "Withdraw",
+           description: stepData.description,
+           status:
+             stepData.status === "completed"
+               ? TransactionStepStatus.completed
+               : stepData.status === "error"
+                 ? TransactionStepStatus.error
+                 : TransactionStepStatus.processing,
+           txHash: stepData.txHash,
+           isWaitingTooLong: stepData.isWaitingTooLong,
+         },
+       },
+     });
+
+     return {
+       transactionStepFeedback: {
+         ...prev.transactionStepFeedback,
+         [actionKey]: {
+           label: transactionType === "deposit" ? "Deposit" : "Withdraw",
+           description: stepData.description,
+           status:
+             stepData.status === "completed"
+               ? TransactionStepStatus.completed
+               : stepData.status === "error"
+                 ? TransactionStepStatus.error
+                 : TransactionStepStatus.processing,
+           txHash: stepData.txHash,
+           isWaitingTooLong: stepData.isWaitingTooLong,
+         },
+       },
+     };
+   });
+
+   // CRITICAL FIX: Only update step/action for completed steps, and avoid triggering useEffect
+   if (stepData.status === "completed" && stepIndex < actionMapping.length) {
+     // Only update step, avoid updating action to prevent useEffect retrigger
+     setStep(stepIndex);
+     updateLocalStorageObject(vaultData.id, {
+       vaultId: vaultData.id,
+       step: stepIndex,
+     });
+   }
+ };
 
         const result = await blockpi.trackTransactionSequenceWithProgress(
           crosschainInvestHash,
@@ -770,6 +797,7 @@ export default function InteractionContainer({
           useTransactionStore.setState((prev) => {
             setLastTransactionStepFeedback(prev.transactionStepFeedback);
             updateLocalStorageObject(vaultData.id, {
+              vaultId: vaultData.id,
               transactionStepFeedback: prev.transactionStepFeedback,
               lastTransactionStepFeedback: prev.transactionStepFeedback,
             });
@@ -857,6 +885,24 @@ export default function InteractionContainer({
     setStoreCrosschainInvestHash(crosschainInvestHash);
   }, [crosschainInvestHash, setStoreCrosschainInvestHash]);
 
+  useEffect(() => {
+    return () => {
+      isComponentActiveRef.current = false;
+      isTrackingActiveRef.current = false;
+      console.log(`[BlockPI] Component unmounted for vault ${vaultData.id}`);
+    };
+  }, [vaultData.id]);
+
+  useEffect(() => {
+    isComponentActiveRef.current = true;
+    console.log(`[BlockPI] Component activated for vault ${vaultData.id}`);
+
+    return () => {
+      isComponentActiveRef.current = false;
+      console.log(`[BlockPI] Component deactivated for vault ${vaultData.id}`);
+    };
+  }, [vaultData.id]);
+
   return (
     <div className="w-full flex flex-col">
       <Interaction
@@ -897,6 +943,7 @@ export default function InteractionContainer({
         isDeposit={isDeposit}
         hideStepsDisplay={hideStepsDisplay}
         outputAmountFormatted={outputAmountFormatted}
+        setCurrentVaultId={setCurrentVaultId}
       />
     </div>
   );
@@ -938,6 +985,7 @@ function Interaction({
   hideStepsDisplay = false,
   lastEventTxHash,
   outputAmountFormatted,
+  setCurrentVaultId,
 }: {
   setStep: Function;
   setAction: Function;
@@ -976,6 +1024,7 @@ function Interaction({
   isDeposit: boolean;
   hideStepsDisplay?: boolean;
   outputAmountFormatted: string;
+  setCurrentVaultId: (vaultId: string | null) => void;
 }): JSX.Element {
   const walletContext = useWallet();
   const prevLebel = useRef(label);
@@ -1023,6 +1072,7 @@ function Interaction({
         txHash: txHash || updated[actionKey]?.txHash, // Preserve existing txHash if none provided
       };
       updateLocalStorageObject(vaultData.id, {
+        vaultId: vaultData.id,
         transactionStepFeedback: updated,
       });
 
@@ -1048,6 +1098,7 @@ function Interaction({
         setAction(actions[nextStep]);
         setStep(nextStep);
         updateLocalStorageObject(vaultData.id, {
+          vaultId: vaultData.id,
           isTransactionProcessing: false,
           action: actions[nextStep],
           step: nextStep,
@@ -1110,7 +1161,8 @@ function Interaction({
 
     if (
       action == Action.withdraw &&
-      actions[step + 1] == Action.withdrawconfirmed && success
+      actions[step + 1] == Action.withdrawconfirmed &&
+      success
     ) {
       const isUserOnZetachain = isZetachain(activeChain?.id);
       const isVaultOnZetachain = isZetachain(vaultData.protocol.chainId);
@@ -1138,6 +1190,7 @@ function Interaction({
       setAction(actions[nextStep]);
       setStep(nextStep);
       updateLocalStorageObject(vaultData.id, {
+        vaultId: vaultData.id,
         action: actions[nextStep],
         step: nextStep,
         isTransactionProcessing: false,
@@ -1187,6 +1240,7 @@ function Interaction({
 
     setIsTransactionProcessing(true);
     updateLocalStorageObject(vaultData.id, {
+      vaultId: vaultData.id,
       isTransactionProcessing: true,
     });
 
@@ -1194,6 +1248,7 @@ function Interaction({
 
     // Show warning toast to inform users not to leave the page during transaction processing
     if (currenAction === Action.deposit || currenAction === Action.withdraw) {
+      setCurrentVaultId(vaultData.id);
       showWarningToast(
         "📌 Please stay on this page to monitor progress across all networks!",
       );
@@ -1212,6 +1267,7 @@ function Interaction({
     } else {
       setIsTransactionStarted(true);
       updateLocalStorageObject(vaultData.id, {
+        vaultId: vaultData.id,
         isTransactionStarted: true,
       });
     }
@@ -1295,6 +1351,7 @@ function Interaction({
     setLastTransactionStepFeedback({});
     setTransactionStepFeedback({});
     setFinishedTransaction(false);
+    setCurrentVaultId(null);
 
     setTransactionCompleted(true);
 
@@ -1311,7 +1368,7 @@ function Interaction({
     }, 100);
 
     refreshBalance();
-  }, [refreshBalance, vaultData?.id]);
+  }, [refreshBalance, vaultData?.id, setCurrentVaultId]);
 
   const handleWalletConnect = () => {
     setChain(activeChain);
@@ -1552,7 +1609,7 @@ function Interaction({
             setInputBalance,
             setLastEventTxHash,
             setFailedOnConfirmation,
-            priceContext
+            priceContext,
           );
           return result;
         };
