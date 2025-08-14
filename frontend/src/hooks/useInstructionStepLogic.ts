@@ -216,7 +216,7 @@ export const useInstructionStepLogic = ({
   const activeFeedback = finishedTransaction
     ? lastTransactionStepFeedback
     : transactionStepFeedback;
-
+  
   const isFirstStepActive = useMemo(() => {
     const hasValidInput =
       currentInputBalance?.formatted &&
