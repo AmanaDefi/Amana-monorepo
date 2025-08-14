@@ -119,7 +119,7 @@ export function getLocalStorageObject(subKey: string): ITxLocalStorage | null {
 
 export const CheckTheTxIsInProgress = (vaultId: string) => {
   const TxVaultInfo = getLocalStorageObject(vaultId);
-  // console.log(TxVaultInfo);
+  console.log(TxVaultInfo);
   return (
     !!TxVaultInfo &&
     (TxVaultInfo?.crosschainInvestHash?.length > 0 ||
