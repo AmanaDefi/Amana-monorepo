@@ -31,8 +31,9 @@ import { VAULTS_INFO_KEY } from "@/utils/localStorageUtils";
 
 // Constants for localStorage
 const WALLET_STATE_KEY = "amana-wallet-state";
-const PERSISTED_WALLET_KEY = "amana-persisted-wallet"; // NEW
-const PERSISTED_CHAIN_KEY = "amana-persisted-chain"; // NEW
+const PERSISTED_WALLET_KEY = "amana-persisted-wallet";
+const PERSISTED_CHAIN_KEY = "amana-persisted-chain";
+const WAGMI_WALLET_KEY = "amana-wagmi-wallet"; // NEW
 const DEBUG_WALLET = false; // Set to false in production
 
 // Helper function for debug logging
@@ -84,7 +85,8 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [persistedWalletAddress, setPersistedWalletAddress] = useState<
     string | null
-  >(null); // NEW
+  >(null);
+  const [isWagmiConnected, setIsWagmiConnected] = useState(false); 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { logout } = usePrivy();
   const { publicKey, disconnect, connected } = useWallet();
@@ -104,7 +106,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     isAuthenticated,
   } = useAuthStore();
   const isConnectedRef = useRef(connected);
-  const { isConnected } = useAccount();
 
   const router = useRouter();
   const path = usePathname();
@@ -152,7 +153,38 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const initializationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastPathProcessedRef = useRef<string | null>(null);
 
-  const { address: wagmiAddress, isConnected: wagmiConnected } = useAccount();
+  const { address: wagmiAddress } = useAccount();
+
+  useEffect(() => {
+    console.log("[WAGMI STATE] Address changed:", {
+      wagmiAddress,
+      currentWagmiConnected: isWagmiConnected,
+      savedAddress: localStorage.getItem(WAGMI_WALLET_KEY),
+      timestamp: new Date().toISOString(),
+    });
+
+    if (wagmiAddress) {
+      // Has address - save and set as connected
+      setIsWagmiConnected(true);
+      localStorage.setItem(WAGMI_WALLET_KEY, wagmiAddress);
+      console.log("[WAGMI STATE] Connected and saved:", wagmiAddress);
+    } else {
+      // No address - check if we have saved one
+      const savedAddress = localStorage.getItem(WAGMI_WALLET_KEY);
+      if (savedAddress) {
+        console.log(
+          "[WAGMI STATE] No current address but found saved:",
+          savedAddress,
+        );
+        setIsWagmiConnected(true); // Keep as connected
+      } else {
+        console.log("[WAGMI STATE] No address and no saved - disconnecting");
+        setIsWagmiConnected(false);
+      }
+    }
+  }, [wagmiAddress, isWagmiConnected]);
+
+  const wagmiConnected = isWagmiConnected;
 
   const setWalletAddressWithLog = useCallback(
     (address: string | null, source?: string) => {
@@ -196,7 +228,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [isHydrated, walletAddress, step, setWalletAddressWithLog]);
 
-  // NEW: Save active chain to localStorage
   useEffect(() => {
     if (activeChain?.id) {
       localStorage.setItem(PERSISTED_CHAIN_KEY, activeChain.id.toString());
@@ -214,8 +245,9 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       publicKeyExists: !!publicKey,
       step,
       isHydrated,
-      isConnected,
-      persistedWalletAddress, // NEW
+      wagmiAddress, 
+      wagmiConnected, 
+      persistedWalletAddress,
       timestamp: new Date().toISOString(),
     });
   }, [
@@ -228,8 +260,9 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     publicKey,
     step,
     isHydrated,
-    isConnected,
-    persistedWalletAddress, // NEW
+    wagmiAddress,
+    wagmiConnected,
+    persistedWalletAddress,
   ]);
 
   debugLog("Provider initialized with hydration-safe state:", {
@@ -286,7 +319,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         }
       });
     }
-  }, [connectors, wallets]);
+  }, [connectors, wallets, disconnectAsync]);
 
   const evmDisconnect = useCallback(async () => {
     console.log("[DEBUG] EVM disconnect initiated", {
@@ -295,7 +328,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     setIsWalletSwitching(true);
 
     try {
-      // setWalletAddress(null);
       setWalletAddressWithLog(null, "evm-disconnect");
       setSelectedChain(null);
       setActiveChain(null);
@@ -316,7 +348,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         setIsWalletSwitching(false);
       }, 800);
     }
-  }, [logout, disconnectConnectors]);
+  }, [logout, disconnectConnectors, setWalletAddressWithLog]);
 
   const completeInitializationProcess = useCallback(() => {
     if (initializationTimeoutRef.current) {
@@ -380,7 +412,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       }
 
       console.log("[DEBUG] Regular connection - setting wallet state");
-      // setWalletAddress(publicKey.toBase58());
       setWalletAddressWithLog(publicKey.toBase58(), "solana-connect");
       setSelectedChain("solana");
       setActiveChain(chainConfigs[CHAIN_ID.solana]);
@@ -396,7 +427,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     publicKey,
     setFundWalletAddress,
     setStep,
-    setWalletAddress,
+    setWalletAddressWithLog,
     setSelectedChain,
     setActiveChain,
     successAuth,
@@ -410,7 +441,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       step,
       walletsLength: wallets.length,
       userWallet: !!user?.wallet,
-      persistedWalletAddress, // NEW
+      persistedWalletAddress,
       timestamp: new Date().toISOString(),
     });
 
@@ -432,7 +463,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         }
 
         console.log("[DEBUG] Setting EVM wallet state");
-        // setWalletAddress(privyWallet?.address);
         setWalletAddressWithLog(privyWallet?.address, "privy-connect");
         setSelectedChain("evm");
 
@@ -478,7 +508,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       !wagmiConnected &&
       !persistedWalletAddress
     ) {
-      // MODIFIED: Only clear if no persisted address
       setWalletAddressWithLog(null, "privy-clear");
     }
   }, [
@@ -490,7 +519,11 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     disconnectConnectors,
     filteredWallets,
     activeChain,
-    persistedWalletAddress, // NEW
+    persistedWalletAddress,
+    wagmiConnected,
+    setWalletAddressWithLog,
+    setSelectedChain,
+    setActiveChain,
   ]);
 
   useEffect(() => {
@@ -528,7 +561,9 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       publicKeyExists: !!publicKey,
       connected,
       privyWalletAddress: privyWallet?.address,
-      persistedWalletAddress, // NEW
+      wagmiConnected,
+      wagmiAddress,
+      persistedWalletAddress,
       timestamp: new Date().toISOString(),
     });
 
@@ -537,7 +572,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         (publicKey && connected) ||
         (privyWallet?.address && !connected) ||
         (wagmiConnected && wagmiAddress) ||
-        persistedWalletAddress || // NEW: Include persisted address
+        persistedWalletAddress ||
         (!publicKey && !privyWallet?.address && !wagmiConnected);
 
       if (hasStableConnection) {
@@ -562,7 +597,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     wagmiAddress,
     step,
     completeInitializationProcess,
-    persistedWalletAddress, // NEW
+    persistedWalletAddress,
   ]);
 
   // Fallback timeout:
@@ -589,10 +624,12 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       localStorage.removeItem(VAULTS_INFO_KEY);
     }
 
-    // NEW: Clear persisted data
+    // Clear persisted data
     localStorage.removeItem(PERSISTED_WALLET_KEY);
     localStorage.removeItem(PERSISTED_CHAIN_KEY);
+    localStorage.removeItem(WAGMI_WALLET_KEY); 
     setPersistedWalletAddress(null);
+    setIsWagmiConnected(false); 
 
     try {
       const { logout: authLogout } = useAuthStore.getState();
@@ -616,7 +653,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
 
     setSelectedChain(null);
     setActiveChain(null);
-    // setWalletAddress(null);
     setWalletAddressWithLog(null, "full-disconnect");
     setIsModalOpen(false);
 
@@ -645,6 +681,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     privyWallet?.address,
     connected,
     wagmiConnected,
+    setWalletAddressWithLog,
   ]);
 
   const getEvmBalance = useCallback(
@@ -676,36 +713,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     },
     [privyWallet, setBalance, step, activeChain],
   );
-  // // IMPROVED: Better connection detection logic with initialization delay
-  // useEffect(() => {
-  //   // Wait for hydration before starting initialization
-  //   if (!isHydrated) return;
-
-  //   if (publicKey) {
-  //     if (!step) {
-  //       setWalletAddress(publicKey.toBase58());
-  //       setSelectedChain("solana");
-  //     } else {
-  //       setFundWalletAddress(publicKey.toBase58());
-  //     }
-  //   } else if (
-  //     privyWallet?.address &&
-  //     privyWallet?.meta?.id !== "app.phantom"
-  //   ) {
-  //     if (!step) {
-  //       debugLog("EVM wallet connected:", privyWallet?.address);
-  //       setWalletAddress(privyWallet?.address);
-  //       setSelectedChain("evm");
-  //       setIsModalOpen(false);
-  //     }
-  //   }
-  // }, [
-  //   privyWallet,
-  //   publicKey,
-  //   isHydrated,
-  //   step,
-  //   setFundWalletAddress,
-  // ]);
 
   const switchToChain = useCallback(
     async (chain: Chain) => {
@@ -781,31 +788,13 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         throw error;
       }
     },
-    [privyWallet],
+    [privyWallet, setSelectedChain, setActiveChain],
   );
 
   useEffect(() => {
     if (lastPathProcessedRef.current === path) {
       return;
     }
-
-    // if (
-    //   !isVaultAddressPath.test(path) &&
-    //   privyWallet?.address &&
-    //   privyWallet?.walletClientType !== "privy" &&
-    //   activeChain?.id === CHAIN_ID["solana"]
-    // ) {
-    //   switchToChain(zetachain);
-    //   latestChainRef.current = zetachain.id.toString();
-    // }
-    // if (
-    //   !isVaultAddressPath.test(path) &&
-    //   publicKey &&
-    //   activeChain?.id !== CHAIN_ID["solana"]
-    // ) {
-    //   switchToChain(chainConfigs[CHAIN_ID.solana]);
-    //   latestChainRef.current = CHAIN_ID["solana"].toString();
-    // }
 
     console.log("[DEBUG] Path change effect:", {
       path,
@@ -834,38 +823,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         setSelectedTokenFromModal(null);
       }
 
-      // if (
-      //   !isVaultAddressPath.test(path) &&
-      //   privyWallet?.walletClientType === "privy" &&
-      //   activeChain?.id !== zetachain.id
-      // ) {
-      //   console.log("[DEBUG] Setting zetachain for privy wallet");
-      //   setActiveChain(zetachain);
-      //   latestChainRef.current = zetachain.id.toString();
-      // }
-
-      // if (
-      //   !isVaultAddressPath.test(path) &&
-      //   privyWallet?.address &&
-      //   privyWallet?.walletClientType !== "privy" &&
-      //   activeChain?.id === CHAIN_ID["solana"] &&
-      //   privyWallet?.meta?.id !== "app.phantom"
-      // ) {
-      //   console.log("[DEBUG] Switching non-privy wallet to zetachain");
-      //   switchToChain(zetachain);
-      //   latestChainRef.current = zetachain.id.toString();
-      // }
-
-      // if (
-      //   !isVaultAddressPath.test(path) &&
-      //   publicKey &&
-      //   activeChain?.id !== CHAIN_ID["solana"]
-      // ) {
-      //   console.log("[DEBUG] Switching to Solana for public key");
-      //   switchToChain(chainConfigs[CHAIN_ID.solana]);
-      //   latestChainRef.current = CHAIN_ID["solana"].toString();
-      // }
-
       if (privyWallet?.meta?.id === "app.phantom") {
         console.log("[DEBUG] Handling phantom wallet chain switch");
         switchToChain(
@@ -882,15 +839,11 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   }, [
     path,
     selectedChainFromModal,
-    // switchToChain,
     setSelectedChainFromModal,
     setSelectedTokenFromModal,
-    // privyWallet?.walletClientType,
-    // privyWallet?.address,
     privyWallet?.meta?.id,
     privyWallet?.chainId,
-    // activeChain?.id,
-    // publicKey?.toBase58(),
+    switchToChain,
   ]);
 
   useEffect(() => {
@@ -939,7 +892,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         "[SYNC] Syncing wallet address from authStore:",
         authUserAddress,
       );
-      // setWalletAddress(authUserAddress);
       setWalletAddressWithLog(authUserAddress, "auth-sync");
       setSelectedChain("evm");
 
@@ -953,6 +905,8 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     publicKey,
     privyWallet?.address,
     activeChain,
+    setWalletAddressWithLog,
+    setActiveChain,
   ]);
 
   useEffect(() => {
@@ -963,7 +917,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       !publicKey &&
       !privyWallet?.address
     ) {
-      // setWalletAddress(wagmiAddress);
       setWalletAddressWithLog(wagmiAddress, "wagmi-connect");
       setSelectedChain("evm");
     }
@@ -973,6 +926,8 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     walletAddress,
     publicKey,
     privyWallet?.address,
+    setWalletAddressWithLog,
+    setSelectedChain,
   ]);
 
   const universalActiveEvmWallet = useMemo(() => {
@@ -988,6 +943,18 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       } as ConnectedWallet;
     }
 
+    // NEW: Fallback to saved wagmi address
+    if (wagmiConnected && !wagmiAddress) {
+      const savedAddress = localStorage.getItem(WAGMI_WALLET_KEY);
+      if (savedAddress) {
+        return {
+          address: savedAddress,
+          walletClientType: "wagmi",
+          chainId: `eip155:${activeChain?.id || 7000}`,
+        } as ConnectedWallet;
+      }
+    }
+
     return privyWallet;
   }, [privyWallet, wagmiConnected, wagmiAddress, activeChain?.id]);
 
@@ -1001,12 +968,19 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     },
     wagmi: { connected: wagmiConnected, address: wagmiAddress },
     path: path,
-    persistedWalletAddress, // NEW
+    persistedWalletAddress,
   };
 
   useEffect(() => {
     console.log("WALLET STATE:", debugWalletState);
-  }, [walletAddress, selectedChain, path, persistedWalletAddress]); // NEW
+  }, [
+    walletAddress,
+    selectedChain,
+    path,
+    persistedWalletAddress,
+    wagmiConnected,
+    wagmiAddress,
+  ]);
 
   return (
     <MultiChainContext.Provider
