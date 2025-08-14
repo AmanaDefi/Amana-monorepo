@@ -121,6 +121,8 @@ const VaultsDetailContainer: React.FC<{
     transactionStepFeedback,
     lastTransactionStepFeedback,
     finishedTransaction,
+    failedTransaction,
+    setFailedTransaction,
     setFinishedTransaction,
     setLastTransactionStepFeedback,
     setTransactionStepFeedback,
@@ -289,12 +291,14 @@ const VaultsDetailContainer: React.FC<{
           setIsTransactionProcessing(
             vaultTxData?.isTransactionProcessing ?? false,
           );
+          setFailedTransaction(vaultTxData?.failedTransaction ?? false);
         } else {
           setTransactionStepFeedback({});
           setLastTransactionStepFeedback({});
           setFinishedTransaction(false);
           setIsTransactionProcessing(false);
           setIsFailedOnCOnfirmation(false);
+          setFailedTransaction(false);
         }
       } else {
         const hasCompletedTransaction =
@@ -498,7 +502,7 @@ const VaultsDetailContainer: React.FC<{
   const isWithdraw = !isDeposit;
 
   const shouldShowTransactionComplete = useMemo(() => {
-    if (!finishedTransaction) return false;
+    if (!finishedTransaction && !failedTransaction) return false;
 
     if (currentVaultId && currentVaultId !== vaultData?.id) {
       return false;
@@ -510,6 +514,7 @@ const VaultsDetailContainer: React.FC<{
     );
   }, [
     finishedTransaction,
+    failedTransaction,
     currentVaultId,
     vaultData?.id,
     lastTransactionStepFeedback,

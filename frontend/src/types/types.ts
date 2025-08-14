@@ -246,6 +246,7 @@ export interface ITxLocalStorage {
   isTransactionStarted: boolean;
   isTransactionProcessing: boolean;
   finishedTransaction: boolean;
+  failedTransaction?: boolean;
   transactionCompleted: boolean;
   selectedChain?: string;
 
