@@ -101,13 +101,11 @@ const handleDepositTransaction = async (
       setFailedOnConfirmation(true);
       updateLocalStorageObject(vaultData.id, {
         vaultId: vaultData.id,
-        failedTransaction: true,
         transactionStepFeedback:
           useTransactionStore.getState().transactionStepFeedback,
         lastTransactionStepFeedback:
           useTransactionStore.getState().transactionStepFeedback,
       });
-      setFailedTransaction(true);
       throw new Error("Failed Tx");
     }
 
@@ -291,13 +289,11 @@ const handleWithdrawTransaction = async (
       setFailedOnConfirmation(true);
       updateLocalStorageObject(vaultData.id, {
         vaultId: vaultData.id,
-        failedTransaction: true,
         transactionStepFeedback:
           useTransactionStore.getState().transactionStepFeedback,
         lastTransactionStepFeedback:
           useTransactionStore.getState().transactionStepFeedback,
       });
-      setFailedTransaction(true);
       throw new Error("Failed Tx");
     }
 
@@ -809,11 +805,31 @@ export default function InteractionContainer({
         );
 
 if (result.success) {
+  const currentFeedback = useTransactionStore.getState().transactionStepFeedback;
+  const hasFailedSteps = Object.values(currentFeedback).some(
+    step => step && step.status === TransactionStepStatus.error
+  );
+
+  if (hasFailedSteps) {
+    useTransactionStore.setState((prev) => {
+      setLastTransactionStepFeedback(prev.transactionStepFeedback);
+      updateLocalStorageObject(vaultData.id, null);
+      return { transactionStepFeedback: prev.transactionStepFeedback };
+    });
+
+    setFinishedTransaction(true);
+    setIsTransactionProcessing(false);
+    setIsTransactionStarted(false);
+    return;
+  }
+
   const finalAction =
     transactionType === "deposit" ? Action.deposited : Action.withdrew;
 
+  let updatedFeedback: any;
+
   useTransactionStore.setState((prev) => {
-    const updatedFeedback = { ...prev.transactionStepFeedback };
+    updatedFeedback = { ...prev.transactionStepFeedback };
 
     if (!updatedFeedback[finalAction]) {
       const finalDescription = isDeposit
@@ -840,19 +856,25 @@ if (result.success) {
 
     setLastTransactionStepFeedback(updatedFeedback);
 
-    updateLocalStorageObject(vaultData.id, {
-      vaultId: vaultData.id,
-      transactionStepFeedback: updatedFeedback,
-      lastTransactionStepFeedback: updatedFeedback,
-    });
-
     return { transactionStepFeedback: updatedFeedback };
   });
+
+  setAction(finalAction);
+  setStep(actionMapping.length - 1);
 
   setFinishedTransaction(true);
   setIsTransactionProcessing(false);
   setIsFailedOnCOnfirmation(false);
   setTransactionCompleted(true);
+
+  updateLocalStorageObject(vaultData.id, {
+    vaultId: vaultData.id,
+    finishedTransaction: true,
+    isTransactionProcessing: false,
+    isTransactionStarted: false,
+    transactionStepFeedback: updatedFeedback, 
+    lastTransactionStepFeedback: updatedFeedback,
+  });
 
   setTimeout(() => {
     refreshBalance();
@@ -1289,6 +1311,7 @@ function Interaction({
   async function handleMainAction(directAction?: Action) {
     const currenAction = directAction ?? action;
     setIsFailedOnCOnfirmation(false);
+    setFailedTransaction(false);
 
     if (isTransactionProcessing || !inputToken) {
       return;
@@ -1298,6 +1321,7 @@ function Interaction({
     updateLocalStorageObject(vaultData.id, {
       vaultId: vaultData.id,
       isTransactionProcessing: true,
+      failedTransaction: false,
     });
 
     isComponentActiveRef.current = true;
