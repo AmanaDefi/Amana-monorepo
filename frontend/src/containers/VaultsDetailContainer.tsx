@@ -71,6 +71,7 @@ import Image from "next/image";
 import { useAuthStore } from "@/store/authStore";
 import { AiOutlineConsoleSql } from "react-icons/ai";
 import { useExternalTVL } from "@/hooks/useExternalTVL";
+import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -94,6 +95,8 @@ const VaultsDetailContainer: React.FC<{
   const [selectedToken, setSelectedToken] = useState<Token | undefined>();
   const [isDeposit, setIsDeposit] = useState<boolean>(initialIsDeposit);
   const [showMobileInvestment, setShowMobileInvestment] = useState(false);
+  const { balance: hookWalletBalance, fetchBalance } =
+    useMultichainTokenBalance(selectedToken);
   const giftButtonRef = useRef<HTMLButtonElement>(null);
   const { openStep } = useAuthStore();
 
@@ -119,6 +122,8 @@ const VaultsDetailContainer: React.FC<{
     transactionStepFeedback,
     lastTransactionStepFeedback,
     finishedTransaction,
+    failedTransaction,
+    setFailedTransaction,
     setFinishedTransaction,
     setLastTransactionStepFeedback,
     setTransactionStepFeedback,
@@ -130,12 +135,16 @@ const VaultsDetailContainer: React.FC<{
     lastWithdrawInfo,
     isFailedOnConfirmation,
     setIsFailedOnCOnfirmation,
-    currentVaultId, 
+    currentVaultId,
     setCurrentVaultId,
   } = useTransactionStore();
 
-  const { switchToChain, walletAddress, activeChain, activeEvmWallet: user } =
-    useMultiChain();
+  const {
+    switchToChain,
+    walletAddress,
+    activeChain,
+    activeEvmWallet: user,
+  } = useMultiChain();
 
   const vaultIdStr = Array.isArray(vaultID) ? vaultID[0] : vaultID;
 
@@ -191,6 +200,32 @@ const VaultsDetailContainer: React.FC<{
   );
 
   useEffect(() => {
+    const currentVaultId = vaultData?.id || vaultID?.toString();
+    if (currentVaultId) {
+      const vaultTxData = getLocalStorageObject(currentVaultId);
+      if (vaultTxData?.selectedToken) {
+        try {
+          const txToken = JSON.parse(vaultTxData.selectedToken, bigIntReviver);
+          setSelectedToken(txToken);
+          return;
+        } catch (error) {
+          console.error("Failed to parse transaction selectedToken:", error);
+        }
+      }
+    }
+
+    const storedTokenString = localStorage.getItem("lastSelectedToken");
+    if (storedTokenString) {
+      try {
+        const storedToken = JSON.parse(storedTokenString, bigIntReviver);
+        setSelectedToken(storedToken);
+      } catch (error) {
+        console.error("Failed to parse stored token:", error);
+      }
+    }
+  }, [vaultData?.id, vaultID]);
+
+  useEffect(() => {
     const vaultIdStr = Array.isArray(vaultID) ? vaultID[0] : vaultID;
 
     if (vaultIdStr) {
@@ -220,42 +255,71 @@ const VaultsDetailContainer: React.FC<{
     }
   }, [vaultID, activeChain]);
 
-useEffect(() => {
-  const checkTransactionState = () => {
-    const currentVaultId = vaultData?.id || vaultID?.toString();
-    if (!currentVaultId) return;
+  useEffect(() => {
+    const checkTransactionState = () => {
+      const currentVaultId = vaultData?.id || vaultID?.toString();
+      if (!currentVaultId) return;
 
-    const isTxInProgress = CheckTheTxIsInProgress(currentVaultId);
-    const vaultTxData = getLocalStorageObject(currentVaultId);
+      const isTxInProgress = CheckTheTxIsInProgress(currentVaultId);
+      const vaultTxData = getLocalStorageObject(currentVaultId);
 
-    if (isTxInProgress && vaultTxData) {
-      if (vaultTxData.vaultId === currentVaultId || !vaultTxData.vaultId) {
-        setTransactionStepFeedback(vaultTxData?.transactionStepFeedback ?? {});
-        setLastTransactionStepFeedback(
-          vaultTxData?.lastTransactionStepFeedback ?? {},
-        );
-        setFinishedTransaction(vaultTxData?.finishedTransaction ?? false);
-        setIsTransactionProcessing(
-          vaultTxData?.isTransactionProcessing ?? false,
-        );
-      } else {
-        setTransactionStepFeedback({});
-        setLastTransactionStepFeedback({});
-        setFinishedTransaction(false);
-        setIsTransactionProcessing(false);
-        setIsFailedOnCOnfirmation(false);
+      if (vaultTxData && vaultTxData.userVaultBalance) {
+        try {
+          const parsedBalance = JSON.parse(vaultTxData.userVaultBalance);
+          if (
+            !userVaultBalance ||
+            userVaultBalance.formatted !== parsedBalance.formatted
+          ) {
+            setUserVaultBalance(parsedBalance);
+          }
+        } catch (error) {
+          console.error(
+            "Failed to parse user vault balance from localStorage",
+            error,
+          );
+        }
       }
-    } else {
-      setTransactionStepFeedback({});
-      setLastTransactionStepFeedback({});
-      setFinishedTransaction(false);
-      setIsTransactionProcessing(false);
-      setIsFailedOnCOnfirmation(false);
-    }
-  };
 
-  checkTransactionState();
-}, [vaultID, vaultData?.id, user, wallet]);
+      if (isTxInProgress && vaultTxData) {
+        if (vaultTxData.vaultId === currentVaultId || !vaultTxData.vaultId) {
+          setTransactionStepFeedback(
+            vaultTxData?.transactionStepFeedback ?? {},
+          );
+          setLastTransactionStepFeedback(
+            vaultTxData?.lastTransactionStepFeedback ?? {},
+          );
+          setFinishedTransaction(vaultTxData?.finishedTransaction ?? false);
+          setIsTransactionProcessing(
+            vaultTxData?.isTransactionProcessing ?? false,
+          );
+          setFailedTransaction(vaultTxData?.failedTransaction ?? false);
+        } else {
+          setTransactionStepFeedback({});
+          setLastTransactionStepFeedback({});
+          setFinishedTransaction(false);
+          setIsTransactionProcessing(false);
+          setIsFailedOnCOnfirmation(false);
+          setFailedTransaction(false);
+        }
+      } else {
+        const hasCompletedTransaction =
+          finishedTransaction &&
+          (Object.keys(lastTransactionStepFeedback).length > 0 ||
+            Object.keys(transactionStepFeedback).length > 0) &&
+          currentVaultId === vaultData?.id;;
+
+        if (!hasCompletedTransaction) {
+          setTransactionStepFeedback({});
+          setLastTransactionStepFeedback({});
+          setFinishedTransaction(false);
+          setIsTransactionProcessing(false);
+          setIsFailedOnCOnfirmation(false);
+        }
+      }
+    };
+
+    checkTransactionState();
+  }, [vaultID, vaultData?.id, user, wallet, userVaultBalance]);
 
   const currentVault = useMemo(() => {
     return vaultData ? [vaultData] : null;
@@ -312,6 +376,14 @@ useEffect(() => {
     }
     return vaultTotalAsset;
   }, [enhancedTotalAssets, vaultTotalAsset]);
+  useEffect(() => {
+    if (finishedTransaction && selectedToken) {
+      const timeoutId = setTimeout(() => {
+        fetchBalance();
+      }, 3000);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [finishedTransaction, selectedToken, fetchBalance]);
 
   // Set user vault balance from graph data
   useEffect(() => {
@@ -332,6 +404,10 @@ useEffect(() => {
 
           setUserVaultBalance(balance);
 
+          updateLocalStorageObject(vaultIdStr, {
+            userVaultBalance: JSON.stringify(balance, bigIntReplacer),
+          });
+
           setVaultTotalAssetinToken({
             vaultId: vaultIdStr,
             totalAssetsinToken: balanceValue,
@@ -343,6 +419,9 @@ useEffect(() => {
       ) {
         setUserVaultBalance(undefined);
         setVaultTotalAssetinToken(undefined);
+        updateLocalStorageObject(vaultIdStr, {
+          userVaultBalance: undefined,
+        });
       }
     }
   }, [userVaultBalances, vaultIdStr, userVaultBalance, vaultTotalAssetinToken]);
@@ -398,11 +477,23 @@ useEffect(() => {
   const handleTokenSelect = useCallback(
     (token: Token | undefined) => {
       setSelectedToken(token);
-      updateLocalStorageObject(vaultID.toString(), {
-        selectedToken: JSON.stringify(token, bigIntReplacer),
-      });
+      if (token) {
+        localStorage.setItem(
+          "lastSelectedToken",
+          JSON.stringify(token, bigIntReplacer),
+        );
+
+        const currentVaultId = vaultData?.id || vaultID?.toString();
+        if (currentVaultId) {
+          updateLocalStorageObject(currentVaultId, {
+            selectedToken: JSON.stringify(token, bigIntReplacer),
+          });
+        }
+      } else {
+        localStorage.removeItem("lastSelectedToken");
+      }
     },
-    [vaultID],
+    [vaultData?.id, vaultID],
   );
 
   const handleChainAndTokenSelect = useCallback(
@@ -429,29 +520,42 @@ useEffect(() => {
 
   const isWithdraw = !isDeposit;
 
-const shouldShowTransactionComplete = useMemo(() => {
-  if (!finishedTransaction) return false;
+  const shouldShowTransactionComplete = useMemo(() => {
+    if (!finishedTransaction && !failedTransaction) return false;
 
-  if (currentVaultId !== vaultData?.id) {
-    console.log(
-      `[VaultContainer] Ignoring transaction complete for vault ${currentVaultId}, current vault is ${vaultData?.id}`,
+    if (currentVaultId && currentVaultId !== vaultData?.id) {
+      return false;
+    }
+
+    return (
+      Object.keys(lastTransactionStepFeedback).length > 0 ||
+      Object.keys(transactionStepFeedback).length > 0
     );
-    return false;
-  }
+  }, [
+    finishedTransaction,
+    failedTransaction,
+    currentVaultId,
+    vaultData?.id,
+    lastTransactionStepFeedback,
+    transactionStepFeedback,
+  ]);
 
-  return (
-    Object.keys(lastTransactionStepFeedback).length > 0 ||
-    Object.keys(transactionStepFeedback).length > 0
-  );
-}, [
-  finishedTransaction,
-  currentVaultId,
-  vaultData?.id,
-  lastTransactionStepFeedback,
-  transactionStepFeedback,
-]);
-  
-  const currentTransactionInfo = isDeposit ? lastDepositInfo : lastWithdrawInfo;
+  const getTransactionData = () => {
+    const storage = getLocalStorageObject(vaultID.toString());
+    const txData = storage?.finalTransactionData;
+
+    if (!txData)
+      return {
+        inputAmount: "0",
+        outputAmount: "0",
+        inputSymbol: "",
+        outputSymbol: "",
+      };
+
+    return txData;
+  };
+
+  const txData = getTransactionData();
 
   return vaultData ? (
     <div className=" font-gotham">
@@ -583,7 +687,9 @@ const shouldShowTransactionComplete = useMemo(() => {
                 sizes="24px"
               />
             </div>
-            <h2 className="font-bold text-white text-sm">{vaultData.protocol.network}</h2>
+            <h2 className="font-bold text-white text-sm">
+              {vaultData.protocol.network}
+            </h2>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative">
@@ -596,7 +702,9 @@ const shouldShowTransactionComplete = useMemo(() => {
                 sizes="24px"
               />
             </div>
-            <h2 className="font-bold text-white text-sm">{vaultData.protocol.name}</h2>
+            <h2 className="font-bold text-white text-sm">
+              {vaultData.protocol.name}
+            </h2>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative">
@@ -610,11 +718,8 @@ const shouldShowTransactionComplete = useMemo(() => {
               />
             </div>
             <h2 className="font-bold text-white text-sm">{vaultData.name}</h2>
-            <h2 className="font-bold text-white py-1 ">
-            {vaultData.type}
-          </h2>
+            <h2 className="font-bold text-white py-1 ">{vaultData.type}</h2>
           </div>
-          
         </div>
       </div>
 
@@ -627,6 +732,7 @@ const shouldShowTransactionComplete = useMemo(() => {
             vaultAPYs={vaultAPYs}
             transactionCompleted={finishedTransaction}
             selectedToken={selectedToken}
+            walletBalance={hookWalletBalance.formatted || "0"}
             onDepositDataUpdate={handleDepositDataUpdate}
             isDeposit={isDeposit}
           />
@@ -635,14 +741,34 @@ const shouldShowTransactionComplete = useMemo(() => {
 
       <div className="block md:hidden mt-4">
         <MobileDepositInstruction
-          transactionStepFeedback={transactionStepFeedback}
-          lastTransactionStepFeedback={lastTransactionStepFeedback}
-          finishedTransaction={finishedTransaction}
+          transactionStepFeedback={
+            !currentVaultId || currentVaultId === vaultData?.id
+              ? transactionStepFeedback
+              : {}
+          }
+          lastTransactionStepFeedback={
+            !currentVaultId || currentVaultId === vaultData?.id
+              ? lastTransactionStepFeedback
+              : {}
+          }
+          finishedTransaction={
+            !currentVaultId || currentVaultId === vaultData?.id
+              ? finishedTransaction
+              : false
+          }
           activeChainId={activeChain?.id}
           vaultStrategyChainId={vaultData?.protocol?.chainId}
           isDeposit={isDeposit}
-          isProcessing={isTransactionProcessing}
-          isFailedOnConfirmation={isFailedOnConfirmation}
+          isProcessing={
+            !currentVaultId || currentVaultId === vaultData?.id
+              ? isTransactionProcessing
+              : false
+          }
+          isFailedOnConfirmation={
+            !currentVaultId || currentVaultId === vaultData?.id
+              ? isFailedOnConfirmation
+              : false
+          }
         />
       </div>
 
@@ -663,34 +789,32 @@ const shouldShowTransactionComplete = useMemo(() => {
                 isDeposit={isDeposit}
                 isFailedOnConfirmation={isFailedOnConfirmation}
                 onClose={() => {
-                  setFinishedTransaction(false);
-                  setLastTransactionStepFeedback({});
-                  setTransactionStepFeedback({});
-                  setIsTransactionProcessing(false);
-                  setLastDepositInfo(null);
-                  setLastWithdrawInfo(null);
-                  setIsFailedOnCOnfirmation(false);
-                  setCurrentVaultId(null);
+                  if (currentVaultId === vaultData?.id || !currentVaultId) {
+                    setFinishedTransaction(false);
+                    setLastTransactionStepFeedback({});
+                    setTransactionStepFeedback({});
+                    setIsTransactionProcessing(false);
+                    setLastDepositInfo(null);
+                    setLastWithdrawInfo(null);
+                    setIsFailedOnCOnfirmation(false);
+                    setCurrentVaultId(null);
 
-                  if (vaultID) {
-                    updateLocalStorageObject(vaultID.toString(), null);
+                    if (vaultID) {
+                      updateLocalStorageObject(vaultID.toString(), null);
+                    }
                   }
                   // setTransactionCompleted(true);
                 }}
-                depositedInputAmount={
-                  currentTransactionInfo?.inputAmount || "0"
-                }
-                depositedOutputAmount={
-                  currentTransactionInfo?.outputAmount || "0"
-                }
+                depositedInputAmount={txData.inputAmount}
+                depositedOutputAmount={txData.outputAmount}
                 depositedInputSymbol={
-                  currentTransactionInfo?.inputSymbol ||
+                  txData.inputSymbol ||
                   (isDeposit
                     ? selectedToken?.symbol || vaultData.inputToken.symbol
                     : vaultData.symbol)
                 }
                 depositedOutputSymbol={
-                  currentTransactionInfo?.outputSymbol ||
+                  txData.outputSymbol ||
                   (isDeposit
                     ? vaultData.symbol
                     : selectedToken?.symbol || vaultData.inputToken.symbol)
@@ -790,6 +914,7 @@ const shouldShowTransactionComplete = useMemo(() => {
                 vaultAPYs={vaultAPYs}
                 transactionCompleted={finishedTransaction}
                 selectedToken={selectedToken}
+                walletBalance={hookWalletBalance.formatted || "0"}
                 onDepositDataUpdate={handleDepositDataUpdate}
                 isDeposit={isDeposit}
               />
@@ -810,14 +935,34 @@ const shouldShowTransactionComplete = useMemo(() => {
             }
           >
             <DepositInstruction
-              transactionStepFeedback={transactionStepFeedback}
-              lastTransactionStepFeedback={lastTransactionStepFeedback}
-              finishedTransaction={finishedTransaction}
+              transactionStepFeedback={
+                !currentVaultId || currentVaultId === vaultData?.id
+                  ? transactionStepFeedback
+                  : {}
+              }
+              lastTransactionStepFeedback={
+                !currentVaultId || currentVaultId === vaultData?.id
+                  ? lastTransactionStepFeedback
+                  : {}
+              }
+              finishedTransaction={
+                !currentVaultId || currentVaultId === vaultData?.id
+                  ? finishedTransaction
+                  : false
+              }
               activeChainId={activeChain?.id}
               vaultStrategyChainId={vaultData?.protocol?.chainId}
               isDeposit={isDeposit}
-              isProcessing={isTransactionProcessing}
-              isFailedOnConfirmation={isFailedOnConfirmation}
+              isProcessing={
+                !currentVaultId || currentVaultId === vaultData?.id
+                  ? isTransactionProcessing
+                  : false
+              }
+              isFailedOnConfirmation={
+                !currentVaultId || currentVaultId === vaultData?.id
+                  ? isFailedOnConfirmation
+                  : false
+              }
             />
           </Dropdown>
           <Dropdown

@@ -68,6 +68,7 @@ const handleDepositTransaction = async (
   setInputBalance: Function,
   setLastEventTxHash: Function,
   setFailedOnConfirmation: (value: boolean) => void,
+  setFailedTransaction: (failed: boolean) => void,
   priceContext: TokenPriceContextType,
 ) => {
   if (!activeAccount) return;
@@ -90,7 +91,7 @@ const handleDepositTransaction = async (
         activeChain,
         depositAmount,
         setcrossChainTxId,
-        priceContext
+        priceContext,
       );
     if (
       !receipt ||
@@ -98,7 +99,15 @@ const handleDepositTransaction = async (
       (receipt?.status && receipt?.status !== "success")
     ) {
       setFailedOnConfirmation(true);
-      updateLocalStorageObject(vaultData.id, null);
+      updateLocalStorageObject(vaultData.id, {
+        vaultId: vaultData.id,
+        failedTransaction: true,
+        transactionStepFeedback:
+          useTransactionStore.getState().transactionStepFeedback,
+        lastTransactionStepFeedback:
+          useTransactionStore.getState().transactionStepFeedback,
+      });
+      setFailedTransaction(true);
       throw new Error("Failed Tx");
     }
 
@@ -213,12 +222,12 @@ const handleDepositTransaction = async (
         });
       }
       if (
-        error?.message?.toLowerCase().includes(
-          "wallet timeout",
-        ) &&
+        error?.message?.toLowerCase().includes("wallet timeout") &&
         activeAccount.walletClientType !== "privy"
       ) {
-        showErrorToast("It looks like the confirmation request in your wallet has timed out. You can still approve it, but our app won't be able to track its progress from here.");
+        showErrorToast(
+          "It looks like the confirmation request in your wallet has timed out. You can still approve it, but our app won't be able to track its progress from here.",
+        );
       }
     } catch (analyticsError) {}
 
@@ -239,6 +248,7 @@ const handleWithdrawTransaction = async (
   setInputBalance: Function,
   setLastEventTxHash: Function,
   setFailedOnConfirmation: (value: boolean) => void,
+  setFailedTransaction: (failed: boolean) => void,
 ) => {
   setTransactionCompleted(false);
   updateLocalStorageObject(vaultData.id, { transactionCompleted: false });
@@ -279,7 +289,15 @@ const handleWithdrawTransaction = async (
       (receipt?.status && receipt?.status !== "success")
     ) {
       setFailedOnConfirmation(true);
-      updateLocalStorageObject(vaultData.id, null);
+      updateLocalStorageObject(vaultData.id, {
+        vaultId: vaultData.id,
+        failedTransaction: true,
+        transactionStepFeedback:
+          useTransactionStore.getState().transactionStepFeedback,
+        lastTransactionStepFeedback:
+          useTransactionStore.getState().transactionStepFeedback,
+      });
+      setFailedTransaction(true);
       throw new Error("Failed Tx");
     }
 
@@ -332,12 +350,12 @@ const handleWithdrawTransaction = async (
     }
 
     if (
-      error?.message?.toLowerCase().includes(
-        "wallet timeout",
-      ) &&
+      error?.message?.toLowerCase().includes("wallet timeout") &&
       activeAccount.walletClientType !== "privy"
     ) {
-      showErrorToast("It looks like the confirmation request in your wallet has timed out. You can still approve it, but our app won't be able to track its progress from here.");
+      showErrorToast(
+        "It looks like the confirmation request in your wallet has timed out. You can still approve it, but our app won't be able to track its progress from here.",
+      );
     }
 
     return false;
@@ -392,6 +410,7 @@ export default function InteractionContainer({
   const [lastEventTxHash, setLastEventTxHash] = useState("");
   const {
     setFinishedTransaction,
+    setFailedTransaction,
     setLastDepositInfo,
     setLastTransactionStepFeedback,
     setTransactionStepFeedback,
@@ -572,7 +591,6 @@ export default function InteractionContainer({
     setIsTransactionStarted(false);
     setCrosschainInvestHash("");
     setcrossChainTxId("");
-    updateLocalStorageObject(vaultData.id, null);
 
     // 5. Save the final feedback state for display
     setLastTransactionStepFeedback(feedbackSnapshot);
@@ -657,7 +675,6 @@ export default function InteractionContainer({
           setAction(finalAction);
           setStep(nextStep);
           setFinishedTransaction(true);
-          updateLocalStorageObject(vaultData.id, null);
 
           setTransactionCompleted(true);
 
@@ -696,84 +713,88 @@ export default function InteractionContainer({
                 Action.withdrew,
               ];
 
- const onStepComplete = (stepIndex: number, stepData: any) => {
-   const actionKey = actionMapping[stepIndex];
-   if (!actionKey) return;
+        const onStepComplete = (stepIndex: number, stepData: any) => {
+          const actionKey = actionMapping[stepIndex];
+          if (!actionKey) return;
 
-   if (!isComponentActiveRef.current) {
-     console.log(
-       `[BlockPI] Ignoring step update for vault ${vaultData.id} - component inactive`,
-     );
-     return;
-   }
+          if (!isComponentActiveRef.current) {
+            console.log(
+              `[BlockPI] Ignoring step update for vault ${vaultData.id} - component inactive`,
+            );
+            return;
+          }
 
-   const currentVaultData = getLocalStorageObject(vaultData.id);
-   if (currentVaultData?.vaultId && currentVaultData.vaultId !== vaultData.id) {
-     console.log(
-       `[BlockPI] Ignoring step update - vault ID mismatch: expected ${vaultData.id}, got ${currentVaultData.vaultId}`,
-     );
-     return;
-   }
+          const currentVaultData = getLocalStorageObject(vaultData.id);
+          if (
+            currentVaultData?.vaultId &&
+            currentVaultData.vaultId !== vaultData.id
+          ) {
+            console.log(
+              `[BlockPI] Ignoring step update - vault ID mismatch: expected ${vaultData.id}, got ${currentVaultData.vaultId}`,
+            );
+            return;
+          }
 
-   const currentTxHash = getLocalStorageObject(
-     vaultData.id,
-   )?.crosschainInvestHash;
-   if (currentTxHash && currentTxHash !== crosschainInvestHash) {
-     console.log(
-       `[BlockPI] Ignoring step update - hash mismatch for vault ${vaultData.id}`,
-     );
-     return;
-   }
+          const currentTxHash = getLocalStorageObject(
+            vaultData.id,
+          )?.crosschainInvestHash;
+          if (currentTxHash && currentTxHash !== crosschainInvestHash) {
+            console.log(
+              `[BlockPI] Ignoring step update - hash mismatch for vault ${vaultData.id}`,
+            );
+            return;
+          }
 
-   useTransactionStore.setState((prev) => {
-     updateLocalStorageObject(vaultData.id, {
-       vaultId: vaultData.id,
-       transactionStepFeedback: {
-         ...prev.transactionStepFeedback,
-         [actionKey]: {
-           label: transactionType === "deposit" ? "Deposit" : "Withdraw",
-           description: stepData.description,
-           status:
-             stepData.status === "completed"
-               ? TransactionStepStatus.completed
-               : stepData.status === "error"
-                 ? TransactionStepStatus.error
-                 : TransactionStepStatus.processing,
-           txHash: stepData.txHash,
-           isWaitingTooLong: stepData.isWaitingTooLong,
-         },
-       },
-     });
+          useTransactionStore.setState((prev) => {
+            updateLocalStorageObject(vaultData.id, {
+              vaultId: vaultData.id,
+              transactionStepFeedback: {
+                ...prev.transactionStepFeedback,
+                [actionKey]: {
+                  label: transactionType === "deposit" ? "Deposit" : "Withdraw",
+                  description: stepData.description,
+                  status:
+                    stepData.status === "completed"
+                      ? TransactionStepStatus.completed
+                      : stepData.status === "error"
+                        ? TransactionStepStatus.error
+                        : TransactionStepStatus.processing,
+                  txHash: stepData.txHash,
+                  isWaitingTooLong: stepData.isWaitingTooLong,
+                },
+              },
+            });
 
-     return {
-       transactionStepFeedback: {
-         ...prev.transactionStepFeedback,
-         [actionKey]: {
-           label: transactionType === "deposit" ? "Deposit" : "Withdraw",
-           description: stepData.description,
-           status:
-             stepData.status === "completed"
-               ? TransactionStepStatus.completed
-               : stepData.status === "error"
-                 ? TransactionStepStatus.error
-                 : TransactionStepStatus.processing,
-           txHash: stepData.txHash,
-           isWaitingTooLong: stepData.isWaitingTooLong,
-         },
-       },
-     };
-   });
+            return {
+              transactionStepFeedback: {
+                ...prev.transactionStepFeedback,
+                [actionKey]: {
+                  label: transactionType === "deposit" ? "Deposit" : "Withdraw",
+                  description: stepData.description,
+                  status:
+                    stepData.status === "completed"
+                      ? TransactionStepStatus.completed
+                      : stepData.status === "error"
+                        ? TransactionStepStatus.error
+                        : TransactionStepStatus.processing,
+                  txHash: stepData.txHash,
+                  isWaitingTooLong: stepData.isWaitingTooLong,
+                },
+              },
+            };
+          });
 
-   // CRITICAL FIX: Only update step/action for completed steps, and avoid triggering useEffect
-   if (stepData.status === "completed" && stepIndex < actionMapping.length) {
-     // Only update step, avoid updating action to prevent useEffect retrigger
-     setStep(stepIndex);
-     updateLocalStorageObject(vaultData.id, {
-       vaultId: vaultData.id,
-       step: stepIndex,
-     });
-   }
- };
+          if (
+            stepData.status === "completed" &&
+            stepIndex < actionMapping.length
+          ) {
+            setStep(stepIndex);
+            updateLocalStorageObject(vaultData.id, {
+              vaultId: vaultData.id,
+              step: stepIndex,
+            });
+          }
+        };
 
         const result = await blockpi.trackTransactionSequenceWithProgress(
           crosschainInvestHash,
@@ -787,50 +808,73 @@ export default function InteractionContainer({
           vaultData.protocol.chainId,
         );
 
-        if (result.success) {
-          const finalAction =
-            transactionType === "deposit" ? Action.deposited : Action.withdrew;
+if (result.success) {
+  const finalAction =
+    transactionType === "deposit" ? Action.deposited : Action.withdrew;
 
-          setAction(finalAction);
-          setStep(actionMapping.length - 1);
+  useTransactionStore.setState((prev) => {
+    const updatedFeedback = { ...prev.transactionStepFeedback };
 
+    if (!updatedFeedback[finalAction]) {
+      const finalDescription = isDeposit
+        ? "Final confirmation completed, shares issued by vault"
+        : "Withdrawal confirmation completed, funds returned";
+
+      const finalTxHash =
+        Object.values(prev.transactionStepFeedback)
+          .reverse()
+          .find(
+            (step) =>
+              step &&
+              step.status === TransactionStepStatus.completed &&
+              step.txHash,
+          )?.txHash || crosschainInvestHash;
+
+      updatedFeedback[finalAction] = {
+        label: transactionType === "deposit" ? "Deposit" : "Withdraw",
+        description: finalDescription,
+        status: TransactionStepStatus.completed,
+        txHash: finalTxHash,
+      };
+    }
+
+    setLastTransactionStepFeedback(updatedFeedback);
+
+    updateLocalStorageObject(vaultData.id, {
+      vaultId: vaultData.id,
+      transactionStepFeedback: updatedFeedback,
+      lastTransactionStepFeedback: updatedFeedback,
+    });
+
+    return { transactionStepFeedback: updatedFeedback };
+  });
+
+  setFinishedTransaction(true);
+  setIsTransactionProcessing(false);
+  setIsFailedOnCOnfirmation(false);
+  setTransactionCompleted(true);
+
+  setTimeout(() => {
+    refreshBalance();
+  }, 2000);
+
+  trackEvent("Transaction Crosschain Complete", {
+    vaultSymbol: vaultData.symbol,
+    vault: vaultData.id,
+    type: transactionType,
+  });
+        } else {
           useTransactionStore.setState((prev) => {
             setLastTransactionStepFeedback(prev.transactionStepFeedback);
             updateLocalStorageObject(vaultData.id, {
               vaultId: vaultData.id,
+              failedTransaction: true,
               transactionStepFeedback: prev.transactionStepFeedback,
               lastTransactionStepFeedback: prev.transactionStepFeedback,
             });
-
             return { transactionStepFeedback: prev.transactionStepFeedback };
           });
-
-          setFinishedTransaction(true);
-          setIsTransactionProcessing(false);
-
-          updateLocalStorageObject(vaultData.id, null);
-          setIsFailedOnCOnfirmation(false);
-
-          setTransactionCompleted(true);
-
-          // Also call manual refresh for good measure
-          setTimeout(() => {
-            refreshBalance();
-          }, 2000);
-
-          trackEvent("Transaction Crosschain Complete", {
-            vaultSymbol: vaultData.symbol,
-            vault: vaultData.id,
-            type: transactionType,
-          });
-        } else {
-          useTransactionStore.setState((prev) => {
-            setLastTransactionStepFeedback(prev.transactionStepFeedback);
-            updateLocalStorageObject(vaultData.id, null);
-
-            return { transactionStepFeedback: prev.transactionStepFeedback };
-          });
-
+          setFailedTransaction(true);
           setFinishedTransaction(true);
           setIsTransactionProcessing(false);
           setIsTransactionStarted(false);
@@ -1031,7 +1075,8 @@ function Interaction({
   const { openStep, setChain } = useAuthStore();
   const { selectedChain, activeEvmWallet: activeAccount } = useMultiChain();
   const [isMobile, setIsMobile] = useState(false);
-  const { setIsFailedOnCOnfirmation } = useTransactionStore();
+  const { setIsFailedOnCOnfirmation, setFailedTransaction } =
+    useTransactionStore();
   const priceContext = useTokenPrices();
 
   useEffect(() => {
@@ -1151,6 +1196,12 @@ function Interaction({
         setTimeout(() => {
           setAction(actions[nextStep]);
           setStep(nextStep);
+
+          updateLocalTransactionFeedback(
+            actions[nextStep],
+            TransactionStepStatus.processing,
+            "Cross chain transfer in progress...",
+          );
         }, 50);
       } else if (isType2Flow) {
         setTimeout(() => {
@@ -1219,14 +1270,19 @@ function Interaction({
       }
 
       // Reset transaction state to allow retry
+      const currentFeedback =
+        useTransactionStore.getState().transactionStepFeedback;
       updateLocalStorageObject(vaultData.id, {
+        vaultId: vaultData.id,
         isTransactionProcessing: false,
         isTransactionStarted: false,
-        transactionStepFeedback: {},
+        transactionStepFeedback: currentFeedback,
+        lastTransactionStepFeedback: currentFeedback,
       });
+
       setIsTransactionProcessing(false);
       setIsTransactionStarted(false);
-      setTransactionStepFeedback({});
+      setLastTransactionStepFeedback(currentFeedback);
     }
   }
 
@@ -1342,33 +1398,31 @@ function Interaction({
     await interactionPostHook(!!success, !currenAction);
   }
 
-  const handleDone = useCallback(() => {
-    // Mark component as inactive to prevent any ongoing BlockPI updates
-    isComponentActiveRef.current = false;
-    isTrackingActiveRef.current = false;
+  // const handleDone = useCallback(() => {
+  //   // Mark component as inactive to prevent any ongoing BlockPI updates
+  //   isComponentActiveRef.current = false;
+  //   isTrackingActiveRef.current = false;
 
-    // Clear component state
-    setLastTransactionStepFeedback({});
-    setTransactionStepFeedback({});
-    setFinishedTransaction(false);
-    setCurrentVaultId(null);
+  //   // Clear component state
+  //   setLastTransactionStepFeedback({});
+  //   setTransactionStepFeedback({});
+  //   setFinishedTransaction(false);
+  //   setCurrentVaultId(null);
 
-    setTransactionCompleted(true);
+  //   setTransactionCompleted(true);
 
-    setIsTransactionProcessing(false);
-    setIsTransactionStarted(false);
-    setCrosschainInvestHash("");
-    setcrossChainTxId("");
+  //   setIsTransactionProcessing(false);
+  //   setIsTransactionStarted(false);
+  //   setCrosschainInvestHash("");
+  //   setcrossChainTxId("");
 
-    updateLocalStorageObject(vaultData.id, null);
+  //   // Reactivate component after clearing
+  //   setTimeout(() => {
+  //     isComponentActiveRef.current = true;
+  //   }, 100);
 
-    // Reactivate component after clearing
-    setTimeout(() => {
-      isComponentActiveRef.current = true;
-    }, 100);
-
-    refreshBalance();
-  }, [refreshBalance, vaultData?.id, setCurrentVaultId]);
+  //   refreshBalance();
+  // }, [refreshBalance, vaultData?.id, setCurrentVaultId]);
 
   const handleWalletConnect = () => {
     setChain(activeChain);
@@ -1406,7 +1460,7 @@ function Interaction({
         </>
       )}
 
-      {finishedTransaction &&
+      {/* {finishedTransaction &&
       (Object.keys(lastTransactionStepFeedback).length > 0 ||
         Object.keys(transactionStepFeedback).length > 0) ? (
         <Button
@@ -1416,51 +1470,49 @@ function Interaction({
         >
           Done
         </Button>
-      ) : (
-        (() => {
-          const isDisabledByProcessing = isTransactionProcessing;
-          const isDisabledByHash =
-            crosschainInvestHash?.length > 0 && !finishedTransaction;
+      ) : ( */}
+      {(() => {
+        const isDisabledByProcessing = isTransactionProcessing;
+        const isDisabledByHash =
+          crosschainInvestHash?.length > 0 && !finishedTransaction;
 
-          const isDisabledByValidation =
-            !inputToken ||
-            !inputBalance.formatted ||
-            Number(inputBalance.formatted) <= 0 ||
-            !!errorMessage;
+        const isDisabledByValidation =
+          !inputToken ||
+          !inputBalance.formatted ||
+          Number(inputBalance.formatted) <= 0 ||
+          !!errorMessage;
 
-          const isConnectWalletSHown =
-            (!activeAccount && !walletContext.publicKey) ||
-            (activeAccount?.walletClientType === "privy" &&
-              activeChain?.id !== zetachain.id) ||
-            (walletContext.publicKey &&
-              activeChain?.id !== CHAIN_ID["solana"]) ||
-            (activeAccount?.address && activeChain?.id === CHAIN_ID["solana"]);
+        const isConnectWalletSHown =
+          (!activeAccount && !walletContext.publicKey) ||
+          (activeAccount?.walletClientType === "privy" &&
+            activeChain?.id !== zetachain.id) ||
+          (walletContext.publicKey && activeChain?.id !== CHAIN_ID["solana"]) ||
+          (activeAccount?.address && activeChain?.id === CHAIN_ID["solana"]);
 
-          const isDisabled = !isConnectWalletSHown
-            ? isButtonDisabled ||
-              isDisabledByProcessing ||
-              isDisabledByHash ||
-              isDisabledByValidation
-            : false;
+        const isDisabled = !isConnectWalletSHown
+          ? isButtonDisabled ||
+            isDisabledByProcessing ||
+            isDisabledByHash ||
+            isDisabledByValidation
+          : false;
 
-          return (
-            <Button
-              variant="special"
-              disabled={isDisabled}
-              className="w-full mt-10 md:mt-[47px] !text-[16px] !font-bold !font-gotham !max-h-[48px] md:!max-h-[54px]"
-              onClick={() => {
-                !isConnectWalletSHown
-                  ? handleMainAction()
-                  : handleWalletConnect();
-              }}
-            >
-              {!isConnectWalletSHown
-                ? (label ?? (isDeposit ? "Invest" : "Withdraw"))
-                : "Connect wallet"}
-            </Button>
-          );
-        })()
-      )}
+        return (
+          <Button
+            variant="special"
+            disabled={isDisabled}
+            className="w-full mt-10 md:mt-[47px] !text-[16px] !font-bold !font-gotham !max-h-[48px] md:!max-h-[54px]"
+            onClick={() => {
+              !isConnectWalletSHown
+                ? handleMainAction()
+                : handleWalletConnect();
+            }}
+          >
+            {!isConnectWalletSHown
+              ? (label ?? (isDeposit ? "Invest" : "Withdraw"))
+              : "Connect wallet"}
+          </Button>
+        );
+      })()}
     </>
   );
 
@@ -1596,6 +1648,16 @@ function Interaction({
             inputSymbol: inputToken?.symbol || "",
             outputSymbol: vaultData.symbol,
           });
+          updateLocalStorageObject(vaultData.id, {
+            finalTransactionData: {
+              inputAmount: inputBalance.formatted,
+              outputAmount: outputAmountFormatted,
+              inputSymbol: inputToken?.symbol || "",
+              outputSymbol: vaultData.symbol,
+              isDeposit: true,
+              timestamp: Date.now(),
+            },
+          });
           const result = await handleDepositTransaction(
             vaultData,
             inputBalance,
@@ -1609,6 +1671,7 @@ function Interaction({
             setInputBalance,
             setLastEventTxHash,
             setFailedOnConfirmation,
+            setFailedTransaction,
             priceContext,
           );
           return result;
@@ -1620,6 +1683,16 @@ function Interaction({
             outputAmount: outputAmountFormatted,
             inputSymbol: inputToken?.symbol || "",
             outputSymbol: vaultData.symbol,
+          });
+          updateLocalStorageObject(vaultData.id, {
+            finalTransactionData: {
+              inputAmount: inputBalance.formatted,
+              outputAmount: outputAmountFormatted,
+              inputSymbol: inputToken?.symbol || "",
+              outputSymbol: vaultData.symbol,
+              isDeposit: false, 
+              timestamp: Date.now(),
+            },
           });
           const result = await handleWithdrawTransaction(
             vaultData,
@@ -1634,6 +1707,7 @@ function Interaction({
             setInputBalance,
             setLastEventTxHash,
             setFailedOnConfirmation,
+            setFailedTransaction,
           );
           return result;
         };

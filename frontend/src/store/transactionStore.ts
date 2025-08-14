@@ -4,6 +4,7 @@ import { create } from "zustand";
 interface TransactionState {
   currentVaultId: string | null;
   finishedTransaction: boolean;
+  failedTransaction: boolean;
   lastTransactionStepFeedback: TransactionStepMessages;
   transactionStepFeedback: TransactionStepMessages;
   isTransactionProcessing: boolean;
@@ -38,6 +39,7 @@ interface TransactionState {
   setCurrentVaultId: (vaultId: string | null) => void;
   setIsTransactionProcessing: (isTransactionProcessing: boolean) => void;
   setFinishedTransaction: (finishedTransaction: boolean) => void;
+  setFailedTransaction: (failedTransaction: boolean) => void;
   setTransactionStepFeedback: (
     transactionStepFeedback: TransactionStepMessages,
   ) => void;
@@ -87,6 +89,7 @@ interface TransactionState {
 export const useTransactionStore = create<TransactionState>((set) => ({
   currentVaultId: null,
   finishedTransaction: false,
+  failedTransaction: false,
   lastTransactionStepFeedback: {},
   transactionStepFeedback: {},
   isTransactionProcessing: false,
@@ -104,6 +107,7 @@ export const useTransactionStore = create<TransactionState>((set) => ({
   setIsTransactionProcessing: (isTransactionProcessing) =>
     set({ isTransactionProcessing }),
   setFinishedTransaction: (finishedTransaction) => set({ finishedTransaction }),
+  setFailedTransaction: (failedTransaction) => set({ failedTransaction }),
   setTransactionStepFeedback: (transactionStepFeedback) =>
     set({ transactionStepFeedback }),
   setLastTransactionStepFeedback: (lastTransactionStepFeedback) =>
