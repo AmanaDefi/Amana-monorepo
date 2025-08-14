@@ -1,115 +1,62 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { VaultData } from '@/types/types';
-import { ExponentialRiskRating } from '@/types/exponentialTypes';
-import { apiService } from '@/service';
-import { EXPONENTIAL_TO_RISK_LEVEL } from '@/types/exponentialTypes';
-import { RISK_RATING_CONFIG } from '@/config/riskRatingConfig';
+import { useState, useEffect, useMemo } from "react";
+import { VaultData } from "@/types/types";
+import { exponentialApi } from "@/service/exponentialApi";
 
-interface UseRiskRatingsOptions {
+interface UseRiskRatingsProps {
   vaults: VaultData[];
   enabled?: boolean;
-  showProtocolRisk?: boolean;
-  showAssetRisk?: boolean;
 }
 
-interface UseRiskRatingsReturn {
-  riskRatings: Map<string, ExponentialRiskRating | null>;
-  isLoading: boolean;
-  error: string | null;
-  refetch: () => Promise<void>;
-  getRiskLevel: (vaultId: string) => number | null;
-}
-
-export const useRiskRatings = ({
-  vaults,
-  enabled = RISK_RATING_CONFIG.enabled,
-  showProtocolRisk = RISK_RATING_CONFIG.showProtocolRisk,
-  showAssetRisk = RISK_RATING_CONFIG.showAssetRisk,
-}: UseRiskRatingsOptions): UseRiskRatingsReturn => {
-  const [riskRatings, setRiskRatings] = useState<Map<string, ExponentialRiskRating | null>>(new Map());
+export function useRiskRatings({ vaults, enabled = true }: UseRiskRatingsProps) {
+  const [riskRatings, setRiskRatings] = useState<Map<string, any>>(new Map());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Create a stable key from the list of vault IDs to avoid refetching on every render
-  const vaultKey = useMemo(() => {
-    if (!vaults || vaults.length === 0) return '';
-    try {
-      return vaults.map(v => v.id.toLowerCase()).sort().join(',');
-    } catch {
-      return String(vaults.length);
-    }
-  }, [vaults]);
-
-  const fetchRiskRatings = useCallback(async () => {
-    if (!enabled || vaults.length === 0) {
-      console.log('[useRiskRatings] Skipping fetch - disabled or no vaults');
-      return;
-    }
-
-    // Debug mode: limit to single vault id if configured
-    let targetVaults = vaults;
-    if (RISK_RATING_CONFIG.debugOnlyVaultId) {
-      targetVaults = vaults.filter(v => v.id.toLowerCase() === RISK_RATING_CONFIG.debugOnlyVaultId);
-      if (targetVaults.length === 0) {
-        console.log('[useRiskRatings] Debug filter active; current page has no matching vault. Skipping.');
-        return;
-      }
-    }
-
-    console.log(`[useRiskRatings] Starting fetch for ${targetVaults.length} vaults`);
-    console.log('[useRiskRatings] Configuration:', {
-      enabled,
-      showProtocolRisk,
-      showAssetRisk,
-      vaultCount: targetVaults.length,
-      debugOnlyVaultId: RISK_RATING_CONFIG.debugOnlyVaultId || null,
-    });
-    
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      console.log(`[useRiskRatings] Fetching risk ratings for ${targetVaults.length} vaults`);
-      const ratings = await apiService.exponential.getBatchRiskRatings(targetVaults);
-      console.log('[useRiskRatings] Received ratings:', ratings);
-      console.log('[useRiskRatings] Ratings summary:', {
-        total: ratings.size,
-        successful: Array.from(ratings.values()).filter(r => r !== null).length,
-        failed: Array.from(ratings.values()).filter(r => r === null).length
-      });
-      setRiskRatings(ratings);
-    } catch (err) {
-      console.error('[useRiskRatings] Error fetching risk ratings:', err);
-      setError('Failed to load risk ratings');
-      // Clear existing ratings on error
-      setRiskRatings(new Map());
-    } finally {
-      setIsLoading(false);
-    }
-  }, [vaultKey, enabled, showProtocolRisk, showAssetRisk]);
-
-  const getRiskLevel = useCallback((vaultId: string): number | null => {
-    const rating = riskRatings.get(vaultId);
-    if (!rating) return null;
-
-    // Convert Exponential rating to your A/B/C format
-    const riskLevel = EXPONENTIAL_TO_RISK_LEVEL[rating?.poolRating || 'A'] || null;
-    return riskLevel;
-  }, [riskRatings]);
-
-  const refetch = useCallback(async () => {
-    await fetchRiskRatings();
-  }, [fetchRiskRatings]);
+  const vaultKey = useMemo(() => vaults.map(v => v.id).sort().join(','), [vaults]);
 
   useEffect(() => {
-    fetchRiskRatings();
-  }, [fetchRiskRatings]);
+    if (!enabled || vaults.length === 0) return;
+
+    const fetchRatings = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      const newRatings = new Map<string, any>();
+
+      for (const vault of vaults) {
+        try {
+          const rating = await exponentialApi.getRiskRating(vault);
+          if (rating) {
+            newRatings.set(vault.id, {
+              poolRating: rating.data?.pool_rating,
+              poolRatingColor: rating.data?.pool_rating_color,
+              poolRatingDescription: rating.data?.pool_rating_description,
+              poolUrl: rating.data?.pool_url,
+            });
+          }
+          // Add delay between requests to be conservative
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (err) {
+          console.error(`Failed to fetch rating for vault ${vault.id}:`, err);
+        }
+      }
+
+      setRiskRatings(newRatings);
+      setIsLoading(false);
+    };
+
+    fetchRatings();
+  }, [vaultKey, enabled]);
+
+  const getRiskLevel = (vaultId: string) => {
+    const rating = riskRatings.get(vaultId);
+    return rating?.poolRating || null;
+  };
 
   return {
     riskRatings,
     isLoading,
     error,
-    refetch,
     getRiskLevel,
   };
-};
+}

@@ -1,7 +1,7 @@
 import { SearchParams } from "@/types/types";
 import BaseAPI from "./baseApi";
 import Blockpi from "./blockpi";
-import exponentialApi from "./exponentialApi";
+import { exponentialApi } from "./exponentialApi";
 
 class APIService {
   public api: BaseAPI;

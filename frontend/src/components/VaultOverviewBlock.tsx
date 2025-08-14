@@ -1,11 +1,10 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { VaultAPY, VaultTotalAssets, VaultData } from "@/types/types";
+import { ExponentialRiskRating } from "@/types/exponentialTypes";
 import { formatNumberWithSuffix } from "@/utils/utils";
 import classNames from "classnames";
-import { calculateRiskLevel } from "./VaultsWrapper";
 import { InfoBlock } from "./VaultsWrapper/components/InfoBlock.tsx";
-import { RISK_LEVELS } from "./VaultsGrid";
 
 import PointsIcon from "./svg/PointsIcon";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
@@ -18,6 +17,7 @@ type Props = {
   isLoading?: boolean;
   isDeposit?: boolean;
   isReward?: boolean;
+  riskRating?: ExponentialRiskRating | null;
 };
 
 const SkeletonBox: React.FC<{ className?: string }> = ({ className = "" }) => (
@@ -70,9 +70,9 @@ export const VaultOverviewBlock: React.FC<Props> = ({
   isLoading = false,
   isDeposit,
   isReward = false,
+  riskRating,
 }) => {
   const apyValue = Number(vaultAPY?.APY7d || 0);
-  const riskRating = calculateRiskLevel(vault);
 
   // Get token price for USD conversion
   const tokenPrice = useTokenPriceBySymbol(vault.inputToken.symbol);
@@ -138,24 +138,52 @@ export const VaultOverviewBlock: React.FC<Props> = ({
               Risk
             </p>
             <InfoBlock isMiddle>
-              💡 Risk Rating: {riskRating} <br />
-              This vault has low protocol and slippage risk. Risk scores are
-              based on volatility, smart contract audits, and liquidity depth.
+              <div>
+                <strong>💡 Risk Rating</strong><br/>
+                {riskRating?.poolRating || "-"}
+                {riskRating?.poolUrl && (
+                  <>
+                    {" "}
+                    <a
+                      href={riskRating.poolUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline text-blue-400"
+                    >
+                      details
+                    </a>
+                  </>
+                )}
+                <br/>
+                {riskRating?.poolRatingDescription || ""}
+              </div>
             </InfoBlock>
           </div>
           {isLoading ? (
             <SkeletonBox className="h-6 w-6 rounded-full" />
           ) : (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3 }}
-              className="rounded-full bg-green-accent h-6 w-6 flex items-center justify-center pb-[2px]"
-            >
-              <p className="text-white font-bold text-lg leading-[18px]">
-                {RISK_LEVELS[riskRating]?.level}
-              </p>
-            </motion.div>
+            (() => {
+              const letter = riskRating?.poolRating || "-";
+              const color = (riskRating?.poolRatingColor || "gray").toLowerCase();
+              const colorClass =
+                color === "green"
+                  ? "bg-green-accent"
+                  : color === "yellow"
+                  ? "bg-yellow-400"
+                  : color === "red"
+                  ? "bg-red-500"
+                  : "bg-gray-500";
+              return (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3 }}
+                  className={`rounded-full ${colorClass} h-6 w-6 flex items-center justify-center pb-[2px]`}
+                >
+                  <p className="text-white font-bold text-lg leading-[18px]">{letter}</p>
+                </motion.div>
+              );
+            })()
           )}
         </div>
       </div>

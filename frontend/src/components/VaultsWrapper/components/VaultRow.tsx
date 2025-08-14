@@ -4,6 +4,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 
 import { VaultAPY, VaultData, VaultTotalAssets } from "@/types/types";
+import { ExponentialRiskRating } from "@/types/exponentialTypes";
 import { formatNumberWithSuffix } from "@/utils/utils";
 import FlashIcon from "@/components/svg/Flash";
 import { AppButton } from "@/components/button/AppButton";
@@ -15,10 +16,11 @@ type Props = {
   vault: VaultData;
   vaultAPYs: VaultAPY[];
   vaultTotalAssets: VaultTotalAssets[];
+  riskRatings?: Map<string, ExponentialRiskRating | null>;
 };
 
 export const VaultRow: FC<Props> = React.memo(
-  ({ vault, vaultAPYs, vaultTotalAssets }) => {
+  ({ vault, vaultAPYs, vaultTotalAssets, riskRatings }) => {
     const router = useRouter();
     const { walletAddress } = useMultiChain();
 
@@ -122,9 +124,25 @@ export const VaultRow: FC<Props> = React.memo(
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.3, duration: 0.3 }}
             >
-              <div className="rounded-full bg-green-accent h-6 w-6 flex items-center justify-center">
-                <p className="text-white font-bold text-lg leading-5 ">A</p>
-              </div>
+              {(() => {
+                const rating = riskRatings?.get(vault.id) || null;
+                console.log("rating", rating);
+                const letter = rating?.poolRating || "-";
+                const color = (rating?.poolRatingColor || "gray").toLowerCase();
+                const colorClass =
+                  color === "green"
+                    ? "bg-green-accent"
+                    : color === "yellow"
+                    ? "bg-yellow-400"
+                    : color === "red"
+                    ? "bg-red-500"
+                    : "bg-gray-500";
+                return (
+                  <div className={`rounded-full ${colorClass} h-6 w-6 flex items-center justify-center`}>
+                    <p className="text-white font-bold text-lg leading-5 ">{letter}</p>
+                  </div>
+                );
+              })()}
             </motion.div>
           </div>
 

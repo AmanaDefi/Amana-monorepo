@@ -262,25 +262,21 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   }, [filteredVaults, currentPage, itemsPerPage]);
 
   // Fetch ratings only for the current page slice
-  const { riskRatings, isLoading: riskLoading, getRiskLevel } = useRiskRatings({
+  const { riskRatings, isLoading: riskLoading } = useRiskRatings({
     vaults: currentPageSlice,
     enabled: true,
-  });
-  console.log('[VaultsWrapper] useRiskRatings:', {
-    vaultCount: currentPageSlice.length,
-    ratingsCount: riskRatings.size,
-    isLoading: riskLoading,
   });
 
   // Build risk map AFTER ratings are available
   const riskMap = useMemo(() => {
     const map = new Map<string, number>();
     currentPageSlice.forEach((vault) => {
-      const level = getRiskLevel(vault.id) ?? calculateRiskLevel(vault);
+      const rating = riskRatings.get(vault.id);
+      const level = rating?.poolRating || 1; // Default to 1 if no rating
       map.set(vault.id, level);
     });
     return map;
-  }, [currentPageSlice, getRiskLevel]);
+  }, [currentPageSlice, riskRatings]);
 
   const sortedVaults = useMemo(() => {
     const getSortValue = (vault: VaultData) => {
@@ -453,6 +449,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
                 vaultAPYs={vaultAPYs}
                 vaultTotalAssets={vaultTotalAssets}
                 userVaultBalances={userVaultBalances}
+                riskRating={riskRatings.get(vault.id) || null}
               />
             </div>
           ))}
@@ -479,6 +476,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
             vault={vault}
             vaultAPYs={vaultAPYs}
             vaultTotalAssets={vaultTotalAssets}
+            riskRatings={riskRatings}
           />
         ))}
       </div>

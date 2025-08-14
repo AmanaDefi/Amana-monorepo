@@ -71,6 +71,7 @@ import Image from "next/image";
 import { useAuthStore } from "@/store/authStore";
 import { AiOutlineConsoleSql } from "react-icons/ai";
 import { useExternalTVL } from "@/hooks/useExternalTVL";
+import { useRiskRatings } from "@/hooks/useRiskRatings";
 
 const VaultsDetailContainer: React.FC<{
   vaultID: string | string[];
@@ -453,6 +454,14 @@ const shouldShowTransactionComplete = useMemo(() => {
   
   const currentTransactionInfo = isDeposit ? lastDepositInfo : lastWithdrawInfo;
 
+  // Fetch risk rating for this vault
+  const { riskRatings } = useRiskRatings({
+    vaults: vaultData ? [vaultData] : [],
+    enabled: !!vaultData,
+  });
+
+  const vaultRiskRating = vaultData ? riskRatings.get(vaultData.id) : null;
+
   return vaultData ? (
     <div className=" font-gotham">
       {!walletAddress && <InvestBlock />}
@@ -718,6 +727,7 @@ const shouldShowTransactionComplete = useMemo(() => {
                   }
                   isDeposit={isDeposit}
                   isReward={true}
+                  riskRating={vaultRiskRating}
                 />
               </div>
               <div className="hidden md:block">
@@ -735,6 +745,7 @@ const shouldShowTransactionComplete = useMemo(() => {
                     }
                     isDeposit={isDeposit}
                     isReward={true}
+                    riskRating={vaultRiskRating}
                   />
                 </VaultCardInfoBlock>
               </div>
