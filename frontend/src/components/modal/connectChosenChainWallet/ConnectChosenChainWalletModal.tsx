@@ -18,7 +18,7 @@ import {
 } from "@solana/wallet-adapter-base";
 import { ConnectorIcon } from "../allWallets/components/ConnectorIcon";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { CHAIN_ID } from "@/constants/chainConfig";
+import { CHAIN_ID, solanaChain } from "@/constants/chainConfig";
 import { useEffect } from "react";
 
 const ConnectChosenChain = () => {
@@ -162,6 +162,10 @@ const ConnectChosenChain = () => {
     try {
       await connectSolana();
       select(connector.name);
+      if (fundWalletStep === "reconnectChain" || fundWalletStep) {
+        const { setChain } = useFundWalletStore.getState();
+        setChain(solanaChain);
+      }
       closeAll();
     } catch (error) {
       console.error("Error during Solana wallet selection preparation:", error);

@@ -12,7 +12,11 @@ import { useFundWalletStore } from "@/store/fundWalletStore";
 import { showInfoToast } from "@/toasts";
 
 import { ConnectorIcon } from "./components/ConnectorIcon";
-import { CHAIN_ID, solanaChain } from "@/constants/chainConfig";
+import {
+  APPROVED_TOKENS,
+  CHAIN_ID,
+  solanaChain,
+} from "@/constants/chainConfig";
 import { useEffect, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -22,9 +26,6 @@ import {
   WalletReadyState,
 } from "@solana/wallet-adapter-base";
 import { useMultiChain } from "@/providers/MultiChainProvider";
-import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
-import { Chain } from "viem";
-import { Token } from "@/types/types";
 
 const AllWAllets = () => {
   const [isMobile, setIsMobile] = useState(false);
@@ -48,9 +49,8 @@ const AllWAllets = () => {
     setWalletAddress,
     chain,
     setChain,
-    setCurrency, 
+    setCurrency,
   } = useFundWalletStore();
-  const { openModal: openChainsModal } = useChainTokenModalStore();
   const { connectSolana, activeEvmWallet: activeAccount } = useMultiChain();
 
   const { logout } = usePrivy();
@@ -65,12 +65,7 @@ const AllWAllets = () => {
     connected,
   } = useWallet();
 
-  const onSelectChainAndToken = (
-    selectedChain: Chain,
-    selectedToken: Token,
-  ) => {
-    setChain(selectedChain);
-    setCurrency(selectedToken);
+  const fundWalletConnect = () => {
     setStep("confirm");
   };
 
@@ -83,15 +78,7 @@ const AllWAllets = () => {
       onSuccess: (result) => {
         if (fundWalletStep === "connectWallet") {
           setWalletAddress(result.accounts[0]);
-          openChainsModal(
-            null,
-            null,
-            undefined,
-            onSelectChainAndToken,
-            undefined,
-            true,
-          );
-          return;
+          return fundWalletConnect();
         }
 
         return successAuth(null, activeAccount || undefined, true);
@@ -122,6 +109,7 @@ const AllWAllets = () => {
 
     setActiveConnector(connector);
     localStorage.setItem("connectorId", connector.id);
+
     connect(
       {
         connector,
@@ -176,24 +164,21 @@ const AllWAllets = () => {
     try {
       await connectSolana();
       select(connector.name);
-      await new Promise((resolve) => setTimeout(resolve, 150));
 
       if (fundWalletStep === "connectWallet") {
         setChain(solanaChain);
 
-        setTimeout(() => {
-          if (publicKey) {
-            setWalletAddress(publicKey.toString());
-          }
-          openChainsModal(
-            solanaChain,
-            null,
-            undefined,
-            onSelectChainAndToken,
-            undefined,
-            true,
-          );
-        }, 100);
+        if (publicKey) {
+          setWalletAddress(publicKey.toString());
+        }
+        const solanaTokens = APPROVED_TOKENS[CHAIN_ID["solana"]] || [];
+        const defaultToken = solanaTokens[0];
+        if (defaultToken) {
+          setCurrency(defaultToken);
+        }
+
+        setStep("setValues");
+        return;
       }
     } catch (error) {
       console.log(error);
