@@ -22,6 +22,9 @@ import {
   WalletReadyState,
 } from "@solana/wallet-adapter-base";
 import { useMultiChain } from "@/providers/MultiChainProvider";
+import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
+import { Chain } from "viem";
+import { Token } from "@/types/types";
 
 const AllWAllets = () => {
   const [isMobile, setIsMobile] = useState(false);
@@ -45,7 +48,9 @@ const AllWAllets = () => {
     setWalletAddress,
     chain,
     setChain,
+    setCurrency, 
   } = useFundWalletStore();
+  const { openModal: openChainsModal } = useChainTokenModalStore();
   const { connectSolana, activeEvmWallet: activeAccount } = useMultiChain();
 
   const { logout } = usePrivy();
@@ -60,7 +65,12 @@ const AllWAllets = () => {
     connected,
   } = useWallet();
 
-  const fundWalletConnect = () => {
+  const onSelectChainAndToken = (
+    selectedChain: Chain,
+    selectedToken: Token,
+  ) => {
+    setChain(selectedChain);
+    setCurrency(selectedToken);
     setStep("confirm");
   };
 
@@ -73,7 +83,15 @@ const AllWAllets = () => {
       onSuccess: (result) => {
         if (fundWalletStep === "connectWallet") {
           setWalletAddress(result.accounts[0]);
-          return fundWalletConnect();
+          openChainsModal(
+            null,
+            null,
+            undefined,
+            onSelectChainAndToken,
+            undefined,
+            true,
+          );
+          return;
         }
 
         return successAuth(null, activeAccount || undefined, true);
@@ -158,7 +176,7 @@ const AllWAllets = () => {
     try {
       await connectSolana();
       select(connector.name);
-      solanaConnect();
+      await new Promise((resolve) => setTimeout(resolve, 150));
 
       if (fundWalletStep === "connectWallet") {
         setChain(solanaChain);
@@ -167,9 +185,15 @@ const AllWAllets = () => {
           if (publicKey) {
             setWalletAddress(publicKey.toString());
           }
+          openChainsModal(
+            solanaChain,
+            null,
+            undefined,
+            onSelectChainAndToken,
+            undefined,
+            true,
+          );
         }, 100);
-
-        setStep("setValues");
       }
     } catch (error) {
       console.log(error);
@@ -212,8 +236,6 @@ const AllWAllets = () => {
       </div>
     </div>
   );
-
-  console.log(filteredEvmConnectors);
 
   return (
     <Modal

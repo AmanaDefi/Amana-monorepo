@@ -163,6 +163,13 @@ export const Deposit = () => {
     }
   };
 
+  const getButtonText = () => {
+    if (loading) return "Pending...";
+    if (step === "confirm") return "Confirm";
+    if (walletAddress && chain && currency) return "Confirm";
+    return "Connect Wallet";
+  };
+
   return (
     <>
       <Modal
@@ -210,12 +217,7 @@ export const Deposit = () => {
                 variant="reverse"
                 onClick={handlePressButton}
               >
-                {loading
-                  ? "Pending..."
-                  : step === "confirm" ||
-                      (isExternalWalletConnected && chain && currency)
-                    ? "Confirm"
-                    : "Connect Wallet"}
+                {getButtonText()}
               </AppButton>
             </div>
             {txError && (

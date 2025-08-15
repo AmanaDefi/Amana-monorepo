@@ -597,6 +597,17 @@ const isWalletConnected = useMemo(() => {
 
   const handleModalClose = () => {
     if (isTopUpModal) {
+      closeModal();
+
+      const { chain, currency, setCurrency } = useFundWalletStore.getState();
+      if (chain && !currency) {
+        const tokens = APPROVED_TOKENS[chain.id] || [];
+        const defaultToken = tokens[0];
+
+        if (defaultToken) {
+          setCurrency(defaultToken);
+        }
+      }
       const shouldGoToConfirm =
         fundWalletAddress && activeAccount?.walletClientType !== "privy";
       setFundWalletStep(shouldGoToConfirm ? "confirm" : "setValues");
