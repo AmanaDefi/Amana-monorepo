@@ -49,7 +49,15 @@ export default function ChainTokenSelector({
   };
 
   const currentChain = selectedChain;
-  const currentToken = selectedToken;
+
+  const shouldShowVaultToken =
+    vaultData?.inputToken &&
+    (!selectedToken || 
+      !selectedChain); 
+
+  const currentToken = shouldShowVaultToken
+    ? vaultData.inputToken
+    : selectedToken;
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     e.preventDefault();
@@ -72,7 +80,7 @@ export default function ChainTokenSelector({
     }
   };
 
-  if (!currentChain) {
+  if (!currentChain && !vaultData) {
     return (
       <div
         className={`flex items-center opacity-50 text-xs md:text-sm ${className}`}
