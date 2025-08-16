@@ -109,41 +109,66 @@ export const Deposit = () => {
     return false;
   })();
 
-const handleConfirm = async () => {
-  if (!chain || !currency || !depositAmount || !!error || !smartWalletAddress) {
-    console.log("Early return due to missing values");
-    return;
-  }
+  useEffect(() => {
+    if (step === "confirm" && chain) {
+      const isCurrentChainWalletConnected =
+        chain.name === "Solana"
+          ? !!walletContext.publicKey && walletContext.connected
+          : !!activeWallet && activeWallet.walletClientType !== "privy";
 
-  try {
-    setTxError(false);
-    setLoading(true);
-    const newAmt = parseUnits(depositAmount, currency?.decimals);
-
-    const result = await executeWalletTopup(
-      currency,
-      activeWallet,
-      chain,
-      smartWalletAddress,
-      newAmt,
-      walletContext,
-    );
-
-    if (result.transactionHash) {
-      setTxHash(result.transactionHash);
-      showSuccessToast("Successfully Topped Up");
-      setStep("finishDeposit");
-    } else {
-      console.log("No transaction hash, setting error");
-      setTxError(true);
+      if (!isCurrentChainWalletConnected) {
+        setStep("setValues");
+      }
     }
-  } catch (e) {
-    console.error("Transaction error:", e);
-    setTxError(true);
-  } finally {
-    setLoading(false);
-  }
-};
+  }, [
+    chain?.id,
+    step,
+    walletContext.publicKey,
+    walletContext.connected,
+    activeWallet,
+  ]);
+
+  const handleConfirm = async () => {
+    if (
+      !chain ||
+      !currency ||
+      !depositAmount ||
+      !!error ||
+      !smartWalletAddress
+    ) {
+      console.log("Early return due to missing values");
+      return;
+    }
+
+    try {
+      setTxError(false);
+      setLoading(true);
+      const newAmt = parseUnits(depositAmount, currency?.decimals);
+
+      const result = await executeWalletTopup(
+        currency,
+        activeWallet,
+        chain,
+        smartWalletAddress,
+        newAmt,
+        walletContext,
+      );
+
+      if (result.transactionHash) {
+        setTxHash(result.transactionHash);
+        showSuccessToast("Successfully Topped Up");
+        setStep("finishDeposit");
+      } else {
+        console.log("No transaction hash, setting error");
+        setTxError(true);
+      }
+    } catch (e) {
+      console.error("Transaction error:", e);
+      setTxError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
   const handlePressButton = () => {
     if (step === "confirm") {
       handleConfirm();
@@ -168,12 +193,12 @@ const handleConfirm = async () => {
     }
   };
 
- const getButtonText = () => {
-   if (loading) return "Pending...";
-   if (step === "confirm") return "Confirm";
-   if (isExternalWalletConnected && chain && currency) return "Confirm";
-   return "Connect Wallet";
- };
+  const getButtonText = () => {
+    if (loading) return "Pending...";
+    if (step === "confirm") return "Confirm";
+    if (isExternalWalletConnected && chain && currency) return "Confirm";
+    return "Connect Wallet";
+  };
 
   const { isOpen: isChainsModalOpen } = useChainTokenModalStore();
 
@@ -181,8 +206,8 @@ const handleConfirm = async () => {
     <>
       <Modal
         isOpen={
-    (step === "setValues" || step === "confirm") && !isChainsModalOpen
-  }
+          (step === "setValues" || step === "confirm") && !isChainsModalOpen
+        }
         onClose={handleClose}
         paddingClass="px-4 pt-5 pb-6"
         roundedClass="rounded-[16px]"
