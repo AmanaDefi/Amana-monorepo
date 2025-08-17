@@ -188,8 +188,6 @@ const TokenBalanceItem = React.memo(
       return `$${balanceUSD.toFixed(2)}`;
     }, [balanceUSD, balance]);
 
-
-
     return (
       <motion.div
         variants={itemVariants}
@@ -312,7 +310,11 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
   } = useFundWalletStore();
 
   const { publicKey } = useWallet();
-  const { activeChain, selectedChain, activeEvmWallet: activeAccount } = useMultiChain();
+  const {
+    activeChain,
+    selectedChain,
+    activeEvmWallet: activeAccount,
+  } = useMultiChain();
 
   const { openStep } = useAuthStore();
   const { setChain } = useAuthStore();
@@ -382,31 +384,36 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
     setTokenBalances(new Map());
   }, [selectedChainLocal?.id]);
 
-useEffect(() => {
-  if (isModalOpen) {
-    if (isTopUpModal) {
-      const { chain: fundWalletChain, currency: fundWalletCurrency } =
-        useFundWalletStore.getState();
+  useEffect(() => {
+    if (isModalOpen) {
+      if (isTopUpModal) {
+        const { chain: fundWalletChain, currency: fundWalletCurrency } =
+          useFundWalletStore.getState();
 
-      if (fundWalletChain) {
-        setSelectedChainLocal(fundWalletChain);
-      } else {
-        setSelectedChainLocal(null);
-      }
+        if (fundWalletChain) {
+          setSelectedChainLocal(fundWalletChain);
+        } else {
+          setSelectedChainLocal(null);
+        }
 
-      if (fundWalletCurrency) {
-        setSelectedTokenLocal(fundWalletCurrency);
+        if (fundWalletCurrency) {
+          setSelectedTokenLocal(fundWalletCurrency);
+        } else {
+          setSelectedTokenLocal(null);
+        }
       } else {
-        setSelectedTokenLocal(null);
+        setSelectedChainLocal(selectedChainFromModal || SUPPORTED_CHAINS[0]);
+        setSelectedTokenLocal(selectedTokenFromModal || null);
       }
-    } else {
-      setSelectedChainLocal(selectedChainFromModal || SUPPORTED_CHAINS[0]);
-      setSelectedTokenLocal(selectedTokenFromModal || null);
+      setSearchQuery("");
+      setTokenBalances(new Map());
     }
-    setSearchQuery("");
-    setTokenBalances(new Map());
-  }
-}, [isModalOpen, isTopUpModal, selectedChainFromModal, selectedTokenFromModal]);
+  }, [
+    isModalOpen,
+    isTopUpModal,
+    selectedChainFromModal,
+    selectedTokenFromModal,
+  ]);
 
   useEffect(() => {
     if (isTopUpModal && selectedChainLocal) {
@@ -446,16 +453,16 @@ useEffect(() => {
     [selectedChainLocal],
   );
 
- const filteredTokens = useMemo(() => {
-   if (!searchQuery) return availableTokens;
+  const filteredTokens = useMemo(() => {
+    if (!searchQuery) return availableTokens;
 
-   const query = searchQuery.toLowerCase();
-   return availableTokens.filter(
-     (token) =>
-       token.symbol.toLowerCase().startsWith(query) ||
-       token.address.toLowerCase().includes(query),
-   );
- }, [availableTokens, searchQuery]);
+    const query = searchQuery.toLowerCase();
+    return availableTokens.filter(
+      (token) =>
+        token.symbol.toLowerCase().startsWith(query) ||
+        token.address.toLowerCase().includes(query),
+    );
+  }, [availableTokens, searchQuery]);
 
   const sortedTokens = useMemo(() => {
     return [...filteredTokens].sort((a, b) => {
@@ -551,6 +558,10 @@ useEffect(() => {
     setChain(selectedChainLocal);
 
     const handleChainSwitching = () => {
+      if (isTopUpModal) {
+        return true;
+      }
+
       if (
         (selectedChain === "solana" &&
           activeChain?.id !== CHAIN_ID["solana"]) ||
@@ -579,24 +590,35 @@ useEffect(() => {
       openStep(window?.innerWidth < 768 ? "mobileOptionsA" : "optionsA");
     }
   };
-const isWalletConnected = useMemo(() => {
-  if (!selectedChainLocal) return false;
+  const isWalletConnected = useMemo(() => {
+    if (!selectedChainLocal) return false;
 
-  const isSolana = selectedChainLocal.name === "Solana";
+    const isSolana = selectedChainLocal.name === "Solana";
 
-  if (isSolana) {
-    return !!publicKey;
-  } else {
-    // EVM chains
-    if (isTopUpModal) {
-      return !!activeAccount && activeAccount.walletClientType !== "privy";
+    if (isSolana) {
+      return !!publicKey;
+    } else {
+      // EVM chains
+      if (isTopUpModal) {
+        return !!activeAccount && activeAccount.walletClientType !== "privy";
+      }
+      return !!activeAccount;
     }
-    return !!activeAccount;
-  }
-}, [selectedChainLocal, publicKey, activeAccount, isTopUpModal]);
+  }, [selectedChainLocal, publicKey, activeAccount, isTopUpModal]);
 
   const handleModalClose = () => {
     if (isTopUpModal) {
+      closeModal();
+
+      const { chain, currency, setCurrency } = useFundWalletStore.getState();
+      if (chain && !currency) {
+        const tokens = APPROVED_TOKENS[chain.id] || [];
+        const defaultToken = tokens[0];
+
+        if (defaultToken) {
+          setCurrency(defaultToken);
+        }
+      }
       const shouldGoToConfirm =
         fundWalletAddress && activeAccount?.walletClientType !== "privy";
       setFundWalletStep(shouldGoToConfirm ? "confirm" : "setValues");
