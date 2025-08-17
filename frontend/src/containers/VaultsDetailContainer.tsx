@@ -96,6 +96,7 @@ const VaultsDetailContainer: React.FC<{
   const [showMobileInvestment, setShowMobileInvestment] = useState(false);
   const { balance: hookWalletBalance, fetchBalance } =
     useMultichainTokenBalance(selectedToken);
+  
   const giftButtonRef = useRef<HTMLButtonElement>(null);
   const { openStep } = useAuthStore();
 
@@ -144,6 +145,12 @@ const VaultsDetailContainer: React.FC<{
     activeChain,
     activeEvmWallet: user,
   } = useMultiChain();
+
+  const { balance: vaultStatsBalance } = useMultichainTokenBalance(
+    activeChain?.id === 7000 || activeChain?.id === 7001
+      ? vaultData?.inputToken
+      : selectedToken,
+  );
 
   const vaultIdStr = Array.isArray(vaultID) ? vaultID[0] : vaultID;
 
@@ -717,8 +724,12 @@ const VaultsDetailContainer: React.FC<{
             selectedVaultId={vaultID.toString()}
             vaultAPYs={vaultAPYs}
             transactionCompleted={finishedTransaction}
-            selectedToken={selectedToken}
-            walletBalance={hookWalletBalance.formatted || "0"}
+            selectedToken={
+              activeChain?.id === 7000 || activeChain?.id === 7001
+                ? vaultData?.inputToken
+                : selectedToken
+            }
+            walletBalance={vaultStatsBalance.formatted || "0"}
             onDepositDataUpdate={handleDepositDataUpdate}
             isDeposit={isDeposit}
           />
@@ -899,8 +910,12 @@ const VaultsDetailContainer: React.FC<{
                 selectedVaultId={vaultID.toString()}
                 vaultAPYs={vaultAPYs}
                 transactionCompleted={finishedTransaction}
-                selectedToken={selectedToken}
-                walletBalance={hookWalletBalance.formatted || "0"}
+                selectedToken={
+                  activeChain?.id === 7000 || activeChain?.id === 7001
+                    ? vaultData?.inputToken
+                    : selectedToken
+                }
+                walletBalance={vaultStatsBalance.formatted || "0"}
                 onDepositDataUpdate={handleDepositDataUpdate}
                 isDeposit={isDeposit}
               />

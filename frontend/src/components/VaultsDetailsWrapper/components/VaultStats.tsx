@@ -12,6 +12,7 @@ import {
   fullTruncateTokenBalance,
   truncateNumber,
 } from "@/utils/truncateNumber";
+import { MiniSpinner } from "@/components/PendingDots";
 
 interface VaultStatsProps {
   vaultData: VaultData;
@@ -40,10 +41,12 @@ export default function VaultStats({
   isDeposit,
   walletBalance,
 }: VaultStatsProps): JSX.Element {
-  const { activeChain, walletAddress } = useMultiChain();
+  const { activeChain, walletAddress, isWalletSwitching } = useMultiChain();
   const [depositAmount, setDepositAmount] = useState("0");
   const lastVaultIdRef = useRef<string | null>(null);
   const lastActiveChainRef = useRef<number | null>(null);
+
+  const shouldShowSpinner = isWalletSwitching;
 
   // // Determine input token based on user selection or active chain
   // useEffect(() => {
@@ -246,14 +249,19 @@ export default function VaultStats({
         <LargeCardStat
           id="wallet"
           label="Your Wallet"
-          value={fullTruncateTokenBalance(
-            formattedWalletBalance,
-            symbol ? getOnlyTokenSymbol(symbol) : "",
-            3,
-            11,
-          )}
           tooltip="Value of deposit assets held in your wallet"
-        />
+        >
+          {shouldShowSpinner ? (
+            <MiniSpinner size={16} color="#3E73C4" />
+          ) : (
+            fullTruncateTokenBalance(
+              formattedWalletBalance,
+              symbol ? getOnlyTokenSymbol(symbol) : "",
+              3,
+              11,
+            )
+          )}
+        </LargeCardStat>
 
         <LargeCardStat
           id="rewards"

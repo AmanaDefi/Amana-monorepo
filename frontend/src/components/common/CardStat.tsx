@@ -3,9 +3,9 @@ import ResponsiveTooltip from "@/components/common/Tooltip";
 export interface CardStatProps {
   id: string;
   label: string;
-  value?: string;
+  value?: string | React.ReactNode;
   secondaryValue?: string;
-  children?: JSX.Element;
+  children?: React.ReactNode;
   tooltip?: string | JSX.Element;
   tooltipChild?: JSX.Element;
 }

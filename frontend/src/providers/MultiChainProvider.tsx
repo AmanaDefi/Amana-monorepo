@@ -86,6 +86,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const [balance, setBalance] = useState({ value: 0n, formatted: "0" });
   const { connectors } = useConnect();
   const [isWalletSwitching, setIsWalletSwitching] = useState(false);
+  const [isChainChanging, setIsChainChanging] = useState(false);
   const { disconnectAsync } = useDisconnect();
 
   const {
@@ -473,6 +474,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
 
   const switchToChain = useCallback(
     async (chain: Chain) => {
+      setIsChainChanging(true);
       try {
         if (chain.id === CHAIN_ID.solana) {
           setSelectedChain("solana");
@@ -527,6 +529,9 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         console.log("Error in switchToChain:", error);
         throw error;
       }
+     finally {
+      setTimeout(() => setIsChainChanging(false), 500);
+    }
     },
     [privyWallet],
   );
@@ -651,7 +656,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         isModalOpen,
         setIsModalOpen,
         switchToChain,
-        isWalletSwitching,
+        isWalletSwitching: isWalletSwitching || isChainChanging,
         refetchBalance: getEvmBalance,
         evmDisconnect: evmDisconnect,
         activeEvmWallet: privyWallet,

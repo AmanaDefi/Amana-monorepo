@@ -8,6 +8,7 @@ import ProfileDropdown from "./ProfileDropdown";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 import { AppModals } from "@/components/modal/AppModals";
+import { BreathingValue, MiniSpinner } from "@/components/PendingDots";
 
 const ProfileInfo = () => {
   const { walletAddress, activeChain, isWalletSwitching } = useMultiChain();
@@ -28,8 +29,11 @@ const ProfileInfo = () => {
     return undefined;
   }, [activeChain]);
 
-  const { balance, isLoading: isBalanceLoading } =
+  const { balance, isLoading } =
     useMultichainTokenBalance(nativeToken);
+  
+  
+  const shouldShowSpinner = isWalletSwitching || isLoading || !activeChain;
 
   const isConnected = !!walletAddress;
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -72,12 +76,19 @@ const ProfileInfo = () => {
               Total Portfolio
             </p>
             <div className="text-[32px] font-normal md:font-medium md:text-[24px] min-h-[40px] flex items-center">
-              <>
-                {balance?.formatted && Number(balance.formatted) > 0
-                  ? Number(balance.formatted).toFixed(4)
-                  : "0"}{" "}
-                {activeChain?.nativeCurrency?.symbol || ""}
-              </>
+              {shouldShowSpinner ? (
+                <div className="flex items-center gap-2">
+                  <MiniSpinner size={24} color="#3E73C4" />
+                  <span className="text-gray-400 text-lg">Loading...</span>
+                </div>
+              ) : (
+                <>
+                  {balance?.formatted && Number(balance.formatted) > 0
+                    ? Number(balance.formatted).toFixed(4)
+                    : "0"}{" "}
+                  {activeChain?.nativeCurrency?.symbol || ""}
+                </>
+              )}
             </div>
             {/* <p
               className={`md:hidden ${205.6 > 0 ? "text-[#05D47F]" : "text-white"}`}
