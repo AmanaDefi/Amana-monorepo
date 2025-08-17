@@ -29,7 +29,9 @@ export default function LargeCardStat({
       const valueElement = (
         <AnimatePresence mode="wait">
           <motion.p
-            key={value}
+            key={
+              typeof value === "string" ? value : `react-node-${Math.random()}`
+            }
             variants={valueVariants}
             initial="initial"
             animate="animate"
