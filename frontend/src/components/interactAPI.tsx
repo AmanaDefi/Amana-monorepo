@@ -50,7 +50,8 @@ import {
   useTokenPrices,
   TokenPriceContextType,
 } from "@/providers/TokenPriceProvider";
-import { useAccount } from "wagmi";
+import { useAccount, useWalletClient } from "wagmi";
+import { WalletClient } from "viem";
 
 function isHex(value: string): value is `0x${string}` {
   return typeof value === "string" && value.startsWith("0x");
@@ -71,6 +72,7 @@ const handleDepositTransaction = async (
   setFailedOnConfirmation: (value: boolean) => void,
   setFailedTransaction: (failed: boolean) => void,
   priceContext: TokenPriceContextType,
+  walletClient: WalletClient,
 ) => {
   if (!activeAccount) return;
   console.log("=== DEPOSIT TRANSACTION START ===");
@@ -93,6 +95,7 @@ const handleDepositTransaction = async (
         depositAmount,
         setcrossChainTxId,
         priceContext,
+        walletClient,
       );
     if (
       !receipt ||
@@ -248,6 +251,7 @@ const handleWithdrawTransaction = async (
   setLastEventTxHash: Function,
   setFailedOnConfirmation: (value: boolean) => void,
   setFailedTransaction: (failed: boolean) => void,
+  walletClient: WalletClient,
 ) => {
   setTransactionCompleted(false);
   updateLocalStorageObject(vaultData.id, { transactionCompleted: false });
@@ -280,6 +284,7 @@ const handleWithdrawTransaction = async (
         withdrawToken.address as Address,
         withdrawZRC20 as Token,
         setcrossChainTxId,
+        walletClient,
       );
 
     if (
@@ -1105,6 +1110,7 @@ function Interaction({
   const { setIsFailedOnCOnfirmation, setFailedTransaction } =
     useTransactionStore();
   const priceContext = useTokenPrices();
+  const { data: walletClient } = useWalletClient();
 
   useEffect(() => {
     const checkIsMobile = () => {
@@ -1316,11 +1322,30 @@ function Interaction({
   const { address: wagmiAddress, isConnected: wagmiConnected } = useAccount();
 
   async function handleMainAction(directAction?: Action) {
+     if (!walletClient) {
+       console.log("No wallet client found");
+       return;
+     }
     const currenAction = directAction ?? action;
+
+    console.log("MOBILE DEBUG:", {
+      action: currenAction,
+      processing: isTransactionProcessing,
+      hasToken: !!inputToken,
+      hasAccount: !!activeAccount,
+      walletAddr: walletAddress?.slice(0, 8),
+      wagmiConn: wagmiConnected,
+      wagmiAddr: wagmiAddress?.slice(0, 8),
+    });
+
     setIsFailedOnCOnfirmation(false);
     setFailedTransaction(false);
 
     if (isTransactionProcessing || !inputToken) {
+       console.log("BLOCKED:", {
+         processing: isTransactionProcessing,
+         noToken: !inputToken,
+       });
       return;
     }
 
@@ -1337,7 +1362,7 @@ function Interaction({
     if (currenAction === Action.deposit || currenAction === Action.withdraw) {
       setCurrentVaultId(vaultData.id);
       showWarningToast(
-        "📌 Please stay on this page to monitor progress across all networks!",
+        "Please stay on this page to monitor progress across all networks!",
       );
     }
 
@@ -1409,6 +1434,7 @@ function Interaction({
       console.error("Price context is not available");
       return;
     }
+
     const success = await handleInteraction(
       vaultData,
       inputBalance,
@@ -1424,6 +1450,7 @@ function Interaction({
       setLastEventTxHash,
       setIsFailedOnCOnfirmation,
       priceContext,
+      walletClient,
     )();
 
     await interactionPostHook(!!success, !currenAction);
@@ -1520,6 +1547,14 @@ function Interaction({
               activeAccount?.address ||
               (wagmiConnected && wagmiAddress)
             );
+        
+        console.log("WALLET STATE:", {
+          showConnect: isConnectWalletSHown,
+          walletAddr: !!walletAddress,
+          solana: walletContext.connected && !!walletContext.publicKey,
+          activeAcc: !!activeAccount?.address,
+          wagmi: wagmiConnected && !!wagmiAddress,
+        });
 
         // const isConnectWalletSHown =
         //   (!activeAccount && !walletContext.publicKey) ||
@@ -1542,6 +1577,11 @@ function Interaction({
             disabled={isDisabled}
             className="w-full mt-10 md:mt-[47px] !text-[16px] !font-bold !font-gotham !max-h-[48px] md:!max-h-[54px]"
             onClick={() => {
+              console.log("BUTTON CLICKED:", {
+                isConnectMode: isConnectWalletSHown,
+                disabled: isDisabled,
+              });
+
               !isConnectWalletSHown
                 ? handleMainAction()
                 : handleWalletConnect();
@@ -1666,6 +1706,7 @@ function Interaction({
     setLastEventTxHash: Function,
     setFailedOnConfirmation: (value: boolean) => void,
     priceContext: TokenPriceContextType,
+    walletClient: WalletClient,
   ) {
     switch (action) {
       case Action.depositApprove:
@@ -1677,6 +1718,7 @@ function Interaction({
             activeAccount,
             activeChain,
             depositAmount,
+            walletClient,
           );
           return result;
         };
@@ -1713,6 +1755,7 @@ function Interaction({
             setFailedOnConfirmation,
             setFailedTransaction,
             priceContext,
+            walletClient,
           );
           return result;
         };
@@ -1730,7 +1773,7 @@ function Interaction({
               outputAmount: outputAmountFormatted,
               inputSymbol: inputToken?.symbol || "",
               outputSymbol: vaultData.symbol,
-              isDeposit: false, 
+              isDeposit: false,
               timestamp: Date.now(),
             },
           });
@@ -1748,6 +1791,7 @@ function Interaction({
             setLastEventTxHash,
             setFailedOnConfirmation,
             setFailedTransaction,
+            walletClient,
           );
           return result;
         };
