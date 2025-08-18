@@ -465,8 +465,8 @@ useEffect(() => {
         );
       });
     } else {
-      setErrorMessage("");
-    }}
+      setErrorMessage("");}
+    }
 
     if (loadingOutputToken) {
       setErrorMessage("");
