@@ -12,7 +12,11 @@ import { useFundWalletStore } from "@/store/fundWalletStore";
 import { showInfoToast } from "@/toasts";
 
 import { ConnectorIcon } from "./components/ConnectorIcon";
-import { CHAIN_ID, solanaChain } from "@/constants/chainConfig";
+import {
+  APPROVED_TOKENS,
+  CHAIN_ID,
+  solanaChain,
+} from "@/constants/chainConfig";
 import { useEffect, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -45,6 +49,7 @@ const AllWAllets = () => {
     setWalletAddress,
     chain,
     setChain,
+    setCurrency,
   } = useFundWalletStore();
   const { connectSolana, activeEvmWallet: activeAccount } = useMultiChain();
 
@@ -104,6 +109,7 @@ const AllWAllets = () => {
 
     setActiveConnector(connector);
     localStorage.setItem("connectorId", connector.id);
+
     connect(
       {
         connector,
@@ -158,18 +164,21 @@ const AllWAllets = () => {
     try {
       await connectSolana();
       select(connector.name);
-      solanaConnect();
 
       if (fundWalletStep === "connectWallet") {
         setChain(solanaChain);
 
-        setTimeout(() => {
-          if (publicKey) {
-            setWalletAddress(publicKey.toString());
-          }
-        }, 100);
+        if (publicKey) {
+          setWalletAddress(publicKey.toString());
+        }
+        const solanaTokens = APPROVED_TOKENS[CHAIN_ID["solana"]] || [];
+        const defaultToken = solanaTokens[0];
+        if (defaultToken) {
+          setCurrency(defaultToken);
+        }
 
         setStep("setValues");
+        return;
       }
     } catch (error) {
       console.log(error);
@@ -212,8 +221,6 @@ const AllWAllets = () => {
       </div>
     </div>
   );
-
-  console.log(filteredEvmConnectors);
 
   return (
     <Modal

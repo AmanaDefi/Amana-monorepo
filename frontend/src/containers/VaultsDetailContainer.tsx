@@ -510,9 +510,14 @@ const VaultsDetailContainer: React.FC<{
     (!finishedTransaction && Object.keys(transactionStepFeedback).length > 0);
 
   const handleBack = () => {
+    const vaultIdString = vaultID.toString();
     const isTxInProgress = CheckTheTxIsInProgress(vaultID.toString());
-    if (!isTxInProgress) {
-      updateLocalStorageObject(vaultID.toString(), null);
+    if (
+      !isTxInProgress ||
+      ((finishedTransaction || failedTransaction) &&
+        (!currentVaultId || currentVaultId === vaultData?.id))
+    ) {
+      updateLocalStorageObject(vaultIdString, null);
     }
     router.push(backPath);
     setIsFailedOnCOnfirmation(false);

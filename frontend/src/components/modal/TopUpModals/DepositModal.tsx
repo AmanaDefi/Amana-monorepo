@@ -20,6 +20,7 @@ import { executeWalletTopup } from "@/actions/actions";
 import { useMultiChain } from "@/providers/MultiChainProvider";
 import WarningIcon from "@/components/svg/WarningIcon";
 import ChainsModal from "../chains/ChainsModal";
+import { useChainTokenModalStore } from "@/store/chainTokenModalStore";
 
 export const Deposit = () => {
   const {
@@ -81,15 +82,20 @@ export const Deposit = () => {
     }
   }, [walletContext.publicKey, chain]);
 
+  useEffect(() => {
+    setError("");
+    setTxError(false);
+  }, [chain, currency]);
+
   const isExternalWalletConnected = useMemo(() => {
     if (!chain) return false;
 
     if (chain.name === "Solana") {
-      return !!walletContext.publicKey;
+      return !!walletContext.publicKey && walletContext.connected;
     } else {
       return !!activeWallet && activeWallet.walletClientType !== "privy";
     }
-  }, [chain, walletContext.publicKey, activeWallet]);
+  }, [chain, walletContext.publicKey, walletContext.connected, activeWallet]);
 
   const isButtonDisabled = (() => {
     if (step === "confirm") {
@@ -103,6 +109,25 @@ export const Deposit = () => {
     return false;
   })();
 
+  useEffect(() => {
+    if (step === "confirm" && chain) {
+      const isCurrentChainWalletConnected =
+        chain.name === "Solana"
+          ? !!walletContext.publicKey && walletContext.connected
+          : !!activeWallet && activeWallet.walletClientType !== "privy";
+
+      if (!isCurrentChainWalletConnected) {
+        setStep("setValues");
+      }
+    }
+  }, [
+    chain?.id,
+    step,
+    walletContext.publicKey,
+    walletContext.connected,
+    activeWallet,
+  ]);
+
   const handleConfirm = async () => {
     if (
       !chain ||
@@ -111,13 +136,16 @@ export const Deposit = () => {
       !!error ||
       !smartWalletAddress
     ) {
+      console.log("Early return due to missing values");
       return;
     }
+
     try {
       setTxError(false);
       setLoading(true);
       const newAmt = parseUnits(depositAmount, currency?.decimals);
-      const { transactionHash } = await executeWalletTopup(
+
+      const result = await executeWalletTopup(
         currency,
         activeWallet,
         chain,
@@ -125,20 +153,22 @@ export const Deposit = () => {
         newAmt,
         walletContext,
       );
-      if (transactionHash) {
-        setTxHash(transactionHash);
+
+      if (result.transactionHash) {
+        setTxHash(result.transactionHash);
         showSuccessToast("Successfully Topped Up");
         setStep("finishDeposit");
       } else {
+        console.log("No transaction hash, setting error");
         setTxError(true);
       }
     } catch (e) {
+      console.error("Transaction error:", e);
       setTxError(true);
     } finally {
       setLoading(false);
     }
   };
-
   const handlePressButton = () => {
     if (step === "confirm") {
       handleConfirm();
@@ -163,10 +193,21 @@ export const Deposit = () => {
     }
   };
 
+  const getButtonText = () => {
+    if (loading) return "Pending...";
+    if (step === "confirm") return "Confirm";
+    if (isExternalWalletConnected && chain && currency) return "Confirm";
+    return "Connect Wallet";
+  };
+
+  const { isOpen: isChainsModalOpen } = useChainTokenModalStore();
+
   return (
     <>
       <Modal
-        isOpen={step === "setValues" || step === "confirm"}
+        isOpen={
+          (step === "setValues" || step === "confirm") && !isChainsModalOpen
+        }
         onClose={handleClose}
         paddingClass="px-4 pt-5 pb-6"
         roundedClass="rounded-[16px]"
@@ -210,12 +251,7 @@ export const Deposit = () => {
                 variant="reverse"
                 onClick={handlePressButton}
               >
-                {loading
-                  ? "Pending..."
-                  : step === "confirm" ||
-                      (isExternalWalletConnected && chain && currency)
-                    ? "Confirm"
-                    : "Connect Wallet"}
+                {getButtonText()}
               </AppButton>
             </div>
             {txError && (

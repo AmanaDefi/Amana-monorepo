@@ -203,7 +203,7 @@ export default function VaultInputs({
     clearDepositCalculationCache,
     setLastTransactionStepFeedback,
     setTransactionStepFeedback,
-    setIsFailedOnCOnfirmation
+    setIsFailedOnCOnfirmation,
   } = useTransactionStore();
 
   const { isOpen, setSelectedTokenFromModal, selectedTokenFromModal } =
@@ -274,6 +274,11 @@ export default function VaultInputs({
       }
     }
   }, [vaultData.id]);
+
+  useEffect(() => {
+    setInputToken(undefined);
+    setSelectedTokenFromModal(null);
+  }, [vaultData?.id]);
 
   const initialConversionOutput: ConversionOutput = useMemo(
     () => ({
@@ -397,7 +402,6 @@ export default function VaultInputs({
         inputBal: JSON.stringify(EMPTY_BALANCE, bigIntReplacer),
       });
       setDisplayValue("0.00");
-
     }
   }, [selectChain?.id, vaultData.id]);
 
@@ -462,20 +466,62 @@ useEffect(() => {
       });
     } else {
       setErrorMessage("");
+    }}
+
+    if (loadingOutputToken) {
+      setErrorMessage("");
+      return;
     }
-  }
-}, [
-  inputToken,
-  inputBalance.formatted,
-  isDeposit,
-  vaultData,
-  steps,
-  inputTokenPrice,
-  vaultTokenPrice,
-  loadingOutputToken,
-  userVaultBalance?.formatted,
-  tokenBalance.formatted,
-]);
+
+    if (isDeposit) {
+      setErrorMessage(
+        getVaultErrorMessage(
+          inputBalance.formatted,
+          tokenBalance.formatted,
+          steps,
+          vaultData,
+          inputTokenPrice,
+          isDeposit,
+        ),
+      );
+    } else {
+      if (
+        walletAddress &&
+        inputBalance.formatted &&
+        Number(inputBalance.formatted) > 0
+      ) {
+        fetchUserVaultMaxWithdraw(
+          vaultData.inputToken.decimals,
+          walletAddress,
+          vaultData.id,
+        ).then((maxAmount) => {
+          setErrorMessage(
+            getVaultErrorMessage(
+              inputBalance.formatted,
+              maxAmount || "0",
+              steps,
+              vaultData,
+              vaultTokenPrice,
+              isDeposit,
+            ),
+          );
+        });
+      } else {
+        setErrorMessage("");
+      }
+    }
+  }, [
+    inputToken,
+    inputBalance.formatted,
+    isDeposit,
+    vaultData,
+    steps,
+    inputTokenPrice,
+    vaultTokenPrice,
+    loadingOutputToken,
+    userVaultBalance?.formatted,
+    tokenBalance.formatted,
+  ]);
 
   // ✅ FIXED: useMemo now only computes, no setState during render
   const shouldDisableButton = useMemo(() => {
@@ -676,7 +722,7 @@ useEffect(() => {
 
     setLastTransactionStepFeedback({});
     setTransactionStepFeedback({});
-    setIsFailedOnCOnfirmation(false)
+    setIsFailedOnCOnfirmation(false);
 
     // Only attempt to set steps if we have a token and chain
     if (inputToken && selectedChain) {
@@ -715,7 +761,7 @@ useEffect(() => {
 
       setLastTransactionStepFeedback({});
       setTransactionStepFeedback({});
-      setIsFailedOnCOnfirmation(false)
+      setIsFailedOnCOnfirmation(false);
 
       let value = e.currentTarget.value;
 
@@ -807,7 +853,14 @@ useEffect(() => {
         displayValue: inputAmt,
       });
     },
-    [inputToken, inputTokenPrice, isDeposit, vaultToken.decimals, vaultData.id, setInputBalance],
+    [
+      inputToken,
+      inputTokenPrice,
+      isDeposit,
+      vaultToken.decimals,
+      vaultData.id,
+      setInputBalance,
+    ],
   );
 
   const { handleMaxClick } = useMaxAmount({
@@ -848,7 +901,7 @@ useEffect(() => {
       // So we don't need to convert from shares to assets - the input IS the asset amount
 
       // if (!isDeposit) {
-      
+
       //   const availableBalance = userVaultBalance?.formatted || "0";
       //   const inputFormatted = (
       //     Number(inputAmountValue) /
@@ -1240,49 +1293,51 @@ useEffect(() => {
   }, [conversionOutput.outputAmountFormatted, vaultData?.id]);
 
   // Reset input state after transaction completes or fails
-useEffect(() => {
-  if (!transactionCompleted) return;
+  useEffect(() => {
+    if (!transactionCompleted) return;
 
-  console.log("[VaultInputs] Transaction completed, processing...");
+    console.log("[VaultInputs] Transaction completed, processing...");
 
-  const timeoutId = setTimeout(() => {
-    if (vaultData?.id && APY7DValue) {
-      const currentAPYValue = Number(APY7DValue);
+    const timeoutId = setTimeout(() => {
+      if (vaultData?.id && APY7DValue) {
+        const currentAPYValue = Number(APY7DValue);
 
-      if (currentAPYValue > 0 && !isNaN(currentAPYValue)) {
-        const existingAPY = useAPYStore.getState().getCurrentAPY(vaultData.id);
+        if (currentAPYValue > 0 && !isNaN(currentAPYValue)) {
+          const existingAPY = useAPYStore
+            .getState()
+            .getCurrentAPY(vaultData.id);
 
-        if (existingAPY !== currentAPYValue) {
-          setCurrentAPY(vaultData.id, currentAPYValue);
+          if (existingAPY !== currentAPYValue) {
+            setCurrentAPY(vaultData.id, currentAPYValue);
+          }
         }
       }
-    }
 
-    if (isDeposit) {
-      setLastDepositInfo({
-        inputAmount: displayValue,
-        outputAmount: conversionOutput.outputAmountFormatted,
-        inputSymbol: inputToken?.symbol || "",
-        outputSymbol: vaultData.symbol,
-      });
-    } else {
-      setLastWithdrawInfo({
-        inputAmount: displayValue,
-        outputAmount: conversionOutput.outputAmountFormatted,
-        inputSymbol: vaultData.symbol,
-        outputSymbol: inputToken?.symbol || vaultData.inputToken.symbol,
-      });
-    }
+      if (isDeposit) {
+        setLastDepositInfo({
+          inputAmount: displayValue,
+          outputAmount: conversionOutput.outputAmountFormatted,
+          inputSymbol: inputToken?.symbol || "",
+          outputSymbol: vaultData.symbol,
+        });
+      } else {
+        setLastWithdrawInfo({
+          inputAmount: displayValue,
+          outputAmount: conversionOutput.outputAmountFormatted,
+          inputSymbol: vaultData.symbol,
+          outputSymbol: inputToken?.symbol || vaultData.inputToken.symbol,
+        });
+      }
 
-    setInputBalance(EMPTY_BALANCE);
-    setDisplayValue("0.00");
-    setConversionOutput(initialConversionOutput);
-    setOutputBoxErrorMessage("");
-    setIsSlippageExceedingLimit(false);
-  }, 100); 
+      setInputBalance(EMPTY_BALANCE);
+      setDisplayValue("0.00");
+      setConversionOutput(initialConversionOutput);
+      setOutputBoxErrorMessage("");
+      setIsSlippageExceedingLimit(false);
+    }, 100);
 
-  return () => clearTimeout(timeoutId);
-}, [transactionCompleted]);
+    return () => clearTimeout(timeoutId);
+  }, [transactionCompleted]);
   useEffect(() => {
     if (!finishedTransaction) {
       setActiveTransactionVault(null);
@@ -1300,63 +1355,65 @@ useEffect(() => {
     if (!inputBalance.formatted || Number(inputBalance.formatted) <= 0) {
       if (!isTxInProgress) {
         setConversionOutput(initialConversionOutput);
-      } 
+      }
       setLoadingOutputToken(false);
       return;
     }
   }, [inputBalance, initialConversionOutput]);
 
-useEffect(() => {
-  const vaultIdStr = vaultData?.id;
-  if (!vaultIdStr) return;
+  useEffect(() => {
+    const vaultIdStr = vaultData?.id;
+    if (!vaultIdStr) return;
 
-  const isTxInProgress = CheckTheTxIsInProgress(vaultIdStr);
-  const vaultTxData = getLocalStorageObject(vaultIdStr);
+    const isTxInProgress = CheckTheTxIsInProgress(vaultIdStr);
+    const vaultTxData = getLocalStorageObject(vaultIdStr);
 
+    if (isTxInProgress && vaultTxData?.conversionOutput) {
+      try {
+        const savedConversionOutput = JSON.parse(
+          vaultTxData.conversionOutput,
+          bigIntReviver,
+        );
+        const savedInputBalance = JSON.parse(
+          vaultTxData.inputBal,
+          bigIntReviver,
+        );
 
-  if (isTxInProgress && vaultTxData?.conversionOutput) {
-    try {
-      const savedConversionOutput = JSON.parse(
-        vaultTxData.conversionOutput,
-        bigIntReviver,
-      );
-      const savedInputBalance = JSON.parse(vaultTxData.inputBal, bigIntReviver);
-
-      if (savedInputBalance?.formatted === debouncedInputBalance.formatted) {
-        setConversionOutput(savedConversionOutput);
-        setLoadingOutputToken(false);
-        return;
+        if (savedInputBalance?.formatted === debouncedInputBalance.formatted) {
+          setConversionOutput(savedConversionOutput);
+          setLoadingOutputToken(false);
+          return;
+        }
+      } catch (error) {
+        console.error(
+          "Failed to restore conversion output from localStorage:",
+          error,
+        );
       }
-    } catch (error) {
-      console.error(
-        "Failed to restore conversion output from localStorage:",
-        error,
-      );
     }
-  }
 
-  if (
-    !debouncedInputBalance.formatted ||
-    Number(debouncedInputBalance.formatted) <= 0
-  ) {
-    setLoadingOutputToken(false);
-    setConversionOutput(initialConversionOutput);
-    return;
-  }
+    if (
+      !debouncedInputBalance.formatted ||
+      Number(debouncedInputBalance.formatted) <= 0
+    ) {
+      setLoadingOutputToken(false);
+      setConversionOutput(initialConversionOutput);
+      return;
+    }
 
-  setLoadingOutputToken(true);
-  if (isDeposit) getDepositOutputAmount(debouncedInputBalance.value);
-  else getWithdrawOutputAmount(debouncedInputBalance.value);
-}, [
-  debouncedInputBalance,
-  inputToken,
-  getDepositOutputAmount,
-  getWithdrawOutputAmount,
-  initialConversionOutput,
-  isDeposit,
-  vaultData,
-  userSlippage,
-]);
+    setLoadingOutputToken(true);
+    if (isDeposit) getDepositOutputAmount(debouncedInputBalance.value);
+    else getWithdrawOutputAmount(debouncedInputBalance.value);
+  }, [
+    debouncedInputBalance,
+    inputToken,
+    getDepositOutputAmount,
+    getWithdrawOutputAmount,
+    initialConversionOutput,
+    isDeposit,
+    vaultData,
+    userSlippage,
+  ]);
 
   useEffect(() => {
     // Force recalculation when slippage changes, but only if we have a valid input
@@ -1395,9 +1452,9 @@ useEffect(() => {
   ]);
 
   // Check slippage limits when conversion output changes
- useEffect(() => {
-   checkSlippageExceedingLimit();
- }, [checkSlippageExceedingLimit]);
+  useEffect(() => {
+    checkSlippageExceedingLimit();
+  }, [checkSlippageExceedingLimit]);
 
   // Create an adapter function for InputTokenWithError in Deposit mode
   const handleDepositTokenSelect = (token: Token) => {
@@ -1526,7 +1583,7 @@ useEffect(() => {
                 />
               </div>
             )}
-      
+
             <InputTokenWithError
               onSelectChain={onSelectChain}
               onSelectChainAndToken={handleSelectChainAngToken}
@@ -1600,7 +1657,6 @@ useEffect(() => {
                 />
               )}
             </div>
-            
 
             <InputTokenWithError
               onSelectChain={onSelectChain}
