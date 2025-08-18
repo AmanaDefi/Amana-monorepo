@@ -34,6 +34,7 @@ const WALLET_STATE_KEY = "amana-wallet-state";
 const PERSISTED_WALLET_KEY = "amana-persisted-wallet";
 const PERSISTED_CHAIN_KEY = "amana-persisted-chain";
 const WAGMI_WALLET_KEY = "amana-wagmi-wallet";
+const MANUAL_DISCONNECT_KEY = "amana-manual-disconnect";
 const DEBUG_WALLET = false; // Set to false in production
 
 declare global {
@@ -144,7 +145,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
 
   const { address: wagmiAddress } = useAccount();
   const wagmiConnected = isWagmiConnected;
-  
 
   const setWalletAddressWithLog = useCallback(
     (address: string | null, source?: string) => {
@@ -153,34 +153,48 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     [walletAddress, path],
   );
 
-useEffect(() => {
-  if (wagmiAddress) {
-    setIsWagmiConnected(true);
-    localStorage.setItem(WAGMI_WALLET_KEY, wagmiAddress);
-    console.log("[WAGMI STATE] Connected and saved:", wagmiAddress);
-  } else {
-    const savedAddress = localStorage.getItem(WAGMI_WALLET_KEY);
-    if (savedAddress) {
-      setIsWagmiConnected(true);
-    } else {
-      setIsWagmiConnected(false);
+  useEffect(() => {
+    const manualDisconnect = localStorage.getItem(MANUAL_DISCONNECT_KEY);
+    if (manualDisconnect === "true") {
+      return;
     }
-  }
-}, [wagmiAddress, isWagmiConnected]);
-  
+
+    if (wagmiAddress) {
+      setIsWagmiConnected(true);
+      localStorage.setItem(WAGMI_WALLET_KEY, wagmiAddress);
+      console.log("[WAGMI STATE] Connected and saved:", wagmiAddress);
+    } else {
+      const savedAddress = localStorage.getItem(WAGMI_WALLET_KEY);
+      if (savedAddress && !manualDisconnect) {
+        setIsWagmiConnected(true);
+      } else {
+        setIsWagmiConnected(false);
+      }
+    }
+  }, [wagmiAddress, isWagmiConnected]);
 
   // Persist wallet address when connected
   useEffect(() => {
     if (disconnectInProgress) return;
+
+    const manualDisconnect = localStorage.getItem(MANUAL_DISCONNECT_KEY);
+    if (manualDisconnect === "true") {
+      return;
+    }
     if (walletAddress && walletAddress !== persistedWalletAddress) {
       localStorage.setItem(PERSISTED_WALLET_KEY, walletAddress);
       setPersistedWalletAddress(walletAddress);
     }
   }, [walletAddress, persistedWalletAddress, disconnectInProgress]);
 
-  // Restore wallet address on hydration
   useEffect(() => {
     if (disconnectInProgress) return;
+
+    const manualDisconnect = localStorage.getItem(MANUAL_DISCONNECT_KEY);
+    if (manualDisconnect === "true") {
+      return;
+    }
+
     if (isHydrated && !walletAddress && !step) {
       const saved = localStorage.getItem(PERSISTED_WALLET_KEY);
       if (saved) {
@@ -331,9 +345,12 @@ useEffect(() => {
     disconnectInProgress,
   ]);
 
-  // Privy wallet effect
   useEffect(() => {
     if (disconnectInProgress) return;
+    const manualDisconnect = localStorage.getItem(MANUAL_DISCONNECT_KEY);
+    if (manualDisconnect === "true") {
+      return;
+    }
 
     if (privyWallet?.address && connected && !latestChainRef.current && !step) {
       console.log(
@@ -385,7 +402,8 @@ useEffect(() => {
       !privyWallet?.address &&
       !connected &&
       !wagmiConnected &&
-      !persistedWalletAddress
+      !persistedWalletAddress &&
+      !manualDisconnect
     ) {
       setWalletAddressWithLog(null, "privy-clear");
     }
@@ -472,10 +490,10 @@ useEffect(() => {
     return () => clearTimeout(maxWaitTimer);
   }, [isHydrated, isInitializationComplete, completeInitialization]);
 
-  // Disconnect Wallet
   const disconnectWallet = useCallback(async () => {
-    setDisconnectInProgress(true);
+    localStorage.setItem(MANUAL_DISCONNECT_KEY, "true");
 
+    setDisconnectInProgress(true);
     startInitialization();
 
     const hasTxInfo = localStorage.getItem(VAULTS_INFO_KEY);
@@ -486,6 +504,15 @@ useEffect(() => {
     localStorage.removeItem(PERSISTED_WALLET_KEY);
     localStorage.removeItem(PERSISTED_CHAIN_KEY);
     localStorage.removeItem(WAGMI_WALLET_KEY);
+
+    if (typeof window !== "undefined") {
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith("privy:")) {
+          localStorage.removeItem(key);
+        }
+      });
+    }
+
     setPersistedWalletAddress(null);
     setIsWagmiConnected(false);
 
@@ -515,7 +542,7 @@ useEffect(() => {
         disconnectPromises.push(disconnectAsync());
       }
 
-      await Promise.all(disconnectPromises);
+      await Promise.allSettled(disconnectPromises);
     } catch (error) {
       console.error("Error during disconnect process:", error);
     } finally {
@@ -525,9 +552,10 @@ useEffect(() => {
       setIsModalOpen(false);
 
       setTimeout(() => {
+        localStorage.removeItem(MANUAL_DISCONNECT_KEY);
         completeInitialization();
         setDisconnectInProgress(false);
-      }, 1000);
+      }, 2000);
 
       const isVaultAddressPath = /^\/vaults\/0x[0-9a-fA-F]{40}$/;
       if (
@@ -694,9 +722,14 @@ useEffect(() => {
     }
   }, [connected, privyWallet?.address, setIsWalletConnecting]);
 
-  // Auth sync effect
   useEffect(() => {
     if (disconnectInProgress) return;
+
+    const manualDisconnect = localStorage.getItem(MANUAL_DISCONNECT_KEY);
+    if (manualDisconnect === "true") {
+      return;
+    }
+
     if (
       authUserAddress &&
       !walletAddress &&
@@ -721,9 +754,14 @@ useEffect(() => {
     disconnectInProgress,
   ]);
 
-  // Wagmi connection effect
   useEffect(() => {
     if (disconnectInProgress) return;
+
+    const manualDisconnect = localStorage.getItem(MANUAL_DISCONNECT_KEY);
+    if (manualDisconnect === "true") {
+      return;
+    }
+
     if (
       wagmiConnected &&
       wagmiAddress &&
