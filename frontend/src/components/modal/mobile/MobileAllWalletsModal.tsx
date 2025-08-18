@@ -40,6 +40,7 @@ const MobileAllWallets = () => {
   const { disconnectAsync } = useDisconnect();
 
   const [isMobile, setIsMobile] = useState(false);
+
   useEffect(() => {
     const checkIsMobile = () => {
       setIsMobile(window?.innerWidth < 1024);
@@ -67,11 +68,14 @@ const MobileAllWallets = () => {
   } = useConnect({
     mutation: {
       onSuccess: (result) => {
+        
         if (fundWalletStep === "connectWallet") {
           setWalletAddress(result.accounts[0]);
           return fundWalletConnect();
         }
-        return successAuth(walletAddress, activeAccount || undefined, true);
+
+        const connectedAddress = result.accounts[0];
+        return successAuth(connectedAddress, activeAccount || undefined, true);
       },
     },
   });
@@ -81,14 +85,18 @@ const MobileAllWallets = () => {
   };
 
   const handleExternalWalletConnect = async (connector: Connector) => {
+   
     if (isConnectingWallet) {
       await disconnectAsync();
     }
+
     if (activeAccount?.walletClientType === "privy") {
       const confirmResult = confirm(
         "You smart wallet account will be disconnected",
       );
-      if (!confirmResult) return;
+      if (!confirmResult) {
+        return;
+      }
 
       await logout();
     }
@@ -99,31 +107,49 @@ const MobileAllWallets = () => {
 
     setActiveConnector(connector);
     localStorage.setItem("connectorId", connector.id);
-    connect(
-      {
-        connector,
-        chainId:
-          fundWalletStep === "connectWallet"
-            ? chain.id
-            : (chosenChain?.id ?? activeChain?.id),
-      },
-      {
-        onError: (error) => {
-          console.log(error);
 
-          if (error.name === "ConnectorAlreadyConnectedError") {
-            connector.disconnect();
-            disconnectAsync({ connector });
-            setActiveConnector(null);
+    const chainId =
+      fundWalletStep === "connectWallet"
+        ? chain.id
+        : (chosenChain?.id ?? activeChain?.id);
 
-            showInfoToast("Please try to connect wallet again");
-          }
+    try {
+      connect(
+        {
+          connector,
+          chainId,
         },
-      },
-    );
+        {
+          onError: (error) => {
+            if (error.name === "ConnectorAlreadyConnectedError") {
+              connector.disconnect();
+              disconnectAsync({ connector });
+              setActiveConnector(null);
+              showInfoToast("Please try to connect wallet again");
+            }
+          },
+          onSuccess: (result) => {
+            console.log("[DEBUG] Connection successful in connect callback:", {
+              accounts: result.accounts,
+              chainId: result.chainId,
+              fundWalletStep,
+              timestamp: new Date().toISOString(),
+            });
+          },
+        },
+      );
+    } catch (error) {
+      console.log("[DEBUG] Connection error (try-catch):", {
+        error,
+        errorMessage: error instanceof Error ? error.message : "Unknown error",
+        connectorId: connector.id,
+        timestamp: new Date().toISOString(),
+      });
+    }
   };
 
   const handleClose = () => {
+   
     if (fundWalletStep === "connectWallet") {
       setStep("setValues");
     } else {
@@ -150,25 +176,27 @@ const MobileAllWallets = () => {
     .map((adapter) => adapter.adapter);
 
   const handleSolanaConnect = async (connector: Adapter) => {
+   
     if (activeAccount && fundWalletStep !== "connectWallet") {
       const confirmResult = confirm("You evm wallet will be disconnected");
-      if (!confirmResult) return;
+      if (!confirmResult) {
+        console.log("[DEBUG] User cancelled EVM disconnection");
+        return;
+      }
     }
+
     setActiveConnector(connector);
     try {
       try {
         await connectSolana();
       } catch (e) {
-        console.log("connect solana error");
+        console.log("[DEBUG] Connect solana error:", e);
       }
       select(connector.name);
       await solanaConnect();
     } catch (error) {
-      console.log(error);
-
       if (connector.connected) {
         connector.disconnect();
-
         setActiveConnector(null);
         showInfoToast("Please try to connect wallet again");
       }
@@ -218,24 +246,29 @@ const MobileAllWallets = () => {
           <div className="flex flex-col gap-4 items-center justify-center">
             {shouldShowEVM && (
               <>
-                <p className="text-base text-[#3E73C4]">EVM chains connectors</p>
+                <p className="text-base text-[#3E73C4]">
+                  EVM chains connectors
+                </p>
                 {filteredEvmConnectors.length > 0 ? (
-                  filteredEvmConnectors.map((connector) => (
-                    <ModalButton
-                      key={connector.id}
-                      label={connector.name}
-                      icon={
-                        <ConnectorIcon
-                          connectorId={connector.id}
-                          name={connector.name}
-                          connectorIcon={connector.icon}
-                        />
-                      }
-                      onClick={() => {
-                        handleExternalWalletConnect(connector);
-                      }}
-                    />
-                  ))
+                  filteredEvmConnectors.map((connector) => {
+                
+                    return (
+                      <ModalButton
+                        key={connector.id}
+                        label={connector.name}
+                        icon={
+                          <ConnectorIcon
+                            connectorId={connector.id}
+                            name={connector.name}
+                            connectorIcon={connector.icon}
+                          />
+                        }
+                        onClick={() => {
+                          handleExternalWalletConnect(connector);
+                        }}
+                      />
+                    );
+                  })
                 ) : (
                   <EmptyWalletMessage type="EVM" />
                 )}

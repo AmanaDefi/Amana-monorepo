@@ -31,14 +31,10 @@ import { VAULTS_INFO_KEY } from "@/utils/localStorageUtils";
 
 // Constants for localStorage
 const WALLET_STATE_KEY = "amana-wallet-state";
+const PERSISTED_WALLET_KEY = "amana-persisted-wallet";
+const PERSISTED_CHAIN_KEY = "amana-persisted-chain";
+const WAGMI_WALLET_KEY = "amana-wagmi-wallet";
 const DEBUG_WALLET = false; // Set to false in production
-
-// Helper function for debug logging
-const debugLog = (message: string, data?: any) => {
-  if (DEBUG_WALLET) {
-    console.log(`[MultiChainProvider Debug] ${message}`, data || "");
-  }
-};
 
 declare global {
   interface Window {
@@ -80,7 +76,13 @@ export const useMultiChain = () => {
 export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const [selectedChain, setSelectedChain] = useState<ChainType | null>(null);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [persistedWalletAddress, setPersistedWalletAddress] = useState<
+    string | null
+  >(null);
+  const [isWagmiConnected, setIsWagmiConnected] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [disconnectInProgress, setDisconnectInProgress] = useState(false);
+
   const { logout } = usePrivy();
   const { publicKey, disconnect, connected } = useWallet();
   const [balance, setBalance] = useState({ value: 0n, formatted: "0" });
@@ -93,9 +95,12 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     setWalletAddress: setFundWalletAddress,
     setStep,
   } = useFundWalletStore();
-  const { successAuth } = useAuthStore();
+  const {
+    successAuth,
+    userAddress: authUserAddress,
+    isAuthenticated,
+  } = useAuthStore();
   const isConnectedRef = useRef(connected);
-  const { isConnected } = useAccount();
 
   const router = useRouter();
   const path = usePathname();
@@ -122,7 +127,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       const isDisconnected = localStorage.getItem(
         `wagmi.${wallet.meta.id}.disconnected`,
       );
-      console.log(isDisconnected, wallet.meta.id, wallet.walletClientType);
 
       if (isDisconnected === "true" && wallet.walletClientType !== "privy") {
         return false;
@@ -130,22 +134,80 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
 
       return true;
     });
-  }, [wallets, isConnected]);
+  }, [wallets]);
   const { user } = usePrivy();
   const privyWallet = filteredWallets[0];
   const [activeChain, setActiveChain] = useState<Chain | null>(null);
 
-  console.log(privyWallet);
-
   const initializationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
   const lastPathProcessedRef = useRef<string | null>(null);
 
-  debugLog("Provider initialized with hydration-safe state:", {
-    selectedChain,
-    walletAddress,
+  const { address: wagmiAddress } = useAccount();
+  const wagmiConnected = isWagmiConnected;
+  
+
+  const setWalletAddressWithLog = useCallback(
+    (address: string | null, source?: string) => {
+      setWalletAddress(address);
+    },
+    [walletAddress, path],
+  );
+
+useEffect(() => {
+  if (wagmiAddress) {
+    setIsWagmiConnected(true);
+    localStorage.setItem(WAGMI_WALLET_KEY, wagmiAddress);
+    console.log("[WAGMI STATE] Connected and saved:", wagmiAddress);
+  } else {
+    const savedAddress = localStorage.getItem(WAGMI_WALLET_KEY);
+    if (savedAddress) {
+      setIsWagmiConnected(true);
+    } else {
+      setIsWagmiConnected(false);
+    }
+  }
+}, [wagmiAddress, isWagmiConnected]);
+  
+
+  // Persist wallet address when connected
+  useEffect(() => {
+    if (disconnectInProgress) return;
+    if (walletAddress && walletAddress !== persistedWalletAddress) {
+      localStorage.setItem(PERSISTED_WALLET_KEY, walletAddress);
+      setPersistedWalletAddress(walletAddress);
+    }
+  }, [walletAddress, persistedWalletAddress, disconnectInProgress]);
+
+  // Restore wallet address on hydration
+  useEffect(() => {
+    if (disconnectInProgress) return;
+    if (isHydrated && !walletAddress && !step) {
+      const saved = localStorage.getItem(PERSISTED_WALLET_KEY);
+      if (saved) {
+        setWalletAddressWithLog(saved, "localStorage-restore");
+        setSelectedChain("evm");
+
+        const savedChain = localStorage.getItem(PERSISTED_CHAIN_KEY);
+        if (savedChain && chainConfigs[Number(savedChain)]) {
+          setActiveChain(chainConfigs[Number(savedChain)]);
+        } else {
+          setActiveChain(zetachain);
+        }
+      }
+    }
+  }, [
     isHydrated,
-  });
+    walletAddress,
+    step,
+    setWalletAddressWithLog,
+    disconnectInProgress,
+  ]);
+
+  useEffect(() => {
+    if (activeChain?.id) {
+      localStorage.setItem(PERSISTED_CHAIN_KEY, activeChain.id.toString());
+    }
+  }, [activeChain?.id]);
 
   const { balance: solanaBalance, refetch: refetchSolBalance } =
     useSolanaBalance();
@@ -156,7 +218,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     if (!!wallets?.length) {
       wallets.forEach(async (wallet) => {
         try {
-          console.log(wallet.meta.id, connectors);
           const connector = connectors?.find(
             (con) =>
               con.id === wallet.meta.id ||
@@ -171,24 +232,36 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
             wallet.disconnect();
           }
         } catch (e) {
-          console.log(e);
+          console.log("Error disconnecting wallet:", {
+            walletId: wallet.meta.id,
+            error: e,
+          });
         }
       });
     }
-  }, [connectors, wallets]);
+  }, [connectors, wallets, disconnectAsync]);
 
   const evmDisconnect = useCallback(async () => {
-    console.log("evm disconnect");
     setIsWalletSwitching(true);
+
     try {
+      setWalletAddressWithLog(null, "evm-disconnect");
+      setSelectedChain(null);
+      setActiveChain(null);
+
+      const { logout: authLogout } = useAuthStore.getState();
+      authLogout();
+
       await disconnectConnectors();
-    } finally {
       await logout();
+    } catch (error) {
+      console.error("Error in EVM disconnect:", error);
+    } finally {
       setTimeout(() => {
         setIsWalletSwitching(false);
       }, 800);
     }
-  }, [logout, disconnectConnectors]);
+  }, [logout, disconnectConnectors, setWalletAddressWithLog]);
 
   const completeInitializationProcess = useCallback(() => {
     if (initializationTimeoutRef.current) {
@@ -197,7 +270,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
 
     initializationTimeoutRef.current = setTimeout(() => {
       completeInitialization();
-      debugLog("Initialization completed via store");
     }, 200);
   }, [completeInitialization]);
 
@@ -213,32 +285,37 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         privyWallet.walletClientType !== "privy" &&
         !step
       ) {
-        debugLog("Disconnecting EVM wallet before Solana connection");
         await evmDisconnect();
         setSelectedChain("solana");
       }
     } catch (error) {
-      console.error("Solana connection error:", error);
+      console.error("[DEBUG] Solana connection error:", {
+        error,
+        timestamp: new Date().toISOString(),
+      });
     }
   };
 
+  // Solana connection effect
   useEffect(() => {
+    if (disconnectInProgress) return;
+
     if (connected && publicKey && !isConnectedRef.current) {
-      // connectSolana();
+      console.log("[DEBUG] Processing Solana connection...");
       isConnectedRef.current = true;
 
       if (step === "connectWallet") {
-
+        console.log("[DEBUG] Fund wallet step - setting address");
         setFundWalletAddress(publicKey.toBase58());
         return setStep("selectChain");
       }
-
-      setWalletAddress(publicKey.toBase58());
+      setWalletAddressWithLog(publicKey.toBase58(), "solana-connect");
       setSelectedChain("solana");
       setActiveChain(chainConfigs[CHAIN_ID.solana]);
 
       return successAuth(null, undefined, true);
     } else if (!connected) {
+      console.log("[DEBUG] Solana disconnected");
       isConnectedRef.current = false;
     }
   }, [
@@ -247,24 +324,31 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     publicKey,
     setFundWalletAddress,
     setStep,
-    setWalletAddress,
+    setWalletAddressWithLog,
     setSelectedChain,
     setActiveChain,
     successAuth,
+    disconnectInProgress,
   ]);
 
+  // Privy wallet effect
   useEffect(() => {
+    if (disconnectInProgress) return;
+
     if (privyWallet?.address && connected && !latestChainRef.current && !step) {
+      console.log(
+        "[DEBUG] Disconnecting Solana due to privy wallet connection",
+      );
       disconnect();
       disconnectConnectors();
     }
+
     if (privyWallet?.address) {
       if (!step) {
         if (wallets.length > 1 && user?.wallet) {
           disconnectConnectors();
         }
-
-        setWalletAddress(privyWallet?.address);
+        setWalletAddressWithLog(privyWallet?.address, "privy-connect");
         setSelectedChain("evm");
 
         if (
@@ -293,14 +377,17 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         }
 
         if (connected) {
-          disconnect().catch((err) => {
-            console.error("error disconnect Solana:", err);
-          });
+          disconnect().catch((err) => {});
           disconnectConnectors();
         }
       }
-    } else if (!privyWallet?.address && !connected) {
-      setWalletAddress(null);
+    } else if (
+      !privyWallet?.address &&
+      !connected &&
+      !wagmiConnected &&
+      !persistedWalletAddress
+    ) {
+      setWalletAddressWithLog(null, "privy-clear");
     }
   }, [
     privyWallet,
@@ -311,7 +398,12 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     disconnectConnectors,
     filteredWallets,
     activeChain,
-
+    persistedWalletAddress,
+    wagmiConnected,
+    setWalletAddressWithLog,
+    setSelectedChain,
+    setActiveChain,
+    disconnectInProgress,
   ]);
 
   useEffect(() => {
@@ -338,7 +430,9 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       const hasStableConnection =
         (publicKey && connected) ||
         (privyWallet?.address && !connected) ||
-        (!publicKey && !privyWallet?.address);
+        (wagmiConnected && wagmiAddress) ||
+        persistedWalletAddress ||
+        (!publicKey && !privyWallet?.address && !wagmiConnected);
 
       if (hasStableConnection) {
         completeInitializationProcess();
@@ -358,8 +452,11 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     publicKey,
     connected,
     privyWallet?.address,
+    wagmiConnected,
+    wagmiAddress,
     step,
     completeInitializationProcess,
+    persistedWalletAddress,
   ]);
 
   // Fallback timeout:
@@ -368,7 +465,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
 
     const maxWaitTimer = setTimeout(() => {
       if (!isInitializationComplete) {
-        debugLog("Forcing initialization completion after max wait time");
         completeInitialization();
       }
     }, 3000);
@@ -376,42 +472,86 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     return () => clearTimeout(maxWaitTimer);
   }, [isHydrated, isInitializationComplete, completeInitialization]);
 
-  //  Disconnect Wallet
+  // Disconnect Wallet
   const disconnectWallet = useCallback(async () => {
+    setDisconnectInProgress(true);
+
     startInitialization();
+
     const hasTxInfo = localStorage.getItem(VAULTS_INFO_KEY);
     if (hasTxInfo) {
       localStorage.removeItem(VAULTS_INFO_KEY);
     }
-    debugLog("Disconnecting all wallets...");
-    setSelectedChain("evm");
-    disconnect();
-    await evmDisconnect();
-    setIsModalOpen(false);
-    debugLog("All wallets disconnected");
-    setWalletAddress(null);
 
-    setTimeout(() => {
-      completeInitialization();
-    }, 500);
+    localStorage.removeItem(PERSISTED_WALLET_KEY);
+    localStorage.removeItem(PERSISTED_CHAIN_KEY);
+    localStorage.removeItem(WAGMI_WALLET_KEY);
+    setPersistedWalletAddress(null);
+    setIsWagmiConnected(false);
 
-    const isVaultAddressPath = /^\/vaults\/0x[0-9a-fA-F]{40}$/;
+    try {
+      const { logout: authLogout } = useAuthStore.getState();
+      authLogout();
 
-    if (
-      path !== "/" &&
-      path !== "/leaderboard" &&
-      path !== "/about" &&
-      !isVaultAddressPath.test(path)
-    ) {
-      router.push("/");
+      const disconnectPromises = [];
+
+      if (privyWallet?.address) {
+        disconnectPromises.push(
+          logout().catch((error) => {
+            console.error("Error during Privy logout:", error);
+            if (error.status !== 400) {
+              throw error;
+            }
+          }),
+        );
+        disconnectPromises.push(disconnectConnectors());
+      }
+
+      if (connected) {
+        disconnectPromises.push(disconnect());
+      }
+
+      if (wagmiConnected) {
+        disconnectPromises.push(disconnectAsync());
+      }
+
+      await Promise.all(disconnectPromises);
+    } catch (error) {
+      console.error("Error during disconnect process:", error);
+    } finally {
+      setSelectedChain(null);
+      setActiveChain(null);
+      setWalletAddressWithLog(null, "full-disconnect");
+      setIsModalOpen(false);
+
+      setTimeout(() => {
+        completeInitialization();
+        setDisconnectInProgress(false);
+      }, 1000);
+
+      const isVaultAddressPath = /^\/vaults\/0x[0-9a-fA-F]{40}$/;
+      if (
+        path !== "/" &&
+        path !== "/leaderboard" &&
+        path !== "/about" &&
+        !isVaultAddressPath.test(path)
+      ) {
+        router.push("/");
+      }
     }
   }, [
     disconnect,
-    evmDisconnect,
+    logout,
+    disconnectConnectors,
+    disconnectAsync,
     router,
     path,
     startInitialization,
     completeInitialization,
+    privyWallet?.address,
+    connected,
+    wagmiConnected,
+    setWalletAddressWithLog,
   ]);
 
   const getEvmBalance = useCallback(
@@ -433,43 +573,16 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         }
         return { formatted: formattedBalance, value: balanceInEth };
       } catch (error) {
-        console.error("Error get balance:", error);
+        console.error("Error getting balance:", {
+          error,
+          walletAddress,
+          activeChainId: activeChain?.id,
+          timestamp: new Date().toISOString(),
+        });
       }
     },
     [privyWallet, setBalance, step, activeChain],
   );
-
-  // // IMPROVED: Better connection detection logic with initialization delay
-  // useEffect(() => {
-  //   // Wait for hydration before starting initialization
-  //   if (!isHydrated) return;
-
-  //   if (publicKey) {
-  //     if (!step) {
-  //       setWalletAddress(publicKey.toBase58());
-  //       setSelectedChain("solana");
-  //     } else {
-  //       setFundWalletAddress(publicKey.toBase58());
-  //     }
-  //   } else if (
-  //     privyWallet?.address &&
-  //     privyWallet?.meta?.id !== "app.phantom"
-  //   ) {
-  //     if (!step) {
-  //       debugLog("EVM wallet connected:", privyWallet?.address);
-  //       setWalletAddress(privyWallet?.address);
-  //       setSelectedChain("evm");
-  //       setIsModalOpen(false);
-  //     }
-  //   }
-  // }, [
-  //   privyWallet,
-  //   publicKey,
-  //   isHydrated,
-  //   step,
-  //   setFundWalletAddress,
-  // ]);
-
 
   const switchToChain = useCallback(
     async (chain: Chain) => {
@@ -478,119 +591,63 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
           setSelectedChain("solana");
           setActiveChain(chainConfigs[CHAIN_ID.solana]);
           latestChainRef.current = CHAIN_ID.solana.toString();
-          return Promise.resolve(); // Resolve immediately for Solana
+          return Promise.resolve();
         } else {
-          // For EVM chains, we need to request the wallet to switch chains
           try {
-            // Update our ref immediately (won't be affected by closures)
             latestChainRef.current = chain.id.toString();
-            // This will prompt the user's wallet to switch chains
+
             if (privyWallet && privyWallet?.walletClientType !== "privy") {
               privyWallet?.switchChain(chain.id);
             }
 
-            // Set the chain type first
             setSelectedChain("evm");
-
-            // Then update the active chain
             setActiveChain(chain);
 
-            // Return a promise that resolves when the chain is actually switched
             return new Promise<void>((resolve, reject) => {
-              // Keep track of our own checking
               let checkAttempts = 0;
-              const maxAttempts = 100; // 10 seconds at 100ms intervals
-              
+              const maxAttempts = 100;
+
               const checkChain = setInterval(() => {
                 checkAttempts++;
                 if (latestChainRef.current === chain.id.toString()) {
-                  console.log(
-                    `Chain switch successful: Now on chain ${chain.id}`,
-                  );
                   clearInterval(checkChain);
                   resolve();
                 } else if (checkAttempts >= maxAttempts) {
-                  console.error(
-                    `Chain switch timeout: Current ref shows chain ${latestChainRef.current}`,
-                  );
                   clearInterval(checkChain);
                   reject(new Error("Chain switch timeout"));
                 }
               }, 100);
             });
           } catch (error) {
-            console.error("Failed to switch chain in wallet:", error);
+            console.error("Failed to switch chain in wallet:", {
+              error,
+            });
             throw error;
           }
         }
       } catch (error) {
-        console.log("Error in switchToChain:", error);
+        console.log("Error in switchToChain:", {
+          error,
+        });
         throw error;
       }
     },
-    [privyWallet],
+    [privyWallet, setSelectedChain, setActiveChain],
   );
 
   useEffect(() => {
     if (lastPathProcessedRef.current === path) {
       return;
     }
+
     const timeoutId = setTimeout(() => {
       lastPathProcessedRef.current = path;
-
-    // if (
-    //   !isVaultAddressPath.test(path) &&
-    //   privyWallet?.address &&
-    //   privyWallet?.walletClientType !== "privy" &&
-    //   activeChain?.id === CHAIN_ID["solana"]
-    // ) {
-    //   switchToChain(zetachain);
-    //   latestChainRef.current = zetachain.id.toString();
-    // }
-    // if (
-    //   !isVaultAddressPath.test(path) &&
-    //   publicKey &&
-    //   activeChain?.id !== CHAIN_ID["solana"]
-    // ) {
-    //   switchToChain(chainConfigs[CHAIN_ID.solana]);
-    //   latestChainRef.current = CHAIN_ID["solana"].toString();
-    // }
-
 
       const isVaultAddressPath = /^\/vaults\/0x[0-9a-fA-F]{40}$/;
 
       if (!isVaultAddressPath.test(path) && selectedChainFromModal) {
         setSelectedChainFromModal(null);
         setSelectedTokenFromModal(null);
-      }
-
-      if (
-        !isVaultAddressPath.test(path) &&
-        privyWallet?.walletClientType === "privy" &&
-        activeChain?.id !== zetachain.id
-      ) {
-        setActiveChain(zetachain);
-        latestChainRef.current = zetachain.id.toString();
-      }
-
-      if (
-        !isVaultAddressPath.test(path) &&
-        privyWallet?.address &&
-        privyWallet?.walletClientType !== "privy" &&
-        activeChain?.id === CHAIN_ID["solana"] &&
-        privyWallet?.meta?.id !== "app.phantom"
-      ) {
-        switchToChain(zetachain);
-        latestChainRef.current = zetachain.id.toString();
-      }
-
-      if (
-        !isVaultAddressPath.test(path) &&
-        publicKey &&
-        activeChain?.id !== CHAIN_ID["solana"]
-      ) {
-        switchToChain(chainConfigs[CHAIN_ID.solana]);
-        latestChainRef.current = CHAIN_ID["solana"].toString();
       }
 
       if (privyWallet?.meta?.id === "app.phantom") {
@@ -607,28 +664,26 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     return () => clearTimeout(timeoutId);
   }, [
     path,
-    // activeChain,
-    // privyWallet,
-    // publicKey,
     selectedChainFromModal,
-    switchToChain,
     setSelectedChainFromModal,
     setSelectedTokenFromModal,
-    privyWallet?.walletClientType,
-    privyWallet?.address,
     privyWallet?.meta?.id,
     privyWallet?.chainId,
-    activeChain?.id,
-    publicKey?.toBase58(),
+    switchToChain,
   ]);
 
   useEffect(() => {
-    if (privyWallet?.chainId && privyWallet?.address) {
+    if (
+      privyWallet?.chainId &&
+      privyWallet?.address &&
+      activeChain?.id === Number(privyWallet?.chainId?.split(":")[1])
+    ) {
       getEvmBalance(privyWallet?.address);
     }
   }, [
     privyWallet?.chainId,
     privyWallet?.address,
+    activeChain?.id,
     getEvmBalance,
     privyWallet?.meta?.id,
   ]);
@@ -638,6 +693,84 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       setIsWalletConnecting(false);
     }
   }, [connected, privyWallet?.address, setIsWalletConnecting]);
+
+  // Auth sync effect
+  useEffect(() => {
+    if (disconnectInProgress) return;
+    if (
+      authUserAddress &&
+      !walletAddress &&
+      !publicKey &&
+      !privyWallet?.address
+    ) {
+      setWalletAddressWithLog(authUserAddress, "auth-sync");
+      setSelectedChain("evm");
+
+      if (!activeChain) {
+        setActiveChain(zetachain);
+      }
+    }
+  }, [
+    authUserAddress,
+    walletAddress,
+    publicKey,
+    privyWallet?.address,
+    activeChain,
+    setWalletAddressWithLog,
+    setActiveChain,
+    disconnectInProgress,
+  ]);
+
+  // Wagmi connection effect
+  useEffect(() => {
+    if (disconnectInProgress) return;
+    if (
+      wagmiConnected &&
+      wagmiAddress &&
+      !walletAddress &&
+      !publicKey &&
+      !privyWallet?.address
+    ) {
+      setWalletAddressWithLog(wagmiAddress, "wagmi-connect");
+      setSelectedChain("evm");
+    }
+  }, [
+    wagmiConnected,
+    wagmiAddress,
+    walletAddress,
+    publicKey,
+    privyWallet?.address,
+    setWalletAddressWithLog,
+    setSelectedChain,
+    disconnectInProgress,
+  ]);
+
+  const universalActiveEvmWallet = useMemo(() => {
+    if (privyWallet?.address) {
+      return privyWallet;
+    }
+
+    if (wagmiConnected && wagmiAddress) {
+      return {
+        address: wagmiAddress,
+        walletClientType: "wagmi",
+        chainId: `eip155:${activeChain?.id || 7000}`,
+      } as ConnectedWallet;
+    }
+
+    if (wagmiConnected && !wagmiAddress) {
+      const savedAddress = localStorage.getItem(WAGMI_WALLET_KEY);
+      if (savedAddress) {
+        return {
+          address: savedAddress,
+          walletClientType: "wagmi",
+          chainId: `eip155:${activeChain?.id || 7000}`,
+        } as ConnectedWallet;
+      }
+    }
+
+    return privyWallet;
+  }, [privyWallet, wagmiConnected, wagmiAddress, activeChain?.id]);
 
   return (
     <MultiChainContext.Provider
@@ -654,7 +787,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         isWalletSwitching,
         refetchBalance: getEvmBalance,
         evmDisconnect: evmDisconnect,
-        activeEvmWallet: privyWallet,
+        activeEvmWallet: universalActiveEvmWallet,
       }}
     >
       {children}
