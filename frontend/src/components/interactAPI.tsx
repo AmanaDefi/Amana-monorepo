@@ -1514,15 +1514,12 @@ function Interaction({
           !!errorMessage;
         
           const isConnectWalletSHown =
-            (!activeAccount &&
-              !walletContext.publicKey &&
-              (!wagmiConnected || !walletAddress)) ||
-            (activeAccount?.walletClientType === "privy" &&
-              activeChain?.id !== zetachain.id) ||
-            (walletContext.publicKey &&
-              activeChain?.id !== CHAIN_ID["solana"]) ||
-            ((activeAccount?.address || wagmiAddress) &&
-              activeChain?.id === CHAIN_ID["solana"]);
+            !walletAddress ||
+            !(
+              (walletContext.connected && walletContext.publicKey) ||
+              activeAccount?.address ||
+              (wagmiConnected && wagmiAddress)
+            );
 
         // const isConnectWalletSHown =
         //   (!activeAccount && !walletContext.publicKey) ||

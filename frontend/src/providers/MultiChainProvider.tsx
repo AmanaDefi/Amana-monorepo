@@ -143,23 +143,8 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   const lastPathProcessedRef = useRef<string | null>(null);
 
   const { address: wagmiAddress } = useAccount();
-
-  useEffect(() => {
-    if (wagmiAddress) {
-      setIsWagmiConnected(true);
-      localStorage.setItem(WAGMI_WALLET_KEY, wagmiAddress);
-      console.log("[WAGMI STATE] Connected and saved:", wagmiAddress);
-    } else {
-      const savedAddress = localStorage.getItem(WAGMI_WALLET_KEY);
-      if (savedAddress) {
-        setIsWagmiConnected(true);
-      } else {
-        setIsWagmiConnected(false);
-      }
-    }
-  }, [wagmiAddress, isWagmiConnected]);
-
   const wagmiConnected = isWagmiConnected;
+  
 
   const setWalletAddressWithLog = useCallback(
     (address: string | null, source?: string) => {
@@ -167,6 +152,22 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     },
     [walletAddress, path],
   );
+
+useEffect(() => {
+  if (wagmiAddress) {
+    setIsWagmiConnected(true);
+    localStorage.setItem(WAGMI_WALLET_KEY, wagmiAddress);
+    console.log("[WAGMI STATE] Connected and saved:", wagmiAddress);
+  } else {
+    const savedAddress = localStorage.getItem(WAGMI_WALLET_KEY);
+    if (savedAddress) {
+      setIsWagmiConnected(true);
+    } else {
+      setIsWagmiConnected(false);
+    }
+  }
+}, [wagmiAddress, isWagmiConnected]);
+  
 
   // Persist wallet address when connected
   useEffect(() => {
