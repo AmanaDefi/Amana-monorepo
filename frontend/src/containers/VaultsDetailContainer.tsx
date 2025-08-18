@@ -198,31 +198,25 @@ const VaultsDetailContainer: React.FC<{
     (state) => state.loadSlippageForVault,
   );
 
-  useEffect(() => {
-    const currentVaultId = vaultData?.id || vaultID?.toString();
-    if (currentVaultId) {
-      const vaultTxData = getLocalStorageObject(currentVaultId);
-      if (vaultTxData?.selectedToken) {
-        try {
-          const txToken = JSON.parse(vaultTxData.selectedToken, bigIntReviver);
-          setSelectedToken(txToken);
-          return;
-        } catch (error) {
-          console.error("Failed to parse transaction selectedToken:", error);
-        }
-      }
-    }
-
-    const storedTokenString = localStorage.getItem("lastSelectedToken");
-    if (storedTokenString) {
+useEffect(() => {
+  const currentVaultId = vaultData?.id || vaultID?.toString();
+  if (currentVaultId) {
+    const vaultTxData = getLocalStorageObject(currentVaultId);
+    if (vaultTxData?.selectedToken) {
       try {
-        const storedToken = JSON.parse(storedTokenString, bigIntReviver);
-        setSelectedToken(storedToken);
+        const txToken = JSON.parse(vaultTxData.selectedToken, bigIntReviver);
+        setSelectedToken(txToken);
+        return;
       } catch (error) {
-        console.error("Failed to parse stored token:", error);
+        console.error("Failed to parse transaction selectedToken:", error);
       }
     }
-  }, [vaultData?.id, vaultID]);
+  }
+
+  setSelectedToken(undefined);
+
+  localStorage.removeItem("lastSelectedToken");
+}, [vaultData?.id, vaultID]);
 
   useEffect(() => {
     const vaultIdStr = Array.isArray(vaultID) ? vaultID[0] : vaultID;
