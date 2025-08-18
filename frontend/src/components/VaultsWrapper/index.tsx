@@ -261,9 +261,9 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
     return filteredVaults.slice(startIndex, endIndex);
   }, [filteredVaults, currentPage, itemsPerPage]);
 
-  // Fetch ratings only for the current page slice
+  // Fetch ratings for ALL vaults (not just current page) to maintain cache across navigation
   const { riskRatings, isLoading: riskLoading } = useRiskRatings({
-    vaults: currentPageSlice,
+    vaults: filteredVaults,
     enabled: true,
   });
 

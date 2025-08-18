@@ -244,25 +244,6 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                 <h3 className="text-white text-xs md:text-sm font-bold text-center">
                   {vault.protocol.network}
                 </h3>
-                {(() => {
-                  const letter = riskRating?.poolRating || "-";
-                  const color = (riskRating?.poolRatingColor || "gray").toLowerCase();
-                  const colorClass =
-                    color === "green"
-                      ? "bg-green-accent"
-                      : color === "yellow"
-                      ? "bg-yellow-400"
-                      : color === "red"
-                      ? "bg-red-500"
-                      : "bg-gray-500";
-                  return (
-                    <div className={`rounded-full ${colorClass} h-5 w-5 flex items-center justify-center`}>
-                      <span className="text-white text-[10px] font-bold leading-[10px]">
-                        {letter}
-                      </span>
-                    </div>
-                  );
-                })()}
               </div>
             </div>
           </div>

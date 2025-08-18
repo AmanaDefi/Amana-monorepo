@@ -12,6 +12,12 @@ const MAX_RETRIES = 3;
 let globalCooldownUntil = 0;
 const GLOBAL_COOLDOWN_DURATION = 60 * 60 * 1000; // 1 hour
 
+// Function to reset global cooldown (for testing)
+function resetGlobalCooldown() {
+  globalCooldownUntil = 0;
+  console.log('[ExponentialAPI] Global cooldown reset');
+}
+
 function createExponentialAPI() {
   const api: AxiosInstance = axios.create({
     baseURL: '',
@@ -77,7 +83,7 @@ function createExponentialAPI() {
     return null;
   }
 
-  return { getRiskRating };
+  return { getRiskRating, resetGlobalCooldown };
 }
 
 export const exponentialApi = createExponentialAPI();
