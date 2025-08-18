@@ -6,6 +6,7 @@ import { VaultData, Token, Balance } from "@/types/types";
 import { useRouter } from "next/navigation";
 import { useTransactionStore } from "@/store/transactionStore";
 import { hasNoErrors } from "@/utils/utils";
+import { updateLocalStorageObject } from "@/utils/localStorageUtils";
 
 interface DepositCompleteProps {
   vaultData: VaultData;
@@ -39,6 +40,7 @@ const DepositComplete = ({
   const isSuccess = hasNoErrors(lastTransactionStepFeedback);
 
   const handleExploreClick = () => {
+    updateLocalStorageObject(vaultData.id, null);
     onClose();
     router.push("/");
   };
@@ -98,7 +100,7 @@ const DepositComplete = ({
     parseFloat(amount)
       .toFixed(5)
       .replace(/\.?0+$/, "");
-
+  
   return (
     <div className="flex flex-col gap-6 font-gotham">
       <div className="rounded-[16px] before-gradient-border px-4 py-8 bg-[#14171F]">

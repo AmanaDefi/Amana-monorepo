@@ -225,6 +225,8 @@ export enum Tabs {
 }
 
 export interface ITxLocalStorage {
+  vaultId?: string;
+
   tab: Tabs;
 
   action: Action;
@@ -234,6 +236,7 @@ export interface ITxLocalStorage {
   selectedToken: string; //JSON.stringify fo save BigInt
   inputBal: string; //JSON.stringify fo save BigInt
   displayValue: string;
+  conversionOutput: string;
 
   crosschainInvestHash: string;
   lastEventTxHash: string;
@@ -243,8 +246,11 @@ export interface ITxLocalStorage {
   isTransactionStarted: boolean;
   isTransactionProcessing: boolean;
   finishedTransaction: boolean;
+  failedTransaction?: boolean;
   transactionCompleted: boolean;
   selectedChain?: string;
+
+  userVaultBalance?: string;
 
   slippage?: {
     value: number;
@@ -253,4 +259,13 @@ export interface ITxLocalStorage {
 
   transactionStepFeedback: TransactionStepMessages;
   lastTransactionStepFeedback: TransactionStepMessages;
+
+  finalTransactionData?: {
+    inputAmount: string;
+    outputAmount: string;
+    inputSymbol: string;
+    outputSymbol: string;
+    isDeposit: boolean;
+    timestamp: number;
+  };
 }
