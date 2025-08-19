@@ -46,9 +46,6 @@ declare global {
 
 export type ChainType = "solana" | "evm" | null;
 
-export type ActiveEvmWallet = ConnectedWallet & {
-  isDisconnected?: boolean;
-};
 
 interface MultiChainContextType {
   selectedChain: ChainType | null;
@@ -62,7 +59,7 @@ interface MultiChainContextType {
   switchToChain: (chain: Chain) => Promise<void>;
   refetchBalance: (address: string) => Promise<Balance | undefined>;
   evmDisconnect: () => Promise<void>;
-  activeEvmWallet: ActiveEvmWallet;
+  activeEvmWallet: ConnectedWallet;
   isWalletSwitching: boolean;
 }
 
