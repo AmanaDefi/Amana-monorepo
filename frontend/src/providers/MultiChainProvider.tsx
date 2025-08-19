@@ -46,7 +46,6 @@ declare global {
 
 export type ChainType = "solana" | "evm" | null;
 
-
 interface MultiChainContextType {
   selectedChain: ChainType | null;
   activeChain: Chain | null;
@@ -151,17 +150,20 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     (address: string | null, source?: string) => {
       const flag = localStorage.getItem(MANUAL_DISCONNECT_KEY);
 
-      console.log("[WALLET_ADDRESS]", {
-        from: walletAddress?.slice(0, 8) || "null",
-        to: address?.slice(0, 8) || "null",
-        source: source || "unknown",
-        flag: flag || "none",
-        timestamp: new Date().toISOString(),
-      });
+      console.log(
+        "WALLET SET:",
+        address?.slice(0, 8) || "null",
+        "from:",
+        source,
+        "disconnectInProgress:",
+        disconnectInProgress,
+        "flag:",
+        flag || "none",
+      );
 
       setWalletAddress(address);
     },
-    [walletAddress],
+    [walletAddress, disconnectInProgress],
   );
 
   useEffect(() => {
@@ -171,6 +173,12 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     }
 
     if (wagmiAddress) {
+      console.log(
+        "WAGMI RECONNECT:",
+        wagmiAddress.slice(0, 8),
+        "disconnectInProgress:",
+        disconnectInProgress,
+      );
       setIsWagmiConnected(true);
       localStorage.setItem(WAGMI_WALLET_KEY, wagmiAddress);
       console.log("[WAGMI STATE] Connected and saved:", wagmiAddress);
@@ -182,7 +190,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
         setIsWagmiConnected(false);
       }
     }
-  }, [wagmiAddress, isWagmiConnected]);
+  }, [wagmiAddress, isWagmiConnected, disconnectInProgress]);
 
   // Persist wallet address when connected
   useEffect(() => {
@@ -210,6 +218,12 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     if (isHydrated && !walletAddress && !step) {
       const saved = localStorage.getItem(PERSISTED_WALLET_KEY);
       if (saved) {
+        console.log(
+          "LOCALSTORAGE RESTORE:",
+          saved.slice(0, 8),
+          "disconnectInProgress:",
+          disconnectInProgress,
+        );
         setWalletAddressWithLog(saved, "localStorage-restore");
         setSelectedChain("evm");
 
@@ -373,7 +387,16 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       disconnectConnectors();
     }
 
-    if (privyWallet?.address) {
+    if (privyWallet?.address && !disconnectInProgress) {
+      console.log(
+        "PRIVY RECONNECT:",
+        privyWallet.address.slice(0, 8),
+        "disconnectInProgress:",
+        disconnectInProgress,
+        "step:",
+        step,
+      );
+
       if (!step) {
         if (wallets.length > 1 && user?.wallet) {
           disconnectConnectors();
@@ -440,7 +463,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const flag = localStorage.getItem(MANUAL_DISCONNECT_KEY);
 
-    console.log("[PRIVY MONITOR]", {
+    console.log(" PRIVY MONITOR:", {
       address: privyWallet?.address?.slice(0, 8) || "none",
       walletClientType: privyWallet?.walletClientType || "none",
       flag: flag || "none",
@@ -524,7 +547,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   }, [isHydrated, isInitializationComplete, completeInitialization]);
 
   const disconnectWallet = useCallback(async () => {
-    console.log("[DISCONNECT START]", {
+    console.log("DISCONNECT START", {
       timestamp: new Date().toISOString(),
       walletAddress_before: walletAddress?.slice(0, 8),
       privyWallet_before: privyWallet?.address?.slice(0, 8),
@@ -535,6 +558,11 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
 
     setDisconnectInProgress(true);
     startInitialization();
+
+    setSelectedChain(null);
+    setActiveChain(null);
+    setWalletAddressWithLog(null, "full-disconnect");
+    setIsModalOpen(false);
 
     const hasTxInfo = localStorage.getItem(VAULTS_INFO_KEY);
     if (hasTxInfo) {
@@ -569,9 +597,14 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       const disconnectPromises = [];
 
       if (privyWallet?.address) {
+        console.log("Attempting Privy logout...");
         disconnectPromises.push(
           logout().catch((error) => {
-            console.error("Error during Privy logout:", error);
+            console.log(
+              "Privy logout failed (expected):",
+              error?.message || error,
+            );
+            return null;
           }),
         );
         disconnectPromises.push(disconnectConnectors());
@@ -589,15 +622,14 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error("Error during disconnect process:", error);
     } finally {
-      setSelectedChain(null);
-      setActiveChain(null);
-      setWalletAddressWithLog(null, "full-disconnect");
-      setIsModalOpen(false);
+      setTimeout(() => {
+        setDisconnectInProgress(false);
+        localStorage.removeItem(MANUAL_DISCONNECT_KEY);
+        completeInitialization();
+        console.log("DISCONNECT CLEANUP COMPLETE - flags cleared");
+      }, 1000);
 
-      setDisconnectInProgress(false);
-      completeInitialization();
-
-      console.log("[DISCONNECT END]", {
+      console.log("DISCONNECT END", {
         timestamp: new Date().toISOString(),
         walletAddress_after: walletAddress,
         privyWallet_after: privyWallet?.address?.slice(0, 8),
@@ -785,6 +817,12 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       !publicKey &&
       !privyWallet?.address
     ) {
+      console.log(
+        "AUTH RESTORE:",
+        authUserAddress.slice(0, 8),
+        "disconnectInProgress:",
+        disconnectInProgress,
+      );
       setWalletAddressWithLog(authUserAddress, "auth-sync");
       setSelectedChain("evm");
 
@@ -818,6 +856,12 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       !publicKey &&
       !privyWallet?.address
     ) {
+      console.log(
+        "WAGMI RESTORE:",
+        wagmiAddress.slice(0, 8),
+        "disconnectInProgress:",
+        disconnectInProgress,
+      );
       setWalletAddressWithLog(wagmiAddress, "wagmi-connect");
       setSelectedChain("evm");
     }
