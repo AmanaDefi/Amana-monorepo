@@ -314,6 +314,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
     activeChain,
     selectedChain,
     activeEvmWallet: activeAccount,
+    walletAddress,
   } = useMultiChain();
 
   const { openStep } = useAuthStore();
@@ -602,7 +603,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
       if (isTopUpModal) {
         return !!activeAccount && activeAccount.walletClientType !== "privy";
       }
-      return !!activeAccount;
+      return !!activeAccount && !!walletAddress;
     }
   }, [selectedChainLocal, publicKey, activeAccount, isTopUpModal]);
 

@@ -16,6 +16,7 @@ import convexRewardPoolABI from "../../abis/convexRewardPoolABI.json";
 import IBalancerStablePoolABI from "../../abis/IBalancerStablePoolABI.json";
 import IBalancerLiquidityGaugeABI from "../../abis/IBalancerLiquidityGauge.json";
 import IERC20MetadataABI from "../../abis/IERC20MetadataABI.json";
+import { WalletClient } from "viem";
 
 import { toUtf8Bytes, ZeroAddress, AbiCoder } from "ethers";
 const Nori = require("nori-sdk").Nori;
@@ -836,6 +837,7 @@ export const executeDeposit = async (
   transactionAmount: bigint,
   setcrossChainTxId: Function,
   priceContext: TokenPriceContextType,
+  walletClient: WalletClient,
 ) => {
   if (activeChain?.id === CHAIN_ID.zetachain) {
     return executeDirectDeposit(
@@ -845,6 +847,7 @@ export const executeDeposit = async (
       activeChain,
       transactionAmount,
       priceContext,
+      walletClient,
     );
   } else if (activeChain?.id === CHAIN_ID.solana) {
     return executeSolanaDeposit(
@@ -866,6 +869,7 @@ export const executeDeposit = async (
       transactionAmount,
       setcrossChainTxId,
       priceContext,
+      walletClient,
     );
   }
 };
@@ -910,8 +914,8 @@ export const Approvedeposit = async (
   activeAccount: ConnectedWallet,
   activeChain: Chain,
   transactionAmount: bigint,
+  walletClient: WalletClient,
 ) => {
-  const walletClient = await getWalletClient(activeAccount);
   if (!walletClient || !activeAccount?.address) {
     return false;
   }
@@ -964,12 +968,12 @@ export const Approvedeposit = async (
       showErrorToast("Insufficient ZETA balance to perform the transaction");
     }
     if (
-      error?.message?.toLowerCase().includes(
-        "wallet timeout",
-      ) &&
+      error?.message?.toLowerCase().includes("wallet timeout") &&
       activeAccount.walletClientType !== "privy"
     ) {
-      showErrorToast("It looks like the confirmation request in your wallet has timed out. You can still approve it, but our app won't be able to track its progress from here.");
+      showErrorToast(
+        "It looks like the confirmation request in your wallet has timed out. You can still approve it, but our app won't be able to track its progress from here.",
+      );
     }
     return false;
   }
@@ -1061,7 +1065,12 @@ const executeDirectDeposit = async (
   activeChain: Chain,
   transactionAmount: bigint,
   priceContext: TokenPriceContextType,
+  walletClient: WalletClient,
 ) => {
+  if (!walletClient) {
+    return { transactionHash: null };
+  }
+
   if (!activeAccount)
     throw new Error("no activeAccount found for perform deposit");
 
@@ -1113,10 +1122,10 @@ const executeDirectDeposit = async (
     vaultData.inputToken.decimals,
   );
   const minSharesOut =
-    (sharesAmountBigInt * BigInt(10000 - getCurrentSlippage(vaultData.id) * 100)) /
+    (sharesAmountBigInt *
+      BigInt(10000 - getCurrentSlippage(vaultData.id) * 100)) /
     BigInt(10000);
 
-  const walletClient = await getWalletClient(activeAccount);
   if (!walletClient) {
     return { transactionHash: null };
   }
@@ -1165,8 +1174,8 @@ const executeCrossChainDeposit = async (
   transactionAmount: bigint,
   setcrossChainTxId: Function,
   priceContext: TokenPriceContextType,
+  walletClient: WalletClient,
 ) => {
-  const walletClient = await getWalletClient(activeAccount);
   if (!activeAccount || !walletClient) return { transactionHash: null };
 
   const cached = useTransactionStore.getState().lastDepositCalculation;
@@ -1235,7 +1244,8 @@ const executeCrossChainDeposit = async (
     vaultData.inputToken.decimals,
   );
   const minSharesOut =
-    (sharesAmountBigInt * BigInt(10000 - getCurrentSlippage(vaultData.id) * 100)) /
+    (sharesAmountBigInt *
+      BigInt(10000 - getCurrentSlippage(vaultData.id) * 100)) /
     BigInt(10000);
   // Generate a unique transaction ID
   const transactionId = generateTransactionId(
@@ -1971,6 +1981,7 @@ export const executeWithdrawal = async (
   withdrawERC20: Address,
   withdrawZRC20: Token,
   setcrossChainTxId: Function,
+  walletClient: WalletClient,
 ) => {
   if (activeChain?.id == CHAIN_ID.zetachain) {
     // if active chain is Zetachain (main or testnet)
@@ -1979,6 +1990,7 @@ export const executeWithdrawal = async (
       activeAccount,
       activeChain,
       withdrawAssetAmount,
+      walletClient,
     );
   } else if (activeChain?.id == CHAIN_ID.solana) {
     return executeSolanaWithdrawal(
@@ -1999,6 +2011,7 @@ export const executeWithdrawal = async (
       withdrawERC20,
       withdrawZRC20,
       setcrossChainTxId,
+      walletClient,
     );
   }
 };
@@ -2008,6 +2021,7 @@ const executeDirectWithdrawal = async (
   activeAccount: ConnectedWallet,
   activeChain: Chain,
   withdrawAssetAmount: bigint,
+  walletClient: WalletClient,
 ) => {
   //vaultId: string
   const { swapPath, minAmountOut } = await getPathDataAndMinAmountOut(
@@ -2015,7 +2029,6 @@ const executeDirectWithdrawal = async (
     vaultData.inputToken,
     withdrawAssetAmount,
   );
-  const walletClient = await getWalletClient(activeAccount);
 
   if (!walletClient || !walletClient.chain || !activeAccount?.address) {
     return { transactionHash: null };
@@ -2067,8 +2080,8 @@ const executeCrossChainWithdrawal = async (
   withdrawERC20: Address,
   withdrawZRC20: Token,
   setcrossChainTxId: Function,
+  walletClient: WalletClient,
 ) => {
-  const walletClient = await getWalletClient(activeAccount);
   if (!activeAccount || !walletClient) return { transactionHash: null };
   const { swapPath, minAmountOut } = await getPathDataAndMinAmountOut(
     vaultData,
@@ -2156,12 +2169,12 @@ const executeCrossChainWithdrawal = async (
   } catch (error: any) {
     console.log("error call tx:", error);
     if (
-      error?.message?.toLowerCase().includes(
-        "wallet timeout",
-      ) &&
+      error?.message?.toLowerCase().includes("wallet timeout") &&
       activeAccount.walletClientType !== "privy"
     ) {
-      showErrorToast("It looks like the confirmation request in your wallet has timed out. You can still approve it, but our app won't be able to track its progress from here.");
+      showErrorToast(
+        "It looks like the confirmation request in your wallet has timed out. You can still approve it, but our app won't be able to track its progress from here.",
+      );
     }
     return { transactionHash: null };
   }

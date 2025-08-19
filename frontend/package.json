@@ -61,6 +61,7 @@
     "react-toastify": "^10.0.5",
     "react-tooltip": "5.22.0",
     "thirdweb": "5.92.1",
+    "vconsole": "^3.15.1",
     "viem": "2.30.0",
     "wagmi": "2.15.4",
     "zod": "^3.25.56",
