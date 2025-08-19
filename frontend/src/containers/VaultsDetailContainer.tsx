@@ -94,8 +94,11 @@ const VaultsDetailContainer: React.FC<{
   const [selectedToken, setSelectedToken] = useState<Token | undefined>();
   const [isDeposit, setIsDeposit] = useState<boolean>(initialIsDeposit);
   const [showMobileInvestment, setShowMobileInvestment] = useState(false);
-  const { balance: hookWalletBalance, fetchBalance } =
-    useMultichainTokenBalance(selectedToken);
+  const {
+    balance: hookWalletBalance,
+    fetchBalance,
+    tokenSymbol,
+  } = useMultichainTokenBalance(selectedToken);
   const giftButtonRef = useRef<HTMLButtonElement>(null);
   const { openStep } = useAuthStore();
 
@@ -713,6 +716,7 @@ useEffect(() => {
             transactionCompleted={finishedTransaction}
             selectedToken={selectedToken}
             walletBalance={hookWalletBalance.formatted || "0"}
+            walletTokenSymbol={tokenSymbol}
             onDepositDataUpdate={handleDepositDataUpdate}
             isDeposit={isDeposit}
           />
@@ -895,6 +899,7 @@ useEffect(() => {
                 transactionCompleted={finishedTransaction}
                 selectedToken={selectedToken}
                 walletBalance={hookWalletBalance.formatted || "0"}
+                walletTokenSymbol={tokenSymbol}
                 onDepositDataUpdate={handleDepositDataUpdate}
                 isDeposit={isDeposit}
               />

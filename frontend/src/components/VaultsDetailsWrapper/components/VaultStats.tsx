@@ -22,6 +22,7 @@ interface VaultStatsProps {
   selectedToken?: Token;
   isDeposit: boolean;
   walletBalance: string;
+  walletTokenSymbol?: string;
   onDepositDataUpdate?: (
     amount: string,
     symbol: string,
@@ -39,6 +40,7 @@ export default function VaultStats({
   onDepositDataUpdate,
   isDeposit,
   walletBalance,
+  walletTokenSymbol,
 }: VaultStatsProps): JSX.Element {
   const { activeChain, walletAddress } = useMultiChain();
   const [depositAmount, setDepositAmount] = useState("0");
@@ -178,13 +180,13 @@ export default function VaultStats({
 
   // Get wallet balance and fetchBalance function
 
-  const symbol = selectedToken?.symbol || "";
-  const price = useTokenPriceBySymbol(selectedToken?.symbol);
-  const vaultTokenPrice =
-    useTokenPriceBySymbol(vaultData.inputToken?.symbol) || 0;
+const symbol = walletTokenSymbol || selectedToken?.symbol || "";
+const price = useTokenPriceBySymbol(walletTokenSymbol || selectedToken?.symbol);
+const vaultTokenPrice =
+  useTokenPriceBySymbol(vaultData.inputToken?.symbol) || 0;
 
-  // Format wallet balance according to token type
-  const formattedWalletBalance = formatTokenBalance(walletBalance, symbol);
+// Format wallet balance according to token type
+const formattedWalletBalance = formatTokenBalance(walletBalance, symbol);
 
   useEffect(() => {
     // Update deposit amount whenever the vault balance changes

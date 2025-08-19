@@ -305,11 +305,12 @@ export default function VaultInputs({
   const inputTokenPrice = useTokenPriceBySymbol(inputToken?.symbol);
   const vaultTokenPrice = useTokenPriceBySymbol(vaultData.inputToken?.symbol);
 
-  const isSelectedTokenInput =
-    selectedTokenFromModal &&
-    inputToken &&
-    selectedTokenFromModal?.address === inputToken?.address &&
-    selectedTokenFromModal?.symbol === inputToken?.symbol;
+  // const isSelectedTokenInput =
+  //   selectedTokenFromModal &&
+  //   inputToken &&
+  //   selectedTokenFromModal?.address === inputToken?.address &&
+  //   selectedTokenFromModal?.symbol === inputToken?.symbol;
+  const isSelectedTokenInput = false;
 
   const vaultToken: Token = useMemo(() => {
     return {
@@ -326,7 +327,7 @@ export default function VaultInputs({
 
   useEffect(() => {
     const setTokenBasedOnChain = () => {
-      if (isOpen || isSelectedTokenInput) return;
+      // if (isOpen || isSelectedTokenInput) return;
 
       if (!selectedChain) {
         setInputToken(undefined);
@@ -382,8 +383,8 @@ export default function VaultInputs({
     vaultData,
     onTokenSelect,
     setSelectedTokenFromModal,
-    isOpen,
-    isSelectedTokenInput,
+    // isOpen,
+    // isSelectedTokenInput,
   ]);
 
   // Update inputTokenBalance state when useTokenBalance returns a new value
