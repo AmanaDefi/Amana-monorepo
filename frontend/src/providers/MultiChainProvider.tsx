@@ -570,12 +570,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
           localStorage.removeItem(key);
         }
       });
-
-      Object.keys(localStorage).forEach((key) => {
-        if (key.match(/^0x[a-fA-F0-9]{40}$/)) {
-          localStorage.removeItem(key);
-        }
-      });
     }
 
     setPersistedWalletAddress(null);
@@ -651,8 +645,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     connected,
     wagmiConnected,
     setWalletAddressWithLog,
-    walletAddress,
-    privyWallet,
   ]);
 
   const getEvmBalance = useCallback(
