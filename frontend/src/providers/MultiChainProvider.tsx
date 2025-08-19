@@ -200,7 +200,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     if (manualDisconnect === "true") {
       return;
     }
-
     if (walletAddress && walletAddress !== persistedWalletAddress) {
       localStorage.setItem(PERSISTED_WALLET_KEY, walletAddress);
       setPersistedWalletAddress(walletAddress);
@@ -373,7 +372,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (disconnectInProgress) return;
-
     const manualDisconnect = localStorage.getItem(MANUAL_DISCONNECT_KEY);
     if (manualDisconnect === "true") {
       return;
@@ -554,7 +552,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     });
 
     localStorage.setItem(MANUAL_DISCONNECT_KEY, "true");
-    console.log("[DISCONNECT] Flag set to true");
 
     setDisconnectInProgress(true);
     startInitialization();
@@ -576,12 +573,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     if (typeof window !== "undefined") {
       Object.keys(localStorage).forEach((key) => {
         if (key.startsWith("privy:")) {
-          localStorage.removeItem(key);
-        }
-      });
-
-      Object.keys(localStorage).forEach((key) => {
-        if (key.match(/^0x[a-fA-F0-9]{40}$/)) {
           localStorage.removeItem(key);
         }
       });
@@ -659,8 +650,6 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
     connected,
     wagmiConnected,
     setWalletAddressWithLog,
-    walletAddress,
-    privyWallet,
   ]);
 
   const getEvmBalance = useCallback(
