@@ -233,10 +233,10 @@ export interface ITxLocalStorage {
   step: number;
   steps: Action[];
 
-  selectedToken: string; //JSON.stringify fo save BigInt
+  selectedToken?: string | null; //JSON.stringify fo save BigInt
   inputBal: string; //JSON.stringify fo save BigInt
   displayValue: string;
-  conversionOutput: string;
+  conversionOutput?: string | null;
 
   crosschainInvestHash: string;
   lastEventTxHash: string;

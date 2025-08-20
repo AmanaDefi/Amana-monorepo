@@ -843,7 +843,10 @@ export default function VaultInputs({
   }, [selectedChain?.id, vaultData.inputToken]);
 
   const getWithdrawOutputAmount = useCallback(
-    async (inputAmountValue: bigint) => {
+    async (inputAmountValue: bigint, signal: AbortSignal) => {
+      if (signal.aborted) {
+        return;
+      }
       // 🔄 NEW LOGIC: Input is now in underlying asset terms, not shares
       // So we don't need to convert from shares to assets - the input IS the asset amount
 
@@ -880,6 +883,10 @@ export default function VaultInputs({
         tokenConversionAmount = result.amountOut;
       }
 
+      if (signal.aborted) {
+        return;
+      }
+
       const assetsConversionInUSD =
         (Number(assetsAmount) / 10 ** vaultData.inputToken.decimals) *
         vaultTokenPrice;
@@ -901,7 +908,6 @@ export default function VaultInputs({
       );
 
       if (inputAmountValue === debouncedInputBalance.value) {
-        // Use formatTokenBalance for the output amount formatting
         const formattedOutputAmount = formatTokenBalance(
           tokenConversionFromWei,
           inputToken?.symbol || "",
@@ -933,147 +939,161 @@ export default function VaultInputs({
   );
 
   const getDepositOutputAmount = useCallback(
-    async (inputAmountValue: bigint) => {
-      if (isDeposit && Number(inputAmountValue) > Number(tokenBalance.value)) {
-        setLoadingOutputToken(false);
-        return;
-      }
+  async (inputAmountValue: bigint, signal: AbortSignal) => {
+    // Check if operation was aborted before starting
+    if (signal.aborted) {
+      return;
+    }
 
-      if (!inputToken || !activeChain) {
-        return;
-      }
+    if (isDeposit && Number(inputAmountValue) > Number(tokenBalance.value)) {
+      setLoadingOutputToken(false);
+      return;
+    }
 
-      try {
-        // Check cache first - look for existing calculation with same parameters
-        const cached = useTransactionStore.getState().lastDepositCalculation;
+    if (!inputToken || !activeChain) {
+      return;
+    }
 
-        let calculationResult;
+    try {
+      const cached = useTransactionStore.getState().lastDepositCalculation;
+      let calculationResult;
 
-        if (
-          cached &&
-          isCachedCalculationValid(
-            cached,
-            inputAmountValue,
-            vaultData.id,
-            inputToken,
-            activeChain.id,
-          )
-        ) {
-          // Log cache performance stats periodically
-          const stats = getCacheStats();
-          if (stats.hits % 10 === 0) {
-            // Log every 10th cache hit
-            console.log("Cache Performance:", stats);
-          }
-
-          calculationResult = cached.result;
-        } else {
-          console.log("Cache miss - performing new deposit calculation");
-          const inputTokenPrice = getTokenPrice(
-            inputToken?.symbol,
-            priceContext,
-          );
-          if (!inputTokenPrice) {
-            console.error("Input token price is not defined");
-            return;
-          }
-          // Use the unified calculation function
-          calculationResult = await calculateDepositOutput(
-            inputAmountValue,
-            vaultData,
-            inputToken,
-            activeChain,
-            activeWallet,
-            vaultTokenPrice,
-            inputTokenPrice,
-            gasTokenPrice,
-            formatUSDAmount,
-          );
-
-          // Store result in cache for future use
-          useTransactionStore.getState().setLastDepositCalculation({
-            inputAmount: inputAmountValue.toString(),
-            vaultId: vaultData.id,
-            result: calculationResult,
-            timestamp: Date.now(),
-          });
+      if (
+        cached &&
+        isCachedCalculationValid(
+          cached,
+          inputAmountValue,
+          vaultData.id,
+          inputToken,
+          activeChain.id,
+        )
+      ) {
+        const stats = getCacheStats();
+        if (stats.hits % 10 === 0) {
+          console.log("Cache Performance:", stats);
+        }
+        calculationResult = cached.result;
+      } else {
+        console.log("Cache miss - performing new deposit calculation");
+        const inputTokenPrice = getTokenPrice(
+          inputToken?.symbol,
+          priceContext,
+        );
+        if (!inputTokenPrice) {
+          console.error("Input token price is not defined");
+          return;
         }
 
-        // Helper function to format and set conversion output
-        const formatAndSetConversionOutput = (result: any) => {
-          const sharesAmountFormatted = formatShares(result.sharesAmount);
+        // Check if operation was aborted before expensive calculation
+        if (signal.aborted) {
+          return;
+        }
 
-          const outputAmountInUSD =
-            (Number(result.outputAmount) /
+        calculationResult = await calculateDepositOutput(
+          inputAmountValue,
+          vaultData,
+          inputToken,
+          activeChain,
+          activeWallet,
+          vaultTokenPrice,
+          inputTokenPrice,
+          gasTokenPrice,
+          formatUSDAmount,
+        );
+
+        // Check if operation was aborted after calculation
+        if (signal.aborted) {
+          return;
+        }
+
+        useTransactionStore.getState().setLastDepositCalculation({
+          inputAmount: inputAmountValue.toString(),
+          vaultId: vaultData.id,
+          result: calculationResult,
+          timestamp: Date.now(),
+        });
+      }
+
+      const formatAndSetConversionOutput = (result: any) => {
+        const sharesAmountFormatted = formatShares(result.sharesAmount);
+        const outputAmountInUSD =
+          (Number(result.outputAmount) /
+            10 ** vaultData.inputToken.decimals) *
+          vaultTokenPrice;
+
+        if (inputAmountValue === debouncedInputBalance.value) {
+          const amountForStrategyInUSD =
+            (Number(result.amountForStrategy) /
               10 ** vaultData.inputToken.decimals) *
             vaultTokenPrice;
 
-          if (inputAmountValue === debouncedInputBalance.value) {
-            // Calculate net deposit amount (after gas fee and swap slippage, but before deposit slippage)
-            const amountForStrategyInUSD =
-              (Number(result.amountForStrategy) /
-                10 ** vaultData.inputToken.decimals) *
-              vaultTokenPrice;
+          setConversionOutput({
+            slippageActualValue: Number(
+              result.totalSlippage.percentage.toFixed(2),
+            ),
+            slippageAmountInUSDFormatted: result.totalSlippage.amountInUSD,
+            finalConvertedAmountInUSDFormatted:
+              formatUSDValue(outputAmountInUSD),
+            outputAmountFormatted: sharesAmountFormatted,
+            outputAmountInUSDFormatted: formatUSDValue(outputAmountInUSD),
+            gasFeeInInputToken: result.gasFee.amount.toString(),
+            gasFeeInUSD: result.gasFee.amountInUSD,
+            gasFeeInETH: result.gasFee.amountInETH,
+            netDepositToVaultUSD: formatUSDValue(amountForStrategyInUSD),
+            inputAmountInUSDFormatted: formatUSDValue(
+              (Number(inputAmountValue) /
+                10 ** (inputToken?.decimals ?? 18)) *
+                inputTokenPrice,
+            ),
+            swapSlippageUSD: result.swapSlippage.amountInUSD,
+            depositSlippageUSD: result.depositSlippage.amountInUSD,
+            swapSlippagePercentage: result.swapSlippage.percentage,
+            depositSlippagePercentage: result.depositSlippage.percentage,
+          });
+        }
+      };
 
-            setConversionOutput({
-              slippageActualValue: Number(
-                result.totalSlippage.percentage.toFixed(2),
-              ),
-              slippageAmountInUSDFormatted: result.totalSlippage.amountInUSD,
-              finalConvertedAmountInUSDFormatted:
-                formatUSDValue(outputAmountInUSD),
-              outputAmountFormatted: sharesAmountFormatted,
-              outputAmountInUSDFormatted: formatUSDValue(outputAmountInUSD),
-              gasFeeInInputToken: result.gasFee.amount.toString(),
-              gasFeeInUSD: result.gasFee.amountInUSD,
-              gasFeeInETH: result.gasFee.amountInETH,
-              netDepositToVaultUSD: formatUSDValue(amountForStrategyInUSD),
-              inputAmountInUSDFormatted: formatUSDValue(
-                (Number(inputAmountValue) /
-                  10 ** (inputToken?.decimals ?? 18)) *
-                  inputTokenPrice,
-              ),
-              swapSlippageUSD: result.swapSlippage.amountInUSD,
-              depositSlippageUSD: result.depositSlippage.amountInUSD,
-              swapSlippagePercentage: result.swapSlippage.percentage,
-              depositSlippagePercentage: result.depositSlippage.percentage,
-            });
-          }
-        };
+      formatAndSetConversionOutput(calculationResult);
 
-        // Use the helper function for both cached and new results
-        formatAndSetConversionOutput(calculationResult);
-
-        console.log("Unified Deposit Calculation Result:", {
-          inputAmount: calculationResult.inputAmount.toString(),
-          outputAmount: calculationResult.outputAmount.toString(),
-          gasFee: calculationResult.gasFee.amount.toString(),
-          swapSlippage: calculationResult.swapSlippage.amount.toString(),
-          depositSlippage: calculationResult.depositSlippage.amount.toString(),
-          needsTokenSwap: calculationResult.needsTokenSwap,
-          needsGasFee: calculationResult.needsGasFee,
-        });
-      } catch (error) {
+      console.log("Unified Deposit Calculation Result:", {
+        inputAmount: calculationResult.inputAmount.toString(),
+        outputAmount: calculationResult.outputAmount.toString(),
+        gasFee: calculationResult.gasFee.amount.toString(),
+        swapSlippage: calculationResult.swapSlippage.amount.toString(),
+        depositSlippage: calculationResult.depositSlippage.amount.toString(),
+        needsTokenSwap: calculationResult.needsTokenSwap,
+        needsGasFee: calculationResult.needsGasFee,
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.name === "AbortError") {
+          console.log("Calculation was aborted.");
+        } else {
+          console.error("Error in deposit calculation:", error);
+          setOutputBoxErrorMessage("Error calculating deposit output");
+        }
+      } else {
         console.error("Error in deposit calculation:", error);
         setOutputBoxErrorMessage("Error calculating deposit output");
       }
+    }
 
-      setLoadingOutputToken(false);
-    },
-    [
-      debouncedInputBalance.value,
-      inputToken,
-      inputTokenPrice,
-      vaultData,
-      vaultTokenPrice,
-      activeWallet,
-      userSlippage,
-      gasTokenPrice,
-      priceContext,
-      activeChain,
-      tokenBalance.value,
-    ],
-  );
+    setLoadingOutputToken(false);
+  },
+  [
+    debouncedInputBalance.value,
+    inputToken,
+    inputTokenPrice,
+    vaultData,
+    vaultTokenPrice,
+    activeWallet,
+    userSlippage,
+    gasTokenPrice,
+    priceContext,
+    activeChain,
+    tokenBalance.value,
+  ],
+);
 
   const timeoutRef = useRef<NodeJS.Timeout>();
 
@@ -1319,6 +1339,10 @@ export default function VaultInputs({
       }
     }
 
+    // Create AbortController for this calculation
+    const controller = new AbortController();
+    const { signal } = controller;
+
     if (
       !debouncedInputBalance.formatted ||
       Number(debouncedInputBalance.formatted) <= 0
@@ -1329,8 +1353,18 @@ export default function VaultInputs({
     }
 
     setLoadingOutputToken(true);
-    if (isDeposit) getDepositOutputAmount(debouncedInputBalance.value);
-    else getWithdrawOutputAmount(debouncedInputBalance.value);
+
+    // Pass signal to the calculation functions
+    if (isDeposit) {
+      getDepositOutputAmount(debouncedInputBalance.value, signal);
+    } else {
+      getWithdrawOutputAmount(debouncedInputBalance.value, signal);
+    }
+
+    // Cleanup function to abort ongoing operations
+    return () => {
+      controller.abort();
+    };
   }, [
     debouncedInputBalance,
     inputToken,
@@ -1342,30 +1376,42 @@ export default function VaultInputs({
     userSlippage,
   ]);
 
-  useEffect(() => {
-    // Force recalculation when slippage changes, but only if we have a valid input
-    if (
-      debouncedInputBalance.formatted &&
-      Number(debouncedInputBalance.formatted) > 0 &&
-      !CheckTheTxIsInProgress(vaultData?.id)
-    ) {
-      setLoadingOutputToken(true);
-      clearDepositCalculationCache();
-      if (isDeposit) {
-        getDepositOutputAmount(debouncedInputBalance.value);
-      } else {
-        getWithdrawOutputAmount(debouncedInputBalance.value);
-      }
+useEffect(() => {
+  // Force recalculation when slippage changes, but only if we have a valid input
+  if (
+    debouncedInputBalance.formatted &&
+    Number(debouncedInputBalance.formatted) > 0 &&
+    !CheckTheTxIsInProgress(vaultData?.id)
+  ) {
+    // Create AbortController for slippage recalculation
+    const controller = new AbortController();
+    const { signal } = controller;
+
+    setLoadingOutputToken(true);
+    clearDepositCalculationCache();
+
+    if (isDeposit) {
+      getDepositOutputAmount(debouncedInputBalance.value, signal);
+    } else {
+      getWithdrawOutputAmount(debouncedInputBalance.value, signal);
     }
-  }, [
-    userSlippage,
-    isAuto,
-    debouncedInputBalance.formatted,
-    debouncedInputBalance.value,
-    isDeposit,
-    vaultData?.id,
-    clearDepositCalculationCache,
-  ]);
+
+    // Cleanup function to abort ongoing operations
+    return () => {
+      controller.abort();
+    };
+  }
+}, [
+  userSlippage,
+  isAuto,
+  debouncedInputBalance.formatted,
+  debouncedInputBalance.value,
+  isDeposit,
+  vaultData?.id,
+  clearDepositCalculationCache,
+  getDepositOutputAmount,
+  getWithdrawOutputAmount,
+]);
 
   // Clear cache when important parameters change
   useEffect(() => {
