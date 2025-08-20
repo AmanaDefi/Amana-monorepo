@@ -75,18 +75,27 @@ export class SolanaZetaClient {
 
   solanaDepositAndCall = async (amount: number, recipient: string, args: any, revertOptions: RevertOptions | null = null) => {
     try {
+      console.log("Creating Solana deposit and call transaction...");
+      console.log("Transaction params:", { amount, recipient, args, revertOptions });
+      
       // Create transaction
       const tx = new Transaction().add(
         await createSolanaDepositAndCallTx(this.wallet.publicKey, amount, recipient, args, revertOptions, this.program)
       );
+
+      console.log("Transaction created, setting blockhash and fee payer...");
 
       // Set blockhash and fee payer
       const { blockhash } = await this.connection.getLatestBlockhash();
       tx.recentBlockhash = blockhash;
       tx.feePayer = this.wallet.publicKey;
 
+      console.log("Signing transaction...");
+
       // For wallet adapters, use the signTransaction from the adapter 
       const signedTx = await this.wallet.signTransaction(tx);
+
+      console.log("Transaction signed, sending to network...");
 
       // Send the pre-signed transaction
       const signature = await this.connection.sendRawTransaction(
@@ -94,12 +103,16 @@ export class SolanaZetaClient {
         { skipPreflight: false }
       );
 
+      console.log("Transaction sent, waiting for confirmation...");
+
       // Wait for confirmation
       const confirmation = await this.connection.confirmTransaction(signature, "confirmed");
 
+      console.log("Transaction confirmed:", signature);
       return signature;
     } catch (e) {
-      throw new Error(`Transaction failed`);
+      console.error("Error in solanaDepositAndCall:", e);
+      throw new Error(`Transaction failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
     }
   }
 

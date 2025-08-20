@@ -136,14 +136,42 @@ export const Deposit = () => {
       !!error ||
       !smartWalletAddress
     ) {
-      console.log("Early return due to missing values");
+      console.log("Early return due to missing values:", {
+        chain: chain?.name,
+        currency: currency?.symbol,
+        depositAmount,
+        error,
+        smartWalletAddress
+      });
       return;
     }
+
+    // Debug wallet connection state
+    console.log("Wallet connection state:", {
+      chain: chain.name,
+      isSolana: chain.name === "Solana",
+      walletContext: {
+        publicKey: walletContext.publicKey?.toBase58(),
+        connected: walletContext.connected,
+        connecting: walletContext.connecting
+      },
+      activeWallet: {
+        address: activeWallet?.address,
+        walletClientType: activeWallet?.walletClientType
+      }
+    });
 
     try {
       setTxError(false);
       setLoading(true);
       const newAmt = parseUnits(depositAmount, currency?.decimals);
+
+      console.log("Executing wallet topup with params:", {
+        currency: currency.symbol,
+        amount: newAmt.toString(),
+        smartWalletAddress,
+        chain: chain.name
+      });
 
       const result = await executeWalletTopup(
         currency,
@@ -153,6 +181,8 @@ export const Deposit = () => {
         newAmt,
         walletContext,
       );
+
+      console.log("Wallet topup result:", result);
 
       if (result.transactionHash) {
         setTxHash(result.transactionHash);
