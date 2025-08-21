@@ -36,6 +36,7 @@ interface AuthState {
   userAddress: string | null;
   chosenChain: Chain | null;
   _isProcessingAuth: boolean;
+  isDisconnecting: boolean;
 
   openStep: (step: AuthStep) => void;
   closeAll: () => void;
@@ -50,6 +51,7 @@ interface AuthState {
   setChain: (chain: Chain | null) => void;
   authenticate: (address: string) => void;
   logout: () => void;
+  setDisconnecting: (isDisconnecting: boolean) => void;
 }
 
 export const handleAuthSuccess = (
@@ -89,6 +91,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   userAddress: null,
   chosenChain: null,
   _isProcessingAuth: false,
+  isDisconnecting: false,
 
   openStep: (step) => set({ step }),
   closeAll: () => {
@@ -198,6 +201,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       error: null,
       _isProcessingAuth: false,
     }),
+  setDisconnecting: (isDisconnecting) => set({ isDisconnecting }),
   logout: () => {
     if (successAuthTimeout) {
       clearTimeout(successAuthTimeout);
@@ -215,6 +219,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       chosenChain: null,
       isLoading: false,
       error: null,
+      isDisconnecting: false,
     });
   },
 }));

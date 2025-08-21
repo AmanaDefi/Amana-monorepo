@@ -71,6 +71,7 @@ import Image from "next/image";
 import { useAuthStore } from "@/store/authStore";
 import { AiOutlineConsoleSql } from "react-icons/ai";
 import { useExternalTVL } from "@/hooks/useExternalTVL";
+import { useRiskRatings } from "@/hooks/useRiskRatings";
 import { useMultichainTokenBalance } from "@/hooks/useMultichainTokenBalance";
 
 const VaultsDetailContainer: React.FC<{
@@ -556,6 +557,19 @@ useEffect(() => {
 
   const txData = getTransactionData();
 
+  // Fetch risk rating for this vault
+  const vaultsForRiskRating = useMemo(() => 
+    vaultData ? [vaultData] : [], 
+    [vaultData?.id] // Only depend on vault ID, not the entire vault object
+  );
+  
+  const { riskRatings } = useRiskRatings({
+    vaults: vaultsForRiskRating,
+    enabled: !!vaultData,
+  });
+
+  const vaultRiskRating = vaultData ? riskRatings.get(vaultData.id) : null;
+
   return vaultData ? (
     <div className=" font-gotham">
       {!walletAddress && <InvestBlock />}
@@ -841,6 +855,7 @@ useEffect(() => {
                   }
                   isDeposit={isDeposit}
                   isReward={true}
+                  riskRating={vaultRiskRating}
                 />
               </div>
               <div className="hidden md:block">
@@ -858,6 +873,7 @@ useEffect(() => {
                     }
                     isDeposit={isDeposit}
                     isReward={true}
+                    riskRating={vaultRiskRating}
                   />
                 </VaultCardInfoBlock>
               </div>

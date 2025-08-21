@@ -13,7 +13,7 @@ import { formatTokenBalanceUSD } from "@/utils/tokenFormat";
 import { useTokenPriceBySymbol } from "@/hooks/hooks";
 import { VaultCardInfoBlock } from "./VaultCardInfoBlock";
 import { InfoBlock } from "./InfoBlock.tsx";
-import { calculateRiskLevel } from "..";
+import { ExponentialRiskRating } from "@/types/exponentialTypes";
 import DynamicArrowIcon from "@/components/svg/DynamicArrow";
 import ArrowRightIcon from "@/components/svg/ArrowRightIcon";
 import classNames from "classnames";
@@ -40,10 +40,11 @@ type Props = {
   vaultAPYs: VaultAPY[];
   vaultTotalAssets: VaultTotalAssets[];
   userVaultBalances: UserVaultBalance[];
+  riskRating: ExponentialRiskRating | null;
 };
 
 export const VaultCard = forwardRef<HTMLDivElement, Props>(
-  ({ vault, vaultAPYs, vaultTotalAssets, userVaultBalances }, ref) => {
+  ({ vault, vaultAPYs, vaultTotalAssets, userVaultBalances, riskRating }, ref) => {
     const router = useRouter();
     const { walletAddress } = useMultiChain();
 
@@ -68,8 +69,6 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
     const userBalance = userVaultBalances.find(
       (balance) => balance.vaultId === vault.id,
     );
-
-    const riskLevel = calculateRiskLevel(vault);
 
     const historicalData = getHistoricalAPY(vault.id);
     const percentageChange = getPercentageChange(vault.id);
@@ -210,7 +209,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
         className="w-full h-full bg-[#14171F] md:px-6 px-4 py-6 rounded-2xl transition-all backdrop-blur-[20px] cursor-pointer shadow-md before-gradient-border flex flex-col"
       >
         <div className="flex-1">
-          <div className="grid grid-cols-[auto_max-content] justify-between gap-1">
+            <div className="grid grid-cols-[auto_max-content] justify-between gap-1">
             <div className="grid grid-cols-[auto_1fr] gap-3 mb-3 p-2 rounded-md col-span-1 items-center">
               <Image
                 src={vault.outputTokenImage || vault.inputToken.imgURL}
@@ -241,9 +240,11 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                 className="rounded-full"
                 sizes="24px"
               />
-              <h3 className="text-white text-xs md:text-sm font-bold text-center">
-                {vault.protocol.network}
-              </h3>
+              <div className="flex flex-col items-center gap-1">
+                <h3 className="text-white text-xs md:text-sm font-bold text-center">
+                  {vault.protocol.network}
+                </h3>
+              </div>
             </div>
           </div>
 
@@ -269,6 +270,7 @@ export const VaultCard = forwardRef<HTMLDivElement, Props>(
                 vault={vault}
                 vaultAPY={vaultAPY}
                 totalAssets={totalAssets}
+                riskRating={riskRating}
               />
             </VaultCardInfoBlock>
 
