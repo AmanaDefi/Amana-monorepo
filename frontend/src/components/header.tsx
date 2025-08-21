@@ -1,7 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import AmanaLogo from "@public/logo/amanadefi/logo.svg";
 import { useRef, useState, useEffect } from "react";
@@ -221,7 +220,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
       </header>
 
       {/* Amana News banner - globally visible under the header */}
-      <NewsBanner />
+      {/* <NewsBanner /> */}
 
       <ProfileDropdown
         isOpen={isProfileDropdownOpen}

@@ -1547,14 +1547,6 @@ function Interaction({
               activeAccount?.address ||
               (wagmiConnected && wagmiAddress)
             );
-        
-        console.log("WALLET STATE:", {
-          showConnect: isConnectWalletSHown,
-          walletAddr: !!walletAddress,
-          solana: walletContext.connected && !!walletContext.publicKey,
-          activeAcc: !!activeAccount?.address,
-          wagmi: wagmiConnected && !!wagmiAddress,
-        });
 
         // const isConnectWalletSHown =
         //   (!activeAccount && !walletContext.publicKey) ||
