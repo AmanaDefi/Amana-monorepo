@@ -75,44 +75,72 @@ export class SolanaZetaClient {
 
   solanaDepositAndCall = async (amount: number, recipient: string, args: any, revertOptions: RevertOptions | null = null) => {
     try {
-      console.log("Creating Solana deposit and call transaction...");
-      console.log("Transaction params:", { amount, recipient, args, revertOptions });
+      console.log("=== solanaDepositAndCall called ===");
+      console.log("Amount:", amount);
+      console.log("Recipient:", recipient);
+      console.log("Args:", args);
+      console.log("Revert options:", revertOptions);
+      console.log("Wallet public key:", this.wallet.publicKey?.toBase58());
       
       // Create transaction
+      console.log("Creating transaction...");
       const tx = new Transaction().add(
         await createSolanaDepositAndCallTx(this.wallet.publicKey, amount, recipient, args, revertOptions, this.program)
       );
-
-      console.log("Transaction created, setting blockhash and fee payer...");
+      console.log("Transaction created");
 
       // Set blockhash and fee payer
+      console.log("Getting latest blockhash...");
       const { blockhash } = await this.connection.getLatestBlockhash();
       tx.recentBlockhash = blockhash;
       tx.feePayer = this.wallet.publicKey;
-
-      console.log("Signing transaction...");
+      console.log("Blockhash set:", blockhash);
 
       // For wallet adapters, use the signTransaction from the adapter 
-      const signedTx = await this.wallet.signTransaction(tx);
-
-      console.log("Transaction signed, sending to network...");
+      console.log("About to sign transaction - this should trigger wallet popup");
+      console.log("Sign transaction function:", typeof this.wallet.signTransaction);
+      console.log("Wallet adapter:", this.wallet);
+      
+      // Create a wrapper to track the signing process
+      const originalSignTransaction = this.wallet.signTransaction;
+      const wrappedSignTransaction = async (transaction: any) => {
+        console.log("=== signTransaction called ===");
+        console.log("Transaction to sign:", transaction);
+        try {
+          const result = await originalSignTransaction.call(this.wallet, transaction);
+          console.log("Transaction signed successfully");
+          return result;
+        } catch (error) {
+          console.error("Error during transaction signing:", error);
+          throw error;
+        }
+      };
+      
+      const signedTx = await wrappedSignTransaction(tx);
+      console.log("Transaction signed successfully");
 
       // Send the pre-signed transaction
+      console.log("Sending raw transaction...");
       const signature = await this.connection.sendRawTransaction(
         signedTx.serialize(),
         { skipPreflight: false }
       );
-
-      console.log("Transaction sent, waiting for confirmation...");
+      console.log("Transaction sent, signature:", signature);
 
       // Wait for confirmation
+      console.log("Waiting for confirmation...");
       const confirmation = await this.connection.confirmTransaction(signature, "confirmed");
+      console.log("Transaction confirmed:", confirmation);
 
-      console.log("Transaction confirmed:", signature);
       return signature;
-    } catch (e) {
+    } catch (e: any) {
       console.error("Error in solanaDepositAndCall:", e);
-      throw new Error(`Transaction failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
+      console.error("Error details:", {
+        message: e.message,
+        stack: e.stack,
+        name: e.name
+      });
+      throw new Error(`Transaction failed: ${e.message}`);
     }
   }
 

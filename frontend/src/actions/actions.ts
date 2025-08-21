@@ -1670,47 +1670,6 @@ const executeDirectWalletTopup = async (
   }
 };
 
-// Helper function to map Ethereum-style addresses to Solana SPL token mint addresses
-const getSolanaMintAddress = (tokenSymbol: string): string => {
-  console.log("getSolanaMintAddress called with tokenSymbol:", tokenSymbol);
-  
-  // Map of token symbols to their actual Solana mint addresses
-  const solanaMintAddresses: { [key: string]: string } = {
-    "USDC.SOL": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC on Solana mainnet
-    "USDT.SOL": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB", // USDT on Solana mainnet
-    "SOL.SOL": "So11111111111111111111111111111111111111112", // Wrapped SOL
-    // Add more mappings as needed
-  };
-  
-  // Try exact match first
-  let mintAddress = solanaMintAddresses[tokenSymbol];
-  console.log("Exact match result:", mintAddress);
-  
-  // If not found, try converting parentheses format to dot format
-  if (!mintAddress) {
-    const dotFormat = tokenSymbol.replace(" (SOL)", ".SOL");
-    console.log("Trying dot format:", dotFormat);
-    mintAddress = solanaMintAddresses[dotFormat];
-    console.log("Dot format match result:", mintAddress);
-  }
-  
-  // If still not found, try converting dot format to parentheses format
-  if (!mintAddress) {
-    const parenFormat = tokenSymbol.replace(".SOL", " (SOL)");
-    console.log("Trying parentheses format:", parenFormat);
-    mintAddress = solanaMintAddresses[parenFormat];
-    console.log("Parentheses format match result:", mintAddress);
-  }
-  
-  if (!mintAddress) {
-    console.error("Available mappings:", Object.keys(solanaMintAddresses));
-    throw new Error(`No Solana mint address mapping found for token symbol: ${tokenSymbol}`);
-  }
-  
-  console.log("Final mint address:", mintAddress);
-  return mintAddress;
-};
-
 const executeSolanaWalletTopup = async (
   inputToken: Token,
   walletContext: WalletContextState | undefined,
@@ -1719,117 +1678,93 @@ const executeSolanaWalletTopup = async (
   transactionAmount: bigint,
   setcrossChainTxId?: Function,
 ) => {
+  console.log("=== executeSolanaWalletTopup called ===");
+  console.log("Input token:", inputToken.symbol);
+  console.log("Wallet context:", !!walletContext);
+  console.log("Wallet public key:", walletContext?.publicKey?.toBase58());
+  console.log("Wallet connected:", walletContext?.connected);
+  console.log("Active chain:", activeChain.name);
+  console.log("Smart account address:", smartAccountAddress);
+  console.log("Transaction amount:", transactionAmount.toString());
+  
   if (!walletContext?.publicKey) {
+    console.log("No wallet public key, returning null");
     return { transactionHash: null };
   }
 
   const walletAddress = walletContext.publicKey.toBase58();
+  console.log("Wallet address:", walletAddress);
+  
+  const solanaWalletBytes = ethers.hexlify(
+    new TextEncoder().encode(walletAddress),
+  );
   const wallet = {
     publicKey: walletContext.publicKey,
     signTransaction: walletContext.signTransaction,
     signAllTransactions: walletContext.signAllTransactions,
   } as Wallet;
+  
+  console.log("Wallet object created:", {
+    hasPublicKey: !!wallet.publicKey,
+    hasSignTransaction: !!wallet.signTransaction,
+    hasSignAllTransactions: !!wallet.signAllTransactions
+  });
 
   const client = new SolanaZetaClient(wallet);
+  console.log("SolanaZetaClient created");
 
   const transactionId = generateTransactionId(walletAddress, activeChain);
+  console.log("Transaction ID generated:", transactionId);
+  
   if (setcrossChainTxId) {
     setcrossChainTxId(transactionId);
   }
 
-  // For Solana, we use the wallet address as the abort address instead of smart account address
-  // Convert Solana wallet address to bytes for the abort address
-  const solanaWalletBytes = new TextEncoder().encode(walletAddress);
-  
-  // Ensure abortAddress is exactly 20 bytes as required by RevertOptions interface
-  const abortAddress = new Uint8Array(20);
-  if (solanaWalletBytes.length <= 20) {
-    abortAddress.set(solanaWalletBytes, 0);
-  } else {
-    abortAddress.set(solanaWalletBytes.slice(0, 20), 0);
-  }
-  
   const revertOptions = {
     revertAddress: walletContext.publicKey,
-    abortAddress: abortAddress, // Use properly formatted 20-byte array
+    abortAddress: ethers.getBytes(smartAccountAddress),
     callOnRevert: false,
     revertMessage: Buffer.from("_walletTopupFailed", "utf8"),
     onRevertGasLimit: new (require("@coral-xyz/anchor").BN)(500_000),
   };
+  console.log("Revert options created");
 
   // Prepare payload: just the smartAccountAddress
   const args = {
     types: ["address"],
     values: [smartAccountAddress],
   };
+  console.log("Args prepared:", args);
 
   try {
-    // Ensure TOP_UP_HANDLER_ADDRESS is properly formatted
-    if (!TOP_UP_HANDLER_ADDRESS || !TOP_UP_HANDLER_ADDRESS.startsWith('0x')) {
-      console.error("Invalid TOP_UP_HANDLER_ADDRESS:", TOP_UP_HANDLER_ADDRESS);
-      return { transactionHash: null };
-    }
+    console.log("Starting transaction execution...");
+    console.log("Token is native:", inputToken.isNative);
     
-    console.log("Executing Solana wallet topup with:", {
-      amount: Number(transactionAmount),
-      recipient: TOP_UP_HANDLER_ADDRESS,
-      args,
-      revertOptions
-    });
-
     if (inputToken.isNative) {
-      console.log("Executing native SOL deposit and call...");
+      console.log("Executing native token deposit...");
       const txHash = await client.solanaDepositAndCall(
         Number(transactionAmount),
         TOP_UP_HANDLER_ADDRESS, // Target is TopUpHandler
         args,
         revertOptions,
       );
-      console.log("Native SOL deposit successful, txHash:", txHash);
+      console.log("Native deposit completed, tx hash:", txHash);
       return { transactionHash: txHash };
     } else {
-      console.log("Executing SPL token deposit and call...");
-      // For SPL tokens, we need to use the actual SPL token mint address
-      // The inputToken.address should be the SPL token mint address, not the wallet address
-      console.log("Input token symbol:", inputToken.symbol);
-      console.log("Input token address (Ethereum-style):", inputToken.address);
-      const splMintAddress = getSolanaMintAddress(inputToken.symbol);
-      console.log("Mapped SPL mint address:", splMintAddress);
-      
-      try {
-        console.log("About to call depositSplTokenAndCall with parameters:");
-        console.log("mint:", splMintAddress);
-        console.log("amount:", Number(transactionAmount));
-        console.log("recipient:", TOP_UP_HANDLER_ADDRESS);
-        console.log("args:", args);
-        console.log("revertOptions:", revertOptions);
-        
-        const txHash = await client.depositSplTokenAndCall(
-          splMintAddress, // This should be the SPL token mint address
-          Number(transactionAmount),
-          TOP_UP_HANDLER_ADDRESS, // Target is TopUpHandler
-          args,
-          revertOptions,
-        );
-        console.log("SPL token deposit successful, txHash:", txHash);
-        return { transactionHash: txHash };
-      } catch (error: any) {
-        console.error("Error in SPL token deposit:", error);
-        console.error("Error details:", {
-          message: error.message,
-          stack: error.stack,
-          name: error.name
-        });
-        throw error; // Re-throw to be caught by the outer try-catch
-      }
+      console.log("Executing SPL token deposit...");
+      const txHash = await client.depositSplTokenAndCall(
+        inputToken.address,
+        Number(transactionAmount),
+        TOP_UP_HANDLER_ADDRESS, // Target is TopUpHandler
+        args,
+        revertOptions,
+      );
+      console.log("SPL token deposit completed, tx hash:", txHash);
+      return { transactionHash: txHash };
     }
   } catch (error: any) {
-    console.error("Error in executeSolanaWalletTopup:", error);
-    console.error("Error details:", {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    });
+    console.log("Error in executeSolanaWalletTopup:", error.message);
+    console.error("Full error:", error);
     return { transactionHash: null };
   }
 };

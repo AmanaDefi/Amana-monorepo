@@ -88,24 +88,50 @@ export const Deposit = () => {
   }, [chain, currency]);
 
   const isExternalWalletConnected = useMemo(() => {
-    if (!chain) return false;
+    console.log("=== isExternalWalletConnected calculation ===");
+    console.log("Chain:", chain?.name);
+    console.log("Wallet context public key:", walletContext?.publicKey?.toBase58());
+    console.log("Wallet context connected:", walletContext?.connected);
+    console.log("Active wallet:", activeWallet?.address);
+    console.log("Active wallet type:", activeWallet?.walletClientType);
+    
+    if (!chain) {
+      console.log("No chain selected, returning false");
+      return false;
+    }
 
     if (chain.name === "Solana") {
-      return !!walletContext.publicKey && walletContext.connected;
+      const isConnected = !!walletContext.publicKey && walletContext.connected;
+      console.log("Solana wallet connected:", isConnected);
+      return isConnected;
     } else {
-      return !!activeWallet && activeWallet.walletClientType !== "privy";
+      const isConnected = !!activeWallet && activeWallet.walletClientType !== "privy";
+      console.log("EVM wallet connected:", isConnected);
+      return isConnected;
     }
   }, [chain, walletContext.publicKey, walletContext.connected, activeWallet]);
 
   const isButtonDisabled = (() => {
+    console.log("=== isButtonDisabled calculation ===");
+    console.log("Step:", step);
+    console.log("Chain:", !!chain);
+    console.log("Currency:", !!currency);
+    console.log("Deposit amount:", !!depositAmount);
+    console.log("Error:", !!error);
+    
     if (step === "confirm") {
-      return !chain || !currency || !depositAmount || !!error;
+      const disabled = !chain || !currency || !depositAmount || !!error;
+      console.log("Confirm step - button disabled:", disabled);
+      return disabled;
     }
 
     if (isExternalWalletConnected && chain && currency) {
-      return !depositAmount || !!error;
+      const disabled = !depositAmount || !!error;
+      console.log("External wallet connected - button disabled:", disabled);
+      return disabled;
     }
 
+    console.log("Default case - button disabled: false");
     return false;
   })();
 
@@ -129,6 +155,17 @@ export const Deposit = () => {
   ]);
 
   const handleConfirm = async () => {
+    console.log("=== handleConfirm called ===");
+    console.log("Step:", step);
+    console.log("Chain:", chain?.name);
+    console.log("Currency:", currency?.symbol);
+    console.log("Deposit amount:", depositAmount);
+    console.log("Error:", error);
+    console.log("Smart wallet address:", smartWalletAddress);
+    console.log("Wallet context connected:", walletContext?.connected);
+    console.log("Wallet context public key:", walletContext?.publicKey?.toBase58());
+    console.log("Active wallet:", activeWallet?.address);
+    
     if (
       !chain ||
       !currency ||
@@ -136,43 +173,25 @@ export const Deposit = () => {
       !!error ||
       !smartWalletAddress
     ) {
-      console.log("Early return due to missing values:", {
-        chain: chain?.name,
-        currency: currency?.symbol,
-        depositAmount,
-        error,
-        smartWalletAddress
+      console.log("Early return due to missing values");
+      console.log("Missing values:", {
+        chain: !chain,
+        currency: !currency,
+        depositAmount: !depositAmount,
+        error: !!error,
+        smartWalletAddress: !smartWalletAddress
       });
       return;
     }
 
-    // Debug wallet connection state
-    console.log("Wallet connection state:", {
-      chain: chain.name,
-      isSolana: chain.name === "Solana",
-      walletContext: {
-        publicKey: walletContext.publicKey?.toBase58(),
-        connected: walletContext.connected,
-        connecting: walletContext.connecting
-      },
-      activeWallet: {
-        address: activeWallet?.address,
-        walletClientType: activeWallet?.walletClientType
-      }
-    });
-
     try {
+      console.log("Starting transaction execution...");
       setTxError(false);
       setLoading(true);
       const newAmt = parseUnits(depositAmount, currency?.decimals);
+      console.log("Parsed amount:", newAmt.toString());
 
-      console.log("Executing wallet topup with params:", {
-        currency: currency.symbol,
-        amount: newAmt.toString(),
-        smartWalletAddress,
-        chain: chain.name
-      });
-
+      console.log("Calling executeWalletTopup...");
       const result = await executeWalletTopup(
         currency,
         activeWallet,
@@ -181,10 +200,10 @@ export const Deposit = () => {
         newAmt,
         walletContext,
       );
-
-      console.log("Wallet topup result:", result);
+      console.log("executeWalletTopup result:", result);
 
       if (result.transactionHash) {
+        console.log("Transaction successful, hash:", result.transactionHash);
         setTxHash(result.transactionHash);
         showSuccessToast("Successfully Topped Up");
         setStep("finishDeposit");
@@ -194,17 +213,32 @@ export const Deposit = () => {
       }
     } catch (e) {
       console.error("Transaction error:", e);
+      console.error("Error details:", {
+        message: e.message,
+        stack: e.stack,
+        name: e.name
+      });
       setTxError(true);
     } finally {
+      console.log("Setting loading to false");
       setLoading(false);
     }
   };
   const handlePressButton = () => {
+    console.log("=== handlePressButton called ===");
+    console.log("Current step:", step);
+    console.log("Is external wallet connected:", isExternalWalletConnected);
+    console.log("Chain:", chain?.name);
+    console.log("Currency:", currency?.symbol);
+    
     if (step === "confirm") {
+      console.log("Step is confirm, calling handleConfirm");
       handleConfirm();
     } else if (isExternalWalletConnected && chain && currency) {
+      console.log("External wallet connected, moving to confirm step");
       setStep("confirm");
     } else {
+      console.log("No external wallet connected, calling handleConnectWallet");
       handleConnectWallet();
     }
   };
@@ -224,9 +258,26 @@ export const Deposit = () => {
   };
 
   const getButtonText = () => {
-    if (loading) return "Pending...";
-    if (step === "confirm") return "Confirm";
-    if (isExternalWalletConnected && chain && currency) return "Confirm";
+    console.log("=== getButtonText called ===");
+    console.log("Loading:", loading);
+    console.log("Step:", step);
+    console.log("Is external wallet connected:", isExternalWalletConnected);
+    console.log("Chain:", !!chain);
+    console.log("Currency:", !!currency);
+    
+    if (loading) {
+      console.log("Button text: Pending...");
+      return "Pending...";
+    }
+    if (step === "confirm") {
+      console.log("Button text: Confirm");
+      return "Confirm";
+    }
+    if (isExternalWalletConnected && chain && currency) {
+      console.log("Button text: Confirm");
+      return "Confirm";
+    }
+    console.log("Button text: Connect Wallet");
     return "Connect Wallet";
   };
 
