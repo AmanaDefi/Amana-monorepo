@@ -26,6 +26,28 @@ export const getPublicClient = (activeChainId?: number) => {
 export const getWalletClient = async (
   wallet: ConnectedWallet,
 ): Promise<WalletClient | null> => {
+  if (wallet?.walletClientType === "wagmi") {
+    if (typeof window !== "undefined" && window.ethereum) {
+      const chainId = wallet.chainId?.split(":")[1] || "1";
+
+      const chain = chainsWithCustomRpcs().find(
+        (c) => c.id.toString() === chainId,
+      );
+
+      if (!chain) {
+        console.log(`Chain with id:${chainId} doesn't supported`);
+        return null;
+      }
+
+      return createWalletClient({
+        account: wallet.address,
+        chain: chain,
+        transport: custom((window as any).ethereum),
+      });
+    }
+    return null;
+  }
+
   if (walletClientCache.has(wallet?.chainId?.split(":")[1])) {
     return walletClientCache.get(wallet?.chainId?.split(":")[1])!;
   }

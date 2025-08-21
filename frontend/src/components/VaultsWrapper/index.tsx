@@ -430,7 +430,7 @@ const VaultsGrid: React.FC<VaultsGridProps> = ({
   const renderVaultsContent = () => {
     if (loading || isSorting) {
       return (
-        <div className="flex justify-center items-center py-20 min-h-[400px]">
+        <div className="w-full flex justify-center items-center py-20 min-h-[400px]">
           <LoadingLogo />
         </div>
       );
