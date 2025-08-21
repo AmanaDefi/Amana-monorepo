@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { VaultData } from "@/types/types";
 import { exponentialApi } from "@/service/exponentialApi";
 
@@ -18,9 +18,27 @@ export function useRiskRatings({ vaults, enabled = true }: UseRiskRatingsProps) 
   
   // Persistent cache across re-renders AND page refreshes
   const persistentCache = useRef<Map<string, any>>(new Map());
+  const isInitialized = useRef(false);
 
-  // Load cache from localStorage on mount
+  // Create a stable vaults dependency by using vault IDs
+  const vaultIds = useMemo(() => vaults.map(vault => vault.id).sort(), [vaults]);
+  
+  // Track previous vault IDs to prevent unnecessary re-renders
+  const prevVaultIds = useRef<string[]>([]);
+  
+  // Check if vaults have actually changed
+  const vaultsChanged = useMemo(() => {
+    const currentIds = vaultIds.join(',');
+    const prevIds = prevVaultIds.current.join(',');
+    const changed = currentIds !== prevIds;
+    prevVaultIds.current = vaultIds;
+    return changed;
+  }, [vaultIds]);
+
+  // Load cache from localStorage on mount (only once)
   useEffect(() => {
+    if (isInitialized.current) return;
+    
     try {
       const cached = localStorage.getItem(CACHE_KEY);
       if (cached) {
@@ -39,13 +57,15 @@ export function useRiskRatings({ vaults, enabled = true }: UseRiskRatingsProps) 
         
         console.log(`[useRiskRatings] Loaded ${validEntries.length} cached ratings from localStorage`);
       }
+      isInitialized.current = true;
     } catch (err) {
       console.error('[useRiskRatings] Failed to load cache from localStorage:', err);
+      isInitialized.current = true;
     }
   }, []);
 
   // Save cache to localStorage whenever it changes
-  const saveCacheToStorage = () => {
+  const saveCacheToStorage = useCallback(() => {
     try {
       const cacheData: Record<string, { rating: any; timestamp: number }> = {};
       persistentCache.current.forEach((rating, vaultId) => {
@@ -58,18 +78,18 @@ export function useRiskRatings({ vaults, enabled = true }: UseRiskRatingsProps) 
     } catch (err) {
       console.error('[useRiskRatings] Failed to save cache to localStorage:', err);
     }
-  };
+  }, []);
 
   // Function to clear cache (for testing)
-  const clearCache = () => {
+  const clearCache = useCallback(() => {
     persistentCache.current.clear();
     localStorage.removeItem(CACHE_KEY);
     setRiskRatings(new Map());
     console.log('[useRiskRatings] Cache cleared');
-  };
+  }, []);
 
   useEffect(() => {
-    if (!enabled || vaults.length === 0) return;
+    if (!enabled || vaults.length === 0 || !isInitialized.current || !vaultsChanged) return;
 
     const fetchMissingRatings = async () => {
       setIsLoading(true);
@@ -137,18 +157,18 @@ export function useRiskRatings({ vaults, enabled = true }: UseRiskRatingsProps) 
     };
 
     fetchMissingRatings();
-  }, [vaults, enabled]); // Remove vaultKey dependency to prevent unnecessary refetches
+  }, [vaultIds, enabled, saveCacheToStorage, vaultsChanged]); // Use vaultIds instead of vaults array
 
-  const getRiskLevel = (vaultId: string) => {
+  const getRiskLevel = useCallback((vaultId: string) => {
     const rating = riskRatings.get(vaultId);
     return rating?.poolRating || null;
-  };
+  }, [riskRatings]);
 
   return {
     riskRatings,
     isLoading,
     error,
     getRiskLevel,
-    clearCache, // Export for testing
+    clearCache,
   };
 }

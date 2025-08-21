@@ -92,7 +92,6 @@ export async function getVaultTVL(vaultId: string): Promise<number | null> {
     const pool = pools.find((p: any) => p.pool === poolId);
     if (!pool || typeof pool.tvlUsd !== 'number') return null;
 
-    console.log("defilama pools data",pool);
     return pool.tvlUsd;
   } catch (e) {
     console.error("Failed to get DefiLlama TVL for vault:", vaultId, e);

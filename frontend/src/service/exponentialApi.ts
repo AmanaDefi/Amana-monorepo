@@ -56,6 +56,7 @@ function createExponentialAPI() {
       try {
         const response = await api.post('/api/exponential-proxy', request);
         const data = response.data;
+        console.log('[ExponentialAPI] Response:', data);
         
         // Cache successful response
         cache.set(cacheKey, { data, timestamp: Date.now() });

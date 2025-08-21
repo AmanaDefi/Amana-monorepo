@@ -138,24 +138,64 @@ export const VaultOverviewBlock: React.FC<Props> = ({
               Risk
             </p>
             <InfoBlock isMiddle>
-              <div>
-                <strong>💡 Risk Rating</strong><br/>
-                {riskRating?.poolRating || "-"}
+              <div className="text-left">
+                {/* Header with Risk Rating and Badge */}
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="font-bold text-sm">Risk Rating</span>
+                  {riskRating?.poolRating && (
+                    <div 
+                      className="rounded-full h-5 w-5 flex items-center justify-center text-white font-bold text-xs"
+                      style={{ 
+                        backgroundColor: riskRating.poolRatingColor || '#6B7280' 
+                      }}
+                    >
+                      {riskRating.poolRating}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Risk Description */}
+                <div className="font-bold text-sm mb-1">
+                  {riskRating?.poolRating === 'A' && 'This Vault is Safest'}
+                  {riskRating?.poolRating === 'B' && 'This Vault is Safe'}
+                  {riskRating?.poolRating === 'C' && 'This Vault has Moderate Risk'}
+                  {riskRating?.poolRating === 'D' && 'This Vault has High Risk'}
+                  {!riskRating?.poolRating && 'Risk rating not available'}
+                </div>
+                
+                {/* Explanatory Text */}
+                <div className="text-xs text-gray-300 mb-3">
+                  Based on audit of code, protocol structure, and blockchain reliability.
+                </div>
+                
+                {/* Learn More Link */}
                 {riskRating?.poolUrl && (
-                  <>
-                    {" "}
+                  <div className="mb-3">
                     <a
                       href={riskRating.poolUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="underline text-blue-400"
+                      className="text-blue-400 underline text-xs hover:text-blue-300 transition-colors"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      details
+                      Learn more
                     </a>
-                  </>
+                  </div>
                 )}
-                <br/>
-                {riskRating?.poolRatingDescription || ""}
+                
+                {/* Footer Attribution */}
+                <div className="text-center text-xs text-gray-400">
+                  <span>Powered by </span>
+                  <a
+                    href="https://exponential.fi/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:text-blue-300 transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    exponential.fi
+                  </a>
+                </div>
               </div>
             </InfoBlock>
           </div>

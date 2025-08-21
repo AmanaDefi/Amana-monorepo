@@ -558,8 +558,13 @@ useEffect(() => {
   const txData = getTransactionData();
 
   // Fetch risk rating for this vault
+  const vaultsForRiskRating = useMemo(() => 
+    vaultData ? [vaultData] : [], 
+    [vaultData?.id] // Only depend on vault ID, not the entire vault object
+  );
+  
   const { riskRatings } = useRiskRatings({
-    vaults: vaultData ? [vaultData] : [],
+    vaults: vaultsForRiskRating,
     enabled: !!vaultData,
   });
 
