@@ -191,10 +191,12 @@ export const VaultRow: FC<Props> = React.memo(
                           
                           {/* Risk Description */}
                           <div className="font-bold text-sm mb-1">
-                            {rating?.poolRating === 'A' && 'This Vault is Safest'}
-                            {rating?.poolRating === 'B' && 'This Vault is Safe'}
-                            {rating?.poolRating === 'C' && 'This Vault has Moderate Risk'}
-                            {rating?.poolRating === 'D' && 'This Vault has High Risk'}
+                            {rating?.poolRating === 'A' && 'This Vault has lowest risk'}
+                            {rating?.poolRating === 'B' && 'This Vault has low risk'}
+                            {rating?.poolRating === 'C' && 'This Vault has moderate risk'}
+                            {rating?.poolRating === 'D' && 'This Vault has high risk (watch out)'}
+                            {rating?.poolRating === 'E' && 'This Vault has high risk (watch out)'}  
+                            {rating?.poolRating === 'F' && 'This Vault has high risk (watch out)'}
                             {!rating?.poolRating && 'Risk rating not available'}
                           </div>
                           

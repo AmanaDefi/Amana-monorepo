@@ -156,10 +156,12 @@ export const VaultOverviewBlock: React.FC<Props> = ({
                 
                 {/* Risk Description */}
                 <div className="font-bold text-sm mb-1">
-                  {riskRating?.poolRating === 'A' && 'This Vault is Safest'}
-                  {riskRating?.poolRating === 'B' && 'This Vault is Safe'}
-                  {riskRating?.poolRating === 'C' && 'This Vault has Moderate Risk'}
-                  {riskRating?.poolRating === 'D' && 'This Vault has High Risk'}
+                {riskRating?.poolRating === 'A' && 'This Vault has lowest risk'}
+                  {riskRating?.poolRating === 'B' && 'This Vault has low risk'}
+                  {riskRating?.poolRating === 'C' && 'This Vault has moderate risk'}
+                  {riskRating?.poolRating === 'D' && 'This Vault has high risk (watch out)'}
+                  {riskRating?.poolRating === 'E' && 'This Vault has high risk (watch out)'}  
+                  {riskRating?.poolRating === 'F' && 'This Vault has high risk (watch out)'}
                   {!riskRating?.poolRating && 'Risk rating not available'}
                 </div>
                 
