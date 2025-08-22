@@ -1485,11 +1485,16 @@ function Interaction({
   const handleWalletConnect = () => {
     setChain(activeChain);
     const hasConnectedWallet =
-      !isDisconnecting && 
+      !isDisconnecting &&
       ((walletContext.connected && walletContext.publicKey) ||
-        activeAccount?.address ||
+        (activeAccount?.address && !isDisconnecting) ||
         (wagmiConnected && wagmiAddress));
-    if (activeChain?.id === zetachain.id || !activeChain || !hasConnectedWallet) {
+    if (
+      activeChain?.id === zetachain.id ||
+      !activeChain ||
+      !hasConnectedWallet ||
+      isDisconnecting
+    ) {
       openStep(isMobile ? "mobileOptionsA" : "optionsA");
     } else {
       if (
