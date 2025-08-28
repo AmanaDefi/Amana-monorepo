@@ -22,6 +22,7 @@ import { VaultCard } from "@/components/VaultsWrapper/components/VaultCard";
 import { type Transaction } from "@/constants/mockTransactions";
 import { useUserTransactionsHistory } from "@/hooks/hooks";
 import { useMultiChain } from "@/providers/MultiChainProvider";
+import { useRiskRatings } from "@/hooks/useRiskRatings";
 import { formatTimestamp, convertStringToBalance } from "@/utils/graphUtils";
 import Image from "next/image";
 import TransactionDetailsIcon from "@/components/svg/TransactionDetailsIcon";
@@ -219,6 +220,12 @@ const PortfolioTabs: React.FC<PortfolioTabsProps> = ({
 
   const [networkSearchQuery, setNetworkSearchQuery] = useState("");
 
+  // Add risk ratings hook
+  const { riskRatings } = useRiskRatings({
+    vaults,
+    enabled: true,
+  });
+
   const {
     deposits,
     withdrawals,
@@ -294,6 +301,7 @@ const PortfolioTabs: React.FC<PortfolioTabsProps> = ({
                   vaultAPYs={vaultAPYs}
                   vaultTotalAssets={vaultTotalAssets}
                   userVaultBalances={userVaultBalances}
+                  riskRating={riskRatings.get(vault.id) || null}
                 />
               ))}
             </div>
