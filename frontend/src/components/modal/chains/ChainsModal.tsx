@@ -317,8 +317,7 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
     walletAddress,
   } = useMultiChain();
 
-  const { openStep } = useAuthStore();
-  const { setChain } = useAuthStore();
+  const { openStep, setChain, isDisconnecting } = useAuthStore();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -581,15 +580,17 @@ const ChainsModal = ({ vaultData: propVaultData }: ChainsModalProps) => {
       return true;
     };
 
-    if (
-      isTopUpModal ||
-      (selectedChainLocal?.id !== zetachain.id && selectedChainLocal)
-    ) {
-      if (!handleChainSwitching()) return;
-      openStep("connectInChosenChain");
-    } else {
-      openStep(window?.innerWidth < 768 ? "mobileOptionsA" : "optionsA");
-    }
+   if (
+     isTopUpModal ||
+     isDisconnecting || 
+     selectedChainLocal?.id === zetachain.id || 
+     !selectedChainLocal
+   ) {
+     if (!handleChainSwitching()) return;
+     openStep("connectInChosenChain");
+   } else {
+     openStep(window?.innerWidth < 768 ? "mobileOptionsA" : "optionsA");
+   }
   };
   const isWalletConnected = useMemo(() => {
     if (!selectedChainLocal) return false;

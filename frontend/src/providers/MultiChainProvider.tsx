@@ -539,14 +539,7 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
   }, [isHydrated, isInitializationComplete, completeInitialization]);
 
   const disconnectWallet = useCallback(async () => {
-    console.log("DISCONNECT START", {
-      timestamp: new Date().toISOString(),
-      walletAddress_before: walletAddress?.slice(0, 8),
-      privyWallet_before: privyWallet?.address?.slice(0, 8),
-    });
-
     setDisconnecting(true);
-    console.log("FLAGS SET - isDisconnecting:", true);
     setDisconnectInProgress(true);
     startInitialization();
 
@@ -582,13 +575,8 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       const disconnectPromises = [];
 
       if (privyWallet?.address) {
-        console.log("Attempting Privy logout...");
         disconnectPromises.push(
           logout().catch((error) => {
-            console.log(
-              "Privy logout failed (expected):",
-              error?.message || error,
-            );
             return null;
           }),
         );
@@ -610,16 +598,13 @@ export const MultiChainProvider = ({ children }: { children: ReactNode }) => {
       setTimeout(() => {
         setDisconnectInProgress(false);
         setDisconnecting(false);
-        console.log("FLAGS CLEARED - isDisconnecting:", false);
-        completeInitialization();
-        console.log("DISCONNECT CLEANUP COMPLETE - flags cleared");
-      }, 1000);
 
-      console.log("DISCONNECT END", {
-        timestamp: new Date().toISOString(),
-        walletAddress_after: walletAddress,
-        privyWallet_after: privyWallet?.address?.slice(0, 8),
-      });
+         setSelectedChain(null);
+         setActiveChain(null);
+         setWalletAddressWithLog(null, "final-cleanup");
+      
+        completeInitialization();
+      }, 1000);
 
       const isVaultAddressPath = /^\/vaults\/0x[0-9a-fA-F]{40}$/;
       if (

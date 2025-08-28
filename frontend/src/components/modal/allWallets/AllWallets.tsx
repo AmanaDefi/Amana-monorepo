@@ -77,7 +77,23 @@ const AllWAllets = () => {
     mutation: {
       onSuccess: (result) => {
         if (fundWalletStep === "connectWallet") {
-          setWalletAddress(result.accounts[0]);
+          const walletAddress = result.accounts[0];
+          setWalletAddress(walletAddress);
+          if (chain) {
+            const chainTokens = APPROVED_TOKENS[chain.id] || [];
+            const defaultToken = chainTokens[0];
+
+            if (defaultToken) {
+              setCurrency(defaultToken);
+              console.log(
+                "Auto-selected EVM token:",
+                defaultToken.symbol,
+                "for chain:",
+                chain.name,
+              );
+            }
+          }
+
           return fundWalletConnect();
         }
 

@@ -17,7 +17,11 @@ import {
   WalletAdapter,
   WalletReadyState,
 } from "@solana/wallet-adapter-base";
-import { CHAIN_ID } from "@/constants/chainConfig";
+import {
+  APPROVED_TOKENS,
+  CHAIN_ID,
+  solanaChain,
+} from "@/constants/chainConfig";
 
 const MobileAllWallets = () => {
   const { step, successAuth, closeAll, chosenChain } = useAuthStore();
@@ -27,6 +31,8 @@ const MobileAllWallets = () => {
     setActiveConnector,
     setWalletAddress,
     chain,
+    setChain,
+    setCurrency,
   } = useFundWalletStore();
 
   const {
@@ -68,9 +74,25 @@ const MobileAllWallets = () => {
   } = useConnect({
     mutation: {
       onSuccess: (result) => {
-        
         if (fundWalletStep === "connectWallet") {
-          setWalletAddress(result.accounts[0]);
+          const walletAddress = result.accounts[0];
+          setWalletAddress(walletAddress);
+
+          if (chain) {
+            const chainTokens = APPROVED_TOKENS[chain.id] || [];
+            const defaultToken = chainTokens[0];
+
+            if (defaultToken) {
+              setCurrency(defaultToken);
+              console.log(
+                "Mobile: Auto-selected EVM token:",
+                defaultToken.symbol,
+                "for chain:",
+                chain.name,
+              );
+            }
+          }
+
           return fundWalletConnect();
         }
 
@@ -85,7 +107,6 @@ const MobileAllWallets = () => {
   };
 
   const handleExternalWalletConnect = async (connector: Connector) => {
-   
     if (isConnectingWallet) {
       await disconnectAsync();
     }
@@ -149,7 +170,6 @@ const MobileAllWallets = () => {
   };
 
   const handleClose = () => {
-   
     if (fundWalletStep === "connectWallet") {
       setStep("setValues");
     } else {
@@ -176,11 +196,9 @@ const MobileAllWallets = () => {
     .map((adapter) => adapter.adapter);
 
   const handleSolanaConnect = async (connector: Adapter) => {
-   
     if (activeAccount && fundWalletStep !== "connectWallet") {
       const confirmResult = confirm("You evm wallet will be disconnected");
       if (!confirmResult) {
-        console.log("[DEBUG] User cancelled EVM disconnection");
         return;
       }
     }
@@ -190,10 +208,23 @@ const MobileAllWallets = () => {
       try {
         await connectSolana();
       } catch (e) {
-        console.log("[DEBUG] Connect solana error:", e);
+        console.log("Connect solana error:", e);
       }
       select(connector.name);
       await solanaConnect();
+
+      if (fundWalletStep === "connectWallet") {
+        setChain(solanaChain);
+
+        const solanaTokens = APPROVED_TOKENS[CHAIN_ID["solana"]] || [];
+        const defaultToken = solanaTokens[0];
+        if (defaultToken) {
+          setCurrency(defaultToken);
+        }
+
+        setStep("setValues");
+        return;
+      }
     } catch (error) {
       if (connector.connected) {
         connector.disconnect();
@@ -251,7 +282,6 @@ const MobileAllWallets = () => {
                 </p>
                 {filteredEvmConnectors.length > 0 ? (
                   filteredEvmConnectors.map((connector) => {
-                
                     return (
                       <ModalButton
                         key={connector.id}
