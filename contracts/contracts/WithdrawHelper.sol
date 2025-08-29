@@ -107,6 +107,13 @@ contract WithdrawHelper is
         gasLimitForRevertCall = _gasLimitForRevertCall;
     }
 
+    function emergencyWithdraw(address token) external onlyOwner {
+        IERC20(token).safeTransfer(
+            owner(),
+            IERC20(token).balanceOf(address(this))
+        );
+    }
+
     function handleGasFeeAndWithdrawToUser(
         bytes memory recipient,
         address withdrawZRC20,

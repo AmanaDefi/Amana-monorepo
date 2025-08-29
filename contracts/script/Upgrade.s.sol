@@ -10,7 +10,7 @@ contract Upgrade is Script {
         address proxyAddress = 0xd435B3d2b7497c359beF43F99c42eF6D91f40831;
 
         // 🆕 New implementation contract address
-        address newImpl = 0xD7e8e0a20B38eccab6b3D6928CD2732fCd378057;
+        address newImpl = 0x0CB4153b89cbc13C52215dDF5c004522A7DA235D;
 
         // 🔐 Get private key from .env and prefix if needed
         string memory rawPrivateKey = vm.envString("PRIVATE_KEY");
