@@ -192,6 +192,7 @@ const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange }) => {
         <div className="flex items-center gap-2 lg:gap-6 flex-1 justify-end relative z-50">
           <div className="transition-all duration-300 ease-in-out">
             {isConnected &&
+              activeAccount?.address &&
               activeAccount?.walletClientType !== "privy" &&
               !isMenuOpened &&
               activeChain?.id !== CHAIN_ID["solana"] && <ChainSwitcher />}

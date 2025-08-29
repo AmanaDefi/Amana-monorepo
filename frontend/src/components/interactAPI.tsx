@@ -1100,7 +1100,7 @@ function Interaction({
 }): JSX.Element {
   const walletContext = useWallet();
   const prevLebel = useRef(label);
-  const { openStep, setChain } = useAuthStore();
+  const { openStep, setChain, isDisconnecting } = useAuthStore();
   const {
     selectedChain,
     activeEvmWallet: activeAccount,
@@ -1484,7 +1484,17 @@ function Interaction({
 
   const handleWalletConnect = () => {
     setChain(activeChain);
-    if (activeChain?.id === zetachain.id || !activeChain) {
+    const hasConnectedWallet =
+      !isDisconnecting &&
+      ((walletContext.connected && walletContext.publicKey) ||
+        (activeAccount?.address && !isDisconnecting) ||
+        (wagmiConnected && wagmiAddress));
+    if (
+      activeChain?.id === zetachain.id ||
+      !activeChain ||
+      !hasConnectedWallet ||
+      isDisconnecting
+    ) {
       openStep(isMobile ? "mobileOptionsA" : "optionsA");
     } else {
       if (
